@@ -1,10 +1,10 @@
-# Performance Tuning For Ingestion
+# Performance Tuning For Grounding
 
-*scholar-rag-agent — 2026-01-18*
+*scholar-rag-agent — 2024-03-19*
 
 ## Overview
 
-This guide covers performance tuning for ingestion for the `scholar-rag-agent` project.
+This guide covers performance tuning for grounding for the `scholar-rag-agent` project.
 
 ## Prerequisites
 
@@ -27,12 +27,12 @@ python -m agent --help
 
 ## Common Scenarios
 
-### Scenario 1: Basic Ingestion Usage
+### Scenario 1: Basic Grounding Usage
 
 ```python
-from agent import Ingestion
+from agent import Grounding
 
-client = Ingestion(config)
+client = Grounding(config)
 result = client.run()
 print(result)
 ```
