@@ -3,10 +3,10 @@
 All notable changes to **scholar-rag-agent** are documented here.
 Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.1.14] — 2025-10-09
+## [v0.7.19] — 2024-04-08
 
 ### Added
-- Extended embedding module with improved error handling
+- Extended ingestion module with improved error handling
 - Added structured logging for retrieval operations
 - New unit tests covering edge cases in graph pipeline
 
@@ -16,10 +16,10 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Updated dependency pins to latest stable versions
 
 ### Fixed
-- Resolved race condition in async embedding handler
+- Resolved race condition in async ingestion handler
 - Fixed incorrect retrieval timeout calculation
 
-## [v0.1.0] — 2025-09-18
+## [v0.1.0] — 2024-02-26
 
 ### Added
 - Initial project scaffold with scientific RAG core
