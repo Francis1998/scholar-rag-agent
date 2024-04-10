@@ -3,12 +3,12 @@
 All notable changes to **scholar-rag-agent** are documented here.
 Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.7.19] — 2024-04-08
+## [v0.1.20] — 2024-04-09
 
 ### Added
-- Extended ingestion module with improved error handling
-- Added structured logging for retrieval operations
-- New unit tests covering edge cases in graph pipeline
+- Extended arXiv module with improved error handling
+- Added structured logging for graph operations
+- New unit tests covering edge cases in retrieval pipeline
 
 ### Changed
 - Refactored retry logic to use exponential backoff with jitter
@@ -16,10 +16,10 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Updated dependency pins to latest stable versions
 
 ### Fixed
-- Resolved race condition in async ingestion handler
-- Fixed incorrect retrieval timeout calculation
+- Resolved race condition in async arXiv handler
+- Fixed incorrect graph timeout calculation
 
-## [v0.1.0] — 2024-02-26
+## [v0.1.0] — 2024-03-05
 
 ### Added
 - Initial project scaffold with scientific RAG core
