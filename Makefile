@@ -1,6 +1,6 @@
 .PHONY: help install dev-install test lint format type-check clean docker-build
 
-# scholar-rag-agent Makefile  —  updated 2024-04-06
+# scholar-rag-agent Makefile  —  updated 2024-04-15
 
 help:  ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | \
@@ -35,10 +35,10 @@ clean:  ## Remove build artifacts
 	rm -rf .pytest_cache htmlcov .coverage dist build *.egg-info
 
 docker-build:  ## Build Docker image
-	docker build -t Francis1998/scholar-rag-agent:0.6.10 .
+	docker build -t Francis1998/scholar-rag-agent:0.1.20 .
 
 docker-run:  ## Run Docker container
-	docker run --env-file .env Francis1998/scholar-rag-agent:0.6.10
+	docker run --env-file .env Francis1998/scholar-rag-agent:0.1.20
 
 bump-patch:  ## Bump patch version
 	bump2version patch
