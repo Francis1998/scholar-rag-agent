@@ -1,6 +1,6 @@
 # .pre-commit-config.yaml
 # Run: pre-commit install
-# Updated: 2024-08-05
+# Updated: 2024-05-27
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
