@@ -1,10 +1,10 @@
-# Performance Tuning For Grounding
+# Performance Tuning For Embedding
 
-*scholar-rag-agent — 2024-03-19*
+*scholar-rag-agent — 2024-10-15*
 
 ## Overview
 
-This guide covers performance tuning for grounding for the `scholar-rag-agent` project.
+This guide covers performance tuning for embedding for the `scholar-rag-agent` project.
 
 ## Prerequisites
 
@@ -27,12 +27,12 @@ python -m agent --help
 
 ## Common Scenarios
 
-### Scenario 1: Basic Grounding Usage
+### Scenario 1: Basic Embedding Usage
 
 ```python
-from agent import Grounding
+from agent import Embedding
 
-client = Grounding(config)
+client = Embedding(config)
 result = client.run()
 print(result)
 ```
