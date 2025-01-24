@@ -1,26 +1,27 @@
 # Changelog
 
 All notable changes to **scholar-rag-agent** are documented here.
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.1.47] - 2026-05-11
+## [v0.5.8] — 2025-01-24
 
 ### Added
-- Improved documentation coverage for core modules
-- Added type annotations to utility functions
-- Extended test coverage for edge cases
+- Extended graph module with improved error handling
+- Added structured logging for retrieval operations
+- New unit tests covering edge cases in grounding pipeline
 
 ### Changed
-- Refactored internal logging to use structured format
-- Updated dependency pins for security patches
+- Refactored retry logic to use exponential backoff with jitter
+- Improved type annotations across core modules
+- Updated dependency pins to latest stable versions
 
 ### Fixed
-- Resolved intermittent timeout issue in async operations
-- Fixed edge case in input validation logic
+- Resolved race condition in async graph handler
+- Fixed incorrect retrieval timeout calculation
 
-## [v0.1.0] - 2026-04-13
+## [v0.1.0] — 2024-12-20
 
 ### Added
-- Initial project scaffold
-- Core agent runtime
-- Basic documentation
+- Initial project scaffold with scientific RAG core
+- Basic agent implementation
+- README and setup documentation
