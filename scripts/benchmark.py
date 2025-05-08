@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Basic benchmark for scientific RAG throughput."""
-
-import statistics
 import time
+import statistics
 
 ITERATIONS = 100
 
-
-def benchmark_run() -> dict[str, float | int]:
+def benchmark_run() -> dict:
     """Run a basic throughput benchmark."""
     times = []
     for _ in range(ITERATIONS):
@@ -24,8 +22,7 @@ def benchmark_run() -> dict[str, float | int]:
         "p99_ms": round(sorted(times)[int(ITERATIONS * 0.99)] * 1000, 2),
     }
 
-
 if __name__ == "__main__":
     results = benchmark_run()
-    for metric_name, metric_value in results.items():
-        print(f"{metric_name:<15}: {metric_value}")
+    for k, v in results.items():
+        print(f"{k:<15}: {v}")
