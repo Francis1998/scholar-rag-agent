@@ -1,0 +1,20 @@
+# CODEOWNERS
+# Each line is a file pattern followed by one or more owners.
+# Owners are automatically requested for review when someone opens
+# a PR that modifies matching files.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+*                   @Francis1998
+
+# Core source
+src/                @Francis1998
+
+# Documentation
+docs/               @Francis1998
+*.md                @Francis1998
+
+# CI/CD
+.github/            @Francis1998
+
+# Last updated: 2026-01-26
