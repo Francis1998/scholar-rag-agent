@@ -1,6 +1,6 @@
 # Configuration Reference For Agent
 
-*scholar-rag-agent — 2026-01-12*
+*scholar-rag-agent — 2026-06-17*
 
 ## Overview
 
