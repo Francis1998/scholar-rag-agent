@@ -1,0 +1,11 @@
+services:
+  scholar-rag-agent:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.example
+    volumes:
+      - scholar-rag-data:/app/data
+volumes:
+  scholar-rag-data:
