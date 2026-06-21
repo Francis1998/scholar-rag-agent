@@ -5,10 +5,42 @@ from collections import Counter
 
 from retrieval.models import Chunk, SearchResult
 
+STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "from",
+        "in",
+        "is",
+        "it",
+        "of",
+        "on",
+        "or",
+        "that",
+        "the",
+        "this",
+        "to",
+        "was",
+        "with",
+    }
+)
+
 
 def tokenize(text: str) -> list[str]:
     """Tokenize text into lowercase alphanumeric terms."""
     return [token.strip(".,;:()[]{}!?\"'").lower() for token in text.split() if token.strip()]
+
+
+def meaningful_terms(text: str) -> set[str]:
+    """Return lexical terms excluding common stopwords for grounding overlap."""
+    return {term for term in tokenize(text) if term not in STOPWORDS}
 
 
 class BM25Retriever:
