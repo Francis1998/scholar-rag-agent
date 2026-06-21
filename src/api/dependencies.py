@@ -49,7 +49,7 @@ class AppContainer:
         )
         executor = Executor(
             retriever=self.hybrid_retriever,
-            multihop_retriever=MultiHopRetriever(self.graph_store),
+            multihop_retriever=MultiHopRetriever(self.graph_store, max_depth=settings.max_hops),
             reranker=AdaptiveReranker(),
             llm=self.llm,
             grounder=CitationGrounder(),
