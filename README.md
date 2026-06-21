@@ -109,8 +109,10 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 
 | Document | Description |
 | --- | --- |
+| [Quickstart](QUICKSTART.md) | Install, demo, and API in three steps. |
 | [Architecture](ARCHITECTURE.md) | Agent state machine, retrieval pipeline, and data flow. |
 | [Configuration](CONFIGURATION.md) | Environment variables and provider keys. |
+| [Configuration (extended)](docs/CONFIGURATION.md) | Full configuration reference with examples. |
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
@@ -134,9 +136,9 @@ export MOONSHOT_API_KEY=...
 ## Quality Gates
 
 ```bash
-uv run ruff check src/
+uv run ruff check . && uv run ruff format --check .
 uv run mypy src/
-uv run pytest tests/ -v
+uv run pytest tests/ -v --cov=src --cov-fail-under=70
 ```
 
 ## License

@@ -29,10 +29,10 @@ jobs:
         run: ruff check . && ruff format --check .
 
       - name: Type check with mypy
-        run: mypy src/agent --ignore-missing-imports
+        run: mypy src/ --ignore-missing-imports
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short --cov=src --cov-report=xml
+        run: pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

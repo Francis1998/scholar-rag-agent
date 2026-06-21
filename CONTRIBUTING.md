@@ -27,9 +27,11 @@ uv run pytest tests/ -v --tb=short
 ## Pull Request Process
 
 1. Fork the repo and create your branch from `main`
-2. Ensure tests pass and coverage stays above 80%
+2. Ensure tests pass and coverage stays at or above 70%
 3. Update relevant documentation
 4. Open a PR with a clear description of the change
+
+Do not push bulk documentation or workflow rewrites directly to `main`. Use a branch and PR so CI and review can catch template drift.
 
 ## Commit Message Format
 

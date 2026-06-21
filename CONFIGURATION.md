@@ -10,5 +10,8 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per query. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound, with default retrieval depth set to 3. |
+| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Default model family for live adapter routing. |
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.
