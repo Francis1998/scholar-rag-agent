@@ -9,6 +9,53 @@ Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scie
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
+## Why Researchers Need This
+
+Most literature workflows break down when the corpus grows beyond a few papers:
+
+- Issue: keyword search misses papers that use different terminology.
+  Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
+
+- Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
+  The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
+
+- Issue: generated summaries sound plausible but are hard to audit.
+  Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
+
+- Issue: research questions often need a plan, not just one search call.
+  The Observe -> Decide -> Act runtime classifies intent, decomposes the query into retrieval sub-tasks, and persists a JSON rationale trace for every decision.
+
+- Issue: teams need reproducible evidence trails for reviews, grants, and publications.
+  The SQLite event log records state transitions, timestamps, agent IDs, run IDs, plans, retrieval payloads, and final answer provenance.
+
+## Actual Use Cases
+
+- Systematic literature review: ingest a folder of PDFs plus arXiv IDs, ask for the strongest themes, and receive cited claims grouped by supporting chunks.
+
+- Grant or NIW evidence synthesis: collect papers around a research contribution, validate novelty claims, and export citation-backed reasoning traces that show why each claim is supported.
+
+- Hypothesis validation: ask whether the literature supports or refutes a hypothesis, then inspect supporting and counter-evidence retrieval tasks separately.
+
+- Method comparison: compare approaches such as GraphRAG, dense retrieval, and BM25 across papers while preserving the source chunks behind each contrast.
+
+- Research onboarding: give a new lab member a paper corpus and let them ask grounded factual, synthesis, comparison, and hypothesis questions without manually reading every PDF first.
+
+- Prior-art triage: search Semantic Scholar and arXiv records, ingest abstracts, then identify overlapping methods, datasets, and claims before deeper manual review.
+
+- Citation QA for drafts: paste draft claims as questions and flag statements that are not supported by the ingested source chunks.
+
+- Multi-provider LLM evaluation: route reasoning, speed, cost, and default tasks to different adapters while keeping output validation and citation grounding consistent.
+
+## Demo Gallery
+
+![End-to-end local demo](docs/assets/demo.gif)
+
+![Use case walkthrough](docs/assets/use_cases.gif)
+
+![Planning trace demo](docs/assets/planning_trace.gif)
+
+![Grounded answer demo](docs/assets/grounded_answer.gif)
+
 ```text
                  +---------------------------+
                  | Observe: Query Analyzer   |
@@ -55,6 +102,8 @@ uv run uvicorn api.main:app --reload
 ```
 
 The deterministic demo ingests a small fixture paper, executes an Observe -> Decide -> Act run, prints the planner trace, and returns a cited answer. A generated demo asset is available at `docs/assets/demo.gif`.
+
+Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner trace, and citation grounding guard.
 
 ## Provider Keys
 
