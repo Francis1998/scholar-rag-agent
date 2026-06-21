@@ -22,8 +22,7 @@ class HyDEExpander:
             LLMRequest(
                 task_type=TaskType.SPEED,
                 prompt=(
-                    "Write a concise hypothetical scientific abstract that would answer: "
-                    f"{query}"
+                    f"Write a concise hypothetical scientific abstract that would answer: {query}"
                 ),
                 context="",
                 citation_chunk_ids=[],

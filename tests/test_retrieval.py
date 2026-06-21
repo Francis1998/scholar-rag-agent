@@ -15,8 +15,7 @@ def build_chunks() -> list:
         document_id=stable_id("rag", "doc"),
         title="RAG Methods",
         text=(
-            "Hybrid retrieval combines dense embeddings and BM25 sparse search for "
-            "scientific RAG."
+            "Hybrid retrieval combines dense embeddings and BM25 sparse search for scientific RAG."
         ),
         source="fixture",
     )
