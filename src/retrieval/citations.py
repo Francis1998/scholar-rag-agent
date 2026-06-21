@@ -22,7 +22,7 @@ class CitationGrounder:
             for chunk_id in supporting_ids:
                 chunk = chunk_by_id[chunk_id]
                 chunk_terms = set(tokenize(chunk.text))
-                if not claim_terms or claim_terms & chunk_terms:
+                if claim_terms and claim_terms & chunk_terms:
                     grounded_ids.append(chunk_id)
                     citations[chunk_id] = Citation(
                         chunk_id=chunk.chunk_id,

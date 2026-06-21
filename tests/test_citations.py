@@ -21,3 +21,22 @@ def test_grounder_flags_unsupported_claims() -> None:
     )
     assert answer.ungrounded is True
     assert answer.answer.startswith("[UNGROUNDED]")
+
+
+def test_grounder_flags_empty_token_claim_as_ungrounded() -> None:
+    """A claim that tokenizes to nothing must not be auto-grounded by an attached chunk id."""
+    chunk = Chunk(
+        chunk_id="c1",
+        document_id="d1",
+        title="Evidence",
+        text="Hybrid retrieval improves grounded scientific answers.",
+        source="fixture",
+    )
+    answer = CitationGrounder().ground(
+        answer_text="   ",
+        claims=[Claim(text="   ", chunk_ids=["c1"])],
+        retrieved_chunks=[chunk],
+    )
+    assert answer.ungrounded is True
+    assert answer.answer.startswith("[UNGROUNDED]")
+    assert answer.citations == []
