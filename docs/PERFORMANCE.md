@@ -1,64 +1,26 @@
-# Performance Tuning For Embedding
+# Performance Tuning
 
-*scholar-rag-agent — 2024-10-15*
+Scholar RAG Agent is local-first. The default path favors deterministic behavior and
+small-corpus ergonomics over distributed throughput.
 
-## Overview
+## Retrieval
 
-This guide covers performance tuning for embedding for the `scholar-rag-agent` project.
+- Keep `SCHOLAR_RAG_MAX_SOURCE_DOCS` at or below the default `50` for interactive use.
+- Keep multi-hop retrieval at depth `3` for research questions; higher values increase graph fan-out.
+- Use the lexical reranker for fast local demos and enable cross-encoder reranking only when the model dependency is installed and latency is acceptable.
 
-## Prerequisites
+## Ingestion
 
-- Python 3.10+
-- Redis (if using distributed mode)
-- Environment variables configured (see `.env.example`)
+- Chunk size and overlap are controlled in `ingestion.chunking.TextChunker`.
+- Larger chunks improve context continuity but reduce retrieval precision.
+- Smaller chunks improve citation granularity but increase index size.
 
-## Quick Start
+## LLM Providers
 
-```bash
-# Install dependencies
-pip install -e ".[dev]"
+- Route fast drafting tasks to Gemini or the fake adapter.
+- Route deeper reasoning tasks to Claude/OpenAI when API keys are configured.
+- Keep provider rate limits conservative for batch corpus analysis.
 
-# Copy and configure environment
-cp .env.example .env
+## Storage
 
-# Run the agent module
-python -m agent --help
-```
-
-## Common Scenarios
-
-### Scenario 1: Basic Embedding Usage
-
-```python
-from agent import Embedding
-
-client = Embedding(config)
-result = client.run()
-print(result)
-```
-
-### Scenario 2: Advanced Configuration
-
-```python
-from agent.config import Settings
-
-settings = Settings(
-    max_retries=3,
-    timeout=30,
-    log_level="INFO",
-)
-```
-
-## Troubleshooting
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| `ConnectionError` | API endpoint unreachable | Check `BASE_URL` in `.env` |
-| `TimeoutError` | Request took too long | Increase `timeout` setting |
-| `AuthError` | Invalid or expired token | Rotate API key |
-
-## See Also
-
-- [README](../README.md)
-- [ARCHITECTURE](../ARCHITECTURE.md)
-- [API Reference](./API.md)
+SQLite is adequate for local and small-team workflows. If write contention becomes the bottleneck, keep the storage interfaces and move document/vector/graph persistence behind a dedicated service.

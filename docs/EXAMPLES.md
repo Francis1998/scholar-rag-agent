@@ -1,64 +1,44 @@
-# Usage Examples For Graph
+# Usage Examples
 
-*scholar-rag-agent — 2024-09-12*
-
-## Overview
-
-This guide covers usage examples for graph for the `scholar-rag-agent` project.
-
-## Prerequisites
-
-- Python 3.10+
-- Redis (if using distributed mode)
-- Environment variables configured (see `.env.example`)
-
-## Quick Start
+## Run The Local Demo
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
-
-# Copy and configure environment
-cp .env.example .env
-
-# Run the agent module
-python -m agent --help
+uv run python scripts/demo_local.py
 ```
 
-## Common Scenarios
+This ingests a fixture paper, runs the Observe -> Decide -> Act agent, prints the
+planner trace, and returns a cited answer.
 
-### Scenario 1: Basic Graph Usage
+## Start The API
 
-```python
-from agent import Graph
-
-client = Graph(config)
-result = client.run()
-print(result)
+```bash
+uv run uvicorn api.main:app --reload
 ```
 
-### Scenario 2: Advanced Configuration
+Then open `http://127.0.0.1:8000/docs`.
 
-```python
-from agent.config import Settings
+## Ingest Text Through The API
 
-settings = Settings(
-    max_retries=3,
-    timeout=30,
-    log_level="INFO",
-)
+```bash
+curl -X POST http://127.0.0.1:8000/ingest/text \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "GraphRAG API Fixture",
+    "text": "GraphRAG connects entities for multi-hop scientific retrieval.",
+    "source": "fixture"
+  }'
 ```
 
-## Troubleshooting
+## Query The Agent
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| `ConnectionError` | API endpoint unreachable | Check `BASE_URL` in `.env` |
-| `TimeoutError` | Request took too long | Increase `timeout` setting |
-| `AuthError` | Invalid or expired token | Rotate API key |
+```bash
+curl -X POST http://127.0.0.1:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What does GraphRAG connect?"}'
+```
 
-## See Also
+## Evaluate Retrieval
 
-- [README](../README.md)
-- [ARCHITECTURE](../ARCHITECTURE.md)
-- [API Reference](./API.md)
+```bash
+uv run python scripts/evaluate_retrieval.py
+```

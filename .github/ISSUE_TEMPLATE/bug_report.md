@@ -11,7 +11,7 @@ A clear description of what the bug is.
 
 ## Steps to Reproduce
 1. Set up environment with `...`
-2. Run `python -m agent ...`
+2. Run `uv run python scripts/demo_local.py` or the API command that failed.
 3. Observe error
 
 ## Expected Behavior

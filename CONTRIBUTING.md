@@ -7,23 +7,22 @@ Thank you for considering a contribution!
 ```bash
 git clone https://github.com/Francis1998/scholar-rag-agent.git
 cd scholar-rag-agent
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync --extra dev
 pre-commit install
 ```
 
 ## Running Tests
 
 ```bash
-pytest tests/ -v --tb=short
+uv run pytest tests/ -v --tb=short
 ```
 
 ## Coding Standards
 
-- Python 3.10+
+- Python 3.11+
 - Type annotations on all functions
 - Google-style docstrings
-- Ruff for linting and formatting (`ruff check . && ruff format .`)
+- Ruff for linting and formatting (`uv run ruff check . && uv run ruff format .`)
 
 ## Pull Request Process
 

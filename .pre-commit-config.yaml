@@ -1,6 +1,5 @@
 # .pre-commit-config.yaml
 # Run: pre-commit install
-# Updated: 2025-03-09
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -25,6 +24,5 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-requests, types-redis]
         args: [--ignore-missing-imports]
-        files: ^src/agent/
+        files: ^src/

@@ -1,64 +1,48 @@
-# Configuration Reference For Agent
+# Configuration Reference
 
-*scholar-rag-agent — 2026-06-17*
+Scholar RAG Agent is configured through environment variables loaded by
+`pydantic-settings`. Copy `.env.example` to `.env` for local development.
 
-## Overview
+## Required Runtime
 
-This guide covers configuration reference for agent for the `scholar-rag-agent` project.
+- Python 3.11+
+- SQLite, provided by the Python standard library
+- Optional provider API keys for live LLM or paper metadata calls
 
-## Prerequisites
+## Core Settings
 
-- Python 3.10+
-- Redis (if using distributed mode)
-- Environment variables configured (see `.env.example`)
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SCHOLAR_RAG_DATABASE_PATH` | `.scholar-rag-agent.sqlite3` | SQLite event, document, and graph store. |
+| `SCHOLAR_RAG_AGENT_ID` | `local-agent` | Agent ID persisted with event-log entries. |
+| `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Retrieval phase timeout. |
+| `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
+| `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per request. |
+| `SCHOLAR_RAG_MAX_HOPS` | `5` | Hard graph traversal bound. |
+| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Default model family for live adapter routing. |
 
-## Quick Start
+## Optional Provider Keys
+
+| Variable | Provider |
+| --- | --- |
+| `OPENAI_API_KEY` | OpenAI GPT-4o adapter |
+| `ANTHROPIC_API_KEY` | Anthropic Claude adapter |
+| `GEMINI_API_KEY` | Google Gemini adapter |
+| `MOONSHOT_API_KEY` | Moonshot Kimi adapter |
+| `SEMANTIC_SCHOLAR_API_KEY` | Semantic Scholar API connector |
+
+Without these keys, tests and demos use deterministic local fakes.
+
+## Local Commands
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
-
-# Copy and configure environment
-cp .env.example .env
-
-# Run the agent module
-python -m agent --help
+uv sync --extra dev
+uv run python scripts/demo_local.py
+uv run uvicorn api.main:app --reload
 ```
-
-## Common Scenarios
-
-### Scenario 1: Basic Grounding Usage
-
-```python
-from agent import Grounding
-
-client = Grounding(config)
-result = client.run()
-print(result)
-```
-
-### Scenario 2: Advanced Configuration
-
-```python
-from agent.config import Settings
-
-settings = Settings(
-    max_retries=3,
-    timeout=30,
-    log_level="INFO",
-)
-```
-
-## Troubleshooting
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| `ConnectionError` | API endpoint unreachable | Check `BASE_URL` in `.env` |
-| `TimeoutError` | Request took too long | Increase `timeout` setting |
-| `AuthError` | Invalid or expired token | Rotate API key |
 
 ## See Also
 
 - [README](../README.md)
-- [ARCHITECTURE](../ARCHITECTURE.md)
-- [API Reference](./API.md)
+- [Architecture](../ARCHITECTURE.md)
+- [Safety](../SAFETY.md)

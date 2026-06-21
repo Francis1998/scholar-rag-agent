@@ -1,64 +1,47 @@
-# Troubleshooting Retrieval
+# Troubleshooting
 
-*scholar-rag-agent — 2025-04-26*
+## Install Fails On Unsupported Python
 
-## Overview
-
-This guide covers troubleshooting retrieval for the `scholar-rag-agent` project.
-
-## Prerequisites
-
-- Python 3.10+
-- Redis (if using distributed mode)
-- Environment variables configured (see `.env.example`)
-
-## Quick Start
+The project requires Python 3.11+. Install a supported interpreter and rerun:
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
-
-# Copy and configure environment
-cp .env.example .env
-
-# Run the agent module
-python -m agent --help
+uv sync --extra dev
 ```
 
-## Common Scenarios
+## API Starts But Returns No Evidence
 
-### Scenario 1: Basic Retrieval Usage
+Ingest at least one document before querying:
 
-```python
-from agent import Retrieval
-
-client = Retrieval(config)
-result = client.run()
-print(result)
+```bash
+uv run python scripts/demo_local.py
 ```
 
-### Scenario 2: Advanced Configuration
+For API usage, call `/ingest/text` before `/query`.
 
-```python
-from agent.config import Settings
+## Live Providers Do Not Respond
 
-settings = Settings(
-    max_retries=3,
-    timeout=30,
-    log_level="INFO",
-)
+Live LLM providers are optional. If provider keys are missing, tests and demos use
+the deterministic fake adapter. Set provider keys in `.env` only when live calls
+are required.
+
+## GraphRAG Finds Few Entities
+
+Install the optional NLP stack and spaCy model for stronger NER:
+
+```bash
+uv sync --extra dev --extra all
+uv run python -m spacy download en_core_web_sm
 ```
 
-## Troubleshooting
+Without spaCy, the fallback extractor still supports deterministic tests and demos.
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| `ConnectionError` | API endpoint unreachable | Check `BASE_URL` in `.env` |
-| `TimeoutError` | Request took too long | Increase `timeout` setting |
-| `AuthError` | Invalid or expired token | Rotate API key |
+## CI Fails On Formatting
 
-## See Also
+Run the same commands locally:
 
-- [README](../README.md)
-- [ARCHITECTURE](../ARCHITECTURE.md)
-- [API Reference](./API.md)
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src/
+uv run pytest tests/ -v
+```
