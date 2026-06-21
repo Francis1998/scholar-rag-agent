@@ -1,0 +1,1 @@
+GraphRAG connects entities across scientific papers to enable multi-hop reasoning. Hybrid retrieval combines dense embeddings with sparse BM25 matching. Citation grounding links generated claims back to source chunks.
