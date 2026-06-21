@@ -1,6 +1,6 @@
 # Scholar RAG Agent
 
-[![CI](https://github.com/example/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/example/scholar-rag-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-pytest--cov-blue)](tests)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
@@ -42,7 +42,7 @@ The project is designed for the scientific knowledge synthesis narrative behind 
 ## Install In 3 Commands
 
 ```bash
-git clone https://github.com/YOUR_ORG/scholar-rag-agent.git
+git clone https://github.com/Francis1998/scholar-rag-agent.git
 cd scholar-rag-agent && uv sync --extra dev
 uv run pytest tests/ -v
 ```
