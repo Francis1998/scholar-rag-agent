@@ -25,11 +25,12 @@ from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
 from storage.graph_store import SQLiteGraphStore
 
-DEMO_TEXT = """
-GraphRAG connects entities across scientific papers to support multi-hop reasoning. Hybrid retrieval
-combines dense semantic similarity with sparse BM25 matching, and reciprocal rank fusion improves
-robustness when either signal is noisy. Citation grounding maps generated claims back to source chunks.
-"""
+DEMO_TEXT = (
+    "GraphRAG connects entities across scientific papers to support multi-hop reasoning. "
+    "Hybrid retrieval combines dense semantic similarity with sparse BM25 matching, and "
+    "reciprocal rank fusion improves robustness when either signal is noisy. Citation "
+    "grounding maps generated claims back to source chunks."
+)
 
 
 async def run_demo() -> None:

@@ -2,10 +2,11 @@
 
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from api.dependencies import AppContainer
 from api.main import app
 from config import Settings
-from fastapi.testclient import TestClient
 
 
 def test_api_ingest_and_query(tmp_path: Path) -> None:

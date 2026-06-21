@@ -15,7 +15,10 @@ async def evaluate() -> None:
     document = Document(
         document_id=stable_id("evaluation", "doc"),
         title="Evaluation Fixture",
-        text="Hybrid retrieval uses dense and sparse evidence for grounded scientific question answering.",
+        text=(
+            "Hybrid retrieval uses dense and sparse evidence for grounded scientific "
+            "question answering."
+        ),
         source="fixture",
     )
     chunks = TextChunker(chunk_size=200, overlap=0).chunk(document)

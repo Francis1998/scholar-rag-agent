@@ -1,5 +1,7 @@
 """Tests for the explicit agent state machine."""
 
+from itertools import pairwise
+
 import pytest
 
 from agent.models import AgentState
@@ -17,7 +19,7 @@ def test_state_machine_accepts_required_path() -> None:
         AgentState.ANSWERING,
         AgentState.DONE,
     ]
-    for from_state, to_state in zip(path[:-1], path[1:], strict=True):
+    for from_state, to_state in pairwise(path):
         machine.validate(from_state, to_state)
 
 

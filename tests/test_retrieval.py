@@ -14,7 +14,10 @@ def build_chunks() -> list:
     document = Document(
         document_id=stable_id("rag", "doc"),
         title="RAG Methods",
-        text="Hybrid retrieval combines dense embeddings and BM25 sparse search for scientific RAG.",
+        text=(
+            "Hybrid retrieval combines dense embeddings and BM25 sparse search for "
+            "scientific RAG."
+        ),
         source="fixture",
     )
     return TextChunker(chunk_size=240, overlap=0).chunk(document)
