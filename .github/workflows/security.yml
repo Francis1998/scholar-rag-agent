@@ -24,4 +24,4 @@ jobs:
         run: pip-audit
 
       - name: Run bandit security scan
-        run: bandit -r src/agent -ll
+        run: bandit -r src -ll

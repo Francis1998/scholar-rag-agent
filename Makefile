@@ -14,7 +14,7 @@ dev-install:  ## Install with dev extras
 	pre-commit install
 
 test:  ## Run test suite with coverage
-	uv run pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
+	uv run pytest tests/ -v --tb=short --cov=src --cov-report=term-missing --cov-fail-under=70
 
 test-fast:  ## Run tests without coverage (faster)
 	uv run pytest tests/ -v --tb=short -x
