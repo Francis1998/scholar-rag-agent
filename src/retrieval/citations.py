@@ -2,7 +2,7 @@
 
 from agent.models import AgentAnswer, Citation, Claim
 from retrieval.models import Chunk
-from retrieval.sparse import tokenize
+from retrieval.sparse import meaningful_terms
 
 
 class CitationGrounder:
@@ -17,11 +17,11 @@ class CitationGrounder:
         citations: dict[str, Citation] = {}
         for claim in claims:
             supporting_ids = [chunk_id for chunk_id in claim.chunk_ids if chunk_id in chunk_by_id]
-            claim_terms = set(tokenize(claim.text))
+            claim_terms = meaningful_terms(claim.text)
             grounded_ids = []
             for chunk_id in supporting_ids:
                 chunk = chunk_by_id[chunk_id]
-                chunk_terms = set(tokenize(chunk.text))
+                chunk_terms = meaningful_terms(chunk.text)
                 if claim_terms and claim_terms & chunk_terms:
                     grounded_ids.append(chunk_id)
                     citations[chunk_id] = Citation(
