@@ -25,10 +25,10 @@ Scholar RAG Agent is configured through environment variables loaded by
 
 | Variable | Provider |
 | --- | --- |
-| `OPENAI_API_KEY` | OpenAI GPT-4o adapter |
-| `ANTHROPIC_API_KEY` | Anthropic Claude adapter |
-| `GEMINI_API_KEY` | Google Gemini adapter |
-| `MOONSHOT_API_KEY` | Moonshot Kimi adapter |
+| `OPENAI_API_KEY` | OpenAI GPT-5.5 adapter |
+| `ANTHROPIC_API_KEY` | Anthropic Claude Sonnet 4.6 adapter |
+| `GEMINI_API_KEY` | Google Gemini 3.1 Pro adapter |
+| `MOONSHOT_API_KEY` | Moonshot Kimi K2 adapter |
 | `SEMANTIC_SCHOLAR_API_KEY` | Semantic Scholar API connector |
 
 Without these keys, tests and demos use deterministic local fakes.

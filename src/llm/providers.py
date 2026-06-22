@@ -58,11 +58,11 @@ class HTTPProviderAdapter(BaseLLMAdapter):
 
 
 class OpenAIAdapter(HTTPProviderAdapter):
-    """OpenAI GPT-4o adapter using the chat completions API."""
+    """OpenAI GPT adapter using the chat completions API."""
 
     provider_name = "openai"
 
-    def __init__(self, api_key: str, model: str = "gpt-4o") -> None:
+    def __init__(self, api_key: str, model: str = "gpt-5.5") -> None:
         """Create an OpenAI adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -104,11 +104,11 @@ class OpenAIAdapter(HTTPProviderAdapter):
 
 
 class AnthropicAdapter(HTTPProviderAdapter):
-    """Anthropic Claude 3.5 adapter."""
+    """Anthropic Claude adapter."""
 
     provider_name = "anthropic"
 
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022") -> None:
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6") -> None:
         """Create an Anthropic adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -152,11 +152,11 @@ class AnthropicAdapter(HTTPProviderAdapter):
 
 
 class GeminiAdapter(HTTPProviderAdapter):
-    """Google Gemini 1.5 adapter."""
+    """Google Gemini adapter."""
 
     provider_name = "gemini"
 
-    def __init__(self, api_key: str, model: str = "gemini-1.5-pro") -> None:
+    def __init__(self, api_key: str, model: str = "gemini-3.1-pro-preview") -> None:
         """Create a Gemini adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -198,7 +198,7 @@ class KimiAdapter(OpenAIAdapter):
 
     provider_name = "kimi"
 
-    def __init__(self, api_key: str, model: str = "moonshot-v1-8k") -> None:
+    def __init__(self, api_key: str, model: str = "kimi-k2") -> None:
         """Create a Kimi adapter."""
         super().__init__(api_key=api_key, model=model)
 
