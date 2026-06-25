@@ -44,6 +44,7 @@ class AgentRunner:
             state = self._transition(run_id, state, AgentState.PLANNING, {"query": query})
             observation = self._analyzer.analyze(query)
             plan = self._planner.plan(run_id, observation)
+            plan = self._clamp_plan(plan)
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
@@ -117,3 +118,11 @@ class AgentRunner:
         )
         self._event_log.append_transition(transition)
         return to_state
+
+    def _clamp_plan(self, plan: QueryPlan) -> QueryPlan:
+        """Apply configured safety limits to planned retrieval tasks."""
+        clamped_tasks = [
+            task.model_copy(update={"max_hops": self._safety_limits.clamp_hops(task.max_hops)})
+            for task in plan.tasks
+        ]
+        return plan.model_copy(update={"tasks": clamped_tasks})

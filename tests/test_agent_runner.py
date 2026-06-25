@@ -55,9 +55,11 @@ async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
         analyzer=QueryAnalyzer(),
         planner=Planner(),
         executor=executor,
-        safety_limits=SafetyLimits(),
+        safety_limits=SafetyLimits(max_hops=1),
     )
-    result = await runner.run("How does GraphRAG improve scientific retrieval?")
+    result = await runner.run("Summarize literature on GraphRAG for scientific retrieval.")
     assert result.state == AgentState.DONE
+    assert result.plan is not None
+    assert all(task.max_hops <= 1 for task in result.plan.tasks)
     assert result.answer is not None
     assert event_log.list_events(result.run_id)
