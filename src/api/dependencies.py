@@ -9,7 +9,7 @@ from agent.runner import AgentRunner
 from agent.safety import SafetyLimits
 from config import Settings, load_settings
 from ingestion.pipeline import IngestionPipeline
-from llm.fake import FakeLLMAdapter
+from llm.router import RoutingLLMAdapter, build_model_router
 from retrieval.citations import CitationGrounder
 from retrieval.dense import DenseRetriever
 from retrieval.graph import GraphRAGBuilder
@@ -32,7 +32,7 @@ class AppContainer:
         self.event_log = SQLiteEventLog(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.graph_store = SQLiteGraphStore(database_path)
-        self.llm = FakeLLMAdapter()
+        self.llm = RoutingLLMAdapter(build_model_router(settings))
         self.hybrid_retriever = HybridRetriever(
             dense_retriever=DenseRetriever(),
             sparse_retriever=BM25Retriever(),
