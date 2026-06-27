@@ -57,7 +57,10 @@ class AgentRunner:
                 run_id, state, AgentState.RETRIEVING, plan.model_dump(mode="json")
             )
             retrieved = await with_timeout(
-                self._executor.retrieve(plan, self._safety_limits.clamp_sources(8)),
+                self._executor.retrieve(
+                    plan,
+                    self._safety_limits.clamp_sources(self._safety_limits.max_source_docs),
+                ),
                 self._safety_limits.retrieval_timeout_seconds,
                 "retrieval",
             )
