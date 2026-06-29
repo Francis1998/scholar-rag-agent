@@ -11,6 +11,24 @@ from llm.schemas import LLMRequest, LLMResponse
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
+def _is_transient_http_error(exc: Exception) -> bool:
+    """Return whether a provider error is worth retrying.
+
+    Args:
+        exc: Exception raised during a provider call.
+
+    Returns:
+        True for transport-level failures and transient HTTP status codes;
+        False for permanent client errors (for example 400 or 401) so they are
+        surfaced immediately instead of being retried.
+    """
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in TRANSIENT_STATUS_CODES
+    return False
+
+
 class HTTPProviderAdapter(BaseLLMAdapter):
     """Base class for optional live HTTP LLM providers."""
 
@@ -23,7 +41,10 @@ class HTTPProviderAdapter(BaseLLMAdapter):
     async def generate(self, request: LLMRequest) -> LLMResponse:
         """Generate a validated response through provider HTTP APIs."""
         await self._limiter.acquire()
-        return await with_backoff(lambda: self._generate_once(request))
+        return await with_backoff(
+            lambda: self._generate_once(request),
+            is_retryable=_is_transient_http_error,
+        )
 
     async def _generate_once(self, request: LLMRequest) -> LLMResponse:
         """Execute one provider call without retry handling."""
@@ -33,8 +54,6 @@ class HTTPProviderAdapter(BaseLLMAdapter):
                 headers=self.headers,
                 json=self.payload(request),
             )
-            if response.status_code in TRANSIENT_STATUS_CODES:
-                response.raise_for_status()
             response.raise_for_status()
             return self.parse_response(response.json(), request)
 
