@@ -33,28 +33,6 @@ def _build_runner(tmp_path: Path) -> tuple[AgentRunner, SQLiteEventLog]:
     Returns:
         Agent runner and its durable event log.
     """
-
-class RecordingExecutor(Executor):
-    """Executor test double that records the retrieval result limit."""
-
-    def __init__(self) -> None:
-        """Create an executor double with no recorded limit."""
-        self.max_results_seen: int | None = None
-
-    async def retrieve(self, plan: QueryPlan, max_results: int = 8) -> list[SearchResult]:
-        """Record the max retrieval results requested by the runner."""
-        del plan
-        self.max_results_seen = max_results
-        return []
-
-    async def answer(self, plan: QueryPlan, retrieved: list[SearchResult]) -> AgentAnswer:
-        """Return a deterministic answer for runner integration tests."""
-        del plan, retrieved
-        return AgentAnswer(answer="No documents retrieved.", citations=[], claims=[])
-
-
-async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
-    """Agent runner completes a grounded query and persists all transitions."""
     database_path = tmp_path / "agent.sqlite3"
     event_log = SQLiteEventLog(database_path)
     document_store = SQLiteDocumentStore(database_path)
@@ -87,6 +65,25 @@ async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
         safety_limits=SafetyLimits(max_hops=1),
     )
     return runner, event_log
+
+
+class RecordingExecutor(Executor):
+    """Executor test double that records the retrieval result limit."""
+
+    def __init__(self) -> None:
+        """Create an executor double with no recorded limit."""
+        self.max_results_seen: int | None = None
+
+    async def retrieve(self, plan: QueryPlan, max_results: int = 8) -> list[SearchResult]:
+        """Record the max retrieval results requested by the runner."""
+        del plan
+        self.max_results_seen = max_results
+        return []
+
+    async def answer(self, plan: QueryPlan, retrieved: list[SearchResult]) -> AgentAnswer:
+        """Return a deterministic answer for runner integration tests."""
+        del plan, retrieved
+        return AgentAnswer(answer="No documents retrieved.", citations=[], claims=[])
 
 
 async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
@@ -155,6 +152,8 @@ async def test_agent_runner_transitions_to_error_when_cancelled(tmp_path: Path) 
     assert events[-1]["payload"]["from_state"] == "IDLE"
     assert events[-1]["payload"]["to_state"] == "ERROR"
     assert events[-1]["payload"]["payload"] == {"error": "agent run was cancelled"}
+
+
 async def test_agent_runner_uses_configured_source_document_limit(tmp_path: Path) -> None:
     """Agent runner passes configured source-document limits into retrieval."""
     database_path = tmp_path / "agent.sqlite3"
