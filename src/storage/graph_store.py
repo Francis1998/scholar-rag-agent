@@ -76,13 +76,15 @@ class SQLiteGraphStore:
             return []
         entity_keys = [entity.lower() for entity in entities]
         placeholders = ",".join("?" for _ in entity_keys)
+        # Only the number of bound "?" placeholders is interpolated; every value
+        # is passed as a query parameter, so this cannot be an injection vector.
         query = f"""
             SELECT DISTINCT c.chunk_id, c.document_id, c.title, c.text, c.source, c.metadata
             FROM graph_chunks c
             JOIN entity_mentions m ON c.chunk_id = m.chunk_id
             WHERE m.entity_key IN ({placeholders})
             LIMIT ?
-        """
+        """  # nosec B608
         with sqlite3.connect(self._database_path) as connection:
             rows = connection.execute(query, (*entity_keys, limit)).fetchall()
         return [
@@ -103,12 +105,14 @@ class SQLiteGraphStore:
             return []
         entity_keys = [entity.lower() for entity in entities]
         placeholders = ",".join("?" for _ in entity_keys)
+        # Only the number of bound "?" placeholders is interpolated; every value
+        # is passed as a query parameter, so this cannot be an injection vector.
         query = f"""
             SELECT target_name FROM entity_edges WHERE source_key IN ({placeholders})
             UNION
             SELECT source_name FROM entity_edges WHERE target_key IN ({placeholders})
             LIMIT ?
-        """
+        """  # nosec B608
         with sqlite3.connect(self._database_path) as connection:
             rows = connection.execute(query, (*entity_keys, *entity_keys, limit)).fetchall()
         return [str(row[0]) for row in rows]
