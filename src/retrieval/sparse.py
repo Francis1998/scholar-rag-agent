@@ -34,8 +34,15 @@ STOPWORDS = frozenset(
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize text into lowercase alphanumeric terms."""
-    return [token.strip(".,;:()[]{}!?\"'").lower() for token in text.split() if token.strip()]
+    """Tokenize text into lowercase alphanumeric terms.
+
+    Tokens that consist solely of punctuation collapse to an empty string once
+    surrounding punctuation is stripped; those are dropped so they cannot leak
+    into term sets (e.g. as a spurious empty-string term shared by any two
+    texts containing punctuation).
+    """
+    tokens = [token.strip(".,;:()[]{}!?\"'").lower() for token in text.split()]
+    return [token for token in tokens if token]
 
 
 def meaningful_terms(text: str) -> set[str]:
