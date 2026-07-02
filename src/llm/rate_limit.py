@@ -19,14 +19,19 @@ class AsyncRateLimiter:
     async def acquire(self) -> None:
         """Wait until a request slot is available."""
         now = monotonic()
-        window_start = now - 60.0
-        self._timestamps = [
-            timestamp for timestamp in self._timestamps if timestamp >= window_start
-        ]
+        self._timestamps = [timestamp for timestamp in self._timestamps if timestamp >= now - 60.0]
         if len(self._timestamps) >= self.requests_per_minute:
             sleep_seconds = 60.0 - (now - self._timestamps[0])
             await asyncio.sleep(max(sleep_seconds, 0.0))
-        self._timestamps.append(monotonic())
+            # Re-anchor to the post-sleep clock and drop the timestamps that
+            # aged out while waiting. Without this second prune, expired entries
+            # keep counting against the limit and throttle throughput below the
+            # configured requests-per-minute.
+            now = monotonic()
+            self._timestamps = [
+                timestamp for timestamp in self._timestamps if timestamp >= now - 60.0
+            ]
+        self._timestamps.append(now)
 
 
 async def with_backoff(
