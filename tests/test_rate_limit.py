@@ -34,6 +34,28 @@ async def test_rate_limiter_waits_when_window_is_saturated() -> None:
 
 
 @pytest.mark.asyncio
+async def test_rate_limiter_prunes_expired_timestamps_after_waiting() -> None:
+    """Timestamps that age out during the wait must not linger in the window.
+
+    A saturated limiter sleeps until the oldest slot frees up. Previously the
+    freed slot was left in the list and only the new timestamp was appended, so
+    the stale entry kept counting against the cap and throttled throughput below
+    the configured rate. After the wait the window must contain only the
+    just-admitted request.
+    """
+    limiter = AsyncRateLimiter(requests_per_minute=1)
+    limiter._timestamps = [0.0]
+    sleep_mock = AsyncMock()
+    with (
+        patch("llm.rate_limit.monotonic", side_effect=[0.0, 61.0]),
+        patch("llm.rate_limit.asyncio.sleep", sleep_mock),
+    ):
+        await limiter.acquire()
+    sleep_mock.assert_awaited_once()
+    assert limiter._timestamps == [61.0]
+
+
+@pytest.mark.asyncio
 async def test_with_backoff_retries_transient_failures() -> None:
     """with_backoff retries until the operation succeeds."""
     operation = AsyncMock(side_effect=[RuntimeError("transient"), "ok"])
