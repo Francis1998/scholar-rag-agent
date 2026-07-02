@@ -19,3 +19,10 @@ Generated answers must include claims mapped to source chunk IDs. Claims without
 ## Provider Backoff
 
 LLM calls pass through per-provider rate limiters with exponential backoff for transient `429`, `500`, `502`, `503`, and `504` failures.
+
+Each `AsyncRateLimiter` enforces a sliding one-minute window of at most
+`requests_per_minute` calls. When the window is saturated, `acquire` waits until
+the oldest slot ages out, then re-anchors the window to the current clock and
+drops expired timestamps before admitting the new request. This keeps the
+effective admission rate equal to the configured cap rather than throttling
+below it because of stale entries left over from a wait.
