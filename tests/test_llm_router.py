@@ -38,3 +38,37 @@ def test_live_provider_defaults_use_current_model_stack() -> None:
     assert AnthropicAdapter(api_key="test-key").payload(request)["model"] == "claude-sonnet-4-6"
     assert "gemini-3.1-pro-preview" in GeminiAdapter(api_key="test-key").endpoint
     assert KimiAdapter(api_key="test-key").payload(request)["model"] == "kimi-k2"
+
+
+def test_gemini_parse_response_concatenates_all_text_parts() -> None:
+    """Gemini parsing must join every text part, not only the first.
+
+    A Gemini candidate's ``content.parts`` is a list that can hold multiple
+    text segments interleaved with non-text parts (for example a
+    ``functionCall``). Reading only ``parts[0]`` silently truncated multi-part
+    answers, dropping cited evidence from the grounded response.
+    """
+    adapter = GeminiAdapter(api_key="test-key")
+    request = LLMRequest(
+        task_type=TaskType.REASONING,
+        prompt="Summarize the findings.",
+        context="[c1] evidence.",
+        citation_chunk_ids=["c1"],
+    )
+    data = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {"text": "The study "},
+                        {"functionCall": {"name": "noop"}},
+                        {"text": "supports the hypothesis [c1]."},
+                    ]
+                }
+            }
+        ]
+    }
+
+    response = adapter.parse_response(data, request)
+
+    assert response.text == "The study supports the hypothesis [c1]."
