@@ -204,7 +204,12 @@ class GeminiAdapter(HTTPProviderAdapter):
         if isinstance(candidates, list) and candidates:
             content = candidates[0].get("content", {})
             parts = content.get("parts", []) if isinstance(content, dict) else []
-            text = str(parts[0].get("text", "")) if parts else ""
+            if isinstance(parts, list):
+                text = "".join(
+                    str(part["text"])
+                    for part in parts
+                    if isinstance(part, dict) and isinstance(part.get("text"), str)
+                )
         return LLMResponse(
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,
