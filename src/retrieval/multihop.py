@@ -10,7 +10,7 @@ class MultiHopRetriever:
     def __init__(self, graph_store: SQLiteGraphStore, max_depth: int = 3) -> None:
         """Create a multi-hop graph retriever."""
         self._graph_store = graph_store
-        self._max_depth = min(max_depth, 5)
+        self._max_depth = max_depth
 
     async def retrieve(
         self,
@@ -21,7 +21,7 @@ class MultiHopRetriever:
     ) -> list[SearchResult]:
         """Retrieve chunks by traversing entity chains up to a bounded depth."""
         del query
-        bounded_depth = min(depth, self._max_depth, 5)
+        bounded_depth = min(depth, self._max_depth)
         if bounded_depth <= 0:
             return []
         frontier = {entity.lower() for entity in seed_entities}
