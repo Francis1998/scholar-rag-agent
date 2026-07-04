@@ -52,3 +52,39 @@ async def test_multihop_max_depth_bounds_traversal(tmp_path: Path) -> None:
 
     assert {result.chunk.chunk_id for result in shallow} == {"a"}
     assert {result.chunk.chunk_id for result in deep} == {"a", "b"}
+
+
+async def test_multihop_max_depth_can_exceed_five(tmp_path: Path) -> None:
+    """A ``max_depth`` above five must traverse beyond five hops.
+
+    ``__init__`` and ``retrieve`` previously applied a hardcoded literal ceiling
+    of ``5`` alongside the configurable ``max_depth``, so a chain longer than
+    five hops was silently truncated even when ``max_depth`` (wired from
+    ``settings.max_hops``) permitted deeper traversal. The configured
+    ``max_depth`` must be the sole traversal bound.
+    """
+    store = SQLiteGraphStore(tmp_path / "graph.sqlite3")
+    chain_length = 7
+    for index in range(1, chain_length + 1):
+        chunk = Chunk(
+            chunk_id=f"c{index}",
+            document_id="d",
+            title=f"N{index}",
+            text=f"Node {index}",
+            source="fixture",
+        )
+        store.add_mentions(chunk, [Entity(name=f"E{index}", label="TERM")])
+    store.add_edges(
+        [
+            EntityEdge(source=f"E{index}", target=f"E{index + 1}", chunk_id=f"c{index}")
+            for index in range(1, chain_length)
+        ]
+    )
+
+    results = await MultiHopRetriever(store, max_depth=chain_length).retrieve(
+        "q", ["E1"], depth=chain_length, limit=20
+    )
+    reached = {result.chunk.chunk_id for result in results}
+
+    # c6 and c7 are only reachable at hop six and seven respectively.
+    assert {"c6", "c7"}.issubset(reached)
