@@ -23,11 +23,11 @@ class SafetyLimits:
 
     def clamp_hops(self, requested_hops: int) -> int:
         """Clamp requested graph hops to the configured safe range."""
-        return max(0, min(requested_hops, self.max_hops, 5))
+        return max(0, min(requested_hops, self.max_hops))
 
     def clamp_sources(self, requested_sources: int) -> int:
         """Clamp requested sources to the configured source-document bound."""
-        return max(1, min(requested_sources, self.max_source_docs, 50))
+        return max(1, min(requested_sources, self.max_source_docs))
 
 
 class CancellationToken:
