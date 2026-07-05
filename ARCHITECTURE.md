@@ -28,7 +28,8 @@ flowchart LR
   hyde --> sparse[BM25 Sparse]
   dense --> rrf[RRF Fusion]
   sparse --> rrf
-  rrf --> graph[Entity Graph Expansion]
+  rrf --> mmr[MMR Diversify optional]
+  mmr --> graph[Entity Graph Expansion]
   graph --> multihop[MultiHop Depth 3]
   multihop --> rerank[CrossEncoder Rerank]
   rerank --> chunks[Grounding Chunks]
