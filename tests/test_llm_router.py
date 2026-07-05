@@ -72,3 +72,32 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
     response = adapter.parse_response(data, request)
 
     assert response.text == "The study supports the hypothesis [c1]."
+
+
+def test_anthropic_parse_response_joins_all_text_blocks() -> None:
+    """Anthropic parsing must join text blocks and skip non-text blocks.
+
+    Anthropic's ``content`` is an ordered list of typed blocks. A leading
+    non-text block (for example ``thinking`` or ``tool_use``) has no ``text``
+    key, so reading ``content[0]['text']`` raised ``KeyError`` and crashed the
+    request; when the first block was text but more followed, the answer was
+    truncated. All text blocks must be concatenated and non-text blocks skipped.
+    """
+    adapter = AnthropicAdapter(api_key="test-key")
+    request = LLMRequest(
+        task_type=TaskType.REASONING,
+        prompt="Summarize the findings.",
+        context="[c1] evidence.",
+        citation_chunk_ids=["c1"],
+    )
+    data = {
+        "content": [
+            {"type": "thinking", "thinking": "internal reasoning"},
+            {"type": "text", "text": "The study "},
+            {"type": "text", "text": "supports the hypothesis [c1]."},
+        ]
+    }
+
+    response = adapter.parse_response(data, request)
+
+    assert response.text == "The study supports the hypothesis [c1]."
