@@ -160,9 +160,21 @@ class AnthropicAdapter(HTTPProviderAdapter):
         }
 
     def parse_response(self, data: Mapping[str, object], request: LLMRequest) -> LLMResponse:
-        """Parse Anthropic response JSON."""
+        """Parse Anthropic response JSON.
+
+        Anthropic returns ``content`` as an ordered list of typed blocks. All
+        text blocks are concatenated and non-text blocks (for example
+        ``thinking`` or ``tool_use``) are skipped, so a leading non-text block
+        neither raises nor truncates the answer.
+        """
         content = data.get("content")
-        text = str(content[0]["text"]) if isinstance(content, list) and content else ""
+        text = ""
+        if isinstance(content, list):
+            text = "".join(
+                str(block["text"])
+                for block in content
+                if isinstance(block, dict) and isinstance(block.get("text"), str)
+            )
         return LLMResponse(
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,

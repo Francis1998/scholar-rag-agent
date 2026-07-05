@@ -16,6 +16,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: keyword search misses papers that use different terminology.
   Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
 
+- Issue: fused results are dominated by near-duplicate passages that waste the context window.
+  An optional Maximal Marginal Relevance (MMR) re-ranker balances relevance against novelty, dropping redundant chunks so the model sees complementary evidence.
+
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
