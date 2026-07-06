@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- OpenAlex ingestion connector (`ingestion/openalex.py`) that fetches works from the OpenAlex API and reconstructs the abstract from its `abstract_inverted_index` representation, adding a fourth open scholarly source alongside PDF, arXiv, and Semantic Scholar.
 - Maximal Marginal Relevance (MMR) diversity re-ranker (`retrieval/mmr.py`) that reduces near-duplicate chunks by balancing query relevance against novelty (dependency-free lexical Jaccard similarity); available as an optional, default-off `HybridRetriever` stage.
 - Public repository scaffold with Python 3.11+ packaging, CI, Docker, docs, and tests.
 - Observe -> Decide -> Act agent runtime with an explicit persisted state machine.
@@ -23,6 +24,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Utility scripts and docs corrected to avoid generated placeholder APIs.
 
 ### Fixed
+- OpenAI (and inherited Kimi) provider adapter now extracts text from a structured `message.content` part list returned by OpenAI-compatible gateways (LiteLLM, vLLM, OpenRouter) instead of coercing the list with `str(...)`, which previously emitted a Python repr (`[{'type': 'text', ...}]`) as the answer.
 - Anthropic provider adapter now concatenates all `content` text blocks (skipping non-text blocks such as `thinking`/`tool_use`) instead of reading only `content[0].text`, which raised `KeyError` when a non-text block came first and truncated multi-block answers.
 - `SafetyLimits.clamp_hops`/`clamp_sources` and `MultiHopRetriever` no longer apply hardcoded literal ceilings (`5`/`50`) alongside the configurable `max_hops`/`max_source_docs`/`max_depth`, which silently capped any limit raised above the historical defaults; the configured values are now the sole authoritative bounds.
 - Gemini provider adapter now concatenates all `content.parts` text segments (skipping non-text parts) instead of reading only the first, preventing silent truncation of multi-part answers and dropped citations.
