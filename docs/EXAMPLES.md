@@ -37,6 +37,24 @@ curl -X POST http://127.0.0.1:8000/query \
   -d '{"query": "What does GraphRAG connect?"}'
 ```
 
+## Fetch A Paper From OpenAlex
+
+```python
+import asyncio
+
+from ingestion.openalex import OpenAlexConnector
+
+# `mailto` is optional but routes traffic to the faster OpenAlex "polite" pool.
+connector = OpenAlexConnector(mailto="you@example.org")
+document = asyncio.run(connector.fetch_work("W2741809807"))
+print(document.title)
+print(document.text)  # abstract reconstructed from the inverted index
+```
+
+The connector normalizes OpenAlex works into the same `Document` shape as the
+PDF, arXiv, and Semantic Scholar connectors, reconstructing the abstract from
+OpenAlex's `abstract_inverted_index` field.
+
 ## Evaluate Retrieval
 
 ```bash
