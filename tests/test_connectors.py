@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from ingestion.arxiv import ArxivConnector
+from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 
@@ -64,6 +65,63 @@ async def test_semantic_scholar_connector_parses_paper_payload() -> None:
     assert document.text == "Dense and sparse retrieval improve recall."
     assert document.metadata["source_type"] == "semantic_scholar"
     assert document.metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_openalex_connector_reconstructs_inverted_abstract() -> None:
+    """OpenAlexConnector rebuilds the abstract from its inverted index."""
+    response = httpx.Response(
+        200,
+        json={
+            "id": "https://openalex.org/W2741809807",
+            "title": "Retrieval Augmented Generation",
+            "publication_year": 2023,
+            "abstract_inverted_index": {
+                "Dense": [0],
+                "and": [1],
+                "sparse": [2],
+                "retrieval": [3],
+            },
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openalex.httpx.AsyncClient", return_value=mock_client):
+        document = await OpenAlexConnector(mailto="dev@example.org").fetch_work("W2741809807")
+
+    assert document.title == "Retrieval Augmented Generation"
+    assert document.text == "Dense and sparse retrieval"
+    assert document.source == "https://openalex.org/W2741809807"
+    assert document.metadata["source_type"] == "openalex"
+    assert document.metadata["year"] == "2023"
+
+
+def test_openalex_reconstruct_abstract_orders_repeated_words() -> None:
+    """The inverted-index reconstruction restores original word order.
+
+    A word may appear at several positions; each occurrence must be placed at its
+    own index so the reconstructed text preserves the source ordering rather than
+    collapsing duplicates.
+    """
+    inverted_index = {
+        "graph": [0, 3],
+        "based": [1],
+        "retrieval": [2, 4],
+    }
+
+    reconstructed = OpenAlexConnector._reconstruct_abstract(inverted_index)
+
+    assert reconstructed == "graph based retrieval graph retrieval"
+
+
+def test_openalex_reconstruct_abstract_handles_missing_index() -> None:
+    """A missing or non-dict inverted index yields an empty abstract."""
+    assert OpenAlexConnector._reconstruct_abstract(None) == ""
+    assert OpenAlexConnector._reconstruct_abstract({}) == ""
 
 
 def test_pdf_connector_extracts_text(tmp_path: Path) -> None:
