@@ -74,6 +74,57 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
     assert response.text == "The study supports the hypothesis [c1]."
 
 
+def test_openai_parse_response_joins_structured_content_parts() -> None:
+    """OpenAI parsing must join a structured content-part list into plain text.
+
+    The base Chat Completions contract returns ``message.content`` as a string,
+    but OpenAI-compatible gateways (LiteLLM, vLLM, OpenRouter) may return it as a
+    list of ``{"type": "text", "text": ...}`` parts. Coercing that list with
+    ``str(...)`` produced a Python repr (``"[{'type': 'text', ...}]"``) as the
+    answer instead of the text. Each part's ``text`` must be extracted and
+    joined. The KimiAdapter subclass shares this parser and behavior.
+    """
+    adapter = OpenAIAdapter(api_key="test-key")
+    request = LLMRequest(
+        task_type=TaskType.REASONING,
+        prompt="Summarize the findings.",
+        context="[c1] evidence.",
+        citation_chunk_ids=["c1"],
+    )
+    data = {
+        "choices": [
+            {
+                "message": {
+                    "content": [
+                        {"type": "text", "text": "The study "},
+                        {"type": "text", "text": "supports the hypothesis [c1]."},
+                    ]
+                }
+            }
+        ]
+    }
+
+    response = adapter.parse_response(data, request)
+
+    assert response.text == "The study supports the hypothesis [c1]."
+
+
+def test_openai_parse_response_reads_plain_string_content() -> None:
+    """A plain-string ``message.content`` is returned unchanged."""
+    adapter = OpenAIAdapter(api_key="test-key")
+    request = LLMRequest(
+        task_type=TaskType.REASONING,
+        prompt="Summarize.",
+        context="[c1] evidence.",
+        citation_chunk_ids=["c1"],
+    )
+    data = {"choices": [{"message": {"content": "Grounded answer [c1]."}}]}
+
+    response = adapter.parse_response(data, request)
+
+    assert response.text == "Grounded answer [c1]."
+
+
 def test_anthropic_parse_response_joins_all_text_blocks() -> None:
     """Anthropic parsing must join text blocks and skip non-text blocks.
 

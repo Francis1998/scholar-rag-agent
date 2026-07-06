@@ -110,16 +110,47 @@ class OpenAIAdapter(HTTPProviderAdapter):
         }
 
     def parse_response(self, data: Mapping[str, object], request: LLMRequest) -> LLMResponse:
-        """Parse OpenAI response JSON."""
+        """Parse OpenAI response JSON.
+
+        The base contract returns ``message.content`` as a string, but
+        OpenAI-compatible gateways (LiteLLM, vLLM, OpenRouter) may return it as a
+        list of ``{"type": "text", "text": ...}`` parts. Both shapes are handled;
+        coercing the list with ``str(...)`` would otherwise emit a Python repr as
+        the answer instead of the text.
+        """
         choices = data.get("choices")
-        text = (
-            str(choices[0]["message"]["content"]) if isinstance(choices, list) and choices else ""
-        )
+        text = ""
+        if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+            message = choices[0].get("message")
+            if isinstance(message, dict):
+                text = self._message_text(message.get("content"))
         return LLMResponse(
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,
             raw_provider=self.provider_name,
         )
+
+    @staticmethod
+    def _message_text(content: object) -> str:
+        """Extract assistant text from an OpenAI-compatible message content.
+
+        Args:
+            content: The ``message.content`` value, a string or a list of
+                structured content parts.
+
+        Returns:
+            The string content, or the concatenated ``text`` of each part; an
+            empty string for unrecognized shapes.
+        """
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            return "".join(
+                str(part["text"])
+                for part in content
+                if isinstance(part, dict) and isinstance(part.get("text"), str)
+            )
+        return ""
 
 
 class AnthropicAdapter(HTTPProviderAdapter):
