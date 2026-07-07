@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- PubMed ingestion connector (`ingestion/pubmed.py`) that runs the NCBI E-utilities `esearch`+`efetch` flow to resolve a free-text query to PMIDs and normalize each article (title, structured multi-section abstract, PMID, year) into a `Document`. It is the first keyword-search connector, so one call can ingest several biomedical papers for a topic.
 - OpenAlex ingestion connector (`ingestion/openalex.py`) that fetches works from the OpenAlex API and reconstructs the abstract from its `abstract_inverted_index` representation, adding a fourth open scholarly source alongside PDF, arXiv, and Semantic Scholar.
 - Maximal Marginal Relevance (MMR) diversity re-ranker (`retrieval/mmr.py`) that reduces near-duplicate chunks by balancing query relevance against novelty (dependency-free lexical Jaccard similarity); available as an optional, default-off `HybridRetriever` stage.
 - Public repository scaffold with Python 3.11+ packaging, CI, Docker, docs, and tests.
@@ -24,6 +25,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Utility scripts and docs corrected to avoid generated placeholder APIs.
 
 ### Fixed
+- Gemini provider adapter no longer raises `AttributeError` when the `candidates` list holds a non-object first element (for example a blocked/`null` candidate or a malformed gateway payload); it now guards `candidates[0]` like the OpenAI adapter and degrades to an empty completion instead of failing the request.
 - OpenAI (and inherited Kimi) provider adapter now extracts text from a structured `message.content` part list returned by OpenAI-compatible gateways (LiteLLM, vLLM, OpenRouter) instead of coercing the list with `str(...)`, which previously emitted a Python repr (`[{'type': 'text', ...}]`) as the answer.
 - Anthropic provider adapter now concatenates all `content` text blocks (skipping non-text blocks such as `thinking`/`tool_use`) instead of reading only `content[0].text`, which raised `KeyError` when a non-text block came first and truncated multi-block answers.
 - `SafetyLimits.clamp_hops`/`clamp_sources` and `MultiHopRetriever` no longer apply hardcoded literal ceilings (`5`/`50`) alongside the configurable `max_hops`/`max_source_docs`/`max_depth`, which silently capped any limit raised above the historical defaults; the configured values are now the sole authoritative bounds.

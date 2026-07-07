@@ -74,6 +74,30 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
     assert response.text == "The study supports the hypothesis [c1]."
 
 
+def test_gemini_parse_response_tolerates_non_dict_candidate() -> None:
+    """A malformed or blocked candidate must degrade to empty text, not crash.
+
+    Gemini can return a ``candidates`` list whose first element is not an object
+    (for example ``null`` for a blocked candidate, or a malformed gateway
+    payload). The parser guarded the ``candidates`` list but not ``candidates[0]``
+    and called ``.get`` on it directly, raising ``AttributeError`` and failing the
+    whole request. The other adapters guard their first element, so parsing must
+    return an empty completion here rather than raise.
+    """
+    adapter = GeminiAdapter(api_key="test-key")
+    request = LLMRequest(
+        task_type=TaskType.REASONING,
+        prompt="Summarize the findings.",
+        context="[c1] evidence.",
+        citation_chunk_ids=["c1"],
+    )
+
+    response = adapter.parse_response({"candidates": [None]}, request)
+
+    assert response.text == ""
+    assert response.citation_chunk_ids == ["c1"]
+
+
 def test_openai_parse_response_joins_structured_content_parts() -> None:
     """OpenAI parsing must join a structured content-part list into plain text.
 

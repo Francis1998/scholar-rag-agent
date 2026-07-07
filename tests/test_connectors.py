@@ -9,6 +9,7 @@ import pytest
 from ingestion.arxiv import ArxivConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
+from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 
 ARXIV_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -122,6 +123,89 @@ def test_openalex_reconstruct_abstract_handles_missing_index() -> None:
     """A missing or non-dict inverted index yields an empty abstract."""
     assert OpenAlexConnector._reconstruct_abstract(None) == ""
     assert OpenAlexConnector._reconstruct_abstract({}) == ""
+
+
+PUBMED_EFETCH_FIXTURE = """<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40012345</PMID>
+      <Article>
+        <Journal><JournalIssue><PubDate><Year>2024</Year></PubDate></JournalIssue></Journal>
+        <ArticleTitle>Retrieval Augmented Generation for Clinical QA</ArticleTitle>
+        <Abstract>
+          <AbstractText Label="BACKGROUND">RAG grounds answers in evidence.</AbstractText>
+          <AbstractText Label="RESULTS">It improves factual accuracy.</AbstractText>
+        </Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+
+
+@pytest.mark.asyncio
+async def test_pubmed_connector_searches_and_normalizes_articles() -> None:
+    """PubMedConnector resolves a query to PMIDs then fetches normalized docs."""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["40012345"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=PUBMED_EFETCH_FIXTURE, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector(api_key="test-key").search("clinical RAG", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Retrieval Augmented Generation for Clinical QA"
+    # Structured abstract sections are joined, not truncated to the first.
+    assert document.text == "RAG grounds answers in evidence. It improves factual accuracy."
+    assert document.source == "https://pubmed.ncbi.nlm.nih.gov/40012345/"
+    assert document.metadata["source_type"] == "pubmed"
+    assert document.metadata["pmid"] == "40012345"
+    assert document.metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_pubmed_connector_returns_empty_on_no_hits() -> None:
+    """An empty PMID list short-circuits before any efetch call."""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": []}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = esearch_response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("no such topic", max_results=5)
+
+    assert documents == []
+    assert mock_client.get.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_pubmed_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
 
 
 def test_pdf_connector_extracts_text(tmp_path: Path) -> None:
