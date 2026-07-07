@@ -244,7 +244,7 @@ class GeminiAdapter(HTTPProviderAdapter):
         """Parse Gemini response JSON."""
         candidates = data.get("candidates")
         text = ""
-        if isinstance(candidates, list) and candidates:
+        if isinstance(candidates, list) and candidates and isinstance(candidates[0], dict):
             content = candidates[0].get("content", {})
             parts = content.get("parts", []) if isinstance(content, dict) else []
             if isinstance(parts, list):
