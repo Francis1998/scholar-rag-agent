@@ -55,6 +55,25 @@ The connector normalizes OpenAlex works into the same `Document` shape as the
 PDF, arXiv, and Semantic Scholar connectors, reconstructing the abstract from
 OpenAlex's `abstract_inverted_index` field.
 
+## Search Crossref By Keyword
+
+```python
+import asyncio
+
+from ingestion.crossref import CrossrefConnector
+
+# `mailto` is optional but routes traffic to the faster Crossref "polite" pool.
+connector = CrossrefConnector(mailto="you@example.org")
+documents = asyncio.run(connector.search("retrieval augmented generation", max_results=5))
+for document in documents:
+    print(document.metadata["doi"], document.title)
+```
+
+Like PubMed, Crossref is a keyword-search connector: one call ingests several
+works. Each work is normalized into the same `Document` shape, with the DOI and
+publication year captured in metadata and any JATS-XML abstract markup stripped
+to plain text.
+
 ## Evaluate Retrieval
 
 ```bash
