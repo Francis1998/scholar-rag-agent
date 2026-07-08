@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Crossref ingestion connector (`ingestion/crossref.py`) that queries the Crossref REST `works` endpoint by keyword and normalizes each work (title, JATS-stripped abstract, DOI, year) into a `Document`. It adds the largest cross-disciplinary DOI index as a sixth scholarly source alongside PDF, arXiv, Semantic Scholar, OpenAlex, and PubMed.
 - PubMed ingestion connector (`ingestion/pubmed.py`) that runs the NCBI E-utilities `esearch`+`efetch` flow to resolve a free-text query to PMIDs and normalize each article (title, structured multi-section abstract, PMID, year) into a `Document`. It is the first keyword-search connector, so one call can ingest several biomedical papers for a topic.
 - OpenAlex ingestion connector (`ingestion/openalex.py`) that fetches works from the OpenAlex API and reconstructs the abstract from its `abstract_inverted_index` representation, adding a fourth open scholarly source alongside PDF, arXiv, and Semantic Scholar.
 - Maximal Marginal Relevance (MMR) diversity re-ranker (`retrieval/mmr.py`) that reduces near-duplicate chunks by balancing query relevance against novelty (dependency-free lexical Jaccard similarity); available as an optional, default-off `HybridRetriever` stage.
@@ -25,6 +26,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Utility scripts and docs corrected to avoid generated placeholder APIs.
 
 ### Fixed
+- arXiv connector now recognizes versioned new-style identifiers (for example `2301.00001v2`) as ids and resolves them via the `id_list` parameter. The previous `replace('.', '').isdigit()` check failed on the trailing `vN` suffix, so versioned ids were misrouted to a keyword `search_query` and returned search hits instead of the requested paper.
 - Gemini provider adapter no longer raises `AttributeError` when the `candidates` list holds a non-object first element (for example a blocked/`null` candidate or a malformed gateway payload); it now guards `candidates[0]` like the OpenAI adapter and degrades to an empty completion instead of failing the request.
 - OpenAI (and inherited Kimi) provider adapter now extracts text from a structured `message.content` part list returned by OpenAI-compatible gateways (LiteLLM, vLLM, OpenRouter) instead of coercing the list with `str(...)`, which previously emitted a Python repr (`[{'type': 'text', ...}]`) as the answer.
 - Anthropic provider adapter now concatenates all `content` text blocks (skipping non-text blocks such as `thinking`/`tool_use`) instead of reading only `content[0].text`, which raised `KeyError` when a non-text block came first and truncated multi-block answers.

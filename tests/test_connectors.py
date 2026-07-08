@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from ingestion.arxiv import ArxivConnector
+from ingestion.crossref import CrossrefConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
@@ -39,6 +40,102 @@ async def test_arxiv_connector_parses_atom_feed() -> None:
     assert documents[0].title == "GraphRAG Paper"
     assert "GraphRAG connects retrieval and agents." in documents[0].text
     assert documents[0].metadata["source_type"] == "arxiv"
+
+
+@pytest.mark.asyncio
+async def test_arxiv_connector_uses_id_list_for_versioned_id() -> None:
+    """A versioned arXiv id (e.g. ``2301.00001v2``) must resolve via id_list.
+
+    The previous ``replace('.', '').isdigit()`` id detection failed on the
+    trailing ``vN`` version suffix, so versioned ids were misrouted to a
+    keyword ``search_query`` instead of an exact ``id_list`` lookup.
+    """
+    response = httpx.Response(200, text=ARXIV_FIXTURE, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.arxiv.httpx.AsyncClient", return_value=mock_client):
+        await ArxivConnector().fetch("2301.00001v2")
+
+    params = mock_client.get.call_args.kwargs["params"]
+    assert params.get("id_list") == "2301.00001v2"
+    assert "search_query" not in params
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_searches_and_normalizes_works() -> None:
+    """CrossrefConnector normalizes work items, stripping JATS abstract markup."""
+    response = httpx.Response(
+        200,
+        json={
+            "message": {
+                "items": [
+                    {
+                        "title": ["Retrieval Augmented Generation Survey"],
+                        "DOI": "10.1000/rag.survey",
+                        "abstract": "<jats:p>RAG grounds answers in evidence.</jats:p>",
+                        "published": {"date-parts": [[2024, 3]]},
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector(mailto="dev@example.org").search("rag", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Retrieval Augmented Generation Survey"
+    assert document.text == "RAG grounds answers in evidence."
+    assert document.source == "https://doi.org/10.1000/rag.survey"
+    assert document.metadata["source_type"] == "crossref"
+    assert document.metadata["doi"] == "10.1000/rag.survey"
+    assert document.metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_handles_missing_abstract_and_doi() -> None:
+    """A work without an abstract or DOI still yields a titled document."""
+    response = httpx.Response(
+        200,
+        json={"message": {"items": [{"title": ["Preprint Without Metadata"]}]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("preprint", max_results=5)
+
+    assert len(documents) == 1
+    assert documents[0].title == "Preprint Without Metadata"
+    assert documents[0].text == ""
+    assert documents[0].source == "Preprint Without Metadata"
+    assert documents[0].metadata["doi"] == ""
 
 
 @pytest.mark.asyncio
