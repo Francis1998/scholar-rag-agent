@@ -8,6 +8,7 @@ import pytest
 
 from ingestion.arxiv import ArxivConnector
 from ingestion.crossref import CrossrefConnector
+from ingestion.europepmc import EuropePmcConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
@@ -136,6 +137,93 @@ async def test_crossref_connector_handles_missing_abstract_and_doi() -> None:
     assert documents[0].text == ""
     assert documents[0].source == "Preprint Without Metadata"
     assert documents[0].metadata["doi"] == ""
+
+
+@pytest.mark.asyncio
+async def test_europepmc_connector_searches_and_normalizes_results() -> None:
+    """EuropePmcConnector normalizes result items and builds the article URL."""
+    response = httpx.Response(
+        200,
+        json={
+            "resultList": {
+                "result": [
+                    {
+                        "id": "40012345",
+                        "source": "MED",
+                        "title": "Federated Retrieval for Biomedicine",
+                        "abstractText": "Europe PMC federates many sources.",
+                        "doi": "10.1000/epmc.rag",
+                        "pubYear": "2025",
+                        "pmid": "40012345",
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.europepmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcConnector(email="dev@example.org").search("rag", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Federated Retrieval for Biomedicine"
+    assert document.text == "Europe PMC federates many sources."
+    assert document.source == "https://europepmc.org/article/MED/40012345"
+    assert document.metadata["source_type"] == "europepmc"
+    assert document.metadata["doi"] == "10.1000/epmc.rag"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["pmid"] == "40012345"
+
+
+@pytest.mark.asyncio
+async def test_europepmc_connector_coerces_numeric_year_and_uses_doi_fallback() -> None:
+    """A numeric ``pubYear`` is coerced and the DOI anchors a source-less result."""
+    response = httpx.Response(
+        200,
+        json={
+            "resultList": {
+                "result": [
+                    {
+                        "title": "Preprint Without Source Id",
+                        "abstractText": "Body.",
+                        "doi": "10.1000/epmc.preprint",
+                        "pubYear": 2024,
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.europepmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcConnector().search("preprint", max_results=5)
+
+    assert len(documents) == 1
+    assert documents[0].source == "https://doi.org/10.1000/epmc.preprint"
+    assert documents[0].metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_europepmc_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.europepmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -269,6 +357,54 @@ async def test_pubmed_connector_searches_and_normalizes_articles() -> None:
     assert document.metadata["source_type"] == "pubmed"
     assert document.metadata["pmid"] == "40012345"
     assert document.metadata["year"] == "2024"
+
+
+PUBMED_INLINE_MARKUP_FIXTURE = """<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40067890</PMID>
+      <Article>
+        <Journal><JournalIssue><PubDate><Year>2025</Year></PubDate></JournalIssue></Journal>
+        <ArticleTitle>Inline Markup Abstract</ArticleTitle>
+        <Abstract>
+          <AbstractText>The <i>BRCA1</i> gene is <b>essential</b> for repair.</AbstractText>
+        </Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+
+
+@pytest.mark.asyncio
+async def test_pubmed_connector_preserves_abstract_with_inline_markup() -> None:
+    """Inline formatting tags in an AbstractText must not truncate the abstract.
+
+    PubMed embeds inline elements (``<i>`` for gene names, ``<sup>`` for
+    exponents, ``<b>`` for emphasis) inside an ``AbstractText``. Reading only
+    ``node.text`` captured just the run before the first inline child, silently
+    dropping the rest of the abstract; the full text of every segment must be
+    reconstructed instead.
+    """
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["40067890"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=PUBMED_INLINE_MARKUP_FIXTURE, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("brca1", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].text == "The BRCA1 gene is essential for repair."
 
 
 @pytest.mark.asyncio
