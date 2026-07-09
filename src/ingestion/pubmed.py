@@ -152,6 +152,12 @@ class PubMedConnector:
         segments are concatenated with single spaces so the full abstract is
         preserved rather than truncated to its first section.
 
+        PubMed also embeds inline formatting elements inside an ``AbstractText``
+        (for example ``<i>`` for gene names or ``<sup>`` for exponents). Reading
+        only ``node.text`` captured just the run of text before the first inline
+        child and silently dropped the remainder, so every segment's full text is
+        gathered with ``itertext`` instead.
+
         Args:
             article: A ``PubmedArticle`` XML element.
 
@@ -161,7 +167,12 @@ class PubMedConnector:
         findall = getattr(article, "findall", None)
         if findall is None:
             return ""
-        segments = [
-            " ".join(node.text.split()) for node in findall(".//Abstract/AbstractText") if node.text
-        ]
-        return " ".join(segment for segment in segments if segment)
+        segments: list[str] = []
+        for node in findall(".//Abstract/AbstractText"):
+            itertext = getattr(node, "itertext", None)
+            if itertext is None:
+                continue
+            segment = " ".join("".join(itertext()).split())
+            if segment:
+                segments.append(segment)
+        return " ".join(segments)

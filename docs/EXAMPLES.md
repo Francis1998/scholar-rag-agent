@@ -74,6 +74,25 @@ works. Each work is normalized into the same `Document` shape, with the DOI and
 publication year captured in metadata and any JATS-XML abstract markup stripped
 to plain text.
 
+## Search Europe PMC By Keyword
+
+```python
+import asyncio
+
+from ingestion.europepmc import EuropePmcConnector
+
+# `email` is optional but identifies polite API traffic to Europe PMC.
+connector = EuropePmcConnector(email="you@example.org")
+documents = asyncio.run(connector.search("crispr gene therapy", max_results=5))
+for document in documents:
+    print(document.metadata["pmid"], document.metadata["doi"], document.title)
+```
+
+Europe PMC federates PubMed/MEDLINE, PubMed Central, preprints, and patents, so
+one keyword search spans many life-sciences sources. Each result is normalized
+into the same `Document` shape, with the DOI, publication year, and PMID captured
+in metadata and the article's Europe PMC page used as the source URL.
+
 ## Evaluate Retrieval
 
 ```bash
