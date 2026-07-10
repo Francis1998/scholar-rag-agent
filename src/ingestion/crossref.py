@@ -9,6 +9,7 @@ connector runs a single ``works?query=`` request and normalizes every hit into
 a :class:`Document`, so one call can ingest several papers for a topic.
 """
 
+import html
 import re
 
 import httpx
@@ -142,8 +143,11 @@ class CrossrefConnector:
         """Strip JATS XML markup from a Crossref abstract.
 
         Crossref abstracts are stored as JATS XML (for example
-        ``<jats:p>...</jats:p>``). Tags are removed and surrounding whitespace is
-        collapsed so the stored text is plain, readable prose.
+        ``<jats:p>...</jats:p>``) in which literal ``<``, ``>``, ``&`` and
+        non-ASCII characters are entity-encoded (``&lt;``, ``&amp;``,
+        ``&#945;``). Tags are removed, entities are decoded to their characters,
+        and surrounding whitespace is collapsed so the stored text is plain,
+        readable prose rather than leaking raw ``&lt;`` / ``&#945;`` markup.
 
         Args:
             abstract: The raw ``abstract`` field.
@@ -154,7 +158,7 @@ class CrossrefConnector:
         if not isinstance(abstract, str) or not abstract.strip():
             return ""
         without_tags = _JATS_TAG_PATTERN.sub(" ", abstract)
-        return " ".join(without_tags.split())
+        return " ".join(html.unescape(without_tags).split())
 
     @staticmethod
     def _extract_year(published: object) -> str:
