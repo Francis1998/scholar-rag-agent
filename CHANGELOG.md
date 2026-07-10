@@ -6,6 +6,12 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
+
+### Fixed
+- Crossref abstracts left XML/HTML entities undecoded: `_strip_jats` removed JATS tags but not entity references, so `&lt;`, `&amp;`, and numeric character references such as `&#945;` (α) leaked into the stored abstract as raw markup. Entities are now decoded via `html.unescape`, yielding readable, searchable prose.
+
+### Added (earlier this cycle)
 - Europe PMC ingestion connector (`ingestion/europepmc.py`) that queries the Europe PMC REST `search` endpoint (`resultType=core`) by keyword and normalizes each result (title, abstract, DOI, year, PMID) into a `Document`. It adds a seventh scholarly source that federates PubMed/MEDLINE, PubMed Central, preprints, and patents alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, and Crossref.
 - Crossref ingestion connector (`ingestion/crossref.py`) that queries the Crossref REST `works` endpoint by keyword and normalizes each work (title, JATS-stripped abstract, DOI, year) into a `Document`. It adds the largest cross-disciplinary DOI index as a sixth scholarly source alongside PDF, arXiv, Semantic Scholar, OpenAlex, and PubMed.
 - PubMed ingestion connector (`ingestion/pubmed.py`) that runs the NCBI E-utilities `esearch`+`efetch` flow to resolve a free-text query to PMIDs and normalize each article (title, structured multi-section abstract, PMID, year) into a `Document`. It is the first keyword-search connector, so one call can ingest several biomedical papers for a topic.

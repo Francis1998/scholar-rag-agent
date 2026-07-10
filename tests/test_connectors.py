@@ -8,6 +8,7 @@ import pytest
 
 from ingestion.arxiv import ArxivConnector
 from ingestion.crossref import CrossrefConnector
+from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
@@ -100,6 +101,46 @@ async def test_crossref_connector_searches_and_normalizes_works() -> None:
     assert document.metadata["source_type"] == "crossref"
     assert document.metadata["doi"] == "10.1000/rag.survey"
     assert document.metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_decodes_entities_in_jats_abstract() -> None:
+    """XML/HTML entities in a JATS abstract are decoded to their characters.
+
+    Crossref abstracts are JATS XML in which literal ``<``, ``>``, ``&`` and
+    non-ASCII characters are entity-encoded (for example ``&lt;``, ``&amp;``,
+    ``&#233;``). Stripping only the tags left those entities as raw text in the
+    stored abstract; they must be decoded to their characters so the prose is
+    readable and searchable.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "message": {
+                "items": [
+                    {
+                        "title": ["Entity Handling"],
+                        "DOI": "10.1000/entities",
+                        "abstract": (
+                            "<jats:p>Results show x &lt; y &amp; z &gt; 0 in a caf&#233;.</jats:p>"
+                        ),
+                        "published": {"date-parts": [[2025]]},
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("entities", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].text == "Results show x < y & z > 0 in a café."
 
 
 @pytest.mark.asyncio
@@ -221,6 +262,118 @@ async def test_europepmc_connector_rejects_non_positive_max_results() -> None:
 
     with patch("ingestion.europepmc.httpx.AsyncClient", return_value=mock_client):
         documents = await EuropePmcConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_doaj_connector_searches_and_normalizes_articles() -> None:
+    """DoajConnector normalizes bibjson articles and prefers the full-text link."""
+    response = httpx.Response(
+        200,
+        json={
+            "total": 1,
+            "results": [
+                {
+                    "id": "abc123",
+                    "bibjson": {
+                        "title": "Open Access Retrieval",
+                        "abstract": "DOAJ indexes open access articles.",
+                        "year": "2025",
+                        "identifier": [
+                            {"type": "doi", "id": "10.1000/doaj.rag"},
+                            {"type": "eissn", "id": "1234-5678"},
+                        ],
+                        "link": [
+                            {"type": "fulltext", "url": "https://journal.example.org/article/1"},
+                        ],
+                    },
+                }
+            ],
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.doaj.httpx.AsyncClient", return_value=mock_client):
+        documents = await DoajConnector().search("rag", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Access Retrieval"
+    assert document.text == "DOAJ indexes open access articles."
+    assert document.source == "https://journal.example.org/article/1"
+    assert document.metadata["source_type"] == "doaj"
+    assert document.metadata["doi"] == "10.1000/doaj.rag"
+    assert document.metadata["year"] == "2025"
+
+
+@pytest.mark.asyncio
+async def test_doaj_connector_coerces_numeric_year_and_falls_back_to_doi() -> None:
+    """A numeric ``year`` is coerced and the DOI anchors a link-less article."""
+    response = httpx.Response(
+        200,
+        json={
+            "results": [
+                {
+                    "id": "no-link",
+                    "bibjson": {
+                        "title": "Article Without Full-Text Link",
+                        "abstract": "Body.",
+                        "year": 2024,
+                        "identifier": [{"type": "DOI", "id": "10.1000/doaj.nolink"}],
+                    },
+                }
+            ]
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.doaj.httpx.AsyncClient", return_value=mock_client):
+        documents = await DoajConnector().search("preprint", max_results=5)
+
+    assert len(documents) == 1
+    # Identifier ``type`` is matched case-insensitively (``DOI`` -> ``doi``).
+    assert documents[0].source == "https://doi.org/10.1000/doaj.nolink"
+    assert documents[0].metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_doaj_connector_skips_items_without_bibjson() -> None:
+    """A result item lacking a ``bibjson`` object is skipped, not crashed on."""
+    response = httpx.Response(
+        200,
+        json={"results": [{"id": "malformed"}]},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.doaj.httpx.AsyncClient", return_value=mock_client):
+        documents = await DoajConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_doaj_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.doaj.httpx.AsyncClient", return_value=mock_client):
+        documents = await DoajConnector().search("anything", max_results=0)
 
     assert documents == []
     mock_client.get.assert_not_called()
