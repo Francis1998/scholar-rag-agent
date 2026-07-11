@@ -8,6 +8,7 @@ import pytest
 
 from ingestion.arxiv import ArxivConnector
 from ingestion.crossref import CrossrefConnector
+from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
 from ingestion.openalex import OpenAlexConnector
@@ -374,6 +375,134 @@ async def test_doaj_connector_rejects_non_positive_max_results() -> None:
 
     with patch("ingestion.doaj.httpx.AsyncClient", return_value=mock_client):
         documents = await DoajConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_dblp_connector_searches_and_normalizes_publications() -> None:
+    """DblpConnector normalizes info hits and prefers the electronic edition."""
+    response = httpx.Response(
+        200,
+        json={
+            "result": {
+                "hits": {
+                    "@total": "1",
+                    "hit": [
+                        {
+                            "info": {
+                                "title": "Retrieval-Augmented Generation",
+                                "authors": {
+                                    "author": [
+                                        {"@pid": "1", "text": "Ada Lovelace"},
+                                        {"@pid": "2", "text": "Alan Turing"},
+                                    ]
+                                },
+                                "venue": "NeurIPS",
+                                "year": "2020",
+                                "doi": "10.5555/rag",
+                                "ee": "https://example.org/rag.pdf",
+                                "url": "https://dblp.org/rec/conf/nips/rag",
+                            }
+                        }
+                    ],
+                }
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dblp.httpx.AsyncClient", return_value=mock_client):
+        documents = await DblpConnector().search("rag", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Retrieval-Augmented Generation"
+    assert document.text == "By Ada Lovelace, Alan Turing In NeurIPS (2020)"
+    assert document.source == "https://example.org/rag.pdf"
+    assert document.metadata["source_type"] == "dblp"
+    assert document.metadata["doi"] == "10.5555/rag"
+    assert document.metadata["venue"] == "NeurIPS"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+
+@pytest.mark.asyncio
+async def test_dblp_connector_handles_single_hit_and_author_objects() -> None:
+    """A single match collapses ``hit``/``author`` to objects and falls back to DOI.
+
+    DBLP returns ``hits.hit`` (and ``authors.author``) as a lone object rather
+    than a list when exactly one result/author is present, and omits ``ee`` for
+    some records; the connector must normalize the object shapes and anchor the
+    source on the DOI when no electronic edition is advertised.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "result": {
+                "hits": {
+                    "@total": "1",
+                    "hit": {
+                        "info": {
+                            "title": "A Solo Systems Paper",
+                            "authors": {"author": {"@pid": "3", "text": "Grace Hopper"}},
+                            "year": 2019,
+                            "doi": "10.1000/solo",
+                        }
+                    },
+                }
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dblp.httpx.AsyncClient", return_value=mock_client):
+        documents = await DblpConnector().search("systems", max_results=5)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.source == "https://doi.org/10.1000/solo"
+    assert document.text == "By Grace Hopper (2019)"
+    assert document.metadata["year"] == "2019"
+    assert document.metadata["authors"] == "Grace Hopper"
+
+
+@pytest.mark.asyncio
+async def test_dblp_connector_skips_hits_without_title() -> None:
+    """A hit whose ``info`` carries no title is skipped rather than crashed on."""
+    response = httpx.Response(
+        200,
+        json={"result": {"hits": {"hit": [{"info": {"year": "2021"}}]}}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dblp.httpx.AsyncClient", return_value=mock_client):
+        documents = await DblpConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_dblp_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dblp.httpx.AsyncClient", return_value=mock_client):
+        documents = await DblpConnector().search("anything", max_results=0)
 
     assert documents == []
     mock_client.get.assert_not_called()
