@@ -1,12 +1,32 @@
 """Tests for hybrid retrieval components."""
 
+import pytest
+
 from ingestion.chunking import TextChunker, stable_id
 from retrieval.dense import DenseRetriever
+from retrieval.embeddings import HashEmbeddingModel, cosine_similarity
 from retrieval.hybrid import HybridRetriever
 from retrieval.hyde import HyDEExpander
 from retrieval.models import Document, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
 from retrieval.sparse import BM25Retriever
+
+
+def test_hash_embedding_is_invariant_to_attached_punctuation() -> None:
+    """Trailing punctuation must not change a token's embedding dimension.
+
+    The dense embedder previously split on raw whitespace, so ``retrieval.``
+    hashed to a different dimension than ``retrieval`` and the same word was a
+    hit in BM25 sparse retrieval but a miss in the dense vector the two are
+    fused with. Tokenizing with the shared sparse tokenizer makes the embedding
+    of a phrase identical whether or not its terms carry attached punctuation.
+    """
+    embedder = HashEmbeddingModel()
+
+    plain = embedder.embed("machine learning")
+    punctuated = embedder.embed("machine, learning.")
+
+    assert cosine_similarity(plain, punctuated) == pytest.approx(1.0)
 
 
 def build_chunks() -> list:

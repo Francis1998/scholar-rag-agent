@@ -3,6 +3,8 @@
 import hashlib
 import math
 
+from retrieval.sparse import tokenize
+
 
 class HashEmbeddingModel:
     """Small deterministic embedding model for local demos and tests."""
@@ -12,9 +14,17 @@ class HashEmbeddingModel:
         self.dimensions = dimensions
 
     def embed(self, text: str) -> list[float]:
-        """Embed text into a normalized hashing vector."""
+        """Embed text into a normalized hashing vector.
+
+        Tokens are produced by the shared :func:`retrieval.sparse.tokenize`
+        helper so a term is bucketed identically here and in the BM25 sparse
+        retriever. A raw ``str.split`` left surrounding punctuation attached
+        (``"retrieval."`` hashed to a different dimension than ``"retrieval"``),
+        so the same word was a hit in sparse retrieval but a miss in the dense
+        vector the two are fused with.
+        """
         vector = [0.0] * self.dimensions
-        for token in text.lower().split():
+        for token in tokenize(text):
             digest = hashlib.sha256(token.encode("utf-8")).digest()
             index = int.from_bytes(digest[:4], "big") % self.dimensions
             sign = 1.0 if digest[4] % 2 == 0 else -1.0

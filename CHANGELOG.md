@@ -6,9 +6,11 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- DBLP ingestion connector (`ingestion/dblp.py`) that queries the DBLP public `search/publ` endpoint by keyword and normalizes each publication (title, authors, venue, year, DOI, electronic-edition link) into a `Document`. It adds a ninth scholarly source and the first dedicated computer-science bibliography alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, Europe PMC, and DOAJ. As DBLP is a metadata index without abstracts, a concise author/venue/year descriptor is synthesized as the document text so sparse and entity retrieval retain real signal.
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- Dense hashing embeddings tokenized on raw whitespace while the BM25 sparse retriever strips surrounding punctuation, so a term such as `retrieval.` embedded into a different dimension than `retrieval` and the same word was a hit in sparse retrieval but a miss in the dense vector the two are fused with. The embedder now uses the shared `retrieval.sparse.tokenize` helper, making dense and sparse retrieval bucket a term identically.
 - Crossref abstracts left XML/HTML entities undecoded: `_strip_jats` removed JATS tags but not entity references, so `&lt;`, `&amp;`, and numeric character references such as `&#945;` (α) leaked into the stored abstract as raw markup. Entities are now decoded via `html.unescape`, yielding readable, searchable prose.
 
 ### Added (earlier this cycle)
