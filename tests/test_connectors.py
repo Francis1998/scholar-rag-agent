@@ -105,6 +105,43 @@ async def test_crossref_connector_searches_and_normalizes_works() -> None:
 
 
 @pytest.mark.asyncio
+async def test_crossref_connector_resolves_year_from_issued_when_published_absent() -> None:
+    """The year must be read from ``issued`` when ``published`` is absent.
+
+    Crossref does not always populate the unified ``published`` field; ``issued``
+    is its canonical, most widely populated publication date. Reading only
+    ``published`` dropped the year for the many records that carry it solely
+    under ``issued``, leaving ``metadata['year']`` empty.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "message": {
+                "items": [
+                    {
+                        "title": ["Sparse-Dense Hybrid Retrieval"],
+                        "DOI": "10.1000/hybrid",
+                        "abstract": "<jats:p>Hybrid retrieval.</jats:p>",
+                        "issued": {"date-parts": [[2023, 11]]},
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("hybrid", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2023"
+
+
+@pytest.mark.asyncio
 async def test_crossref_connector_decodes_entities_in_jats_abstract() -> None:
     """XML/HTML entities in a JATS abstract are decoded to their characters.
 
