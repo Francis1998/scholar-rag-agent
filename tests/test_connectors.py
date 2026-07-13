@@ -11,6 +11,7 @@ from ingestion.crossref import CrossrefConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
+from ingestion.hal import HalConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
@@ -102,6 +103,146 @@ async def test_crossref_connector_searches_and_normalizes_works() -> None:
     assert document.metadata["source_type"] == "crossref"
     assert document.metadata["doi"] == "10.1000/rag.survey"
     assert document.metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_resolves_year_from_issued_when_published_absent() -> None:
+    """The year must be read from ``issued`` when ``published`` is absent.
+
+    Crossref does not always populate the unified ``published`` field; ``issued``
+    is its canonical, most widely populated publication date. Reading only
+    ``published`` dropped the year for the many records that carry it solely
+    under ``issued``, leaving ``metadata['year']`` empty.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "message": {
+                "items": [
+                    {
+                        "title": ["Sparse-Dense Hybrid Retrieval"],
+                        "DOI": "10.1000/hybrid",
+                        "abstract": "<jats:p>Hybrid retrieval.</jats:p>",
+                        "issued": {"date-parts": [[2023, 11]]},
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("hybrid", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2023"
+
+
+def _hal_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed HAL JSON payload.
+
+    Args:
+        payload: JSON body the mocked GET should return.
+
+    Returns:
+        Configured async mock usable as an async context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_hal_connector_searches_and_normalizes_docs() -> None:
+    """HalConnector normalizes Solr multi-valued fields into documents."""
+    payload: dict[str, object] = {
+        "response": {
+            "docs": [
+                {
+                    "title_s": ["Federated Retrieval over Open Archives"],
+                    "authFullName_s": ["Ada Lovelace", "Alan Turing"],
+                    "abstract_s": ["HAL indexes multidisciplinary open science."],
+                    "uri_s": "https://hal.science/hal-04123456",
+                    "doiId_s": "10.1000/hal.rag",
+                    "publicationDateY_i": 2024,
+                }
+            ]
+        }
+    }
+
+    with patch("ingestion.hal.httpx.AsyncClient", return_value=_hal_client(payload)):
+        documents = await HalConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Federated Retrieval over Open Archives"
+    assert document.text == "HAL indexes multidisciplinary open science."
+    assert document.source == "https://hal.science/hal-04123456"
+    assert document.metadata["source_type"] == "hal"
+    assert document.metadata["doi"] == "10.1000/hal.rag"
+    assert document.metadata["year"] == "2024"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+
+@pytest.mark.asyncio
+async def test_hal_connector_builds_descriptor_and_doi_source_without_abstract() -> None:
+    """A record with no abstract or URI uses a descriptor and DOI-anchored source."""
+    payload: dict[str, object] = {
+        "response": {
+            "docs": [
+                {
+                    "title_s": ["A Bibliographic-Only Deposit"],
+                    "authFullName_s": "Grace Hopper",
+                    "doiId_s": "10.1000/hal.solo",
+                    "producedDateY_i": 2019,
+                }
+            ]
+        }
+    }
+
+    with patch("ingestion.hal.httpx.AsyncClient", return_value=_hal_client(payload)):
+        documents = await HalConnector().search("compilers", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "By Grace Hopper (2019)"
+    assert document.source == "https://doi.org/10.1000/hal.solo"
+    assert document.metadata["year"] == "2019"
+    assert document.metadata["authors"] == "Grace Hopper"
+
+
+@pytest.mark.asyncio
+async def test_hal_connector_skips_docs_without_title() -> None:
+    """A doc carrying no usable title is skipped rather than surfaced empty."""
+    payload: dict[str, object] = {
+        "response": {"docs": [{"abstract_s": ["No title here."], "uri_s": "https://hal.science/x"}]}
+    }
+
+    with patch("ingestion.hal.httpx.AsyncClient", return_value=_hal_client(payload)):
+        documents = await HalConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_hal_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.hal.httpx.AsyncClient", return_value=mock_client):
+        documents = await HalConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
 
 
 @pytest.mark.asyncio

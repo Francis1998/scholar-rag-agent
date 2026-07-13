@@ -113,7 +113,7 @@ class CrossrefConnector:
             metadata={
                 "source_type": "crossref",
                 "doi": doi_str,
-                "year": cls._extract_year(item.get("published")),
+                "year": cls._resolve_year(item),
             },
         )
 
@@ -160,16 +160,40 @@ class CrossrefConnector:
         without_tags = _JATS_TAG_PATTERN.sub(" ", abstract)
         return " ".join(html.unescape(without_tags).split())
 
+    @classmethod
+    def _resolve_year(cls, item: dict[str, object]) -> str:
+        """Resolve the publication year from a Crossref work item.
+
+        Crossref exposes a work's date under several keys and does not always
+        populate the unified ``published`` field; ``issued`` is the canonical,
+        most widely populated publication date, with ``published-print`` and
+        ``published-online`` as further fallbacks. Reading only ``published``
+        therefore dropped the year for the many records that carry it solely
+        under ``issued``. The first field that yields a year wins.
+
+        Args:
+            item: A single Crossref work object from ``message.items``.
+
+        Returns:
+            The publication year as a string, or an empty string when no
+            recognised date field carries one.
+        """
+        for field in ("published", "issued", "published-print", "published-online"):
+            year = cls._extract_year(item.get(field))
+            if year:
+                return year
+        return ""
+
     @staticmethod
     def _extract_year(published: object) -> str:
-        """Extract the publication year from a Crossref ``published`` field.
+        """Extract the publication year from a Crossref date field.
 
         Crossref encodes dates as ``{"date-parts": [[year, month, day]]}`` with
         only the year guaranteed present. The leading year integer is returned as
         a string.
 
         Args:
-            published: The ``published`` (or equivalent) date field.
+            published: A Crossref date field (``published``/``issued``/...).
 
         Returns:
             The publication year as a string, or an empty string when absent.
