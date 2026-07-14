@@ -222,12 +222,25 @@ class DblpConnector:
         or a number depending on the record, so integers are coerced to their
         decimal string form and other non-string values yield an empty string.
 
+        DBLP also collapses a single-valued field to a scalar but returns a
+        *list* when a record carries several values (for example a publication
+        with multiple electronic editions ``ee`` or venues ``venue``). Such a
+        list previously yielded an empty string, silently dropping the venue and
+        forcing the source URL onto a weaker fallback; the first coercible
+        element is now used instead.
+
         Args:
             value: A raw DBLP field value.
 
         Returns:
             The string value, or an empty string when not string- or int-like.
         """
+        if isinstance(value, list):
+            for entry in value:
+                coerced = DblpConnector._as_str(entry)
+                if coerced:
+                    return coerced
+            return ""
         if isinstance(value, str):
             return value
         if isinstance(value, int) and not isinstance(value, bool):
