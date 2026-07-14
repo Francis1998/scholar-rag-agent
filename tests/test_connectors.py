@@ -12,6 +12,7 @@ from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
 from ingestion.hal import HalConnector
+from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
@@ -617,6 +618,53 @@ async def test_dblp_connector_handles_single_hit_and_author_objects() -> None:
 
 
 @pytest.mark.asyncio
+async def test_dblp_connector_handles_list_valued_venue_and_ee() -> None:
+    """List-valued ``venue``/``ee`` fields must be read, not dropped.
+
+    DBLP collapses a single value to a scalar but returns a *list* when a record
+    carries several values (multiple electronic editions or venues). The list
+    form previously coerced to an empty string, so the venue was lost from the
+    metadata and descriptor and the source URL fell back off the electronic
+    edition onto a weaker anchor. The first element must be used.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "result": {
+                "hits": {
+                    "hit": [
+                        {
+                            "info": {
+                                "title": "A Multi-Edition Paper",
+                                "authors": {"author": {"text": "Ada Lovelace"}},
+                                "venue": ["PVLDB", "VLDB J."],
+                                "ee": ["https://example.org/pdf", "https://example.org/alt"],
+                                "year": "2024",
+                                "doi": "10.1000/multi",
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dblp.httpx.AsyncClient", return_value=mock_client):
+        documents = await DblpConnector().search("systems", max_results=5)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["venue"] == "PVLDB"
+    assert document.source == "https://example.org/pdf"
+    assert "In PVLDB" in document.text
+
+
+@pytest.mark.asyncio
 async def test_dblp_connector_skips_hits_without_title() -> None:
     """A hit whose ``info`` carries no title is skipped rather than crashed on."""
     response = httpx.Response(
@@ -880,3 +928,105 @@ def test_pdf_connector_extracts_text(tmp_path: Path) -> None:
     assert document.title == "sample"
     assert "GraphRAG supports scientific retrieval." in document.text
     assert document.metadata["source_type"] == "pdf"
+
+
+def _openaire_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed OpenAIRE JSON payload.
+
+    Args:
+        payload: The decoded JSON body the mocked client should return.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_openaire_connector_searches_and_normalizes_products() -> None:
+    """OpenAireConnector normalizes research products and prefers instance URLs."""
+    payload: dict[str, object] = {
+        "header": {"numFound": 1},
+        "results": [
+            {
+                "mainTitle": "Open Science Retrieval",
+                "authors": [
+                    {"fullName": "Ada Lovelace", "rank": 1},
+                    {"fullName": "Alan Turing", "rank": 2},
+                ],
+                "descriptions": ["An abstract about open-science retrieval graphs."],
+                "publicationDate": "2025-03-18",
+                "pids": [
+                    {"scheme": "pmc", "value": "PMC1"},
+                    {"scheme": "doi", "value": "10.1000/openaire.rag"},
+                ],
+                "instances": [{"urls": ["https://example.org/oa/1"]}],
+            }
+        ],
+    }
+    with patch("ingestion.openaire.httpx.AsyncClient", return_value=_openaire_client(payload)):
+        documents = await OpenAireConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Science Retrieval"
+    assert document.text == "An abstract about open-science retrieval graphs."
+    assert document.source == "https://example.org/oa/1"
+    assert document.metadata["source_type"] == "openaire"
+    assert document.metadata["doi"] == "10.1000/openaire.rag"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+
+@pytest.mark.asyncio
+async def test_openaire_connector_builds_descriptor_and_doi_source_without_abstract() -> None:
+    """A record without a description falls back to a descriptor and DOI source."""
+    payload: dict[str, object] = {
+        "results": [
+            {
+                "mainTitle": "Bibliographic Only",
+                "authors": [{"fullName": "Grace Hopper"}],
+                "publicationDate": "2020",
+                "pids": [{"scheme": "doi", "value": "10.1000/openaire.solo"}],
+            }
+        ]
+    }
+    with patch("ingestion.openaire.httpx.AsyncClient", return_value=_openaire_client(payload)):
+        documents = await OpenAireConnector().search("history", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "By Grace Hopper (2020)"
+    assert document.source == "https://doi.org/10.1000/openaire.solo"
+    assert document.metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_openaire_connector_skips_products_without_title() -> None:
+    """A research product carrying no ``mainTitle`` is skipped, not crashed on."""
+    payload: dict[str, object] = {
+        "results": [{"descriptions": ["No title here."], "publicationDate": "2023"}]
+    }
+    with patch("ingestion.openaire.httpx.AsyncClient", return_value=_openaire_client(payload)):
+        documents = await OpenAireConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_openaire_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openaire.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAireConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
