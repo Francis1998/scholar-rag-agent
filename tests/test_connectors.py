@@ -17,6 +17,7 @@ from ingestion.openalex import OpenAlexConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
+from ingestion.zenodo import ZenodoConnector
 
 ARXIV_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
@@ -394,6 +395,43 @@ async def test_europepmc_connector_coerces_numeric_year_and_uses_doi_fallback() 
     assert len(documents) == 1
     assert documents[0].source == "https://doi.org/10.1000/epmc.preprint"
     assert documents[0].metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
+async def test_europepmc_connector_falls_back_to_first_publication_date_year() -> None:
+    """A record without ``pubYear`` must derive its year from ``firstPublicationDate``.
+
+    Some Europe PMC records (notably preprints and ahead-of-print articles) omit
+    ``pubYear`` while still carrying a full ``firstPublicationDate``. Reading only
+    ``pubYear`` previously dropped the year entirely; the 4-digit prefix of
+    ``firstPublicationDate`` must be used as a fallback.
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "resultList": {
+                "result": [
+                    {
+                        "title": "Ahead of Print Without pubYear",
+                        "abstractText": "Body.",
+                        "doi": "10.1000/epmc.aheadofprint",
+                        "firstPublicationDate": "2021-07-01",
+                    }
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.europepmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcConnector().search("ahead", max_results=5)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2021"
 
 
 @pytest.mark.asyncio
@@ -1027,6 +1065,117 @@ async def test_openaire_connector_rejects_non_positive_max_results() -> None:
 
     with patch("ingestion.openaire.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAireConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+def _zenodo_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed Zenodo JSON payload.
+
+    Args:
+        payload: The decoded JSON body the mocked client should return.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_zenodo_connector_searches_and_normalizes_records() -> None:
+    """ZenodoConnector normalizes records, strips HTML, and prefers the html link."""
+    payload: dict[str, object] = {
+        "hits": {
+            "total": 1,
+            "hits": [
+                {
+                    "doi": "10.5281/zenodo.123",
+                    "links": {
+                        "self": "https://zenodo.org/api/records/123",
+                        "html": "https://zenodo.org/records/123",
+                    },
+                    "metadata": {
+                        "title": "Open Retrieval Toolkit",
+                        "creators": [
+                            {"name": "Ada Lovelace"},
+                            {"name": "Alan Turing"},
+                        ],
+                        "description": "<p>A <b>toolkit</b> for retrieval &amp; agents.</p>",
+                        "publication_date": "2025-02-10",
+                        "doi": "10.5281/zenodo.123",
+                    },
+                }
+            ],
+        }
+    }
+    with patch("ingestion.zenodo.httpx.AsyncClient", return_value=_zenodo_client(payload)):
+        documents = await ZenodoConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Retrieval Toolkit"
+    assert document.text == "A toolkit for retrieval & agents."
+    assert document.source == "https://zenodo.org/records/123"
+    assert document.metadata["source_type"] == "zenodo"
+    assert document.metadata["doi"] == "10.5281/zenodo.123"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+
+@pytest.mark.asyncio
+async def test_zenodo_connector_builds_descriptor_and_doi_source_without_description() -> None:
+    """A record without a description falls back to a descriptor and DOI source."""
+    payload: dict[str, object] = {
+        "hits": {
+            "hits": [
+                {
+                    "doi": "10.5281/zenodo.999",
+                    "metadata": {
+                        "title": "Dataset Only",
+                        "creators": [{"name": "Grace Hopper"}],
+                        "publication_date": "2020-01-01",
+                    },
+                }
+            ]
+        }
+    }
+    with patch("ingestion.zenodo.httpx.AsyncClient", return_value=_zenodo_client(payload)):
+        documents = await ZenodoConnector().search("dataset", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "By Grace Hopper (2020)"
+    assert document.source == "https://doi.org/10.5281/zenodo.999"
+    assert document.metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_zenodo_connector_skips_records_without_title() -> None:
+    """A record carrying no title is skipped, not crashed on."""
+    payload: dict[str, object] = {
+        "hits": {"hits": [{"metadata": {"description": "No title here."}}]}
+    }
+    with patch("ingestion.zenodo.httpx.AsyncClient", return_value=_zenodo_client(payload)):
+        documents = await ZenodoConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_zenodo_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.zenodo.httpx.AsyncClient", return_value=mock_client):
+        documents = await ZenodoConnector().search("anything", max_results=0)
 
     assert documents == []
     mock_client.get.assert_not_called()

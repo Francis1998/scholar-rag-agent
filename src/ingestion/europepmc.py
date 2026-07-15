@@ -112,10 +112,32 @@ class EuropePmcConnector:
             metadata={
                 "source_type": "europepmc",
                 "doi": doi,
-                "year": cls._as_str(item.get("pubYear")).strip(),
+                "year": cls._resolve_year(item),
                 "pmid": cls._as_str(item.get("pmid")).strip(),
             },
         )
+
+    @classmethod
+    def _resolve_year(cls, item: dict[str, object]) -> str:
+        """Resolve the publication year from a Europe PMC result.
+
+        ``pubYear`` is preferred, but some records (notably preprints and
+        ahead-of-print articles) omit it while still carrying a full
+        ``firstPublicationDate`` (for example ``2023-05-01``). Reading only
+        ``pubYear`` dropped the year for those records even though it was present;
+        the 4-digit prefix of ``firstPublicationDate`` is used as a fallback.
+
+        Args:
+            item: A single result object from ``resultList.result``.
+
+        Returns:
+            The 4-digit publication year, or an empty string when unavailable.
+        """
+        year = cls._as_str(item.get("pubYear")).strip()
+        if year:
+            return year
+        first_publication_date = cls._as_str(item.get("firstPublicationDate")).strip()
+        return first_publication_date[:4]
 
     @staticmethod
     def _resolve_source(item: dict[str, object], doi: str, title: str) -> str:
