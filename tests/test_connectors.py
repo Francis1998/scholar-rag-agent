@@ -11,6 +11,7 @@ from ingestion.crossref import CrossrefConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
+from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
@@ -887,6 +888,53 @@ PUBMED_INLINE_MARKUP_FIXTURE = """<?xml version="1.0"?>
 
 
 @pytest.mark.asyncio
+async def test_pubmed_connector_falls_back_to_medline_date_year() -> None:
+    """A record without ``Year`` must derive its year from ``MedlineDate``.
+
+    Many PubMed records (seasonal issues, date ranges) omit ``PubDate/Year`` and
+    carry only a ``MedlineDate`` such as ``2024 Spring``. Reading only ``Year``
+    previously dropped the year entirely; the leading four characters of
+    ``MedlineDate`` must be used as a fallback.
+    """
+    medline_only_fixture = """<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40099999</PMID>
+      <Article>
+        <Journal>
+          <JournalIssue>
+            <PubDate><MedlineDate>2024 Spring</MedlineDate></PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Seasonal PubDate Only</ArticleTitle>
+        <Abstract><AbstractText>Body.</AbstractText></Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["40099999"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=medline_only_fixture, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("seasonal", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
 async def test_pubmed_connector_preserves_abstract_with_inline_markup() -> None:
     """Inline formatting tags in an AbstractText must not truncate the abstract.
 
@@ -1179,3 +1227,90 @@ async def test_zenodo_connector_rejects_non_positive_max_results() -> None:
 
     assert documents == []
     mock_client.get.assert_not_called()
+
+
+def _figshare_client(payload: object) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed Figshare JSON payload.
+
+    Args:
+        payload: The decoded JSON body the mocked client should return.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("POST", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.post.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_figshare_connector_searches_and_normalizes_articles() -> None:
+    """FigshareConnector normalizes articles, strips HTML, and prefers public HTML."""
+    payload: list[dict[str, object]] = [
+        {
+            "id": 1434614,
+            "title": "Open Retrieval Dataset",
+            "doi": "10.6084/m9.figshare.1434614",
+            "published_date": "2025-03-15T12:00:00Z",
+            "url_public_html": "https://figshare.com/articles/Open_Retrieval_Dataset/1434614",
+            "description": "<p>A <b>dataset</b> for retrieval &amp; agents.</p>",
+        }
+    ]
+    with patch("ingestion.figshare.httpx.AsyncClient", return_value=_figshare_client(payload)):
+        documents = await FigshareConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Retrieval Dataset"
+    assert document.text == "A dataset for retrieval & agents."
+    assert document.source == "https://figshare.com/articles/Open_Retrieval_Dataset/1434614"
+    assert document.metadata["source_type"] == "figshare"
+    assert document.metadata["doi"] == "10.6084/m9.figshare.1434614"
+    assert document.metadata["year"] == "2025"
+
+
+@pytest.mark.asyncio
+async def test_figshare_connector_builds_descriptor_and_doi_source_without_description() -> None:
+    """An article without a description falls back to a year descriptor and DOI."""
+    payload: list[dict[str, object]] = [
+        {
+            "title": "Figure Only",
+            "doi": "10.6084/m9.figshare.999",
+            "published_date": "2020-01-01T00:00:00Z",
+        }
+    ]
+    with patch("ingestion.figshare.httpx.AsyncClient", return_value=_figshare_client(payload)):
+        documents = await FigshareConnector().search("figure", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "(2020)"
+    assert document.source == "https://doi.org/10.6084/m9.figshare.999"
+    assert document.metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_figshare_connector_skips_articles_without_title() -> None:
+    """An article carrying no title is skipped, not crashed on."""
+    payload: list[dict[str, object]] = [{"description": "No title here.", "doi": "10.0/x"}]
+    with patch("ingestion.figshare.httpx.AsyncClient", return_value=_figshare_client(payload)):
+        documents = await FigshareConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_figshare_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.figshare.httpx.AsyncClient", return_value=mock_client):
+        documents = await FigshareConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.post.assert_not_called()
