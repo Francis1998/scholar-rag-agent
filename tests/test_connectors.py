@@ -887,6 +887,53 @@ PUBMED_INLINE_MARKUP_FIXTURE = """<?xml version="1.0"?>
 
 
 @pytest.mark.asyncio
+async def test_pubmed_connector_falls_back_to_medline_date_year() -> None:
+    """A record without ``Year`` must derive its year from ``MedlineDate``.
+
+    Many PubMed records (seasonal issues, date ranges) omit ``PubDate/Year`` and
+    carry only a ``MedlineDate`` such as ``2024 Spring``. Reading only ``Year``
+    previously dropped the year entirely; the leading four characters of
+    ``MedlineDate`` must be used as a fallback.
+    """
+    medline_only_fixture = """<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40099999</PMID>
+      <Article>
+        <Journal>
+          <JournalIssue>
+            <PubDate><MedlineDate>2024 Spring</MedlineDate></PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Seasonal PubDate Only</ArticleTitle>
+        <Abstract><AbstractText>Body.</AbstractText></Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["40099999"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=medline_only_fixture, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("seasonal", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2024"
+
+
+@pytest.mark.asyncio
 async def test_pubmed_connector_preserves_abstract_with_inline_markup() -> None:
     """Inline formatting tags in an AbstractText must not truncate the abstract.
 

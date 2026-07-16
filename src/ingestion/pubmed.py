@@ -126,7 +126,7 @@ class PubMedConnector:
                 article.findtext(".//Article/ArticleTitle") or "Untitled PubMed article"
             ).strip()
             abstract = cls._extract_abstract(article)
-            year = (article.findtext(".//Article/Journal/JournalIssue/PubDate/Year") or "").strip()
+            year = cls._resolve_year(article)
             source = f"{PUBMED_ARTICLE_URL}/{pmid}/" if pmid else title
             documents.append(
                 Document(
@@ -142,6 +142,34 @@ class PubMedConnector:
                 )
             )
         return documents
+
+    @staticmethod
+    def _resolve_year(article: object) -> str:
+        """Resolve the publication year from a PubMed ``PubDate`` element.
+
+        ``Year`` is preferred, but many records (seasonal issues, date ranges)
+        omit it and carry only a ``MedlineDate`` such as ``2024 Spring`` or
+        ``1998 Dec-1999 Jan``. Reading only ``Year`` dropped the year for those
+        records even though it was present; the first four characters of
+        ``MedlineDate`` (the leading year digits) are used as a fallback,
+        mirroring the Europe PMC ``firstPublicationDate`` pattern.
+
+        Args:
+            article: A ``PubmedArticle`` XML element.
+
+        Returns:
+            The 4-digit publication year, or an empty string when unavailable.
+        """
+        findtext = getattr(article, "findtext", None)
+        if findtext is None:
+            return ""
+        year = (findtext(".//Article/Journal/JournalIssue/PubDate/Year") or "").strip()
+        if year:
+            return year
+        medline_date = (
+            findtext(".//Article/Journal/JournalIssue/PubDate/MedlineDate") or ""
+        ).strip()
+        return medline_date[:4]
 
     @staticmethod
     def _extract_abstract(article: object) -> str:
