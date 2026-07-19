@@ -32,7 +32,7 @@ objects.
 | `text` | HTML-stripped `description`, or a `(year)` descriptor when absent |
 | `source` | `url_public_html`, else `https://doi.org/{doi}`, else title |
 | `metadata.doi` | `doi` |
-| `metadata.year` | First four characters of `published_date` |
+| `metadata.year` | First four digits of `published_date` when it matches `^\d{4}` |
 | `metadata.source_type` | `"figshare"` |
 
 ## Example
