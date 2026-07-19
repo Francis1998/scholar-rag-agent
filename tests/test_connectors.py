@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from ingestion.arxiv import ArxivConnector
+from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
@@ -1229,6 +1230,35 @@ async def test_zenodo_connector_rejects_non_positive_max_results() -> None:
     mock_client.get.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_zenodo_connector_rejects_non_digit_publication_date_year() -> None:
+    """A ``publication_date`` that does not start with four digits must not yield a year.
+
+    Zenodo previously took ``publication_date[:4]`` unconditionally, so values
+    such as ``unpublished`` or ``TBA`` leaked garbage into ``metadata['year']``.
+    Only dates matching ``^\\d{4}`` are accepted.
+    """
+    payload: dict[str, object] = {
+        "hits": {
+            "hits": [
+                {
+                    "metadata": {
+                        "title": "Undated Deposit",
+                        "creators": [{"name": "Ada Lovelace"}],
+                        "publication_date": "unpublished",
+                    },
+                }
+            ]
+        }
+    }
+    with patch("ingestion.zenodo.httpx.AsyncClient", return_value=_zenodo_client(payload)):
+        documents = await ZenodoConnector().search("undated", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == ""
+    assert documents[0].text == "By Ada Lovelace"
+
+
 def _figshare_client(payload: object) -> AsyncMock:
     """Build a mocked httpx.AsyncClient returning a fixed Figshare JSON payload.
 
@@ -1314,3 +1344,154 @@ async def test_figshare_connector_rejects_non_positive_max_results() -> None:
 
     assert documents == []
     mock_client.post.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_figshare_connector_rejects_non_digit_published_date_year() -> None:
+    """A ``published_date`` that does not start with four digits must not yield a year.
+
+    Figshare previously took ``published_date[:4]`` unconditionally, so values
+    such as ``unpublished`` or ``TBA`` leaked garbage into ``metadata['year']``.
+    Only dates matching ``^\\d{4}`` are accepted.
+    """
+    payload: list[dict[str, object]] = [
+        {
+            "title": "Undated Figure",
+            "doi": "10.6084/m9.figshare.0",
+            "published_date": "unpublished",
+        }
+    ]
+    with patch("ingestion.figshare.httpx.AsyncClient", return_value=_figshare_client(payload)):
+        documents = await FigshareConnector().search("figure", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == ""
+    assert documents[0].text == ""
+
+
+def _core_client(payload: object) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed CORE JSON payload.
+
+    Args:
+        payload: The decoded JSON body the mocked client should return.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_core_connector_searches_and_normalizes_works() -> None:
+    """CoreConnector normalizes works and prefers the display landing page."""
+    payload: dict[str, object] = {
+        "totalHits": 1,
+        "results": [
+            {
+                "id": 171513974,
+                "title": "Open Retrieval Survey",
+                "abstract": "A survey of  retrieval   agents.",
+                "doi": "10.1007/example.2024",
+                "yearPublished": 2024,
+                "authors": [{"name": "Ada Lovelace"}, {"name": "Alan Turing"}],
+                "downloadUrl": "https://core.ac.uk/download/1.pdf",
+                "links": [
+                    {"type": "download", "url": "https://core.ac.uk/download/1.pdf"},
+                    {"type": "display", "url": "https://core.ac.uk/works/171513974"},
+                ],
+            }
+        ],
+    }
+    with patch("ingestion.core.httpx.AsyncClient", return_value=_core_client(payload)):
+        documents = await CoreConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Retrieval Survey"
+    assert document.text == "A survey of retrieval agents."
+    assert document.source == "https://core.ac.uk/works/171513974"
+    assert document.metadata["source_type"] == "core"
+    assert document.metadata["doi"] == "10.1007/example.2024"
+    assert document.metadata["year"] == "2024"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+
+@pytest.mark.asyncio
+async def test_core_connector_builds_descriptor_and_doi_source_without_abstract() -> None:
+    """A work without an abstract falls back to a descriptor and DOI source."""
+    payload: dict[str, object] = {
+        "results": [
+            {
+                "title": "Dataset Only",
+                "doi": "10.5281/core.999",
+                "yearPublished": 2020,
+                "authors": [{"name": "Grace Hopper"}],
+            }
+        ]
+    }
+    with patch("ingestion.core.httpx.AsyncClient", return_value=_core_client(payload)):
+        documents = await CoreConnector().search("dataset", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "By Grace Hopper (2020)"
+    assert document.source == "https://doi.org/10.5281/core.999"
+    assert document.metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_core_connector_skips_works_without_title() -> None:
+    """A work carrying no title is skipped, not crashed on."""
+    payload: dict[str, object] = {"results": [{"abstract": "No title here.", "doi": "10.0/x"}]}
+    with patch("ingestion.core.httpx.AsyncClient", return_value=_core_client(payload)):
+        documents = await CoreConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_core_connector_rejects_blank_query() -> None:
+    """A blank query yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.core.httpx.AsyncClient", return_value=mock_client):
+        documents = await CoreConnector().search("   ", max_results=5)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_core_connector_rejects_non_positive_max_results() -> None:
+    """A non-positive max_results yields no documents and issues no request."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.core.httpx.AsyncClient", return_value=mock_client):
+        documents = await CoreConnector().search("anything", max_results=0)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_core_connector_sends_bearer_api_key_when_configured() -> None:
+    """An optional API key is forwarded as a Bearer Authorization header."""
+    payload: dict[str, object] = {
+        "results": [{"title": "Keyed Work", "yearPublished": 2021, "abstract": "text"}]
+    }
+    mock_client = _core_client(payload)
+    with patch("ingestion.core.httpx.AsyncClient", return_value=mock_client):
+        documents = await CoreConnector(api_key="secret-core-key").search("keyed", max_results=1)
+
+    assert len(documents) == 1
+    headers = mock_client.get.call_args.kwargs["headers"]
+    assert headers == {"Authorization": "Bearer secret-core-key"}

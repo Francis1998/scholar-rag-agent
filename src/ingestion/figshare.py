@@ -27,6 +27,7 @@ from retrieval.models import Document
 FIGSHARE_SEARCH_URL = "https://api.figshare.com/v2/articles/search"
 _PAGE_SIZE_CAP = 100
 _HTML_TAG_PATTERN = re.compile(r"<[^>]+>")
+_YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
 
 
 class FigshareConnector:
@@ -97,7 +98,7 @@ class FigshareConnector:
         if not title:
             return None
         doi = cls._as_str(article.get("doi")).strip()
-        year = cls._as_str(article.get("published_date")).strip()[:4]
+        year = cls._extract_year(article.get("published_date"))
         abstract = cls._strip_html(article.get("description"))
         source = cls._resolve_source(article, doi, title)
         text = abstract if abstract else cls._build_descriptor(year)
@@ -112,6 +113,27 @@ class FigshareConnector:
                 "year": year,
             },
         )
+
+    @staticmethod
+    def _extract_year(published_date: object) -> str:
+        """Extract a four-digit year from a Figshare ``published_date``.
+
+        Figshare dates are usually ISO timestamps such as
+        ``2025-03-15T12:00:00Z``, but some records carry free-text placeholders
+        (``unpublished``, ``TBA``). Taking ``[:4]`` unconditionally leaked those
+        placeholders into ``metadata['year']``. Only values matching
+        ``^\\d{4}`` are accepted.
+
+        Args:
+            published_date: The raw ``published_date`` field.
+
+        Returns:
+            The four-digit year string, or an empty string when absent/invalid.
+        """
+        if not isinstance(published_date, str):
+            return ""
+        match = _YEAR_PREFIX_PATTERN.match(published_date.strip())
+        return match.group(1) if match else ""
 
     @classmethod
     def _resolve_source(cls, article: dict[str, object], doi: str, title: str) -> str:

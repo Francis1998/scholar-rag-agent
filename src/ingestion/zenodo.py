@@ -29,6 +29,7 @@ from retrieval.models import Document
 ZENODO_BASE_URL = "https://zenodo.org/api/records"
 _ANONYMOUS_PAGE_SIZE_CAP = 25
 _HTML_TAG_PATTERN = re.compile(r"<[^>]+>")
+_YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
 
 
 class ZenodoConnector:
@@ -112,7 +113,7 @@ class ZenodoConnector:
             return None
         authors = cls._extract_authors(metadata.get("creators"))
         abstract = cls._strip_html(metadata.get("description"))
-        year = cls._as_str(metadata.get("publication_date")).strip()[:4]
+        year = cls._extract_year(metadata.get("publication_date"))
         doi = cls._extract_doi(record, metadata)
         source = cls._resolve_source(record, doi, title)
         text = abstract if abstract else cls._build_descriptor(authors, year)
@@ -128,6 +129,26 @@ class ZenodoConnector:
                 "authors": ", ".join(authors),
             },
         )
+
+    @staticmethod
+    def _extract_year(publication_date: object) -> str:
+        """Extract a four-digit year from a Zenodo ``publication_date``.
+
+        Zenodo dates are usually ISO calendar dates such as ``2025-02-10``, but
+        some records carry free-text placeholders (``unpublished``, ``TBA``).
+        Taking ``[:4]`` unconditionally leaked those placeholders into
+        ``metadata['year']``. Only values matching ``^\\d{4}`` are accepted.
+
+        Args:
+            publication_date: The raw ``publication_date`` field.
+
+        Returns:
+            The four-digit year string, or an empty string when absent/invalid.
+        """
+        if not isinstance(publication_date, str):
+            return ""
+        match = _YEAR_PREFIX_PATTERN.match(publication_date.strip())
+        return match.group(1) if match else ""
 
     @staticmethod
     def _extract_authors(creators: object) -> list[str]:
