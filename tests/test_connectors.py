@@ -10,6 +10,7 @@ from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
+from ingestion.datacite import DataCiteConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.europepmc import EuropePmcConnector
@@ -1709,5 +1710,132 @@ async def test_biorxiv_connector_rejects_unsupported_server() -> None:
         pytest.raises(ValueError, match="Unsupported bioRxiv server"),
     ):
         await BioRxivConnector().search("crispr", server="arxiv")
+
+    mock_client.get.assert_not_called()
+
+def _datacite_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed DataCite JSON payload.
+
+    Args:
+        payload: Decoded DataCite search response body.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_datacite_connector_searches_and_normalizes_dois() -> None:
+    """DataCiteConnector normalizes JSON:API DOI resources into documents."""
+    payload: dict[str, object] = {
+        "data": [
+            {
+                "id": "10.5281/zenodo.123",
+                "type": "dois",
+                "attributes": {
+                    "doi": "10.5281/zenodo.123",
+                    "titles": [{"title": "Climate Dataset"}],
+                    "creators": [{"name": "Ada, A."}, {"givenName": "Bob", "familyName": "Bohr"}],
+                    "descriptions": [
+                        {
+                            "description": "  A curated  climate dataset.  ",
+                            "descriptionType": "Abstract",
+                        }
+                    ],
+                    "publicationYear": 2024,
+                    "publisher": {"name": "Zenodo"},
+                    "url": "https://zenodo.org/records/123",
+                    "types": {"resourceTypeGeneral": "Dataset"},
+                },
+            },
+            {
+                "id": "10.1234/soft.1",
+                "attributes": {
+                    "doi": "10.1234/soft.1",
+                    "titles": [{"title": "Analysis Toolkit"}],
+                    "creators": [{"name": "Chen, C."}],
+                    "descriptions": [],
+                    "publicationYear": 2023,
+                    "publisher": "Example Press",
+                    "types": {"resourceTypeGeneral": "Software"},
+                },
+            },
+        ]
+    }
+    mock_client = _datacite_client(payload)
+    with patch("ingestion.datacite.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteConnector().search("climate", max_results=5)
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Climate Dataset"
+    assert first.text == "A curated climate dataset."
+    assert first.source == "https://zenodo.org/records/123"
+    assert first.metadata["source_type"] == "datacite"
+    assert first.metadata["doi"] == "10.5281/zenodo.123"
+    assert first.metadata["year"] == "2024"
+    assert first.metadata["authors"] == "Ada, A., Bob Bohr"
+    assert first.metadata["publisher"] == "Zenodo"
+    assert first.metadata["resource_type"] == "Dataset"
+    assert documents[1].source == "https://doi.org/10.1234/soft.1"
+    assert "By Chen, C." in documents[1].text
+    assert "via Example Press" in documents[1].text
+    params = mock_client.get.call_args.kwargs["params"]
+    assert params["query"] == "climate"
+    assert params["page[size]"] == 5
+
+
+@pytest.mark.asyncio
+async def test_datacite_connector_prefers_abstract_description() -> None:
+    """Abstract descriptionType is preferred over other descriptions."""
+    payload: dict[str, object] = {
+        "data": [
+            {
+                "attributes": {
+                    "doi": "10.1/x",
+                    "titles": [{"title": "T"}],
+                    "descriptions": [
+                        {"description": "Other notes", "descriptionType": "Other"},
+                        {"description": "The abstract", "descriptionType": "Abstract"},
+                    ],
+                    "publicationYear": 2022,
+                }
+            }
+        ]
+    }
+    with patch("ingestion.datacite.httpx.AsyncClient", return_value=_datacite_client(payload)):
+        documents = await DataCiteConnector().search("t", max_results=1)
+
+    assert documents[0].text == "The abstract"
+
+
+@pytest.mark.asyncio
+async def test_datacite_connector_skips_records_without_title() -> None:
+    """DOI records without a usable title are skipped."""
+    payload: dict[str, object] = {
+        "data": [{"attributes": {"doi": "10.1/y", "titles": [], "publicationYear": 2020}}]
+    }
+    with patch("ingestion.datacite.httpx.AsyncClient", return_value=_datacite_client(payload)):
+        documents = await DataCiteConnector().search("empty", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_datacite_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.datacite.httpx.AsyncClient", return_value=mock_client):
+        assert await DataCiteConnector().search("   ", max_results=5) == []
+        assert await DataCiteConnector().search("q", max_results=0) == []
 
     mock_client.get.assert_not_called()
