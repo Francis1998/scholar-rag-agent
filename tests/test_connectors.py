@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from ingestion.arxiv import ArxivConnector
+from ingestion.biorxiv import BioRxivConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.dblp import DblpConnector
@@ -765,6 +766,85 @@ async def test_semantic_scholar_connector_parses_paper_payload() -> None:
 
 
 @pytest.mark.asyncio
+async def test_semantic_scholar_missing_year_uses_publication_date_not_none_string() -> None:
+    """A null ``year`` must not become the literal ``\"None\"``; prefer ``publicationDate``.
+
+    Semantic Scholar often returns ``year: null`` while still carrying
+    ``publicationDate`` (e.g. ``2023-05-01``). A naive ``str(year)`` coercion
+    leaked ``\"None\"`` into ``metadata['year']``, and ignoring
+    ``publicationDate`` dropped a usable year. The year must be the four-digit
+    prefix of ``publicationDate`` (never the string ``\"None\"``).
+    """
+    response = httpx.Response(
+        200,
+        json={
+            "title": "Undated Draft",
+            "abstract": "Abstract text.",
+            "year": None,
+            "publicationDate": "2023-05-01",
+            "url": "https://example.org/paper/undated",
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.semantic_scholar.httpx.AsyncClient", return_value=mock_client):
+        document = await SemanticScholarConnector().fetch_paper("undated")
+
+    assert document.metadata["year"] == "2023"
+    assert document.metadata["year"] != "None"
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_connector_searches_and_normalizes_papers() -> None:
+    """SemanticScholarConnector.search normalizes paper/search hits into documents."""
+    response = httpx.Response(
+        200,
+        json={
+            "data": [
+                {
+                    "paperId": "abc",
+                    "title": "Retrieval Paper",
+                    "abstract": "About retrieval.",
+                    "year": 2022,
+                    "url": "https://example.org/paper/abc",
+                }
+            ]
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.semantic_scholar.httpx.AsyncClient", return_value=mock_client):
+        documents = await SemanticScholarConnector().search("retrieval", max_results=3)
+
+    assert len(documents) == 1
+    assert documents[0].title == "Retrieval Paper"
+    assert documents[0].metadata["year"] == "2022"
+    assert documents[0].metadata["source_type"] == "semantic_scholar"
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_search_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.semantic_scholar.httpx.AsyncClient", return_value=mock_client):
+        assert await SemanticScholarConnector().search("   ", max_results=5) == []
+        assert await SemanticScholarConnector().search("q", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_openalex_connector_reconstructs_inverted_abstract() -> None:
     """OpenAlexConnector rebuilds the abstract from its inverted index."""
     response = httpx.Response(
@@ -1495,3 +1575,139 @@ async def test_core_connector_sends_bearer_api_key_when_configured() -> None:
     assert len(documents) == 1
     headers = mock_client.get.call_args.kwargs["headers"]
     assert headers == {"Authorization": "Bearer secret-core-key"}
+
+
+def _biorxiv_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock that returns a bioRxiv details payload."""
+    response = httpx.Response(
+        200,
+        json=payload,
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_searches_and_normalizes_preprints() -> None:
+    """BioRxivConnector filters recent posts and normalizes matching preprints."""
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": "CRISPR base editing in neurons",
+                "authors": "Doe, J.; Smith, A.",
+                "doi": "10.1101/2024.01.01.123456",
+                "date": "2024-01-02",
+                "category": "neuroscience",
+                "abstract": "A CRISPR study of neuronal base editing.",
+                "server": "biorxiv",
+            },
+            {
+                "title": "Unrelated plant metabolomics",
+                "authors": "Lee, B.",
+                "doi": "10.1101/2024.01.01.999999",
+                "date": "2024-01-03",
+                "category": "plant biology",
+                "abstract": "Metabolite profiling in Arabidopsis.",
+                "server": "biorxiv",
+            },
+        ]
+    }
+    mock_client = _biorxiv_client(payload)
+    with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivConnector().search("CRISPR neurons", max_results=5)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "CRISPR base editing in neurons"
+    assert document.metadata["source_type"] == "biorxiv"
+    assert document.metadata["doi"] == "10.1101/2024.01.01.123456"
+    assert document.metadata["year"] == "2024"
+    assert document.source == "https://www.biorxiv.org/content/10.1101/2024.01.01.123456"
+    assert "CRISPR" in document.text
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_supports_medrxiv_server() -> None:
+    """The connector can target the medRxiv server."""
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": "COVID vaccine effectiveness cohort",
+                "authors": "Ng, C.",
+                "doi": "10.1101/2021.03.01.212527",
+                "date": "2021-03-02",
+                "category": "epidemiology",
+                "abstract": "A COVID vaccine effectiveness study.",
+                "server": "medrxiv",
+            }
+        ]
+    }
+    with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=_biorxiv_client(payload)):
+        documents = await BioRxivConnector().search(
+            "COVID vaccine", max_results=3, server="medrxiv"
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["source_type"] == "medrxiv"
+    assert documents[0].source.startswith("https://www.medrxiv.org/content/")
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_resolves_doi_queries() -> None:
+    """A DOI-shaped query uses the DOI detail endpoint and skips text filtering."""
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": "Exact DOI Hit",
+                "authors": "Ada, L.",
+                "doi": "10.1101/2020.01.01.000001",
+                "date": "2020-01-02",
+                "category": "bioinformatics",
+                "abstract": "",
+                "server": "biorxiv",
+            }
+        ]
+    }
+    mock_client = _biorxiv_client(payload)
+    with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivConnector().search("10.1101/2020.01.01.000001", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2020"
+    assert "By Ada, L." in documents[0].text
+    assert "10.1101/2020.01.01.000001" in mock_client.get.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+        assert await BioRxivConnector().search("   ", max_results=5) == []
+        assert await BioRxivConnector().search("crispr", max_results=0) == []
+        assert await BioRxivConnector().search("crispr", max_results=-1) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_rejects_unsupported_server() -> None:
+    """An unsupported server name raises ValueError before any HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with (
+        patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client),
+        pytest.raises(ValueError, match="Unsupported bioRxiv server"),
+    ):
+        await BioRxivConnector().search("crispr", server="arxiv")
+
+    mock_client.get.assert_not_called()
