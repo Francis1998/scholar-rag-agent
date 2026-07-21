@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.core import CoreConnector
@@ -1711,3 +1712,152 @@ async def test_biorxiv_connector_rejects_unsupported_server() -> None:
         await BioRxivConnector().search("crispr", server="arxiv")
 
     mock_client.get.assert_not_called()
+
+
+def _ads_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed NASA ADS JSON payload.
+
+    Args:
+        payload: Decoded ADS search response body.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_searches_and_normalizes_records() -> None:
+    """AdsConnector normalizes ADS ``response.docs`` into documents."""
+    payload: dict[str, object] = {
+        "response": {
+            "docs": [
+                {
+                    "bibcode": "2024ApJ...900...1A",
+                    "title": ["Exoplanet Transit Spectroscopy"],
+                    "abstract": "  We measure atmospheric  features.  ",
+                    "author": ["Ada, A.", "Bohr, B."],
+                    "year": "2024",
+                    "doi": ["10.3847/example"],
+                    "pub": "ApJ",
+                },
+                {
+                    "bibcode": "2023MNRAS.500.10B",
+                    "title": ["Galaxy Formation"],
+                    "abstract": "",
+                    "author": ["Chen, C."],
+                    "year": "2023",
+                    "doi": [],
+                    "pub": "MNRAS",
+                },
+            ]
+        }
+    }
+    mock_client = _ads_client(payload)
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=mock_client):
+        documents = await AdsConnector(api_key="ads-token").search("exoplanet", max_results=5)
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Exoplanet Transit Spectroscopy"
+    assert first.text == "We measure atmospheric features."
+    assert first.source == "https://ui.adsabs.harvard.edu/abs/2024ApJ...900...1A"
+    assert first.metadata["source_type"] == "ads"
+    assert first.metadata["doi"] == "10.3847/example"
+    assert first.metadata["year"] == "2024"
+    assert first.metadata["authors"] == "Ada, A., Bohr, B."
+    assert first.metadata["bibcode"] == "2024ApJ...900...1A"
+    assert "By Chen, C." in documents[1].text
+    assert "(2023)" in documents[1].text
+    params = mock_client.get.call_args.kwargs["params"]
+    assert params["q"] == "exoplanet"
+    assert params["rows"] == 5
+    assert "bibcode" in params["fl"]
+    assert mock_client.get.call_args.kwargs["headers"] == {"Authorization": "Bearer ads-token"}
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_builds_doi_source_without_bibcode() -> None:
+    """When bibcode is absent the DOI link is used as the source."""
+    payload: dict[str, object] = {
+        "response": {
+            "docs": [
+                {
+                    "title": ["Untitled Bibcode"],
+                    "abstract": "text",
+                    "doi": ["10.1000/ads.1"],
+                    "year": "2021",
+                }
+            ]
+        }
+    }
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=_ads_client(payload)):
+        documents = await AdsConnector(api_key="ads-token").search("doi", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].source == "https://doi.org/10.1000/ads.1"
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_skips_records_without_title() -> None:
+    """ADS hits without a usable title are skipped."""
+    payload: dict[str, object] = {
+        "response": {"docs": [{"bibcode": "2020ApJ", "title": [], "abstract": "x"}]}
+    }
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=_ads_client(payload)):
+        documents = await AdsConnector(api_key="ads-token").search("empty", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=mock_client):
+        assert await AdsConnector(api_key="ads-token").search("   ", max_results=5) == []
+        assert await AdsConnector(api_key="ads-token").search("q", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_returns_empty_without_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing ADS token is handled gracefully with no HTTP call."""
+    monkeypatch.delenv("ADS_API_TOKEN", raising=False)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=mock_client):
+        documents = await AdsConnector().search("stars", max_results=5)
+
+    assert documents == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ads_connector_reads_token_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``ADS_API_TOKEN`` from the environment is used when no key is passed."""
+    monkeypatch.setenv("ADS_API_TOKEN", "env-ads-token")
+    payload: dict[str, object] = {
+        "response": {"docs": [{"title": ["From Env"], "year": "2020", "abstract": "a"}]}
+    }
+    mock_client = _ads_client(payload)
+    with patch("ingestion.ads.httpx.AsyncClient", return_value=mock_client):
+        documents = await AdsConnector().search("env", max_results=1)
+
+    assert len(documents) == 1
+    assert mock_client.get.call_args.kwargs["headers"] == {"Authorization": "Bearer env-ads-token"}
