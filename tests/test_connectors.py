@@ -19,6 +19,7 @@ from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
+from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
@@ -1988,5 +1989,128 @@ async def test_datacite_connector_rejects_blank_and_non_positive() -> None:
     with patch("ingestion.datacite.httpx.AsyncClient", return_value=mock_client):
         assert await DataCiteConnector().search("   ", max_results=5) == []
         assert await DataCiteConnector().search("q", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+def _osf_client(payloads: list[object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OSF JSON:API payloads."""
+    responses = [
+        httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+        for payload in payloads
+    ]
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = responses
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_osf_connector_searches_preprints_and_registrations() -> None:
+    """OsfConnector queries both OSF endpoints and normalizes JSON:API records."""
+    preprints_payload: dict[str, object] = {
+        "data": [
+            {
+                "id": "pre123",
+                "attributes": {
+                    "title": "Open Science Preprint",
+                    "description": "  OSF stores transparent   preprint workflows. ",
+                    "date_published": "2025-04-12T10:00:00Z",
+                    "category": "psychology",
+                },
+                "links": {
+                    "html": "https://osf.io/preprints/psyarxiv/pre123",
+                    "preprint_doi": "https://doi.org/10.31234/osf.io/pre123",
+                },
+                "embeds": {
+                    "contributors": {
+                        "data": [
+                            {
+                                "embeds": {
+                                    "users": {
+                                        "data": {"attributes": {"full_name": "Ada Lovelace"}}
+                                    }
+                                }
+                            },
+                            {"attributes": {"bibliographic": "Alan Turing"}},
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+    registrations_payload: dict[str, object] = {
+        "data": [
+            {
+                "id": "reg456",
+                "attributes": {
+                    "title": "Registered Replication Protocol",
+                    "description": "",
+                    "date_registered": "2024-01-20T12:00:00Z",
+                    "category": "project",
+                    "doi": "10.17605/OSF.IO/REG456",
+                },
+                "links": {"html": "https://osf.io/reg456/"},
+            }
+        ]
+    }
+    mock_client = _osf_client([preprints_payload, registrations_payload])
+
+    with patch("ingestion.osf.httpx.AsyncClient", return_value=mock_client):
+        documents = await OsfConnector().search("open science", max_results=5)
+
+    assert len(documents) == 2
+    preprint = documents[0]
+    assert preprint.title == "Open Science Preprint"
+    assert preprint.text == "OSF stores transparent preprint workflows."
+    assert preprint.source == "https://osf.io/preprints/psyarxiv/pre123"
+    assert preprint.metadata["source_type"] == "osf"
+    assert preprint.metadata["resource_type"] == "preprint"
+    assert preprint.metadata["doi"] == "10.31234/osf.io/pre123"
+    assert preprint.metadata["year"] == "2025"
+    assert preprint.metadata["authors"] == "Ada Lovelace, Alan Turing"
+
+    registration = documents[1]
+    assert registration.metadata["resource_type"] == "registration"
+    assert registration.metadata["doi"] == "10.17605/OSF.IO/REG456"
+    assert registration.metadata["year"] == "2024"
+    assert registration.text == "in project (2024)"
+
+    first_call = mock_client.get.call_args_list[0]
+    assert first_call.args[0] == "https://api.osf.io/v2/preprints/"
+    assert first_call.kwargs["params"]["filter[search]"] == "open science"
+    assert first_call.kwargs["params"]["page[size]"] == 5
+    assert mock_client.get.call_args_list[1].args[0] == "https://api.osf.io/v2/registrations/"
+
+
+@pytest.mark.asyncio
+async def test_osf_connector_returns_empty_when_api_unavailable() -> None:
+    """OSF network failures are handled gracefully with no exception."""
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = httpx.ConnectError(
+        "OSF API unavailable",
+        request=httpx.Request("GET", "https://api.osf.io/v2/preprints/"),
+    )
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.osf.httpx.AsyncClient", return_value=mock_client):
+        documents = await OsfConnector().search("open science", max_results=3)
+
+    assert documents == []
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_osf_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.osf.httpx.AsyncClient", return_value=mock_client):
+        assert await OsfConnector().search("   ", max_results=5) == []
+        assert await OsfConnector().search("open science", max_results=0) == []
 
     mock_client.get.assert_not_called()
