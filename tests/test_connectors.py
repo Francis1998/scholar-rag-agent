@@ -20,6 +20,7 @@ from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.opencitations import OpenCitationsConnector
+from ingestion.orcid import OrcidConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
@@ -1528,6 +1529,26 @@ async def test_core_connector_builds_descriptor_and_doi_source_without_abstract(
 
 
 @pytest.mark.asyncio
+async def test_core_connector_extracts_year_from_date_string() -> None:
+    """Date-shaped ``yearPublished`` strings should still yield the publication year."""
+    payload: dict[str, object] = {
+        "results": [
+            {
+                "title": "Date-Shaped CORE Work",
+                "yearPublished": "2021-07-01",
+                "authors": [{"name": "Ada Lovelace"}],
+            }
+        ]
+    }
+    with patch("ingestion.core.httpx.AsyncClient", return_value=_core_client(payload)):
+        documents = await CoreConnector().search("date-shaped", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2021"
+    assert documents[0].text == "By Ada Lovelace (2021)"
+
+
+@pytest.mark.asyncio
 async def test_core_connector_skips_works_without_title() -> None:
     """A work carrying no title is skipped, not crashed on."""
     payload: dict[str, object] = {"results": [{"abstract": "No title here.", "doi": "10.0/x"}]}
@@ -1578,6 +1599,170 @@ async def test_core_connector_sends_bearer_api_key_when_configured() -> None:
     assert len(documents) == 1
     headers = mock_client.get.call_args.kwargs["headers"]
     assert headers == {"Authorization": "Bearer secret-core-key"}
+
+
+def _orcid_client(*payloads: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning fixed ORCID JSON payloads."""
+    responses = [
+        httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+        for payload in payloads
+    ]
+    mock_client = AsyncMock()
+    if len(responses) == 1:
+        mock_client.get.return_value = responses[0]
+    else:
+        mock_client.get.side_effect = responses
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _orcid_works_payload() -> dict[str, object]:
+    """Return a representative ORCID works payload."""
+    return {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "put-code": 12345,
+                        "title": {"title": {"value": "Retrieval-Augmented Scholarship"}},
+                        "type": "journal-article",
+                        "publication-date": {"year": {"value": "2024"}},
+                        "journal-title": {"value": "Journal of Scholarly AI"},
+                        "url": {"value": "https://example.org/orcid-work"},
+                        "external-ids": {
+                            "external-id": [
+                                {
+                                    "external-id-type": "doi",
+                                    "external-id-value": "https://doi.org/10.5555/orcid.rag",
+                                    "external-id-url": {
+                                        "value": "https://doi.org/10.5555/orcid.rag"
+                                    },
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        "put-code": 999,
+                        "title": {"title": {"value": "Unrelated Plant Metabolomics"}},
+                        "type": "dataset",
+                        "publication-date": {"year": {"value": "2022"}},
+                    },
+                ]
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_searches_profiles_and_filters_works() -> None:
+    """Keyword search finds ORCID profiles, fetches works, and filters by work metadata."""
+    search_payload: dict[str, object] = {
+        "expanded-result": [
+            {
+                "orcid-id": "0000-0002-1825-0097",
+                "given-names": "Ada",
+                "family-names": "Lovelace",
+            }
+        ]
+    }
+    mock_client = _orcid_client(search_payload, _orcid_works_payload())
+
+    with patch("ingestion.orcid.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidConnector().search("retrieval scholarship", max_results=5)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Retrieval-Augmented Scholarship"
+    assert document.text == (
+        "Retrieval-Augmented Scholarship By Ada Lovelace in Journal of Scholarly AI "
+        "type: journal-article DOI 10.5555/orcid.rag (2024)"
+    )
+    assert document.source == "https://example.org/orcid-work"
+    assert document.metadata["source_type"] == "orcid"
+    assert document.metadata["orcid"] == "0000-0002-1825-0097"
+    assert document.metadata["doi"] == "10.5555/orcid.rag"
+    assert document.metadata["year"] == "2024"
+    assert document.metadata["authors"] == "Ada Lovelace"
+
+    search_call = mock_client.get.call_args_list[0]
+    assert search_call.args[0].endswith("/expanded-search/")
+    assert search_call.kwargs["params"] == {"q": "retrieval scholarship", "rows": 5}
+    assert mock_client.get.call_args_list[1].args[0].endswith("/0000-0002-1825-0097/works")
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_resolves_orcid_id_queries_directly() -> None:
+    """A bare or URL ORCID iD bypasses profile search and returns works directly."""
+    mock_client = _orcid_client(_orcid_works_payload())
+
+    with patch("ingestion.orcid.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidConnector().search(
+            "https://orcid.org/0000-0002-1825-0097",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["orcid"] == "0000-0002-1825-0097"
+    assert documents[0].metadata["authors"] == "0000-0002-1825-0097"
+    assert mock_client.get.await_count == 1
+    assert mock_client.get.call_args.args[0].endswith("/0000-0002-1825-0097/works")
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_builds_doi_source_without_work_url() -> None:
+    """When an ORCID work lacks a URL, the DOI link is used as source."""
+    payload: dict[str, object] = {
+        "group": [
+            {
+                "work-summary": {
+                    "put-code": 7,
+                    "title": {"title": {"value": "DOI-Only ORCID Work"}},
+                    "publication-date": {"year": {"value": 2020}},
+                    "external-ids": {
+                        "external-id": {
+                            "external-id-type": "doi",
+                            "external-id-value": "10.1000/orcid-only",
+                        }
+                    },
+                }
+            }
+        ]
+    }
+    mock_client = _orcid_client(payload)
+
+    with patch("ingestion.orcid.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidConnector().search("0000-0002-1825-0097", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].source == "https://doi.org/10.1000/orcid-only"
+    assert documents[0].metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.orcid.httpx.AsyncClient", return_value=mock_client):
+        assert await OrcidConnector().search("   ", max_results=5) == []
+        assert await OrcidConnector().search("retrieval", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_orcid_connector_skips_works_without_title() -> None:
+    """ORCID work summaries without a title are skipped rather than surfaced empty."""
+    payload: dict[str, object] = {"group": [{"work-summary": [{"put-code": 1, "type": "other"}]}]}
+    mock_client = _orcid_client(payload)
+
+    with patch("ingestion.orcid.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidConnector().search("0000-0002-1825-0097", max_results=5)
+
+    assert documents == []
 
 
 def _biorxiv_client(payload: dict[str, object]) -> AsyncMock:
