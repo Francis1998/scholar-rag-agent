@@ -19,6 +19,7 @@ from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
+from ingestion.opencitations import OpenCitationsConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
@@ -1990,3 +1991,203 @@ async def test_datacite_connector_rejects_blank_and_non_positive() -> None:
         assert await DataCiteConnector().search("q", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_datacite_connector_accepts_float_like_publication_year() -> None:
+    """Float-like publication years from DataCite must normalize to four digits.
+
+    Some JSON serializers and upstream transformations represent
+    ``publicationYear`` as ``2024.0`` or ``"2024.0"``. The old digit-only parser
+    dropped those usable years entirely; integer-valued floats should preserve
+    the publication year.
+    """
+    payload: dict[str, object] = {
+        "data": [
+            {
+                "attributes": {
+                    "doi": "10.1/float",
+                    "titles": [{"title": "Float Year Dataset"}],
+                    "publicationYear": 2024.0,
+                }
+            },
+            {
+                "attributes": {
+                    "doi": "10.1/float-string",
+                    "titles": [{"title": "Float String Year Dataset"}],
+                    "publicationYear": "2023.0",
+                }
+            },
+        ]
+    }
+    with patch("ingestion.datacite.httpx.AsyncClient", return_value=_datacite_client(payload)):
+        documents = await DataCiteConnector().search("float years", max_results=2)
+
+    assert [document.metadata["year"] for document in documents] == ["2024", "2023"]
+
+
+def _opencitations_client(responses: list[httpx.Response]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OpenCitations responses.
+
+    Args:
+        responses: Responses yielded by successive GET calls.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = responses
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_opencitations_connector_fetches_doi_metadata_and_counts() -> None:
+    """OpenCitationsConnector normalizes Meta metadata and Index counts."""
+    metadata_response = httpx.Response(
+        200,
+        json=[
+            {
+                "id": (
+                    "doi:10.1038/227680a0 openalex:W2100837269 pmid:5432063 omid:br/06190356582"
+                ),
+                "title": (
+                    "Cleavage Of Structural Proteins During The Assembly Of The Head "
+                    "Of Bacteriophage T4"
+                ),
+                "author": "Laemmli, U. K. [omid:ra/061901010373]",
+                "pub_date": "1970-08",
+                "venue": ("Nature [issn:0028-0836 issn:1465-7392 omid:br/0626016512]"),
+                "type": "journal article",
+            }
+        ],
+        request=httpx.Request("GET", "http://test"),
+    )
+    citation_count_response = httpx.Response(
+        200,
+        json=[{"count": "19000"}],
+        request=httpx.Request("GET", "http://test"),
+    )
+    reference_count_response = httpx.Response(
+        200,
+        json=[{"count": 19}],
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _opencitations_client(
+        [metadata_response, citation_count_response, reference_count_response]
+    )
+
+    with patch("ingestion.opencitations.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenCitationsConnector().search(
+            "https://doi.org/10.1038/227680a0",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title.startswith("Cleavage Of Structural Proteins")
+    assert document.text == "By Laemmli, U. K. in Nature [journal article] (1970)"
+    assert document.source == "https://doi.org/10.1038/227680a0"
+    assert document.metadata["source_type"] == "opencitations"
+    assert document.metadata["doi"] == "10.1038/227680a0"
+    assert document.metadata["year"] == "1970"
+    assert document.metadata["authors"] == "Laemmli, U. K."
+    assert document.metadata["venue"] == "Nature"
+    assert document.metadata["type"] == "journal article"
+    assert document.metadata["citation_count"] == "19000"
+    assert document.metadata["reference_count"] == "19"
+
+    metadata_call = mock_client.get.await_args_list[0]
+    assert metadata_call.args[0].endswith("/doi:10.1038/227680a0")
+    assert (
+        mock_client.get.await_args_list[1].args[0].endswith("/citation-count/doi:10.1038/227680a0")
+    )
+    assert (
+        mock_client.get.await_args_list[2].args[0].endswith("/reference-count/doi:10.1038/227680a0")
+    )
+
+
+@pytest.mark.asyncio
+async def test_opencitations_connector_extracts_unique_doi_list_and_token_header() -> None:
+    """Free text may contain a DOI list; duplicate DOIs are fetched once."""
+    metadata_response = httpx.Response(
+        200,
+        json=[],
+        request=httpx.Request("GET", "http://test"),
+    )
+    citation_count_response = httpx.Response(
+        200,
+        json=[],
+        request=httpx.Request("GET", "http://test"),
+    )
+    reference_count_response = httpx.Response(
+        200,
+        json=[],
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _opencitations_client(
+        [metadata_response, citation_count_response, reference_count_response]
+    )
+
+    with patch("ingestion.opencitations.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenCitationsConnector(access_token="oc-token").search(  # noqa: S106
+            "Compare DOI:10.1234/Alpha and https://doi.org/10.1234/alpha.",
+            max_results=5,
+        )
+
+    assert documents == []
+    assert mock_client.get.await_count == 3
+    assert mock_client.get.await_args_list[0].args[0].endswith("/doi:10.1234/Alpha")
+    assert mock_client.get.await_args_list[0].kwargs["headers"] == {"authorization": "oc-token"}
+
+
+@pytest.mark.asyncio
+async def test_opencitations_connector_rejects_blank_non_positive_and_non_doi() -> None:
+    """Blank, non-positive, and non-DOI queries short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.opencitations.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenCitationsConnector().search("   ", max_results=5) == []
+        assert await OpenCitationsConnector().search("10.1000/example", max_results=0) == []
+        assert await OpenCitationsConnector().search("graph retrieval", max_results=5) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_opencitations_connector_keeps_metadata_when_count_fails() -> None:
+    """Slow or failing Index counts must not drop usable Meta metadata."""
+    metadata_response = httpx.Response(
+        200,
+        json=[
+            {
+                "id": "doi:10.5555/fail-count omid:br/1",
+                "title": "Metadata Without Counts",
+                "pub_date": "2022",
+            }
+        ],
+        request=httpx.Request("GET", "http://test"),
+    )
+    failing_count_response = httpx.Response(
+        503,
+        json={"message": "temporarily unavailable"},
+        request=httpx.Request("GET", "http://test"),
+    )
+    reference_count_response = httpx.Response(
+        200,
+        json=[{"count": "3"}],
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _opencitations_client(
+        [metadata_response, failing_count_response, reference_count_response]
+    )
+
+    with patch("ingestion.opencitations.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenCitationsConnector().search("10.5555/fail-count", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["citation_count"] == ""
+    assert documents[0].metadata["reference_count"] == "3"
