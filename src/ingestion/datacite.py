@@ -17,6 +17,8 @@ unauthenticated.
 
 from __future__ import annotations
 
+import re
+
 import httpx
 
 from ingestion.chunking import stable_id
@@ -24,6 +26,7 @@ from retrieval.models import Document
 
 DATACITE_SEARCH_URL = "https://api.datacite.org/dois"
 _PAGE_SIZE_CAP = 100
+_FLOAT_YEAR_PATTERN = re.compile(r"^(\d{4})\.0+$")
 
 
 class DataCiteConnector:
@@ -215,8 +218,15 @@ class DataCiteConnector:
         """
         if isinstance(publication_year, int) and not isinstance(publication_year, bool):
             return str(publication_year)
-        if isinstance(publication_year, str) and publication_year.strip().isdigit():
-            return publication_year.strip()
+        if isinstance(publication_year, float) and publication_year.is_integer():
+            return str(int(publication_year))
+        if isinstance(publication_year, str):
+            stripped = publication_year.strip()
+            if stripped.isdigit():
+                return stripped
+            match = _FLOAT_YEAR_PATTERN.match(stripped)
+            if match:
+                return match.group(1)
         return ""
 
     @staticmethod
