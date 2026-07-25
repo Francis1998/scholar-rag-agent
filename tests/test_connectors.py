@@ -21,6 +21,7 @@ from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.pdf import PDFConnector
+from ingestion.pmc import PmcConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.zenodo import ZenodoConnector
@@ -1079,6 +1080,160 @@ async def test_pubmed_connector_rejects_non_positive_max_results() -> None:
         documents = await PubMedConnector().search("anything", max_results=0)
 
     assert documents == []
+    mock_client.get.assert_not_called()
+
+
+PMC_EFETCH_FIXTURE = """<?xml version="1.0"?>
+<pmc-articleset>
+  <article>
+    <front>
+      <article-meta>
+        <article-id pub-id-type="pmc">PMC7654321</article-id>
+        <article-id pub-id-type="pmid">41000001</article-id>
+        <article-id pub-id-type="doi">10.1000/pmc.fulltext</article-id>
+        <title-group>
+          <article-title>Full Text Retrieval for Biomedical RAG</article-title>
+        </title-group>
+        <contrib-group>
+          <contrib contrib-type="author">
+            <name><surname>Lovelace</surname><given-names>Ada</given-names></name>
+          </contrib>
+          <contrib contrib-type="author">
+            <name><surname>Turing</surname><given-names>Alan</given-names></name>
+          </contrib>
+        </contrib-group>
+        <pub-date><year>2025</year></pub-date>
+        <abstract>
+          <p>PMC provides open full-text article records.</p>
+        </abstract>
+      </article-meta>
+    </front>
+    <body>
+      <sec>
+        <title>Results</title>
+        <p>Full text contains methods, findings, and citation context.</p>
+      </sec>
+    </body>
+  </article>
+</pmc-articleset>
+"""
+
+
+@pytest.mark.asyncio
+async def test_pmc_connector_searches_and_normalizes_fulltext_articles() -> None:
+    """PmcConnector resolves a query to PMC IDs then fetches full-text XML."""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["7654321"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=PMC_EFETCH_FIXTURE, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcConnector(api_key="test-key", email="dev@example.org").search(
+            "biomedical RAG",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Full Text Retrieval for Biomedical RAG"
+    assert document.source == "https://pmc.ncbi.nlm.nih.gov/articles/PMC7654321/"
+    assert document.metadata["source_type"] == "pmc"
+    assert document.metadata["pmcid"] == "PMC7654321"
+    assert document.metadata["pmid"] == "41000001"
+    assert document.metadata["doi"] == "10.1000/pmc.fulltext"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+    assert "PMC provides open full-text article records." in document.text
+    assert "Full-text excerpt: Results Full text contains methods" in document.text
+
+    esearch_params = mock_client.get.await_args_list[0].kwargs["params"]
+    assert esearch_params["db"] == "pmc"
+    assert esearch_params["retmax"] == 3
+    assert esearch_params["api_key"] == "test-key"
+    assert esearch_params["email"] == "dev@example.org"
+    efetch_params = mock_client.get.await_args_list[1].kwargs["params"]
+    assert efetch_params["db"] == "pmc"
+    assert efetch_params["id"] == "7654321"
+
+
+@pytest.mark.asyncio
+async def test_pmc_connector_uses_body_excerpt_without_abstract() -> None:
+    """Full-text body content is used when a PMC article lacks an abstract."""
+    xml_text = """<?xml version="1.0"?>
+<pmc-articleset>
+  <article>
+    <front>
+      <article-meta>
+        <article-id pub-id-type="pmc">7654322</article-id>
+        <title-group><article-title>Body Only PMC Record</article-title></title-group>
+        <pub-date><year>2024</year></pub-date>
+      </article-meta>
+    </front>
+    <body><p>The article body is still useful for retrieval.</p></body>
+  </article>
+</pmc-articleset>
+"""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["7654322"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=xml_text, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcConnector().search("body only", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].source == "https://pmc.ncbi.nlm.nih.gov/articles/PMC7654322/"
+    assert documents[0].text == "The article body is still useful for retrieval."
+    assert documents[0].metadata["pmcid"] == "PMC7654322"
+
+
+@pytest.mark.asyncio
+async def test_pmc_connector_returns_empty_on_no_hits() -> None:
+    """An empty PMC ID list short-circuits before any efetch call."""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": []}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = esearch_response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcConnector().search("no such topic", max_results=5)
+
+    assert documents == []
+    assert mock_client.get.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_pmc_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc.httpx.AsyncClient", return_value=mock_client):
+        assert await PmcConnector().search("   ", max_results=5) == []
+        assert await PmcConnector().search("pmc", max_results=0) == []
+
     mock_client.get.assert_not_called()
 
 

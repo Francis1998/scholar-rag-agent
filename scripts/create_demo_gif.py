@@ -106,6 +106,29 @@ STORIES: dict[str, Story] = {
     ],
 }
 
+PMC_SOURCE_STORY: Story = [
+    (
+        "1. Search PMC",
+        "E-utilities esearch resolves a biomedical query to bounded PMC IDs.",
+        ["db=pmc", "retmax<=100", "PMCID preferred", "mockable HTTP"],
+    ),
+    (
+        "2. Fetch full text XML",
+        "efetch returns JATS article metadata, abstract, and body text.",
+        ["title", "authors", "DOI", "article body"],
+    ),
+    (
+        "3. Normalize document",
+        "PMC records become source-tracked Documents with stable PMC URLs.",
+        ["source_type=pmc", "PMCID", "PMID", "year"],
+    ),
+    (
+        "4. Retrieve with provenance",
+        "Abstracts and bounded full-text excerpts feed grounded synthesis.",
+        ["full-text excerpt", "chunks", "citations", "audit trail"],
+    ),
+]
+
 
 def _draw_card(draw: ImageDraw.ImageDraw, x: int, y: int, width: int, height: int) -> None:
     """Draw a panel card with a simple border."""
@@ -191,6 +214,9 @@ def main() -> None:
     output_directory.mkdir(parents=True, exist_ok=True)
     for file_name, story in STORIES.items():
         _save_story(output_directory / file_name, story)
+    pmc_output_directory = Path("assets/demo")
+    pmc_output_directory.mkdir(parents=True, exist_ok=True)
+    _save_story(pmc_output_directory / "pmc-source.gif", PMC_SOURCE_STORY)
 
 
 if __name__ == "__main__":
