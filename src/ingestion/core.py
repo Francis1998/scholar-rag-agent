@@ -16,6 +16,8 @@ several works for a topic. Search metadata is available without authentication;
 an optional API key is sent as a Bearer token when configured.
 """
 
+import re
+
 import httpx
 
 from ingestion.chunking import stable_id
@@ -23,6 +25,7 @@ from retrieval.models import Document
 
 CORE_SEARCH_URL = "https://api.core.ac.uk/v3/search/works"
 _PAGE_SIZE_CAP = 100
+_YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
 
 
 class CoreConnector:
@@ -163,8 +166,9 @@ class CoreConnector:
         """
         if isinstance(year_published, int) and not isinstance(year_published, bool):
             return str(year_published)
-        if isinstance(year_published, str) and year_published.strip().isdigit():
-            return year_published.strip()
+        if isinstance(year_published, str):
+            match = _YEAR_PREFIX_PATTERN.match(year_published.strip())
+            return match.group(1) if match else ""
         return ""
 
     @classmethod
