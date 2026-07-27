@@ -31,7 +31,7 @@ for higher rate limits.
 | `text` | Collapsed `abstract`, or a `By authors (year)` descriptor when absent |
 | `source` | `links` entry with `type=display`, else `downloadUrl`, else `https://doi.org/{doi}`, else title |
 | `metadata.doi` | `doi` |
-| `metadata.year` | `yearPublished` |
+| `metadata.year` | `yearPublished` as an integer, or the leading four digits of a date-shaped string |
 | `metadata.authors` | Comma-joined `authors[].name` |
 | `metadata.source_type` | `"core"` |
 
