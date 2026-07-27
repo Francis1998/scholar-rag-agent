@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import quote
 
 import httpx
 
@@ -10,9 +11,11 @@ from ingestion.chunking import stable_id
 from retrieval.models import Document
 
 S2_BASE_URL = "https://api.semanticscholar.org/graph/v1"
-_PAPER_FIELDS = "title,abstract,year,authors,url,publicationDate"
+S2_RECOMMENDATIONS_BASE_URL = "https://api.semanticscholar.org/recommendations/v1"
+_PAPER_FIELDS = "title,abstract,year,authors,url,publicationDate,externalIds"
 _YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
 _PAGE_SIZE_CAP = 100
+_RECOMMENDATIONS_PAGE_SIZE_CAP = 20
 
 
 class SemanticScholarConnector:
@@ -61,6 +64,41 @@ class SemanticScholarConnector:
             response.raise_for_status()
         return self._build_document(response.json(), fallback_source=paper_id)
 
+    async def recommendations(self, seed_paper_id: str, max_results: int = 5) -> list[Document]:
+        """Return papers recommended by Semantic Scholar for a seed paper.
+
+        Args:
+            seed_paper_id: Semantic Scholar paper id or supported external paper
+                identifier such as ``DOI:10.1000/example``. DOI values are URL
+                encoded before being placed in the recommendations path.
+            max_results: Maximum number of related papers to return. The request
+                is capped conservatively to avoid high-volume recommendation
+                calls from a single seed.
+
+        Returns:
+            Normalized recommended paper documents. An empty list is returned
+            for blank seeds or non-positive limits.
+        """
+        stripped = seed_paper_id.strip()
+        if max_results <= 0 or not stripped:
+            return []
+
+        headers = {"x-api-key": self._api_key} if self._api_key else None
+        params: dict[str, str | int] = {
+            "fields": _PAPER_FIELDS,
+            "limit": min(max_results, _RECOMMENDATIONS_PAGE_SIZE_CAP),
+        }
+        encoded_seed = quote(stripped, safe="")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{S2_RECOMMENDATIONS_BASE_URL}/papers/forpaper/{encoded_seed}",
+                params=params,
+                headers=headers,
+            )
+            response.raise_for_status()
+
+        return self._parse_recommendation_results(response.json(), max_results, stripped)
+
     @classmethod
     def _parse_search_results(cls, payload: object, max_results: int) -> list[Document]:
         """Parse a Semantic Scholar ``paper/search`` JSON payload into documents.
@@ -90,7 +128,51 @@ class SemanticScholarConnector:
         return documents
 
     @classmethod
-    def _build_document(cls, data: dict[str, object], *, fallback_source: str) -> Document:
+    def _parse_recommendation_results(
+        cls,
+        payload: object,
+        max_results: int,
+        seed_paper_id: str,
+    ) -> list[Document]:
+        """Parse a Semantic Scholar recommendations payload into documents."""
+        if max_results <= 0 or not isinstance(payload, dict):
+            return []
+        data = payload.get("recommendedPapers")
+        if not isinstance(data, list):
+            return []
+
+        documents: list[Document] = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            paper_id = cls._as_str(item.get("paperId")).strip()
+            fallback = paper_id or "semantic-scholar-recommendation"
+            documents.append(
+                cls._build_document(
+                    item,
+                    fallback_source=fallback,
+                    source_type="semantic_scholar_recommendations",
+                    extra_metadata={
+                        "seed_paper": seed_paper_id,
+                        "semantic_scholar_id": paper_id,
+                        "doi": cls._extract_external_id(item.get("externalIds"), "DOI"),
+                        "authors": ", ".join(cls._extract_author_names(item.get("authors"))),
+                    },
+                )
+            )
+            if len(documents) >= max_results:
+                break
+        return documents
+
+    @classmethod
+    def _build_document(
+        cls,
+        data: dict[str, object],
+        *,
+        fallback_source: str,
+        source_type: str = "semantic_scholar",
+        extra_metadata: dict[str, str] | None = None,
+    ) -> Document:
         """Build a document from one Semantic Scholar paper object.
 
         Args:
@@ -105,15 +187,18 @@ class SemanticScholarConnector:
         text = abstract.strip() if isinstance(abstract, str) else ""
         url = data.get("url")
         source = url.strip() if isinstance(url, str) and url.strip() else fallback_source
+        metadata = {
+            "source_type": source_type,
+            "year": cls._resolve_year(data),
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
         return Document(
             document_id=stable_id(source, "doc"),
             title=title,
             text=text,
             source=source,
-            metadata={
-                "source_type": "semantic_scholar",
-                "year": cls._resolve_year(data),
-            },
+            metadata=metadata,
         )
 
     @classmethod
@@ -142,4 +227,35 @@ class SemanticScholarConnector:
             match = _YEAR_PREFIX_PATTERN.match(publication_date.strip())
             if match:
                 return match.group(1)
+        return ""
+
+    @staticmethod
+    def _extract_external_id(external_ids: object, key: str) -> str:
+        """Extract one Semantic Scholar external identifier by key."""
+        if not isinstance(external_ids, dict):
+            return ""
+        value = external_ids.get(key)
+        return value.strip() if isinstance(value, str) else ""
+
+    @staticmethod
+    def _extract_author_names(authors: object) -> list[str]:
+        """Extract ordered Semantic Scholar author display names."""
+        if not isinstance(authors, list):
+            return []
+        names: list[str] = []
+        for author in authors:
+            if not isinstance(author, dict):
+                continue
+            name = SemanticScholarConnector._as_str(author.get("name")).strip()
+            if name:
+                names.append(name)
+        return names
+
+    @staticmethod
+    def _as_str(value: object) -> str:
+        """Coerce a scalar Semantic Scholar field value to a string."""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, int) and not isinstance(value, bool):
+            return str(value)
         return ""
