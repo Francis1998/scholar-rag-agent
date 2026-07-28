@@ -852,6 +852,70 @@ async def test_semantic_scholar_search_rejects_blank_and_non_positive() -> None:
 
 
 @pytest.mark.asyncio
+async def test_semantic_scholar_recommendations_normalize_related_papers() -> None:
+    """SemanticScholarConnector.recommendations normalizes recommendedPapers."""
+    response = httpx.Response(
+        200,
+        json={
+            "recommendedPapers": [
+                {
+                    "paperId": "recommended-1",
+                    "title": "Related Graph Retrieval",
+                    "abstract": "Recommendations surface adjacent retrieval work.",
+                    "year": 2025,
+                    "url": "https://example.org/paper/recommended-1",
+                    "externalIds": {"DOI": "10.1000/recommended"},
+                    "authors": [{"name": "Ada Lovelace"}, {"name": "Alan Turing"}],
+                }
+            ]
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.semantic_scholar.httpx.AsyncClient", return_value=mock_client):
+        documents = await SemanticScholarConnector(api_key="test-key").recommendations(
+            "DOI:10.1000/root.paper",
+            max_results=50,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Related Graph Retrieval"
+    assert document.text == "Recommendations surface adjacent retrieval work."
+    assert document.source == "https://example.org/paper/recommended-1"
+    assert document.metadata["source_type"] == "semantic_scholar_recommendations"
+    assert document.metadata["seed_paper"] == "DOI:10.1000/root.paper"
+    assert document.metadata["semantic_scholar_id"] == "recommended-1"
+    assert document.metadata["doi"] == "10.1000/recommended"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+    assert document.metadata["year"] == "2025"
+
+    requested_url = mock_client.get.call_args.args[0]
+    assert requested_url.endswith("/papers/forpaper/DOI%3A10.1000%2Froot.paper")
+    assert mock_client.get.call_args.kwargs["params"]["limit"] == 20
+    assert "externalIds" in mock_client.get.call_args.kwargs["params"]["fields"]
+    assert mock_client.get.call_args.kwargs["headers"] == {"x-api-key": "test-key"}
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_recommendations_reject_blank_and_non_positive() -> None:
+    """Blank seeds and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.semantic_scholar.httpx.AsyncClient", return_value=mock_client):
+        assert await SemanticScholarConnector().recommendations("   ", max_results=5) == []
+        assert await SemanticScholarConnector().recommendations("abc", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_openalex_connector_reconstructs_inverted_abstract() -> None:
     """OpenAlexConnector rebuilds the abstract from its inverted index."""
     response = httpx.Response(
