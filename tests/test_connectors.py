@@ -26,6 +26,7 @@ from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
+from ingestion.unpaywall import UnpaywallConnector
 from ingestion.zenodo import ZenodoConnector
 
 ARXIV_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -2653,3 +2654,169 @@ async def test_osf_connector_rejects_blank_and_non_positive() -> None:
         assert await OsfConnector().search("open science", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
+
+def _unpaywall_client(responses: list[httpx.Response]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning Unpaywall API responses."""
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = responses
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_unpaywall_connector_extracts_dois_and_normalizes_oa_location() -> None:
+    """UnpaywallConnector extracts DOI text and returns OA landing/PDF metadata."""
+    response = httpx.Response(
+        200,
+        json={
+            "doi": "10.1234/rag.oa",
+            "doi_url": "https://doi.org/10.1234/rag.oa",
+            "title": "Open Access Retrieval Study",
+            "year": 2025,
+            "published_date": "2025-03-14",
+            "journal_name": "Journal of Open Retrieval",
+            "publisher": "Example Publisher",
+            "genre": "journal-article",
+            "is_oa": True,
+            "oa_status": "green",
+            "z_authors": [{"given": "Ada", "family": "Lovelace"}, {"name": "Alan Turing"}],
+            "best_oa_location": {
+                "url_for_landing_page": "https://repository.example.org/rag-oa",
+                "url_for_pdf": "https://repository.example.org/rag-oa.pdf",
+                "host_type": "repository",
+                "version": "acceptedVersion",
+                "license": "cc-by",
+            },
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _unpaywall_client([response])
+
+    with patch("ingestion.unpaywall.httpx.AsyncClient", return_value=mock_client):
+        documents = await UnpaywallConnector(email="dev@example.org").search(
+            "Read https://doi.org/10.1234/rag.oa, please.",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Access Retrieval Study"
+    assert document.source == "https://repository.example.org/rag-oa"
+    assert "OA status: green" in document.text
+    assert "PDF: https://repository.example.org/rag-oa.pdf" in document.text
+    assert document.metadata["source_type"] == "unpaywall"
+    assert document.metadata["doi"] == "10.1234/rag.oa"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["authors"] == "Ada Lovelace, Alan Turing"
+    assert document.metadata["is_oa"] == "true"
+    assert document.metadata["landing_url"] == "https://repository.example.org/rag-oa"
+    assert document.metadata["pdf_url"] == "https://repository.example.org/rag-oa.pdf"
+    assert document.metadata["host_type"] == "repository"
+    assert document.metadata["version"] == "acceptedVersion"
+    assert document.metadata["license"] == "cc-by"
+
+    call = mock_client.get.await_args
+    assert call.args[0] == "https://api.unpaywall.org/v2/10.1234/rag.oa"
+    assert call.kwargs["params"] == {"email": "dev@example.org"}
+
+
+@pytest.mark.asyncio
+async def test_unpaywall_connector_extracts_unique_dois_and_uses_fallback_location() -> None:
+    """Free text DOI lists are de-duplicated and fallback OA locations are used."""
+    first = httpx.Response(
+        200,
+        json={
+            "doi": "10.5555/fallback",
+            "title": "Fallback OA Location",
+            "published_date": "2021-10-01",
+            "is_oa": True,
+            "oa_locations": [
+                {
+                    "url": "https://publisher.example.org/article",
+                    "url_for_pdf": "https://publisher.example.org/article.pdf",
+                    "host_type": "publisher",
+                }
+            ],
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    second = httpx.Response(
+        200,
+        json={
+            "doi": "10.5555/closed",
+            "title": "Closed Access Record",
+            "year": 2020,
+            "is_oa": False,
+            "doi_url": "https://doi.org/10.5555/closed",
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _unpaywall_client([first, second])
+
+    with patch("ingestion.unpaywall.httpx.AsyncClient", return_value=mock_client):
+        documents = await UnpaywallConnector(email="dev@example.org").search(
+            "DOI:10.5555/fallback; duplicate 10.5555/FALLBACK and 10.5555/closed",
+            max_results=5,
+        )
+
+    assert [document.metadata["doi"] for document in documents] == [
+        "10.5555/fallback",
+        "10.5555/closed",
+    ]
+    assert documents[0].source == "https://publisher.example.org/article"
+    assert documents[0].metadata["year"] == "2021"
+    assert documents[0].metadata["pdf_url"] == "https://publisher.example.org/article.pdf"
+    assert documents[1].source == "https://doi.org/10.5555/closed"
+    assert documents[1].metadata["is_oa"] == "false"
+    assert "OA status: closed" in documents[1].text
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_unpaywall_connector_rejects_blank_non_positive_missing_email_and_non_doi() -> None:
+    """Invalid queries and missing email configuration short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.unpaywall.httpx.AsyncClient", return_value=mock_client):
+        assert await UnpaywallConnector(email="dev@example.org").search("   ", max_results=5) == []
+        assert (
+            await UnpaywallConnector(email="dev@example.org").search(
+                "10.1234/example",
+                max_results=0,
+            )
+            == []
+        )
+        assert await UnpaywallConnector(email="dev@example.org").search("graph retrieval") == []
+        assert await UnpaywallConnector().search("10.1234/example") == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_unpaywall_connector_skips_failed_lookup() -> None:
+    """An unavailable DOI lookup is skipped rather than failing the batch."""
+    failing = httpx.Response(
+        404,
+        json={"error": True},
+        request=httpx.Request("GET", "http://test"),
+    )
+    succeeding = httpx.Response(
+        200,
+        json={"doi": "10.7777/ok", "title": "Recovered OA Record", "is_oa": False},
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = _unpaywall_client([failing, succeeding])
+
+    with patch("ingestion.unpaywall.httpx.AsyncClient", return_value=mock_client):
+        documents = await UnpaywallConnector(email="dev@example.org").search(
+            "10.7777/missing 10.7777/ok",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].title == "Recovered OA Record"
+    assert documents[0].metadata["doi"] == "10.7777/ok"
