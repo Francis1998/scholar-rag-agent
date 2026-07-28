@@ -8,6 +8,7 @@
 Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, and OSF; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, and ORCID; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, and Unpaywall; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, and ORCID; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -45,7 +46,7 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 
 - Research onboarding: give a new lab member a paper corpus and let them ask grounded factual, synthesis, comparison, and hypothesis questions without manually reading every PDF first.
 
-- Prior-art triage: search Semantic Scholar and arXiv records, ingest abstracts, then identify overlapping methods, datasets, and claims before deeper manual review.
+- Prior-art triage: search Semantic Scholar and arXiv records, expand a trusted seed through Semantic Scholar recommendations, ingest abstracts, then identify overlapping methods, datasets, and claims before deeper manual review.
 
 - Citation QA for drafts: paste draft claims as questions and flag statements that are not supported by the ingested source chunks.
 
@@ -131,6 +132,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [PMC source guide](docs/guides/PMC_SOURCE_GUIDE.md) | PubMed Central full-text connector. |
 | [DataCite source guide](docs/guides/DATACITE_SOURCE_GUIDE.md) | DataCite DOI registry connector. |
 | [OpenCitations source guide](docs/guides/OPENCITATIONS_SOURCE_GUIDE.md) | OpenCitations DOI metadata and citation-count connector. |
+| [Semantic Scholar recommendations guide](docs/guides/SEMANTIC_SCHOLAR_RECOMMENDATIONS_GUIDE.md) | Related-paper expansion from a seed Semantic Scholar id or DOI. |
 | [OSF source guide](docs/guides/OSF_SOURCE_GUIDE.md) | Open Science Framework preprint and registration connector. |
 | [ORCID source guide](docs/guides/ORCID_SOURCE_GUIDE.md) | ORCID public record works connector. |
 | [Unpaywall source guide](docs/guides/UNPAYWALL_SOURCE_GUIDE.md) | Unpaywall DOI open-access landing/PDF lookup connector. |
@@ -152,6 +154,7 @@ export UNPAYWALL_EMAIL=dev@example.org
 When enabled, downstream synthesis can route through GPT-5.5, Claude Sonnet 4.6,
 Gemini 3.x, and Kimi K2 while deterministic connectors such as Unpaywall keep
 source lookup reproducible.
+For downstream synthesis and evaluation, the preferred frontier model families are GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, and Kimi K2.
 
 ## Quality Gates
 
