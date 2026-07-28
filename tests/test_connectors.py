@@ -25,6 +25,7 @@ from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
 from ingestion.pubmed import PubMedConnector
+from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.unpaywall import UnpaywallConnector
 from ingestion.zenodo import ZenodoConnector
@@ -2884,3 +2885,159 @@ async def test_unpaywall_connector_skips_failed_lookup() -> None:
     assert len(documents) == 1
     assert documents[0].title == "Recovered OA Record"
     assert documents[0].metadata["doi"] == "10.7777/ok"
+
+
+def _retraction_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning an OpenAlex retraction payload."""
+    mock_client = AsyncMock()
+    if status_code >= 400:
+        response = httpx.Response(
+            status_code,
+            request=httpx.Request("GET", "http://test"),
+        )
+    else:
+        response = httpx.Response(
+            status_code,
+            json=payload,
+            request=httpx.Request("GET", "http://test"),
+        )
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _retracted_work_payload() -> dict[str, object]:
+    """Return a representative OpenAlex retracted work search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/W2158048826",
+                "doi": "https://doi.org/10.1038/nature00870",
+                "title": "RETRACTED ARTICLE: Pluripotency of mesenchymal stem cells",
+                "display_name": "RETRACTED ARTICLE: Pluripotency of mesenchymal stem cells",
+                "publication_year": 2002,
+                "is_retracted": True,
+                "cited_by_count": 5532,
+                "authorships": [
+                    {"author": {"display_name": "Yuehua Jiang"}},
+                    {"author": {"display_name": "Balkrishna Jahagirdar"}},
+                ],
+                "primary_location": {
+                    "landing_page_url": "https://doi.org/10.1038/nature00870",
+                    "source": {"display_name": "Nature"},
+                },
+                "abstract_inverted_index": {
+                    "Retracted": [0],
+                    "stem": [1],
+                    "cell": [2],
+                    "claim.": [3],
+                },
+            },
+            {
+                "id": "https://openalex.org/W999",
+                "title": "Not actually retracted",
+                "is_retracted": False,
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_connector_filters_retracted_openalex_works() -> None:
+    """RetractionWatchConnector searches OpenAlex with is_retracted:true."""
+    mock_client = _retraction_client(_retracted_work_payload())
+
+    with patch("ingestion.retraction_watch.httpx.AsyncClient", return_value=mock_client):
+        documents = await RetractionWatchConnector(mailto="dev@example.org").search(
+            "stem cell",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "RETRACTED ARTICLE: Pluripotency of mesenchymal stem cells"
+    assert document.text == "Retracted stem cell claim."
+    assert document.source == "https://openalex.org/W2158048826"
+    assert document.metadata["source_type"] == "retraction_watch"
+    assert document.metadata["is_retracted"] == "true"
+    assert document.metadata["doi"] == "10.1038/nature00870"
+    assert document.metadata["year"] == "2002"
+    assert document.metadata["authors"] == "Yuehua Jiang, Balkrishna Jahagirdar"
+    assert document.metadata["journal"] == "Nature"
+    assert document.metadata["openalex_id"] == "https://openalex.org/W2158048826"
+    assert document.metadata["cited_by_count"] == "5532"
+
+    call = mock_client.get.await_args
+    assert call.args[0] == "https://api.openalex.org/works"
+    assert call.kwargs["params"]["filter"] == "is_retracted:true"
+    assert call.kwargs["params"]["search"] == "stem cell"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_connector_synthesizes_text_without_abstract() -> None:
+    """When OpenAlex omits an abstract, a retraction descriptor is synthesized."""
+    payload: dict[str, object] = {
+        "results": [
+            {
+                "id": "https://openalex.org/W1",
+                "doi": "10.1000/retracted",
+                "title": "Retracted Methods Paper",
+                "publication_year": 2019,
+                "is_retracted": True,
+                "cited_by_count": 12,
+                "authorships": [{"author": {"display_name": "Ada Lovelace"}}],
+                "primary_location": {"source": {"display_name": "Fake Journal"}},
+            }
+        ]
+    }
+    mock_client = _retraction_client(payload)
+
+    with patch("ingestion.retraction_watch.httpx.AsyncClient", return_value=mock_client):
+        documents = await RetractionWatchConnector().search("methods", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].text == (
+        "Retracted work. By Ada Lovelace in Fake Journal (2019) "
+        "DOI 10.1000/retracted cited_by_count=12"
+    )
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.retraction_watch.httpx.AsyncClient", return_value=mock_client):
+        assert await RetractionWatchConnector().search("   ", max_results=5) == []
+        assert await RetractionWatchConnector().search("stem cell", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_connector_skips_failed_lookup() -> None:
+    """An unavailable OpenAlex response yields an empty list rather than raising."""
+    mock_client = _retraction_client({}, status_code=503)
+
+    with patch("ingestion.retraction_watch.httpx.AsyncClient", return_value=mock_client):
+        documents = await RetractionWatchConnector().search("stem cell", max_results=3)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_retraction_watch_connector_skips_untitled_works() -> None:
+    """Retracted OpenAlex works without a title are skipped."""
+    payload: dict[str, object] = {
+        "results": [{"id": "https://openalex.org/W2", "is_retracted": True}]
+    }
+    mock_client = _retraction_client(payload)
+
+    with patch("ingestion.retraction_watch.httpx.AsyncClient", return_value=mock_client):
+        documents = await RetractionWatchConnector().search("anything", max_results=5)
+
+    assert documents == []
