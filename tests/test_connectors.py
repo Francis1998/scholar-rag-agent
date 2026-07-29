@@ -15,6 +15,7 @@ from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
+from ingestion.dryad import DryadConnector
 from ingestion.europepmc import EuropePmcConnector
 from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
@@ -3210,3 +3211,128 @@ async def test_crossref_events_connector_synthesizes_title_without_subj_title() 
     assert len(documents) == 1
     assert documents[0].title == "references on wikipedia for DOI 10.5555/altmetric"
     assert documents[0].metadata["subj_title"] == ""
+
+
+def _dryad_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed Dryad JSON payload.
+
+    Args:
+        payload: Decoded Dryad search response body.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _dryad_dataset_payload() -> dict[str, object]:
+    """Return a minimal Dryad search payload with one dataset."""
+    return {
+        "_embedded": {
+            "stash:datasets": [
+                {
+                    "id": 102889,
+                    "identifier": "doi:10.5061/dryad.hx3ffbgjj",
+                    "title": "The climatic drivers of long-term population changes",
+                    "publicationDate": "2023-01-19",
+                    "fieldOfScience": "Natural sciences",
+                    "sharingLink": "http://datadryad.org/dataset/doi:10.5061/dryad.hx3ffbgjj",
+                    "authors": [
+                        {"firstName": "Alejandro", "lastName": "de la Fuente"},
+                        {"firstName": "Stephen", "lastName": "Williams"},
+                    ],
+                    "abstract": "<p>Climate-driven biodiversity erosion is escalating.</p>",
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_dryad_connector_searches_and_normalizes_datasets() -> None:
+    """DryadConnector normalizes search datasets, strips HTML, and prefers sharingLink."""
+    mock_client = _dryad_client(_dryad_dataset_payload())
+
+    with patch("ingestion.dryad.httpx.AsyncClient", return_value=mock_client):
+        documents = await DryadConnector().search("climate birds", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "The climatic drivers of long-term population changes"
+    assert document.text == "Climate-driven biodiversity erosion is escalating."
+    assert document.source == "http://datadryad.org/dataset/doi:10.5061/dryad.hx3ffbgjj"
+    assert document.metadata["source_type"] == "dryad"
+    assert document.metadata["doi"] == "10.5061/dryad.hx3ffbgjj"
+    assert document.metadata["year"] == "2023"
+    assert document.metadata["authors"] == "Alejandro de la Fuente, Stephen Williams"
+    assert document.metadata["field_of_science"] == "Natural sciences"
+    assert document.metadata["dryad_id"] == "102889"
+    mock_client.get.assert_awaited_once()
+    call_kwargs = mock_client.get.await_args.kwargs
+    assert call_kwargs["params"]["q"] == "climate birds"
+    assert call_kwargs["params"]["per_page"] == 3
+
+
+@pytest.mark.asyncio
+async def test_dryad_connector_builds_descriptor_and_doi_source_without_abstract() -> None:
+    """A dataset without an abstract falls back to a descriptor and DOI source."""
+    payload: dict[str, object] = {
+        "_embedded": {
+            "stash:datasets": [
+                {
+                    "id": 42,
+                    "identifier": "doi:10.5061/dryad.abc123",
+                    "title": "Supplemental Tables",
+                    "publicationDate": "2020-06-01",
+                    "fieldOfScience": "Biological sciences",
+                    "authors": [{"firstName": "Ada", "lastName": "Lovelace"}],
+                }
+            ]
+        }
+    }
+    with patch("ingestion.dryad.httpx.AsyncClient", return_value=_dryad_client(payload)):
+        documents = await DryadConnector().search("tables", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == "By Ada Lovelace (Biological sciences) (2020)"
+    assert document.source == "https://doi.org/10.5061/dryad.abc123"
+    assert document.metadata["year"] == "2020"
+
+
+@pytest.mark.asyncio
+async def test_dryad_connector_skips_datasets_without_title() -> None:
+    """A dataset carrying no title is skipped, not crashed on."""
+    payload: dict[str, object] = {
+        "_embedded": {
+            "stash:datasets": [
+                {
+                    "identifier": "doi:10.5061/dryad.empty",
+                    "abstract": "No title here.",
+                }
+            ]
+        }
+    }
+    with patch("ingestion.dryad.httpx.AsyncClient", return_value=_dryad_client(payload)):
+        documents = await DryadConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_dryad_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.dryad.httpx.AsyncClient", return_value=mock_client):
+        assert await DryadConnector().search("   ", max_results=5) == []
+        assert await DryadConnector().search("q", max_results=0) == []
+
+    mock_client.get.assert_not_called()
