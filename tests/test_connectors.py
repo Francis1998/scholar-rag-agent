@@ -11,6 +11,7 @@ from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
+from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
@@ -3041,3 +3042,171 @@ async def test_retraction_watch_connector_skips_untitled_works() -> None:
         documents = await RetractionWatchConnector().search("anything", max_results=5)
 
     assert documents == []
+
+
+def _crossref_events_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a Crossref Event Data payload."""
+    mock_client = AsyncMock()
+    if status_code >= 400:
+        response = httpx.Response(
+            status_code,
+            request=httpx.Request("GET", "http://test"),
+        )
+    else:
+        response = httpx.Response(
+            status_code,
+            json=payload,
+            request=httpx.Request("GET", "http://test"),
+        )
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _crossref_event_payload() -> dict[str, object]:
+    """Return a representative Crossref Event Data search payload."""
+    return {
+        "status": "ok",
+        "message-type": "event-list",
+        "message": {
+            "total-results": 1,
+            "items": [
+                {
+                    "id": "615cf92e-9922-4868-9b62-a51b8efd29ee",
+                    "occurred_at": "2016-10-12T07:20:40.000Z",
+                    "timestamp": "2017-02-20T07:20:40.000Z",
+                    "subj_id": (
+                        "https://reddit.com/r/math/comments/572xbh/"
+                        "five_stages_of_accepting_constructive_mathematics/"
+                    ),
+                    "obj_id": "https://doi.org/10.1090/bull/1556",
+                    "relation_type_id": "discusses",
+                    "source_id": "reddit",
+                    "subj": {
+                        "pid": (
+                            "https://reddit.com/r/math/comments/572xbh/"
+                            "five_stages_of_accepting_constructive_mathematics/"
+                        ),
+                        "type": "post",
+                        "title": (
+                            "Five stages of accepting constructive mathematics, "
+                            "by Andrej Bauer [abstract + link to PDF]"
+                        ),
+                        "issued": "2016-10-12T07:20:40.000Z",
+                    },
+                    "obj": {
+                        "pid": "https://doi.org/10.1090/bull/1556",
+                        "url": (
+                            "http://www.ams.org/journals/bull/0000-000-00/"
+                            "S0273-0979-2016-01556-4/home.html"
+                        ),
+                    },
+                    "evidence-record": (
+                        "https://evidence.eventdata.crossref.org/evidence/"
+                        "2017022284421dfd-ddbe-4730-bc35-caf11d92231f"
+                    ),
+                }
+            ],
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_events_connector_searches_bibliographic_and_normalizes() -> None:
+    """CrossrefEventsConnector normalizes Event Data items from bibliographic search."""
+    mock_client = _crossref_events_client(_crossref_event_payload())
+
+    with patch("ingestion.crossref_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefEventsConnector(mailto="dev@example.org").search(
+            "constructive mathematics",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title.startswith("Five stages of accepting constructive mathematics")
+    assert "Crossref Event Data mention." in document.text
+    assert "Relation: discusses." in document.text
+    assert document.source.startswith("https://evidence.eventdata.crossref.org/evidence/")
+    assert document.metadata["source_type"] == "crossref_events"
+    assert document.metadata["event_id"] == "615cf92e-9922-4868-9b62-a51b8efd29ee"
+    assert document.metadata["relation_type"] == "discusses"
+    assert document.metadata["source_id"] == "reddit"
+    assert document.metadata["obj_doi"] == "10.1090/bull/1556"
+    assert document.metadata["year"] == "2016"
+    assert document.metadata["subj_title"].startswith("Five stages of accepting")
+
+    call = mock_client.get.await_args
+    assert call.args[0] == "https://api.eventdata.crossref.org/v1/events"
+    assert call.kwargs["params"]["rows"] == 3
+    assert call.kwargs["params"]["query.bibliographic"] == "constructive mathematics"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_events_connector_uses_obj_id_for_doi_queries() -> None:
+    """DOI-shaped queries use obj-id instead of query.bibliographic."""
+    mock_client = _crossref_events_client(_crossref_event_payload())
+
+    with patch("ingestion.crossref_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefEventsConnector().search(
+            "https://doi.org/10.1090/bull/1556",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    call = mock_client.get.await_args
+    assert call.kwargs["params"]["obj-id"] == "10.1090/bull/1556"
+    assert "query.bibliographic" not in call.kwargs["params"]
+
+
+@pytest.mark.asyncio
+async def test_crossref_events_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref_events.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefEventsConnector().search("   ", max_results=5) == []
+        assert await CrossrefEventsConnector().search("machine learning", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_crossref_events_connector_handles_failed_lookup() -> None:
+    """An unavailable Event Data response yields an empty list rather than raising."""
+    mock_client = _crossref_events_client({}, status_code=503)
+
+    with patch("ingestion.crossref_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefEventsConnector().search("machine learning", max_results=3)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_crossref_events_connector_synthesizes_title_without_subj_title() -> None:
+    """Events without subject titles still normalize using relation and DOI metadata."""
+    payload: dict[str, object] = {
+        "message": {
+            "items": [
+                {
+                    "id": "event-no-title",
+                    "obj_id": "https://doi.org/10.5555/altmetric",
+                    "relation_type_id": "references",
+                    "source_id": "wikipedia",
+                    "subj_id": "https://en.wikipedia.org/wiki/Example",
+                }
+            ]
+        }
+    }
+    mock_client = _crossref_events_client(payload)
+
+    with patch("ingestion.crossref_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefEventsConnector().search("altmetric", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].title == "references on wikipedia for DOI 10.5555/altmetric"
+    assert documents[0].metadata["subj_title"] == ""
