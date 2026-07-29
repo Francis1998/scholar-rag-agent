@@ -21,6 +21,7 @@ from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
+from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.osf import OsfConnector
@@ -3336,3 +3337,170 @@ async def test_dryad_connector_rejects_blank_and_non_positive() -> None:
         assert await DryadConnector().search("q", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
+
+def _openalex_topics_client(
+    payloads: list[tuple[str, object]],
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OpenAlex topic payloads."""
+    mock_client = AsyncMock()
+
+    def _response_for(url: str) -> httpx.Response:
+        for target_url, payload in payloads:
+            if url == target_url:
+                if status_code >= 400:
+                    return httpx.Response(
+                        status_code,
+                        request=httpx.Request("GET", url),
+                    )
+                return httpx.Response(
+                    status_code,
+                    json=payload,
+                    request=httpx.Request("GET", url),
+                )
+        return httpx.Response(
+            status_code,
+            json={},
+            request=httpx.Request("GET", url),
+        )
+
+    async def _get(url: str, params: object = None) -> httpx.Response:
+        return _response_for(url)
+
+    mock_client.get.side_effect = _get
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _openalex_topics_search_payload() -> dict[str, object]:
+    """Return a representative OpenAlex topics search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/T11948",
+                "display_name": "Machine Learning in Materials Science",
+                "description": (
+                    "Materials informatics and machine learning for property predictions."
+                ),
+                "works_count": 142968,
+                "subfield": {"display_name": "Materials Chemistry"},
+                "field": {"display_name": "Materials Science"},
+                "domain": {"display_name": "Physical Sciences"},
+            },
+            {
+                "id": "https://openalex.org/T12254",
+                "display_name": "Machine Learning in Bioinformatics",
+                "description": "",
+                "works_count": 278481,
+            },
+            {"display_name": ""},
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_connector_searches_and_normalizes_topics() -> None:
+    """OpenAlexTopicsConnector searches the topics API for free-text queries."""
+    mock_client = _openalex_topics_client(
+        [("https://api.openalex.org/topics", _openalex_topics_search_payload())]
+    )
+
+    with patch("ingestion.openalex_topics.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexTopicsConnector(mailto="dev@example.org").search(
+            "machine learning",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    document = documents[0]
+    assert document.title == "Machine Learning in Materials Science"
+    assert document.text == ("Materials informatics and machine learning for property predictions.")
+    assert document.source == "https://openalex.org/T11948"
+    assert document.metadata["source_type"] == "openalex_topics"
+    assert document.metadata["topic_id"] == "T11948"
+    assert document.metadata["works_count"] == "142968"
+    assert document.metadata["subfield"] == "Materials Chemistry"
+    assert document.metadata["field"] == "Materials Science"
+    assert document.metadata["domain"] == "Physical Sciences"
+
+    fallback = documents[1]
+    assert fallback.title == "Machine Learning in Bioinformatics"
+    assert fallback.text == "OpenAlex topic Machine Learning in Bioinformatics with 278481 works."
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.openalex.org/topics"
+    assert call.kwargs["params"]["search"] == "machine learning"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_connector_resolves_topic_id_with_works_filter() -> None:
+    """Topic-shaped queries resolve the topic and sample works via topics.id filter."""
+    topic_payload = {
+        "id": "https://openalex.org/T11948",
+        "display_name": "Machine Learning in Materials Science",
+        "description": "Topic cluster for materials informatics.",
+        "works_count": 142968,
+    }
+    works_payload = {
+        "results": [
+            {"title": "Accelerated materials discovery with ML"},
+            {"title": "High-throughput screening of perovskites"},
+        ]
+    }
+    mock_client = _openalex_topics_client(
+        [
+            ("https://api.openalex.org/topics/T11948", topic_payload),
+            ("https://api.openalex.org/works", works_payload),
+        ]
+    )
+
+    with patch("ingestion.openalex_topics.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexTopicsConnector(mailto="dev@example.org").search(
+            "T11948",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Machine Learning in Materials Science"
+    assert "Sample works:" in document.text
+    assert "Accelerated materials discovery with ML" in document.text
+    assert document.metadata["sample_work_titles"].startswith("Accelerated materials discovery")
+
+    topic_call = mock_client.get.await_args_list[0]
+    works_call = mock_client.get.await_args_list[1]
+    assert topic_call.args[0] == "https://api.openalex.org/topics/T11948"
+    assert works_call.args[0] == "https://api.openalex.org/works"
+    assert works_call.kwargs["params"]["filter"] == "topics.id:T11948"
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openalex_topics.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexTopicsConnector().search("   ", max_results=5) == []
+        assert await OpenAlexTopicsConnector().search("machine learning", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_connector_handles_failed_lookup() -> None:
+    """An unavailable OpenAlex response yields an empty list rather than raising."""
+    mock_client = _openalex_topics_client(
+        [("https://api.openalex.org/topics", {})],
+        status_code=503,
+    )
+
+    with patch("ingestion.openalex_topics.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexTopicsConnector().search("machine learning", max_results=3)
+
+    assert documents == []

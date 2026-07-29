@@ -106,6 +106,29 @@ STORIES: dict[str, Story] = {
     ],
 }
 
+OPENALEX_TOPICS_SOURCE_STORY: Story = [
+    (
+        "1. Search OpenAlex topics",
+        "Free-text queries resolve thematic clusters with names and descriptions.",
+        ["topics?search=", "display_name", "description", "mockable HTTP"],
+    ),
+    (
+        "2. Resolve topic ids",
+        "Topic-shaped queries (T####) fetch the topic and sample filtered works.",
+        ["topics/T11948", "filter=topics.id", "works_count", "polite pool"],
+    ),
+    (
+        "3. Normalize document",
+        "Each topic becomes a source-tracked Document with taxonomy metadata.",
+        ["source_type=openalex_topics", "subfield", "field", "domain"],
+    ),
+    (
+        "4. Retrieve with provenance",
+        "Topic summaries guide grounded synthesis across related literature.",
+        ["topic text", "chunks", "citations", "audit trail"],
+    ),
+]
+
 PMC_SOURCE_STORY: Story = [
     (
         "1. Search PMC",
@@ -241,6 +264,7 @@ def main() -> None:
     pmc_output_directory.mkdir(parents=True, exist_ok=True)
     _save_story(pmc_output_directory / "pmc-source.gif", PMC_SOURCE_STORY)
     _save_story(output_directory / "dryad_source.gif", DRYAD_SOURCE_STORY)
+    _save_story(output_directory / "openalex_topics_source.gif", OPENALEX_TOPICS_SOURCE_STORY)
 
 
 if __name__ == "__main__":
