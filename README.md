@@ -141,6 +141,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Crossref Event Data source guide](docs/guides/CROSSREF_EVENTS_SOURCE_GUIDE.md) | Crossref Event Data altmetrics/events connector. |
 | [CORE source guide](docs/guides/CORE_SOURCE_GUIDE.md) | CORE open-access works connector. |
 | [Figshare source guide](docs/guides/FIGSHARE_SOURCE_GUIDE.md) | Figshare research-output connector. |
+| [Dryad source guide](docs/guides/DRYAD_SOURCE_GUIDE.md) | Dryad research-data repository connector. |
 
 ## Provider Keys
 

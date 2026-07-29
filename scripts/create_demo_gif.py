@@ -129,6 +129,29 @@ PMC_SOURCE_STORY: Story = [
     ),
 ]
 
+DRYAD_SOURCE_STORY: Story = [
+    (
+        "1. Search Dryad",
+        "Public API v2 search resolves a keyword query to curated datasets.",
+        ["q=climate", "per_page<=100", "stash:datasets", "mockable HTTP"],
+    ),
+    (
+        "2. Normalize metadata",
+        "Each dataset carries title, authors, abstract, DOI, and publication date.",
+        ["title", "authors", "abstract", "identifier"],
+    ),
+    (
+        "3. Build document",
+        "HTML abstracts are stripped; stable IDs derive from sharingLink or DOI.",
+        ["source_type=dryad", "sharingLink", "stable_id", "fieldOfScience"],
+    ),
+    (
+        "4. Retrieve with provenance",
+        "Dataset summaries feed grounded synthesis alongside other repositories.",
+        ["descriptor text", "chunks", "citations", "audit trail"],
+    ),
+]
+
 
 def _draw_card(draw: ImageDraw.ImageDraw, x: int, y: int, width: int, height: int) -> None:
     """Draw a panel card with a simple border."""
@@ -217,6 +240,7 @@ def main() -> None:
     pmc_output_directory = Path("assets/demo")
     pmc_output_directory.mkdir(parents=True, exist_ok=True)
     _save_story(pmc_output_directory / "pmc-source.gif", PMC_SOURCE_STORY)
+    _save_story(output_directory / "dryad_source.gif", DRYAD_SOURCE_STORY)
 
 
 if __name__ == "__main__":
