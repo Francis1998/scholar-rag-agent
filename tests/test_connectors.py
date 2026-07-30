@@ -3846,6 +3846,62 @@ async def test_crossref_funder_connector_handles_failed_lookup() -> None:
     assert documents == []
 
 
+_PMC_OA_TGZ_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request id="PMC13900">oa.fcgi?id=PMC13900</request>
+  <records returned-count="1" total-count="1">
+    <record
+      id="PMC13900"
+      citation="Breast Cancer Res. 2001 Nov 2; 3(1):55-60"
+      license="none"
+      retracted="no"
+    >
+      <link
+        format="tgz"
+        updated="2025-06-04 14:25:31"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_package/08/e0/PMC13900.tar.gz"
+      />
+    </record>
+  </records>
+</OA>
+"""
+
+_PMC_OA_PDF_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request id="PMC5334499">oa.fcgi?id=PMC5334499</request>
+  <records returned-count="1" total-count="1">
+    <record
+      id="PMC5334499"
+      citation="World J Radiol. 2017 Feb 28; 9(2):27-33"
+      license="CC BY-NC"
+      retracted="no"
+    >
+      <link
+        format="tgz"
+        updated="2021-12-16 16:16:38"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_package/8e/71/PMC5334499.tar.gz"
+      />
+      <link
+        format="pdf"
+        updated="2017-03-03 06:05:17"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_pdf/8e/71/WJR-9-27.PMC5334499.pdf"
+      />
+    </record>
+  </records>
+</OA>
+"""
+
+_PMC_OA_ERROR_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request>oa.fcgi?id=PMC999999999</request>
+  <error code="idDoesNotExist">identifier 'PMC999999999' does not exist</error>
+</OA>
+"""
+
+
 def _pmc_oa_client(responses: list[httpx.Response]) -> AsyncMock:
     """Build a mock AsyncClient that returns OA XML responses in order."""
     mock_client = AsyncMock()
