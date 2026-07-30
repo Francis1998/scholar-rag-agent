@@ -29,6 +29,7 @@ from ingestion.orcid import OrcidConnector
 from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
+from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
@@ -3843,3 +3844,182 @@ async def test_crossref_funder_connector_handles_failed_lookup() -> None:
         documents = await CrossrefFunderConnector().search("national science", max_results=3)
 
     assert documents == []
+
+
+_PMC_OA_TGZ_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request id="PMC13900">oa.fcgi?id=PMC13900</request>
+  <records returned-count="1" total-count="1">
+    <record
+      id="PMC13900"
+      citation="Breast Cancer Res. 2001 Nov 2; 3(1):55-60"
+      license="none"
+      retracted="no"
+    >
+      <link
+        format="tgz"
+        updated="2025-06-04 14:25:31"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_package/08/e0/PMC13900.tar.gz"
+      />
+    </record>
+  </records>
+</OA>
+"""
+
+_PMC_OA_PDF_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request id="PMC5334499">oa.fcgi?id=PMC5334499</request>
+  <records returned-count="1" total-count="1">
+    <record
+      id="PMC5334499"
+      citation="World J Radiol. 2017 Feb 28; 9(2):27-33"
+      license="CC BY-NC"
+      retracted="no"
+    >
+      <link
+        format="tgz"
+        updated="2021-12-16 16:16:38"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_package/8e/71/PMC5334499.tar.gz"
+      />
+      <link
+        format="pdf"
+        updated="2017-03-03 06:05:17"
+        href="ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_pdf/8e/71/WJR-9-27.PMC5334499.pdf"
+      />
+    </record>
+  </records>
+</OA>
+"""
+
+_PMC_OA_ERROR_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<OA>
+  <responseDate>2026-07-30 12:00:00</responseDate>
+  <request>oa.fcgi?id=PMC999999999</request>
+  <error code="idDoesNotExist">identifier 'PMC999999999' does not exist</error>
+</OA>
+"""
+
+
+def _pmc_oa_client(responses: list[httpx.Response]) -> AsyncMock:
+    """Build a mock AsyncClient that returns OA XML responses in order."""
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(side_effect=responses)
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_pmc_oa_connector_resolves_package_links_for_pmcid() -> None:
+    """PmcOaPackageConnector resolves a PMCID to HTTPS package metadata."""
+    response = httpx.Response(
+        200,
+        text=_PMC_OA_TGZ_XML,
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    mock_client = _pmc_oa_client([response])
+
+    with patch("ingestion.pmc_oa.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcOaPackageConnector(email="dev@example.org").search(
+            "PMC13900",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["source_type"] == "pmc_oa"
+    assert document.metadata["pmcid"] == "PMC13900"
+    assert document.metadata["year"] == "2001"
+    assert document.metadata["retracted"] == "no"
+    assert document.metadata["package_url"].endswith("/pub/pmc/oa_package/08/e0/PMC13900.tar.gz")
+    assert document.metadata["package_url"].startswith("https://")
+    assert document.metadata["pdf_url"] == ""
+    assert document.metadata["formats"] == "tgz"
+    assert "PMC13900.tar.gz" in document.source
+    assert "Breast Cancer Res." in document.title
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
+    assert call.kwargs["params"]["id"] == "PMC13900"
+    assert call.kwargs["params"]["email"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_pmc_oa_connector_prefers_pdf_and_extracts_unique_pmcids() -> None:
+    """PDF links are preferred as source; duplicate PMCIDs are looked up once."""
+    first = httpx.Response(
+        200,
+        text=_PMC_OA_PDF_XML,
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    second = httpx.Response(
+        200,
+        text=_PMC_OA_TGZ_XML,
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    mock_client = _pmc_oa_client([first, second])
+
+    with patch("ingestion.pmc_oa.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcOaPackageConnector().search(
+            "See PMC5334499 and https://pmc.ncbi.nlm.nih.gov/articles/PMC5334499/ plus pmc:13900",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    assert documents[0].metadata["pmcid"] == "PMC5334499"
+    assert documents[0].metadata["pdf_url"].endswith("WJR-9-27.PMC5334499.pdf")
+    assert documents[0].metadata["package_url"].endswith("PMC5334499.tar.gz")
+    assert documents[0].metadata["formats"] == "pdf,tgz"
+    assert documents[0].metadata["license"] == "CC BY-NC"
+    assert documents[0].source.endswith("WJR-9-27.PMC5334499.pdf")
+    assert documents[1].metadata["pmcid"] == "PMC13900"
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_pmc_oa_connector_rejects_blank_non_positive_and_non_pmcid() -> None:
+    """Blank, non-positive, and non-PMCID queries short-circuit with no HTTP."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc_oa.httpx.AsyncClient", return_value=mock_client):
+        assert await PmcOaPackageConnector().search("   ", max_results=5) == []
+        assert await PmcOaPackageConnector().search("PMC13900", max_results=0) == []
+        assert (
+            await PmcOaPackageConnector().search("open access breast cancer", max_results=5) == []
+        )
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_pmc_oa_connector_skips_missing_and_failed_lookups() -> None:
+    """Missing PMCIDs and HTTP failures are skipped so one miss does not fail a batch."""
+    missing = httpx.Response(
+        200,
+        text=_PMC_OA_ERROR_XML,
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    failing = httpx.Response(
+        503,
+        text="unavailable",
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    succeeding = httpx.Response(
+        200,
+        text=_PMC_OA_TGZ_XML,
+        request=httpx.Request("GET", "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"),
+    )
+    mock_client = _pmc_oa_client([missing, failing, succeeding])
+
+    with patch("ingestion.pmc_oa.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcOaPackageConnector().search(
+            "PMC999999999 PMC888888888 PMC13900",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["pmcid"] == "PMC13900"

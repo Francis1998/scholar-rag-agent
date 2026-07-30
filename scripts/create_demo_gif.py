@@ -198,6 +198,29 @@ CROSSREF_FUNDER_SOURCE_STORY: Story = [
     ),
 ]
 
+PMC_OA_PACKAGE_STORY: Story = [
+    (
+        "1. Extract PMCIDs",
+        "Free text, pmc: ids, and article URLs yield unique PMC identifiers.",
+        ["PMC5334499", "pmc:13900", "articles/PMC…", "mockable HTTP"],
+    ),
+    (
+        "2. Query OA service",
+        "NCBI oa.fcgi resolves each PMCID to FTP package and PDF links.",
+        ["oa.fcgi?id=", "format=tgz", "format=pdf", "license"],
+    ),
+    (
+        "3. Normalize document",
+        "Package URLs become source-tracked Documents with HTTPS metadata.",
+        ["source_type=pmc_oa", "package_url", "pdf_url", "formats"],
+    ),
+    (
+        "4. Download hook ready",
+        "Full-text package links feed grounded synthesis and local ingest.",
+        ["tar.gz package", "PDF fallback", "citations", "audit trail"],
+    ),
+]
+
 
 def _draw_card(draw: ImageDraw.ImageDraw, x: int, y: int, width: int, height: int) -> None:
     """Draw a panel card with a simple border."""
@@ -289,6 +312,7 @@ def main() -> None:
     _save_story(output_directory / "dryad_source.gif", DRYAD_SOURCE_STORY)
     _save_story(output_directory / "openalex_topics_source.gif", OPENALEX_TOPICS_SOURCE_STORY)
     _save_story(output_directory / "crossref_funder_source.gif", CROSSREF_FUNDER_SOURCE_STORY)
+    _save_story(output_directory / "pmc_oa_package.gif", PMC_OA_PACKAGE_STORY)
 
 
 if __name__ == "__main__":
