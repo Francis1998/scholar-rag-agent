@@ -10,10 +10,10 @@ from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
-from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
+from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
@@ -3680,6 +3680,7 @@ async def test_clinicaltrials_connector_rejects_blank_and_non_positive() -> None
         assert await ClinicalTrialsConnector().search("q", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
 
 def _crossref_funder_client(payload: object, *, status_code: int = 200) -> AsyncMock:
     """Build a mocked httpx.AsyncClient returning a Crossref Funders payload.
