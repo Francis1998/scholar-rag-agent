@@ -10,6 +10,7 @@ from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
+from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
@@ -3679,3 +3680,165 @@ async def test_clinicaltrials_connector_rejects_blank_and_non_positive() -> None
         assert await ClinicalTrialsConnector().search("q", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
+def _crossref_funder_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a Crossref Funders payload.
+
+    Args:
+        payload: Decoded Crossref Funders response body.
+        status_code: HTTP status returned by the mocked GET.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    request = httpx.Request("GET", "https://api.crossref.org/funders")
+    response = httpx.Response(status_code, json=payload, request=request)
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _crossref_funder_list_payload() -> dict[str, object]:
+    """Return a representative Crossref funder-list payload for tests."""
+    return {
+        "status": "ok",
+        "message-type": "funder-list",
+        "message": {
+            "items-per-page": 2,
+            "total-results": 2,
+            "items": [
+                {
+                    "id": "100000001",
+                    "location": "United States",
+                    "name": "National Science Foundation",
+                    "alt-names": ["NSF", "U.S. National Science Foundation"],
+                    "uri": "https://doi.org/10.13039/100000001",
+                    "replaces": [],
+                    "replaced-by": [],
+                },
+                {
+                    "id": "501100000780",
+                    "location": "United Kingdom",
+                    "name": "Engineering and Physical Sciences Research Council",
+                    "alt-names": ["EPSRC"],
+                    "uri": "https://doi.org/10.13039/501100000780",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_funder_connector_searches_and_normalizes() -> None:
+    """CrossrefFunderConnector normalizes funder-list items into documents."""
+    mock_client = _crossref_funder_client(_crossref_funder_list_payload())
+
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefFunderConnector(mailto="dev@example.org").search(
+            "national science",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "National Science Foundation"
+    assert first.source == "https://doi.org/10.13039/100000001"
+    assert first.metadata["source_type"] == "crossref_funder"
+    assert first.metadata["funder_id"] == "100000001"
+    assert first.metadata["location"] == "United States"
+    assert first.metadata["alt_names"] == "NSF, U.S. National Science Foundation"
+    assert "Funding organization: National Science Foundation" in first.text
+    assert "Location: United States" in first.text
+    assert "Also known as: NSF" in first.text
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/funders"
+    assert call.kwargs["params"]["query"] == "national science"
+    assert call.kwargs["params"]["rows"] == 5
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_funder_connector_resolves_funder_id() -> None:
+    """Bare and DOI-shaped funder ids resolve via the single-funder endpoint."""
+    payload: dict[str, object] = {
+        "status": "ok",
+        "message-type": "funder",
+        "message": {
+            "id": "100000001",
+            "name": "National Science Foundation",
+            "location": "United States",
+            "alt-names": ["NSF"],
+            "uri": "https://doi.org/10.13039/100000001",
+            "work-count": 453732,
+            "descendant-work-count": 558111,
+        },
+    }
+    mock_client = _crossref_funder_client(payload)
+
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefFunderConnector().search("100000001", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["work_count"] == "453732"
+    assert document.metadata["descendant_work_count"] == "558111"
+    assert "Registered works: 453732" in document.text
+    assert "Descendant works: 558111" in document.text
+    assert mock_client.get.call_args.args[0] == "https://api.crossref.org/funders/100000001"
+
+    mock_client = _crossref_funder_client(payload)
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        doi_docs = await CrossrefFunderConnector().search(
+            "https://doi.org/10.13039/100000001",
+            max_results=1,
+        )
+    assert len(doi_docs) == 1
+    assert mock_client.get.call_args.args[0] == "https://api.crossref.org/funders/100000001"
+
+
+@pytest.mark.asyncio
+async def test_crossref_funder_connector_skips_nameless_and_caps_rows() -> None:
+    """Funders without a name are skipped and max_results caps the list."""
+    payload: dict[str, object] = {
+        "message": {
+            "items": [
+                {"id": "1", "name": ""},
+                {"id": "2", "name": "Alpha Fund", "uri": "https://doi.org/10.13039/2"},
+                {"id": "3", "name": "Beta Fund", "uri": "https://doi.org/10.13039/3"},
+            ]
+        }
+    }
+    mock_client = _crossref_funder_client(payload)
+
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefFunderConnector().search("fund", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].title == "Alpha Fund"
+
+
+@pytest.mark.asyncio
+async def test_crossref_funder_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefFunderConnector().search("   ", max_results=5) == []
+        assert await CrossrefFunderConnector().search("NSF", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_crossref_funder_connector_handles_failed_lookup() -> None:
+    """An unavailable Crossref Funders response yields an empty list."""
+    mock_client = _crossref_funder_client({}, status_code=503)
+
+    with patch("ingestion.crossref_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefFunderConnector().search("national science", max_results=3)
+
+    assert documents == []
