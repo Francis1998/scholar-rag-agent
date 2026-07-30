@@ -175,6 +175,29 @@ DRYAD_SOURCE_STORY: Story = [
     ),
 ]
 
+CROSSREF_FUNDER_SOURCE_STORY: Story = [
+    (
+        "1. Search Crossref Funders",
+        "Open Funder Registry queries resolve funding organizations by name.",
+        ["funders?query=", "rows", "mailto polite pool", "mockable HTTP"],
+    ),
+    (
+        "2. Resolve funder ids",
+        "Bare ids and 10.13039 DOIs fetch a single registry record.",
+        ["funders/100000001", "alt-names", "location", "work-count"],
+    ),
+    (
+        "3. Normalize document",
+        "Each funder becomes a source-tracked Document for grant-aware RAG.",
+        ["source_type=crossref_funder", "funder_id", "uri", "descriptor"],
+    ),
+    (
+        "4. Retrieve with provenance",
+        "Funder metadata grounds synthesis for grants and acknowledgement trails.",
+        ["funder text", "chunks", "citations", "audit trail"],
+    ),
+]
+
 
 def _draw_card(draw: ImageDraw.ImageDraw, x: int, y: int, width: int, height: int) -> None:
     """Draw a panel card with a simple border."""
@@ -265,6 +288,7 @@ def main() -> None:
     _save_story(pmc_output_directory / "pmc-source.gif", PMC_SOURCE_STORY)
     _save_story(output_directory / "dryad_source.gif", DRYAD_SOURCE_STORY)
     _save_story(output_directory / "openalex_topics_source.gif", OPENALEX_TOPICS_SOURCE_STORY)
+    _save_story(output_directory / "crossref_funder_source.gif", CROSSREF_FUNDER_SOURCE_STORY)
 
 
 if __name__ == "__main__":
