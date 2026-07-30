@@ -6,6 +6,7 @@ from ingestion.dryad import DryadConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.pmc import PmcConnector
+from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.unpaywall import UnpaywallConnector
@@ -17,6 +18,7 @@ __all__ = [
     "OpenAlexTopicsConnector",
     "OrcidConnector",
     "PmcConnector",
+    "PmcOaPackageConnector",
     "RetractionWatchConnector",
     "SemanticScholarConnector",
     "UnpaywallConnector",
