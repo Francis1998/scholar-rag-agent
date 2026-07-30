@@ -5,11 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, and OSF; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, and ORCID; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, and Unpaywall; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, and ORCID; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar, OpenAlex, OpenAlex topics, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, ORCID, Unpaywall, OpenAlex retraction alerts, and Crossref Event Data; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex topics, PubMed, PubMed Central (PMC), Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, NASA ADS, DataCite, OpenCitations, OSF, ORCID, Unpaywall, Dryad, OpenAlex retraction alerts, Crossref Event Data, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -140,9 +136,11 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [OpenAlex topics source guide](docs/guides/OPENALEX_TOPICS_SOURCE_GUIDE.md) | OpenAlex research-topic taxonomy connector. |
 | [Retraction check guide](docs/guides/RETRACTION_CHECK_GUIDE.md) | OpenAlex retracted-works alert connector. |
 | [Crossref Event Data source guide](docs/guides/CROSSREF_EVENTS_SOURCE_GUIDE.md) | Crossref Event Data altmetrics/events connector. |
+| [Crossref Funder Registry source guide](docs/guides/CROSSREF_FUNDER_SOURCE_GUIDE.md) | Crossref Open Funder Registry connector. |
 | [CORE source guide](docs/guides/CORE_SOURCE_GUIDE.md) | CORE open-access works connector. |
 | [Figshare source guide](docs/guides/FIGSHARE_SOURCE_GUIDE.md) | Figshare research-output connector. |
 | [Dryad source guide](docs/guides/DRYAD_SOURCE_GUIDE.md) | Dryad research-data repository connector. |
+| [ClinicalTrials.gov source guide](docs/guides/CLINICALTRIALS_SOURCE_GUIDE.md) | ClinicalTrials.gov clinical-study registry connector. |
 
 ## Provider Keys
 

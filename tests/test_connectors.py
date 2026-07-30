@@ -9,6 +9,7 @@ import pytest
 from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
+from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
@@ -3504,3 +3505,177 @@ async def test_openalex_topics_connector_handles_failed_lookup() -> None:
         documents = await OpenAlexTopicsConnector().search("machine learning", max_results=3)
 
     assert documents == []
+
+
+def _clinicaltrials_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a fixed ClinicalTrials.gov payload.
+
+    Args:
+        payload: Decoded ClinicalTrials.gov search response body.
+
+    Returns:
+        An ``AsyncMock`` usable as an ``httpx.AsyncClient`` context manager.
+    """
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _clinicaltrials_study_payload() -> dict[str, object]:
+    """Return a minimal ClinicalTrials.gov search payload with one study."""
+    return {
+        "studies": [
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT00205335",
+                        "briefTitle": "Free Test Strips and Blood Glucose Control",
+                        "officialTitle": (
+                            "The Impact of Increased Availability of Test Strips "
+                            "on Blood Glucose Control in Patients With Diabetes"
+                        ),
+                    },
+                    "statusModule": {
+                        "overallStatus": "COMPLETED",
+                        "startDateStruct": {"date": "2004-01"},
+                    },
+                    "descriptionModule": {
+                        "briefSummary": (
+                            "This study is designed to determine if there is an "
+                            "impact on blood glucose control in patients who "
+                            "receive free test strips."
+                        ),
+                    },
+                    "conditionsModule": {"conditions": ["Diabetes"]},
+                    "designModule": {
+                        "studyType": "INTERVENTIONAL",
+                        "phases": ["NA"],
+                    },
+                    "sponsorCollaboratorsModule": {
+                        "leadSponsor": {
+                            "name": "University of Wisconsin, Madison",
+                        },
+                    },
+                }
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_clinicaltrials_connector_searches_and_normalizes_studies() -> None:
+    """ClinicalTrialsConnector normalizes API v2 studies and prefers brief titles."""
+    mock_client = _clinicaltrials_client(_clinicaltrials_study_payload())
+
+    with patch("ingestion.clinicaltrials.httpx.AsyncClient", return_value=mock_client):
+        documents = await ClinicalTrialsConnector().search("diabetes", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Free Test Strips and Blood Glucose Control"
+    assert "free test strips" in document.text
+    assert document.source == "https://clinicaltrials.gov/study/NCT00205335"
+    assert document.metadata["source_type"] == "clinicaltrials"
+    assert document.metadata["nct_id"] == "NCT00205335"
+    assert document.metadata["year"] == "2004"
+    assert document.metadata["overall_status"] == "COMPLETED"
+    assert document.metadata["conditions"] == "Diabetes"
+    assert document.metadata["study_type"] == "INTERVENTIONAL"
+    assert document.metadata["phases"] == "NA"
+    assert document.metadata["lead_sponsor"] == "University of Wisconsin, Madison"
+    mock_client.get.assert_awaited_once()
+    call_kwargs = mock_client.get.await_args.kwargs
+    assert call_kwargs["params"]["query.term"] == "diabetes"
+    assert call_kwargs["params"]["pageSize"] == 3
+    assert call_kwargs["params"]["format"] == "json"
+
+
+@pytest.mark.asyncio
+async def test_clinicaltrials_connector_builds_descriptor_without_summary() -> None:
+    """A study without a brief summary falls back to a status/conditions descriptor."""
+    payload: dict[str, object] = {
+        "studies": [
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT00000001",
+                        "briefTitle": "Example Trial Without Summary",
+                    },
+                    "statusModule": {
+                        "overallStatus": "RECRUITING",
+                        "startDateStruct": {"date": "2022-06"},
+                    },
+                    "conditionsModule": {"conditions": ["Asthma", "Allergy"]},
+                    "designModule": {
+                        "studyType": "INTERVENTIONAL",
+                        "phases": ["PHASE2", "PHASE3"],
+                    },
+                    "sponsorCollaboratorsModule": {
+                        "leadSponsor": {"name": "Example Sponsor"},
+                    },
+                }
+            }
+        ]
+    }
+    with patch(
+        "ingestion.clinicaltrials.httpx.AsyncClient",
+        return_value=_clinicaltrials_client(payload),
+    ):
+        documents = await ClinicalTrialsConnector().search("asthma", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.text == (
+        "Status: RECRUITING Conditions: Asthma, Allergy Type: INTERVENTIONAL "
+        "Phases: PHASE2, PHASE3 Sponsor: Example Sponsor (2022)"
+    )
+    assert document.metadata["nct_id"] == "NCT00000001"
+    assert document.metadata["year"] == "2022"
+
+
+@pytest.mark.asyncio
+async def test_clinicaltrials_connector_skips_studies_without_title_or_nct() -> None:
+    """Studies missing a title or NCT ID are skipped, not crashed on."""
+    payload: dict[str, object] = {
+        "studies": [
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT99999999",
+                    },
+                    "descriptionModule": {"briefSummary": "No title here."},
+                }
+            },
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "briefTitle": "Missing NCT identifier",
+                    },
+                }
+            },
+        ]
+    }
+    with patch(
+        "ingestion.clinicaltrials.httpx.AsyncClient",
+        return_value=_clinicaltrials_client(payload),
+    ):
+        documents = await ClinicalTrialsConnector().search("anything", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_clinicaltrials_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.clinicaltrials.httpx.AsyncClient", return_value=mock_client):
+        assert await ClinicalTrialsConnector().search("   ", max_results=5) == []
+        assert await ClinicalTrialsConnector().search("q", max_results=0) == []
+
+    mock_client.get.assert_not_called()
