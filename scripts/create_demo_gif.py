@@ -195,6 +195,9 @@ CROSSREF_FUNDER_SOURCE_STORY: Story = [
         "4. Retrieve with provenance",
         "Funder metadata grounds synthesis for grants and acknowledgement trails.",
         ["funder text", "chunks", "citations", "audit trail"],
+    ),
+]
+
 PMC_OA_PACKAGE_STORY: Story = [
     (
         "1. Extract PMCIDs",
