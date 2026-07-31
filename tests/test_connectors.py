@@ -23,6 +23,7 @@ from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
+from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
@@ -4023,3 +4024,142 @@ async def test_pmc_oa_connector_skips_missing_and_failed_lookups() -> None:
 
     assert len(documents) == 1
     assert documents[0].metadata["pmcid"] == "PMC13900"
+
+
+def _openalex_authors_client(
+    payloads: list[tuple[str, object]],
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OpenAlex author payloads."""
+    mock_client = AsyncMock()
+
+    def _response_for(url: str) -> httpx.Response:
+        for target_url, payload in payloads:
+            if url == target_url:
+                if status_code >= 400:
+                    return httpx.Response(
+                        status_code,
+                        request=httpx.Request("GET", url),
+                    )
+                return httpx.Response(
+                    status_code,
+                    json=payload,
+                    request=httpx.Request("GET", url),
+                )
+        return httpx.Response(
+            status_code,
+            json={},
+            request=httpx.Request("GET", url),
+        )
+
+    async def _get(url: str, params: object = None) -> httpx.Response:
+        return _response_for(url)
+
+    mock_client.get.side_effect = _get
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _openalex_authors_search_payload() -> dict[str, object]:
+    """Return a representative OpenAlex authors search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/A2208157607",
+                "display_name": "Geoffrey E. Hinton",
+                "orcid": "https://orcid.org/0000-0003-0660-5270",
+                "works_count": 312,
+                "cited_by_count": 498231,
+                "last_known_institutions": [
+                    {"display_name": "University of Toronto"},
+                ],
+                "summary_stats": {"h_index": 142, "i10_index": 287},
+            },
+            {"display_name": ""},
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_authors_connector_searches_and_normalizes_authors() -> None:
+    """OpenAlexAuthorsConnector searches the authors API for free-text queries."""
+    mock_client = _openalex_authors_client(
+        [("https://api.openalex.org/authors", _openalex_authors_search_payload())]
+    )
+
+    with patch("ingestion.openalex_authors.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorsConnector(mailto="dev@example.org").search(
+            "Geoffrey Hinton",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Geoffrey E. Hinton"
+    assert "University of Toronto" in document.text
+    assert document.source == "https://openalex.org/A2208157607"
+    assert document.metadata["source_type"] == "openalex_authors"
+    assert document.metadata["author_id"] == "A2208157607"
+    assert document.metadata["orcid"] == "0000-0003-0660-5270"
+    assert document.metadata["works_count"] == "312"
+    assert document.metadata["cited_by_count"] == "498231"
+    assert document.metadata["h_index"] == "142"
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.openalex.org/authors"
+    assert call.kwargs["params"]["search"] == "Geoffrey Hinton"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_authors_connector_resolves_author_id() -> None:
+    """Author-shaped queries resolve the author directly."""
+    author_payload = {
+        "id": "https://openalex.org/A2208157607",
+        "display_name": "Geoffrey E. Hinton",
+        "works_count": 312,
+        "cited_by_count": 498231,
+        "summary_stats": {"h_index": 142},
+    }
+    mock_client = _openalex_authors_client(
+        [("https://api.openalex.org/authors/A2208157607", author_payload)]
+    )
+
+    with patch("ingestion.openalex_authors.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorsConnector().search("A2208157607", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["author_id"] == "A2208157607"
+    assert (
+        mock_client.get.await_args_list[0].args[0] == "https://api.openalex.org/authors/A2208157607"
+    )
+
+
+@pytest.mark.asyncio
+async def test_openalex_authors_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openalex_authors.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexAuthorsConnector().search("   ", max_results=5) == []
+        assert await OpenAlexAuthorsConnector().search("Geoffrey Hinton", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openalex_authors_connector_handles_failed_lookup() -> None:
+    """An unavailable OpenAlex response yields an empty list rather than raising."""
+    mock_client = _openalex_authors_client(
+        [("https://api.openalex.org/authors", {})],
+        status_code=503,
+    )
+
+    with patch("ingestion.openalex_authors.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorsConnector().search("Geoffrey Hinton", max_results=3)
+
+    assert documents == []
