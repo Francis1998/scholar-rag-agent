@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, OpenCitations, OSF, ORCID, Unpaywall, Dryad, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, OpenCitations, OSF, ORCID, Unpaywall, Dryad, Wikidata scholarly entities, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -144,6 +144,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Figshare source guide](docs/guides/FIGSHARE_SOURCE_GUIDE.md) | Figshare research-output connector. |
 | [Dryad source guide](docs/guides/DRYAD_SOURCE_GUIDE.md) | Dryad research-data repository connector. |
 | [ClinicalTrials.gov source guide](docs/guides/CLINICALTRIALS_SOURCE_GUIDE.md) | ClinicalTrials.gov clinical-study registry connector. |
+| [Wikidata scholarly source guide](docs/guides/WIKIDATA_SCHOLARLY_SOURCE_GUIDE.md) | Wikidata scholarly-entity search connector. |
 
 ## Provider Keys
 
