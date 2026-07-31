@@ -36,6 +36,7 @@ from ingestion.pubmed import PubMedConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.unpaywall import UnpaywallConnector
+from ingestion.wikidata_scholarly import WIKIDATA_SCHOLARLY_SPARQL_URL, WikidataScholarlyConnector
 from ingestion.zenodo import ZenodoConnector
 
 ARXIV_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -4259,3 +4260,182 @@ async def test_biorxiv_collections_connector_rejects_blank_and_non_positive() ->
         assert await BioRxivCollectionsConnector().search("cell biology", max_results=0) == []
 
     mock_client.get.assert_not_called()
+
+
+def _wikidata_scholarly_client(
+    search_payload: object | None = None,
+    entities_payload: object | None = None,
+    sparql_payload: object | None = None,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning Wikidata API payloads."""
+    mock_client = AsyncMock()
+
+    async def _get(url: str, params: object = None, headers: object = None) -> httpx.Response:
+        if status_code >= 400:
+            return httpx.Response(status_code, request=httpx.Request("GET", url))
+        if url == WIKIDATA_SCHOLARLY_SPARQL_URL:
+            return httpx.Response(
+                status_code,
+                json=sparql_payload or {},
+                request=httpx.Request("GET", url),
+            )
+        action = ""
+        if isinstance(params, dict):
+            action = str(params.get("action", ""))
+        if action == "wbgetentities":
+            payload = entities_payload or {}
+        elif action == "wbsearchentities":
+            payload = search_payload or {}
+        else:
+            payload = entities_payload or search_payload or {}
+        return httpx.Response(
+            status_code,
+            json=payload,
+            request=httpx.Request("GET", url),
+        )
+
+    mock_client.get.side_effect = _get
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _wikidata_search_payload() -> dict[str, object]:
+    """Return a representative wbsearchentities payload."""
+    return {
+        "search": [
+            {"id": "Q210272", "label": "Attention Is All You Need", "description": "2017 paper"},
+            {"id": "Q42", "label": "Douglas Adams", "description": "Author"},
+        ]
+    }
+
+
+def _wikidata_entities_payload() -> dict[str, object]:
+    """Return a representative wbgetentities payload."""
+    return {
+        "entities": {
+            "Q210272": {
+                "labels": {"en": {"value": "Attention Is All You Need"}},
+                "descriptions": {"en": {"value": "2017 transformer architecture paper"}},
+                "claims": {
+                    "P356": [
+                        {
+                            "mainsnak": {
+                                "datavalue": {"value": "10.48550/arXiv.1706.03762"},
+                            }
+                        }
+                    ],
+                    "P31": [
+                        {
+                            "mainsnak": {
+                                "datavalue": {"value": {"id": "Q13442814"}},
+                            }
+                        }
+                    ],
+                    "P577": [
+                        {
+                            "mainsnak": {
+                                "datavalue": {
+                                    "value": {"time": "+2017-06-12T00:00:00Z"},
+                                }
+                            }
+                        }
+                    ],
+                },
+                "sitelinks": {"enwiki": {"title": "Attention Is All You Need"}},
+            }
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_wikidata_scholarly_connector_searches_and_normalizes_entities() -> None:
+    """WikidataScholarlyConnector searches entities and enriches with wbgetentities."""
+    mock_client = _wikidata_scholarly_client(
+        search_payload=_wikidata_search_payload(),
+        entities_payload=_wikidata_entities_payload(),
+    )
+
+    with patch("ingestion.wikidata_scholarly.httpx.AsyncClient", return_value=mock_client):
+        documents = await WikidataScholarlyConnector().search(
+            "attention is all you need",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Attention Is All You Need"
+    assert "transformer architecture" in document.text
+    assert document.source == "https://www.wikidata.org/wiki/Q210272"
+    assert document.metadata["source_type"] == "wikidata_scholarly"
+    assert document.metadata["wikidata_id"] == "Q210272"
+    assert document.metadata["doi"] == "10.48550/arXiv.1706.03762"
+    assert document.metadata["year"] == "2017"
+    assert document.metadata["scholarly"] == "true"
+    assert document.metadata["wikipedia_title"] == "Attention Is All You Need"
+
+    search_call = mock_client.get.await_args_list[0]
+    assert search_call.kwargs["params"]["action"] == "wbsearchentities"
+    entities_call = mock_client.get.await_args_list[1]
+    assert entities_call.kwargs["params"]["action"] == "wbgetentities"
+
+
+@pytest.mark.asyncio
+async def test_wikidata_scholarly_connector_resolves_qid_directly() -> None:
+    """QID-shaped queries fetch the entity directly via wbgetentities."""
+    mock_client = _wikidata_scholarly_client(entities_payload=_wikidata_entities_payload())
+
+    with patch("ingestion.wikidata_scholarly.httpx.AsyncClient", return_value=mock_client):
+        documents = await WikidataScholarlyConnector().search("Q210272", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["wikidata_id"] == "Q210272"
+    call = mock_client.get.await_args_list[0]
+    assert call.kwargs["params"]["action"] == "wbgetentities"
+    assert call.kwargs["params"]["ids"] == "Q210272"
+
+
+@pytest.mark.asyncio
+async def test_wikidata_scholarly_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.wikidata_scholarly.httpx.AsyncClient", return_value=mock_client):
+        assert await WikidataScholarlyConnector().search("   ", max_results=5) == []
+        assert await WikidataScholarlyConnector().search("transformer", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_wikidata_scholarly_connector_falls_back_to_sparql() -> None:
+    """When entity search returns no ids, the connector falls back to scholarly SPARQL."""
+    sparql_payload = {
+        "results": {
+            "bindings": [
+                {
+                    "item": {"value": "https://www.wikidata.org/entity/Q210272"},
+                    "itemLabel": {"value": "Attention Is All You Need"},
+                    "itemDescription": {"value": "2017 paper on transformers"},
+                    "doi": {"value": "10.48550/arXiv.1706.03762"},
+                }
+            ]
+        }
+    }
+    mock_client = _wikidata_scholarly_client(
+        search_payload={"search": []},
+        sparql_payload=sparql_payload,
+    )
+
+    with patch("ingestion.wikidata_scholarly.httpx.AsyncClient", return_value=mock_client):
+        documents = await WikidataScholarlyConnector().search("transformer paper", max_results=3)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["wikidata_id"] == "Q210272"
+    assert documents[0].metadata["doi"] == "10.48550/arXiv.1706.03762"
+    sparql_call = mock_client.get.await_args_list[1]
+    assert sparql_call.args[0] == "https://query-scholarly.wikidata.org/sparql"

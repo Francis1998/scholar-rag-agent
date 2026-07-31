@@ -12,6 +12,7 @@ from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.unpaywall import UnpaywallConnector
+from ingestion.wikidata_scholarly import WikidataScholarlyConnector
 
 __all__ = [
     "BioRxivCollectionsConnector",
@@ -26,4 +27,5 @@ __all__ = [
     "RetractionWatchConnector",
     "SemanticScholarConnector",
     "UnpaywallConnector",
+    "WikidataScholarlyConnector",
 ]
