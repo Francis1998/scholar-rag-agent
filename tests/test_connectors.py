@@ -9,6 +9,7 @@ import pytest
 from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
 from ingestion.biorxiv import BioRxivConnector
+from ingestion.biorxiv_collections import BioRxivCollectionsConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
@@ -4163,3 +4164,98 @@ async def test_openalex_authors_connector_handles_failed_lookup() -> None:
         documents = await OpenAlexAuthorsConnector().search("Geoffrey Hinton", max_results=3)
 
     assert documents == []
+
+
+def _biorxiv_collections_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a bioRxiv collection payload."""
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _biorxiv_collections_payload() -> dict[str, object]:
+    """Return a representative bioRxiv details API collection payload."""
+    return {
+        "messages": [{"status": "ok", "count": 2}],
+        "collection": [
+            {
+                "doi": "10.1101/2024.01.16.575895",
+                "title": "Single-cell atlas of tumor microenvironment",
+                "authors": "Smith, J.; Doe, A.",
+                "date": "2024-01-20",
+                "category": "cell biology",
+                "abstract": "We profile immune cells in solid tumors.",
+                "server": "biorxiv",
+            },
+            {
+                "doi": "10.1101/2024.02.01.123456",
+                "title": "Unrelated neuroscience preprint",
+                "authors": "Lee, K.",
+                "date": "2024-02-01",
+                "category": "neuroscience",
+                "abstract": "Synaptic plasticity in cortex.",
+                "server": "biorxiv",
+            },
+            {"title": ""},
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_collections_connector_filters_recent_collection() -> None:
+    """BioRxivCollectionsConnector filters the collection array by query tokens."""
+    mock_client = _biorxiv_collections_client(_biorxiv_collections_payload())
+
+    with patch("ingestion.biorxiv_collections.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivCollectionsConnector().search(
+            "tumor microenvironment",
+            max_results=5,
+            server="biorxiv",
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Single-cell atlas of tumor microenvironment"
+    assert "immune cells" in document.text
+    assert document.metadata["source_type"] == "biorxiv_collections"
+    assert document.metadata["doi"] == "10.1101/2024.01.16.575895"
+    assert document.metadata["category"] == "cell biology"
+    assert document.metadata["year"] == "2024"
+    assert document.source.endswith("10.1101/2024.01.16.575895")
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.biorxiv.org/details/biorxiv/100"
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_collections_connector_fetches_category_collection() -> None:
+    """Category-shaped queries use the category query parameter on date ranges."""
+    mock_client = _biorxiv_collections_client(_biorxiv_collections_payload())
+
+    with patch("ingestion.biorxiv_collections.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivCollectionsConnector().search(
+            "cell_biology",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["category"] == "cell biology"
+    call = mock_client.get.await_args_list[0]
+    assert call.kwargs["params"]["category"] == "cell_biology"
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_collections_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.biorxiv_collections.httpx.AsyncClient", return_value=mock_client):
+        assert await BioRxivCollectionsConnector().search("   ", max_results=5) == []
+        assert await BioRxivCollectionsConnector().search("cell biology", max_results=0) == []
+
+    mock_client.get.assert_not_called()

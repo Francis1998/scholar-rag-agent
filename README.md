@@ -125,6 +125,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Security](SECURITY.md) | Vulnerability reporting policy. |
 | [Changelog](CHANGELOG.md) | Version history. |
 | [bioRxiv / medRxiv source guide](docs/guides/BIORXIV_SOURCE_GUIDE.md) | bioRxiv and medRxiv preprint connector. |
+| [bioRxiv / medRxiv collections guide](docs/guides/BIORXIV_COLLECTIONS_SOURCE_GUIDE.md) | bioRxiv and medRxiv subject-category collection connector. |
 | [NASA ADS source guide](docs/guides/ADS_SOURCE_GUIDE.md) | NASA ADS astronomy/physics connector. |
 | [PMC source guide](docs/guides/PMC_SOURCE_GUIDE.md) | PubMed Central full-text connector. |
 | [PMC OA package guide](docs/guides/PMC_OA_PACKAGE_GUIDE.md) | NCBI PMC Open Access package/PDF link discovery connector. |
