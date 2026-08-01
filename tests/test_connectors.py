@@ -15,6 +15,7 @@ from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_funder import CrossrefFunderConnector
+from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
@@ -4473,6 +4474,12 @@ def _openalex_concepts_client(
         return _response_for(url)
 
     mock_client.get.side_effect = _get
+def _crossref_members_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a Crossref members payload."""
+    request = httpx.Request("GET", "https://api.crossref.org/members")
+    response = httpx.Response(status_code, json=payload, request=request)
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     return mock_client
@@ -4500,6 +4507,33 @@ def _openalex_concepts_search_payload() -> dict[str, object]:
             },
             {"display_name": ""},
         ]
+def _crossref_members_list_payload() -> dict[str, object]:
+    """Return a representative Crossref member-list payload for tests."""
+    return {
+        "status": "ok",
+        "message-type": "member-list",
+        "message": {
+            "items-per-page": 2,
+            "total-results": 2,
+            "items": [
+                {
+                    "id": 78,
+                    "primary-name": "Elsevier BV",
+                    "location": "Amsterdam, NX, Netherlands",
+                    "prefixes": ["10.1016", "10.2139"],
+                    "names": ["Elsevier BV", "Elsevier"],
+                    "counts": {"total-dois": 25169491},
+                },
+                {
+                    "id": 311,
+                    "primary-name": "Public Library of Science",
+                    "location": "United States",
+                    "prefixes": ["10.1371"],
+                    "names": ["Public Library of Science", "PLOS"],
+                    "counts": {"total-dois": 250000},
+                },
+            ],
+        },
     }
 
 
@@ -4513,6 +4547,13 @@ async def test_openalex_concepts_connector_searches_and_normalizes_concepts() ->
     with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAlexConceptsConnector(mailto="dev@example.org").search(
             "machine learning",
+async def test_crossref_members_connector_searches_and_normalizes() -> None:
+    """CrossrefMembersConnector normalizes member-list items into documents."""
+    mock_client = _crossref_members_client(_crossref_members_list_payload())
+
+    with patch("ingestion.crossref_members.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefMembersConnector(mailto="dev@example.org").search(
+            "elsevier",
             max_results=5,
         )
 
@@ -4536,6 +4577,20 @@ async def test_openalex_concepts_connector_searches_and_normalizes_concepts() ->
     call = mock_client.get.await_args_list[0]
     assert call.args[0] == "https://api.openalex.org/concepts"
     assert call.kwargs["params"]["search"] == "machine learning"
+    first = documents[0]
+    assert first.title == "Elsevier BV"
+    assert first.source == "https://api.crossref.org/members/78"
+    assert first.metadata["source_type"] == "crossref_members"
+    assert first.metadata["member_id"] == "78"
+    assert first.metadata["location"] == "Amsterdam, NX, Netherlands"
+    assert first.metadata["prefixes"] == "10.1016, 10.2139"
+    assert first.metadata["total_dois"] == "25169491"
+    assert "Crossref member: Elsevier BV" in first.text
+    assert "DOI prefixes: 10.1016" in first.text
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/members"
+    assert call.kwargs["params"]["query"] == "elsevier"
+    assert call.kwargs["params"]["rows"] == 5
     assert call.kwargs["params"]["mailto"] == "dev@example.org"
 
 
@@ -4579,6 +4634,33 @@ async def test_openalex_concepts_connector_resolves_concept_id_with_works_filter
 
 @pytest.mark.asyncio
 async def test_openalex_concepts_connector_rejects_blank_and_non_positive() -> None:
+async def test_crossref_members_connector_resolves_member_id() -> None:
+    """Bare member ids resolve via the single-member endpoint."""
+    payload: dict[str, object] = {
+        "status": "ok",
+        "message-type": "member",
+        "message": {
+            "id": 78,
+            "primary-name": "Elsevier BV",
+            "location": "Amsterdam, NX, Netherlands",
+            "prefixes": ["10.1016"],
+            "names": ["Elsevier BV"],
+            "counts": {"total-dois": 25169491},
+        },
+    }
+    mock_client = _crossref_members_client(payload)
+
+    with patch("ingestion.crossref_members.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefMembersConnector().search("78", max_results=3)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["member_id"] == "78"
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/members/78"
+
+
+@pytest.mark.asyncio
+async def test_crossref_members_connector_rejects_blank_and_non_positive() -> None:
     """Blank queries and non-positive max_results short-circuit with no HTTP call."""
     mock_client = AsyncMock()
     mock_client.__aenter__.return_value = mock_client
@@ -4587,6 +4669,9 @@ async def test_openalex_concepts_connector_rejects_blank_and_non_positive() -> N
     with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
         assert await OpenAlexConceptsConnector().search("   ", max_results=5) == []
         assert await OpenAlexConceptsConnector().search("machine learning", max_results=0) == []
+    with patch("ingestion.crossref_members.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefMembersConnector().search("   ", max_results=5) == []
+        assert await CrossrefMembersConnector().search("elsevier", max_results=0) == []
 
     mock_client.get.assert_not_called()
 
@@ -4601,5 +4686,11 @@ async def test_openalex_concepts_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAlexConceptsConnector().search("machine learning", max_results=3)
+async def test_crossref_members_connector_handles_failed_lookup() -> None:
+    """An unavailable Crossref members response yields an empty list."""
+    mock_client = _crossref_members_client({}, status_code=503)
+
+    with patch("ingestion.crossref_members.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefMembersConnector().search("elsevier", max_results=3)
 
     assert documents == []
