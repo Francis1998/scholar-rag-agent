@@ -5,6 +5,7 @@ from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.dryad import DryadConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
+from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.pmc import PmcConnector
@@ -20,6 +21,7 @@ __all__ = [
     "CrossrefEventsConnector",
     "DryadConnector",
     "OpenAlexAuthorsConnector",
+    "OpenAlexConceptsConnector",
     "OpenAlexTopicsConnector",
     "OrcidConnector",
     "PmcConnector",
