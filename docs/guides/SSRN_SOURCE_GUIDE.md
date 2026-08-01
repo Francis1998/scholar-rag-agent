@@ -66,9 +66,7 @@ for document in documents:
 DOI lookup:
 
 ```python
-documents = asyncio.run(
-    SsrnConnector().search("10.2139/ssrn.3537853", max_results=1)
-)
+documents = asyncio.run(SsrnConnector().search("10.2139/ssrn.3537853", max_results=1))
 ```
 
 ## Safety notes
