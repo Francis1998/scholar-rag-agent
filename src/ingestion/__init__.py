@@ -13,6 +13,7 @@ from ingestion.pmc import PmcConnector
 from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
+from ingestion.ssrn import SsrnConnector
 from ingestion.unpaywall import UnpaywallConnector
 from ingestion.wikidata_scholarly import WikidataScholarlyConnector
 
@@ -30,6 +31,7 @@ __all__ = [
     "PmcOaPackageConnector",
     "RetractionWatchConnector",
     "SemanticScholarConnector",
+    "SsrnConnector",
     "UnpaywallConnector",
     "WikidataScholarlyConnector",
 ]

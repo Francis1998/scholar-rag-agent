@@ -37,6 +37,7 @@ from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.pubmed import PubMedConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
+from ingestion.ssrn import SsrnConnector
 from ingestion.unpaywall import UnpaywallConnector
 from ingestion.wikidata_scholarly import WIKIDATA_SCHOLARLY_SPARQL_URL, WikidataScholarlyConnector
 from ingestion.zenodo import ZenodoConnector
@@ -4602,6 +4603,127 @@ async def test_openalex_concepts_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAlexConceptsConnector().search("machine learning", max_results=3)
+
+    assert documents == []
+
+
+def _ssrn_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a Crossref works payload."""
+    request = httpx.Request("GET", "https://api.crossref.org/works")
+    response = httpx.Response(status_code, json=payload, request=request)
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _ssrn_work_list_payload() -> dict[str, object]:
+    """Return a representative SSRN-filtered Crossref work-list payload."""
+    return {
+        "status": "ok",
+        "message-type": "work-list",
+        "message": {
+            "items": [
+                {
+                    "title": ["Corporate Governance Codes in Financial Communication"],
+                    "DOI": "10.2139/ssrn.3537853",
+                    "abstract": "<jats:p>SSRN preprint on governance reporting.</jats:p>",
+                    "author": [
+                        {"given": "Marc Steffen", "family": "Rapp"},
+                        {"given": "Marco O.", "family": "Sperling"},
+                    ],
+                    "issued": {"date-parts": [[2020]]},
+                    "container-title": ["SSRN Electronic Journal"],
+                    "resource": {"primary": {"URL": "https://www.ssrn.com/abstract=3537853"}},
+                },
+                {
+                    "title": ["Untitled SSRN work"],
+                    "DOI": "10.2139/ssrn.9999999",
+                },
+            ]
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_ssrn_connector_searches_and_normalizes() -> None:
+    """SsrnConnector normalizes SSRN-filtered Crossref works into documents."""
+    mock_client = _ssrn_client(_ssrn_work_list_payload())
+
+    with patch("ingestion.ssrn.httpx.AsyncClient", return_value=mock_client):
+        documents = await SsrnConnector(mailto="dev@example.org").search(
+            "corporate governance",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Corporate Governance Codes in Financial Communication"
+    assert first.text == "SSRN preprint on governance reporting."
+    assert first.source == "https://doi.org/10.2139/ssrn.3537853"
+    assert first.metadata["source_type"] == "ssrn"
+    assert first.metadata["doi"] == "10.2139/ssrn.3537853"
+    assert first.metadata["year"] == "2020"
+    assert first.metadata["authors"] == "Marc Steffen Rapp, Marco O. Sperling"
+    assert first.metadata["container"] == "SSRN Electronic Journal"
+    assert first.metadata["ssrn_url"] == "https://www.ssrn.com/abstract=3537853"
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/works"
+    assert call.kwargs["params"]["query"] == "corporate governance"
+    assert call.kwargs["params"]["filter"] == "prefix:10.2139"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_ssrn_connector_resolves_ssrn_doi() -> None:
+    """SSRN DOI-shaped queries resolve via the single-work endpoint."""
+    payload: dict[str, object] = {
+        "status": "ok",
+        "message-type": "work",
+        "message": {
+            "title": ["Corporate Governance Codes in Financial Communication"],
+            "DOI": "10.2139/ssrn.3537853",
+            "issued": {"date-parts": [[2020]]},
+            "author": [{"given": "Marc Steffen", "family": "Rapp"}],
+            "resource": {"primary": {"URL": "https://www.ssrn.com/abstract=3537853"}},
+        },
+    }
+    mock_client = _ssrn_client(payload)
+
+    with patch("ingestion.ssrn.httpx.AsyncClient", return_value=mock_client):
+        documents = await SsrnConnector().search(
+            "https://doi.org/10.2139/ssrn.3537853",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["doi"] == "10.2139/ssrn.3537853"
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/works/10.2139/ssrn.3537853"
+
+
+@pytest.mark.asyncio
+async def test_ssrn_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.ssrn.httpx.AsyncClient", return_value=mock_client):
+        assert await SsrnConnector().search("   ", max_results=5) == []
+        assert await SsrnConnector().search("corporate governance", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ssrn_connector_handles_failed_lookup() -> None:
+    """An unavailable Crossref works response yields an empty list."""
+    mock_client = _ssrn_client({}, status_code=503)
+
+    with patch("ingestion.ssrn.httpx.AsyncClient", return_value=mock_client):
+        documents = await SsrnConnector().search("corporate governance", max_results=3)
 
     assert documents == []
 
