@@ -25,6 +25,7 @@ from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
+from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
@@ -4439,3 +4440,166 @@ async def test_wikidata_scholarly_connector_falls_back_to_sparql() -> None:
     assert documents[0].metadata["doi"] == "10.48550/arXiv.1706.03762"
     sparql_call = mock_client.get.await_args_list[1]
     assert sparql_call.args[0] == "https://query-scholarly.wikidata.org/sparql"
+
+
+def _openalex_concepts_client(
+    payloads: list[tuple[str, object]],
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OpenAlex concept payloads."""
+    mock_client = AsyncMock()
+
+    def _response_for(url: str) -> httpx.Response:
+        for target_url, payload in payloads:
+            if url == target_url:
+                if status_code >= 400:
+                    return httpx.Response(
+                        status_code,
+                        request=httpx.Request("GET", url),
+                    )
+                return httpx.Response(
+                    status_code,
+                    json=payload,
+                    request=httpx.Request("GET", url),
+                )
+        return httpx.Response(
+            status_code,
+            json={},
+            request=httpx.Request("GET", url),
+        )
+
+    async def _get(url: str, params: object = None) -> httpx.Response:
+        return _response_for(url)
+
+    mock_client.get.side_effect = _get
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _openalex_concepts_search_payload() -> dict[str, object]:
+    """Return a representative OpenAlex concepts search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/C119857082",
+                "display_name": "Machine learning",
+                "description": ("scientific study of algorithms and statistical models"),
+                "works_count": 5185484,
+                "cited_by_count": 83307510,
+                "level": 1,
+                "wikidata": "https://www.wikidata.org/wiki/Q2539",
+            },
+            {
+                "id": "https://openalex.org/C41008148",
+                "display_name": "Computer science",
+                "description": "",
+                "works_count": 12000000,
+                "cited_by_count": 50000000,
+            },
+            {"display_name": ""},
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_connector_searches_and_normalizes_concepts() -> None:
+    """OpenAlexConceptsConnector searches the concepts API for free-text queries."""
+    mock_client = _openalex_concepts_client(
+        [("https://api.openalex.org/concepts", _openalex_concepts_search_payload())]
+    )
+
+    with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexConceptsConnector(mailto="dev@example.org").search(
+            "machine learning",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    document = documents[0]
+    assert document.title == "Machine learning"
+    assert document.text == ("scientific study of algorithms and statistical models")
+    assert document.source == "https://openalex.org/C119857082"
+    assert document.metadata["source_type"] == "openalex_concepts"
+    assert document.metadata["concept_id"] == "C119857082"
+    assert document.metadata["works_count"] == "5185484"
+    assert document.metadata["cited_by_count"] == "83307510"
+    assert document.metadata["level"] == "1"
+    assert document.metadata["wikidata"] == "Q2539"
+
+    fallback = documents[1]
+    assert fallback.title == "Computer science"
+    assert "5185484" not in fallback.text
+    assert "12000000" in fallback.text
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.openalex.org/concepts"
+    assert call.kwargs["params"]["search"] == "machine learning"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_connector_resolves_concept_id_with_works_filter() -> None:
+    """Concept-shaped queries resolve the concept and sample works via concepts.id filter."""
+    concept_payload = {
+        "id": "https://openalex.org/C119857082",
+        "display_name": "Machine learning",
+        "description": "Topic cluster for machine learning.",
+        "works_count": 5185484,
+        "cited_by_count": 83307510,
+    }
+    works_payload = {
+        "results": [
+            {"title": "Deep learning for tabular data"},
+            {"title": "Gradient boosting at scale"},
+        ]
+    }
+    mock_client = _openalex_concepts_client(
+        [
+            ("https://api.openalex.org/concepts/C119857082", concept_payload),
+            ("https://api.openalex.org/works", works_payload),
+        ]
+    )
+
+    with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexConceptsConnector(mailto="dev@example.org").search(
+            "C119857082",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["concept_id"] == "C119857082"
+    assert "Sample works:" in documents[0].text
+    assert "Deep learning for tabular data" in documents[0].text
+    works_call = mock_client.get.await_args_list[1]
+    assert works_call.args[0] == "https://api.openalex.org/works"
+    assert works_call.kwargs["params"]["filter"] == "concepts.id:119857082"
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexConceptsConnector().search("   ", max_results=5) == []
+        assert await OpenAlexConceptsConnector().search("machine learning", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_connector_handles_failed_lookup() -> None:
+    """An unavailable OpenAlex response yields an empty list rather than raising."""
+    mock_client = _openalex_concepts_client(
+        [("https://api.openalex.org/concepts", {})],
+        status_code=503,
+    )
+
+    with patch("ingestion.openalex_concepts.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexConceptsConnector().search("machine learning", max_results=3)
+
+    assert documents == []
