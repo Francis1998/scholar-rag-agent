@@ -24,6 +24,7 @@ from ingestion.europepmc import EuropePmcConnector
 from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
+from ingestion.openaire_projects import OpenaireProjectsConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
@@ -5000,5 +5001,127 @@ async def test_openalex_institutions_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.openalex_institutions.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAlexInstitutionsConnector().search("harvard", max_results=3)
+
+    assert documents == []
+
+
+def _openaire_projects_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning an OpenAIRE projects payload."""
+    request = httpx.Request("GET", "https://api.openaire.eu/search/projects")
+    response = httpx.Response(status_code, json=payload, request=request)
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _openaire_projects_search_payload() -> dict[str, object]:
+    """Return a representative OpenAIRE projects search payload."""
+    return {
+        "response": {
+            "results": {
+                "result": [
+                    {
+                        "metadata": {
+                            "oaf:entity": {
+                                "oaf:project": {
+                                    "originalId": {"$": "snsf________::214458"},
+                                    "code": {"$": "214458"},
+                                    "title": {"$": "Quantum-inspired machine learning research"},
+                                    "summary": {
+                                        "$": "A fellowship on quantum-inspired machine learning."
+                                    },
+                                    "keywords": {"$": "Physics"},
+                                    "startdate": {"$": "2023-07-01"},
+                                    "enddate": {"$": "2025-10-31"},
+                                    "fundedamount": {"$": 159791.0},
+                                    "fundingtree": {
+                                        "funder": {
+                                            "name": {"$": "Swiss National Science Foundation"},
+                                        }
+                                    },
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "metadata": {
+                            "oaf:entity": {
+                                "oaf:project": {
+                                    "title": {"$": ""},
+                                }
+                            }
+                        }
+                    },
+                ]
+            }
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_openaire_projects_connector_searches_and_normalizes() -> None:
+    """OpenaireProjectsConnector normalizes OpenAIRE project records into documents."""
+    mock_client = _openaire_projects_client(_openaire_projects_search_payload())
+
+    with patch("ingestion.openaire_projects.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenaireProjectsConnector().search(
+            "machine learning",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Quantum-inspired machine learning research"
+    assert document.text == "A fellowship on quantum-inspired machine learning."
+    assert document.source == "snsf________::214458"
+    assert document.metadata["source_type"] == "openaire_projects"
+    assert document.metadata["project_id"] == "snsf________::214458"
+    assert document.metadata["code"] == "214458"
+    assert document.metadata["funder"] == "Swiss National Science Foundation"
+    assert document.metadata["start_date"] == "2023-07-01"
+    assert document.metadata["funded_amount"] == "159791"
+
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.openaire.eu/search/projects"
+    assert call.kwargs["params"]["keywords"] == "machine learning"
+    assert call.kwargs["params"]["format"] == "json"
+
+
+@pytest.mark.asyncio
+async def test_openaire_projects_connector_resolves_grant_id() -> None:
+    """Grant-shaped queries resolve via the grantID parameter."""
+    mock_client = _openaire_projects_client(_openaire_projects_search_payload())
+
+    with patch("ingestion.openaire_projects.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenaireProjectsConnector().search("214458", max_results=1)
+
+    assert len(documents) == 1
+    call = mock_client.get.call_args
+    assert call.kwargs["params"]["grantID"] == "214458"
+
+
+@pytest.mark.asyncio
+async def test_openaire_projects_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openaire_projects.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenaireProjectsConnector().search("   ", max_results=5) == []
+        assert await OpenaireProjectsConnector().search("machine learning", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openaire_projects_connector_handles_failed_lookup() -> None:
+    """An unavailable OpenAIRE projects response yields an empty list."""
+    mock_client = _openaire_projects_client({}, status_code=503)
+
+    with patch("ingestion.openaire_projects.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenaireProjectsConnector().search("machine learning", max_results=3)
 
     assert documents == []
