@@ -5127,6 +5127,7 @@ async def test_openaire_projects_connector_handles_failed_lookup() -> None:
 
     assert documents == []
 
+
 def _datacite_related_client(payload: dict[str, object]) -> AsyncMock:
     """Build a mocked httpx.AsyncClient returning a DataCite related search payload."""
     response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
