@@ -27,6 +27,7 @@ from ingestion.openaire import OpenAireConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
+from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
@@ -4845,5 +4846,159 @@ async def test_crossref_members_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.crossref_members.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefMembersConnector().search("elsevier", max_results=3)
+
+    assert documents == []
+
+
+def _openalex_institutions_client(
+    payloads: list[tuple[str, object]],
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning OpenAlex institution payloads."""
+    mock_client = AsyncMock()
+
+    def _response_for(url: str) -> httpx.Response:
+        for target_url, payload in payloads:
+            if url == target_url:
+                if status_code >= 400:
+                    return httpx.Response(
+                        status_code,
+                        request=httpx.Request("GET", url),
+                    )
+                return httpx.Response(
+                    status_code,
+                    json=payload,
+                    request=httpx.Request("GET", url),
+                )
+        return httpx.Response(
+            status_code,
+            json={},
+            request=httpx.Request("GET", url),
+        )
+
+    async def _get(url: str, params: object = None) -> httpx.Response:
+        return _response_for(url)
+
+    mock_client.get.side_effect = _get
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _openalex_institutions_search_payload() -> dict[str, object]:
+    """Return a representative OpenAlex institutions search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/I136199984",
+                "display_name": "Harvard University",
+                "type": "education",
+                "country_code": "US",
+                "works_count": 707672,
+                "cited_by_count": 145282587,
+                "ror": "https://ror.org/03vek6s52",
+                "ids": {"wikidata": "https://www.wikidata.org/wiki/Q13371"},
+                "geo": {"city": "Cambridge", "country": "United States"},
+                "summary_stats": {"h_index": 2785},
+            },
+            {
+                "id": "https://openalex.org/I999999999",
+                "display_name": "",
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_institutions_connector_searches_and_normalizes() -> None:
+    """OpenAlexInstitutionsConnector searches the institutions API for free-text queries."""
+    mock_client = _openalex_institutions_client(
+        [("https://api.openalex.org/institutions", _openalex_institutions_search_payload())]
+    )
+
+    with patch(
+        "ingestion.openalex_institutions.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexInstitutionsConnector(mailto="dev@example.org").search(
+            "harvard",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Harvard University"
+    assert "OpenAlex institution Harvard University" in document.text
+    assert "Cambridge" in document.text
+    assert document.source == "https://openalex.org/I136199984"
+    assert document.metadata["source_type"] == "openalex_institutions"
+    assert document.metadata["institution_id"] == "I136199984"
+    assert document.metadata["country_code"] == "US"
+    assert document.metadata["works_count"] == "707672"
+    assert document.metadata["ror"] == "03vek6s52"
+    assert document.metadata["wikidata"] == "Q13371"
+    assert document.metadata["h_index"] == "2785"
+
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.openalex.org/institutions"
+    assert call.kwargs["params"]["search"] == "harvard"
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_institutions_connector_resolves_institution_id() -> None:
+    """Institution-shaped queries resolve via the single-institution endpoint."""
+    institution_payload = {
+        "id": "https://openalex.org/I136199984",
+        "display_name": "Harvard University",
+        "type": "education",
+        "country_code": "US",
+        "works_count": 707672,
+        "cited_by_count": 145282587,
+    }
+    mock_client = _openalex_institutions_client(
+        [("https://api.openalex.org/institutions/I136199984", institution_payload)]
+    )
+
+    with patch(
+        "ingestion.openalex_institutions.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexInstitutionsConnector(mailto="dev@example.org").search(
+            "I136199984",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["institution_id"] == "I136199984"
+    call = mock_client.get.await_args_list[0]
+    assert call.args[0] == "https://api.openalex.org/institutions/I136199984"
+
+
+@pytest.mark.asyncio
+async def test_openalex_institutions_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.openalex_institutions.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexInstitutionsConnector().search("   ", max_results=5) == []
+        assert await OpenAlexInstitutionsConnector().search("harvard", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openalex_institutions_connector_handles_failed_lookup() -> None:
+    """An unavailable OpenAlex response yields an empty list rather than raising."""
+    mock_client = _openalex_institutions_client(
+        [("https://api.openalex.org/institutions", {})],
+        status_code=503,
+    )
+
+    with patch("ingestion.openalex_institutions.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexInstitutionsConnector().search("harvard", max_results=3)
 
     assert documents == []
