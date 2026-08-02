@@ -17,6 +17,7 @@ from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.datacite import DataCiteConnector
+from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.dryad import DryadConnector
@@ -5123,5 +5124,100 @@ async def test_openaire_projects_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.openaire_projects.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenaireProjectsConnector().search("machine learning", max_results=3)
+
+    assert documents == []
+
+
+def _datacite_related_client(payload: dict[str, object]) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a DataCite related search payload."""
+    response = httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_datacite_related_connector_searches_and_enriches_related_identifiers() -> None:
+    """DataciteRelatedConnector enriches DOI records with relatedIdentifiers."""
+    payload: dict[str, object] = {
+        "data": [
+            {
+                "id": "10.5281/zenodo.21761055",
+                "type": "dois",
+                "attributes": {
+                    "doi": "10.5281/zenodo.21761055",
+                    "titles": [{"title": "Climate Dataset"}],
+                    "creators": [{"name": "Ada, A."}],
+                    "descriptions": [
+                        {
+                            "description": "A curated climate dataset.",
+                            "descriptionType": "Abstract",
+                        }
+                    ],
+                    "publicationYear": 2026,
+                    "publisher": {"name": "Zenodo"},
+                    "url": "https://zenodo.org/doi/10.5281/zenodo.21761055",
+                    "types": {"resourceTypeGeneral": "Dataset"},
+                    "relatedIdentifiers": [
+                        {
+                            "relationType": "IsVersionOf",
+                            "relatedIdentifierType": "DOI",
+                            "relatedIdentifier": "10.5281/zenodo.21761054",
+                        }
+                    ],
+                },
+            },
+            {
+                "id": "10.1234/empty.title",
+                "type": "dois",
+                "attributes": {"titles": []},
+            },
+        ]
+    }
+    mock_client = _datacite_related_client(payload)
+
+    with patch("ingestion.datacite_related.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataciteRelatedConnector().search("climate", max_results=5)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Climate Dataset"
+    assert "Related identifiers:" in document.text
+    assert "IsVersionOf DOI 10.5281/zenodo.21761054" in document.text
+    assert document.metadata["source_type"] == "datacite_related"
+    assert document.metadata["related_identifiers"] == ("IsVersionOf DOI 10.5281/zenodo.21761054")
+    assert document.metadata["related_identifier_count"] == "1"
+
+    call = mock_client.get.call_args
+    assert call.kwargs["params"]["query"] == "climate"
+
+
+@pytest.mark.asyncio
+async def test_datacite_related_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.datacite_related.httpx.AsyncClient", return_value=mock_client):
+        assert await DataciteRelatedConnector().search("   ", max_results=5) == []
+        assert await DataciteRelatedConnector().search("climate", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_datacite_related_connector_handles_failed_lookup() -> None:
+    """An unavailable DataCite response yields an empty list."""
+    response = httpx.Response(503, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.datacite_related.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataciteRelatedConnector().search("climate", max_results=3)
 
     assert documents == []
