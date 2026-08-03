@@ -30,6 +30,7 @@ from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
+from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
@@ -5221,3 +5222,114 @@ async def test_datacite_related_connector_handles_failed_lookup() -> None:
         documents = await DataciteRelatedConnector().search("climate", max_results=3)
 
     assert documents == []
+
+
+def _openalex_sources_client(
+    responses: list[tuple[str, dict[str, object]]],
+) -> AsyncMock:
+    """Build an AsyncClient mock that routes OpenAlex sources URLs."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        for prefix, payload in responses:
+            if str(url).startswith(prefix):
+                response.raise_for_status = MagicMock()
+                response.json = MagicMock(return_value=payload)
+                return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_sources_search_payload() -> dict[str, object]:
+    """Return a sample OpenAlex sources search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/S137773608",
+                "display_name": "Nature",
+                "type": "journal",
+                "host_organization_name": "Springer Nature",
+                "issn_l": "0028-0836",
+                "issn": ["0028-0836", "1476-4687"],
+                "is_oa": False,
+                "works_count": 500000,
+                "cited_by_count": 20000000,
+                "homepage_url": "https://www.nature.com",
+                "summary_stats": {"h_index": 1331},
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_connector_searches_and_normalizes() -> None:
+    """OpenAlexSourcesConnector searches the sources API for free-text queries."""
+    mock_client = _openalex_sources_client(
+        [("https://api.openalex.org/sources", _openalex_sources_search_payload())]
+    )
+    with patch(
+        "ingestion.openalex_sources.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesConnector(mailto="dev@example.org").search(
+            "Nature",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Nature"
+    assert document.metadata["source_type"] == "openalex_sources"
+    assert document.metadata["openalex_source_id"] == "S137773608"
+    assert document.metadata["issn_l"] == "0028-0836"
+    assert "OpenAlex source Nature." in document.text
+    mock_client.get.assert_awaited()
+    assert mock_client.get.await_args.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_connector_resolves_source_id() -> None:
+    """Bare OpenAlex source ids resolve via the direct sources endpoint."""
+    payload = _openalex_sources_search_payload()["results"][0]
+    mock_client = _openalex_sources_client(
+        [("https://api.openalex.org/sources/S137773608", payload)]
+    )
+    with patch(
+        "ingestion.openalex_sources.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesConnector().search("S137773608", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["openalex_source_id"] == "S137773608"
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_connector_skips_sources_without_name() -> None:
+    """Sources missing display_name are skipped."""
+    payload = {"results": [{"id": "https://openalex.org/S1", "display_name": ""}]}
+    mock_client = _openalex_sources_client([("https://api.openalex.org/sources", payload)])
+    with patch(
+        "ingestion.openalex_sources.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesConnector().search("x", max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    with patch("ingestion.openalex_sources.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexSourcesConnector().search(" ", max_results=5) == []
+        assert await OpenAlexSourcesConnector().search("Nature", max_results=0) == []
+    mock_client.get.assert_not_called()

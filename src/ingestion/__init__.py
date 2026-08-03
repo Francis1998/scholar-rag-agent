@@ -10,6 +10,7 @@ from ingestion.openaire_projects import OpenaireProjectsConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
+from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.pmc import PmcConnector
@@ -30,6 +31,7 @@ __all__ = [
     "OpenAlexAuthorsConnector",
     "OpenAlexConceptsConnector",
     "OpenAlexInstitutionsConnector",
+    "OpenAlexSourcesConnector",
     "OpenAlexTopicsConnector",
     "OpenaireProjectsConnector",
     "OrcidConnector",
