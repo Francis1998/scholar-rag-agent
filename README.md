@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -135,6 +135,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Semantic Scholar recommendations guide](docs/guides/SEMANTIC_SCHOLAR_RECOMMENDATIONS_GUIDE.md) | Related-paper expansion from a seed Semantic Scholar id or DOI. |
 | [OSF source guide](docs/guides/OSF_SOURCE_GUIDE.md) | Open Science Framework preprint and registration connector. |
 | [OpenAIRE projects source guide](docs/guides/OPENAIRE_PROJECTS_SOURCE_GUIDE.md) | OpenAIRE funded-projects registry connector. |
+| [ORCID works filter source guide](docs/guides/ORCID_WORKS_FILTER_SOURCE_GUIDE.md) | ORCID works year/type deep-filter connector. |
 | [ORCID source guide](docs/guides/ORCID_SOURCE_GUIDE.md) | ORCID public record works connector. |
 | [Unpaywall source guide](docs/guides/UNPAYWALL_SOURCE_GUIDE.md) | Unpaywall DOI open-access landing/PDF lookup connector. |
 | [OpenAlex topics source guide](docs/guides/OPENALEX_TOPICS_SOURCE_GUIDE.md) | OpenAlex research-topic taxonomy connector. |

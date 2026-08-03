@@ -14,6 +14,7 @@ from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.orcid import OrcidConnector
+from ingestion.orcid_works_filter import OrcidWorksFilterConnector
 from ingestion.pmc import PmcConnector
 from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.retraction_watch import RetractionWatchConnector
@@ -37,6 +38,7 @@ __all__ = [
     "OpenAlexTopicsConnector",
     "OpenaireProjectsConnector",
     "OrcidConnector",
+    "OrcidWorksFilterConnector",
     "PmcConnector",
     "PmcOaPackageConnector",
     "RetractionWatchConnector",

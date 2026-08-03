@@ -35,6 +35,7 @@ from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
+from ingestion.orcid_works_filter import OrcidWorksFilterConnector
 from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
@@ -5476,5 +5477,150 @@ async def test_crossref_relations_connector_handles_failed_lookup() -> None:
 
     with patch("ingestion.crossref_relations.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefRelationsConnector().search("retrieval", max_results=3)
+
+    assert documents == []
+
+
+def _orcid_works_filter_client(*payloads: dict[str, object], status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning fixed ORCID filter payloads."""
+    responses = [
+        httpx.Response(status_code, json=payload, request=httpx.Request("GET", "http://test"))
+        for payload in payloads
+    ]
+    mock_client = AsyncMock()
+    if len(responses) == 1:
+        mock_client.get.return_value = responses[0]
+    else:
+        mock_client.get.side_effect = responses
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _orcid_works_filter_payload() -> dict[str, object]:
+    """Return ORCID works with mixed years and types for filter tests."""
+    return {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "put-code": 12345,
+                        "title": {"title": {"value": "Retrieval-Augmented Scholarship"}},
+                        "type": "journal-article",
+                        "publication-date": {"year": {"value": "2024"}},
+                        "journal-title": {"value": "Journal of Scholarly AI"},
+                        "url": {"value": "https://example.org/orcid-work"},
+                        "external-ids": {
+                            "external-id": [
+                                {
+                                    "external-id-type": "doi",
+                                    "external-id-value": "https://doi.org/10.5555/orcid.rag",
+                                    "external-id-url": {
+                                        "value": "https://doi.org/10.5555/orcid.rag"
+                                    },
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        "put-code": 999,
+                        "title": {"title": {"value": "Unrelated Plant Metabolomics"}},
+                        "type": "dataset",
+                        "publication-date": {"year": {"value": "2022"}},
+                    },
+                    {
+                        "put-code": 1000,
+                        "title": {"title": {"value": "Older Retrieval Notes"}},
+                        "type": "journal-article",
+                        "publication-date": {"year": {"value": "2020"}},
+                    },
+                    {
+                        "put-code": 1001,
+                        "title": {"title": {"value": "2024 Preprint Draft"}},
+                        "type": "preprint",
+                        "publication-date": {"year": {"value": "2024"}},
+                    },
+                ]
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_filter_connector_filters_by_year_and_type() -> None:
+    """ORCID iD queries apply year and work-type filters before returning documents."""
+    mock_client = _orcid_works_filter_client(_orcid_works_filter_payload())
+
+    with patch("ingestion.orcid_works_filter.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksFilterConnector().search(
+            "0000-0002-1825-0097 year:2024 journal-article",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Retrieval-Augmented Scholarship"
+    assert document.metadata["source_type"] == "orcid_works_filter"
+    assert document.metadata["year"] == "2024"
+    assert document.metadata["work_type"] == "journal-article"
+    assert document.metadata["orcid"] == "0000-0002-1825-0097"
+    assert mock_client.get.await_count == 1
+    assert mock_client.get.call_args.args[0].endswith("/0000-0002-1825-0097/works")
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_filter_connector_keyword_search_applies_filters() -> None:
+    """Keyword search uses expanded-search then filters works by year/type tokens."""
+    search_payload: dict[str, object] = {
+        "expanded-result": [
+            {
+                "orcid-id": "0000-0002-1825-0097",
+                "given-names": "Ada",
+                "family-names": "Lovelace",
+            }
+        ]
+    }
+    mock_client = _orcid_works_filter_client(search_payload, _orcid_works_filter_payload())
+
+    with patch("ingestion.orcid_works_filter.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksFilterConnector().search(
+            "retrieval scholarship year:2024",
+            max_results=5,
+            work_type="journal-article",
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["source_type"] == "orcid_works_filter"
+    assert documents[0].metadata["year"] == "2024"
+    search_call = mock_client.get.call_args_list[0]
+    assert search_call.args[0].endswith("/expanded-search/")
+    assert search_call.kwargs["params"]["q"] == "retrieval scholarship"
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_filter_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.orcid_works_filter.httpx.AsyncClient", return_value=mock_client):
+        assert await OrcidWorksFilterConnector().search("   ", max_results=5) == []
+        assert await OrcidWorksFilterConnector().search("retrieval", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_filter_connector_handles_failed_lookup() -> None:
+    """An unavailable ORCID works response yields an empty list."""
+    mock_client = _orcid_works_filter_client({}, status_code=503)
+
+    with patch("ingestion.orcid_works_filter.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksFilterConnector().search(
+            "0000-0002-1825-0097",
+            max_results=3,
+            year=2024,
+        )
 
     assert documents == []

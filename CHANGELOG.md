@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OrcidWorksFilterConnector`: ORCID works year/type deep-filter (`source_type=orcid_works_filter`). See `docs/guides/ORCID_WORKS_FILTER_SOURCE_GUIDE.md`.
 - `CrossrefRelationsConnector`: Crossref works relation-types enrichment (`source_type=crossref_relations`). See `docs/guides/CROSSREF_RELATIONS_SOURCE_GUIDE.md`.
 - `OpenAlexSourcesConnector`: OpenAlex sources/venues API connector (`source_type=openalex_sources`) with free-text search and `S####` id resolve. See `docs/guides/OPENALEX_SOURCES_SOURCE_GUIDE.md`.
 - DataCite related-identifier enrichment ingestion connector (`ingestion/datacite_related.py`) that queries `GET https://api.datacite.org/dois?query=...` and normalizes each JSON:API DOI resource while enriching `relatedIdentifiers` from attributes (`relationType`, `relatedIdentifierType`, `relatedIdentifier`) into searchable text and `metadata.related_identifiers` with `metadata.source_type="datacite_related"`. Distinct from `datacite.py`, which focuses on core bibliographic metadata. Blank and non-positive searches short-circuit without HTTP; unavailable DataCite responses yield an empty list. See `docs/guides/DATACITE_RELATED_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
