@@ -4,6 +4,7 @@ from ingestion.biorxiv_collections import BioRxivCollectionsConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_members import CrossrefMembersConnector
+from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dryad import DryadConnector
 from ingestion.openaire_projects import OpenaireProjectsConnector
@@ -26,6 +27,7 @@ __all__ = [
     "ClinicalTrialsConnector",
     "CrossrefEventsConnector",
     "CrossrefMembersConnector",
+    "CrossrefRelationsConnector",
     "DataciteRelatedConnector",
     "DryadConnector",
     "OpenAlexAuthorsConnector",

@@ -16,6 +16,7 @@ from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.crossref_members import CrossrefMembersConnector
+from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dblp import DblpConnector
@@ -5333,3 +5334,147 @@ async def test_openalex_sources_connector_rejects_blank_and_non_positive() -> No
         assert await OpenAlexSourcesConnector().search(" ", max_results=5) == []
         assert await OpenAlexSourcesConnector().search("Nature", max_results=0) == []
     mock_client.get.assert_not_called()
+
+
+def _crossref_relations_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build a mocked httpx.AsyncClient returning a Crossref relations works payload."""
+    request = httpx.Request("GET", "https://api.crossref.org/works")
+    response = httpx.Response(status_code, json=payload, request=request)
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+def _crossref_relations_list_payload() -> dict[str, object]:
+    """Return a representative Crossref work-list payload with relation enrichment."""
+    return {
+        "status": "ok",
+        "message-type": "work-list",
+        "message": {
+            "items-per-page": 2,
+            "total-results": 2,
+            "items": [
+                {
+                    "DOI": "10.5555/relations.example",
+                    "title": ["Relation-Aware Retrieval"],
+                    "abstract": "<jats:p>A paper with typed Crossref relations.</jats:p>",
+                    "issued": {"date-parts": [[2024, 6, 1]]},
+                    "relation": {
+                        "is-referenced-by": [
+                            {
+                                "id-type": "doi",
+                                "id": "10.5555/citing.work",
+                                "asserted-by": "object",
+                            }
+                        ],
+                        "has-review": [
+                            {
+                                "id-type": "doi",
+                                "id": "10.5555/review.work",
+                                "asserted-by": "subject",
+                            }
+                        ],
+                    },
+                },
+                {
+                    "DOI": "10.5555/empty.title",
+                    "title": [],
+                    "relation": {"is-supplement-to": [{"id-type": "doi", "id": "10.0/x"}]},
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_relations_connector_searches_and_enriches_relations() -> None:
+    """CrossrefRelationsConnector enriches works with relation type keys."""
+    mock_client = _crossref_relations_client(_crossref_relations_list_payload())
+
+    with patch("ingestion.crossref_relations.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefRelationsConnector(mailto="dev@example.org").search(
+            "retrieval",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Relation-Aware Retrieval"
+    assert document.source == "https://doi.org/10.5555/relations.example"
+    assert "A paper with typed Crossref relations." in document.text
+    assert "Relations: is-referenced-by, has-review." in document.text
+    assert "Related objects: 2." in document.text
+    assert document.metadata["source_type"] == "crossref_relations"
+    assert document.metadata["doi"] == "10.5555/relations.example"
+    assert document.metadata["year"] == "2024"
+    assert document.metadata["relation_types"] == "is-referenced-by, has-review"
+    assert document.metadata["relation_count"] == "2"
+
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/works"
+    assert call.kwargs["params"]["query"] == "retrieval"
+    assert call.kwargs["params"]["rows"] == 5
+    assert call.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_relations_connector_resolves_doi_queries() -> None:
+    """DOI-shaped queries resolve via the single-work endpoint."""
+    payload: dict[str, object] = {
+        "status": "ok",
+        "message-type": "work",
+        "message": {
+            "DOI": "10.5555/relations.example",
+            "title": ["DOI Lookup Work"],
+            "issued": {"date-parts": [[2023]]},
+            "relation": {
+                "is-preprint-of": [
+                    {
+                        "id-type": "doi",
+                        "id": "10.5555/version.of.record",
+                        "asserted-by": "subject",
+                    }
+                ]
+            },
+        },
+    }
+    mock_client = _crossref_relations_client(payload)
+
+    with patch("ingestion.crossref_relations.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefRelationsConnector().search(
+            "https://doi.org/10.5555/relations.example",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["relation_types"] == "is-preprint-of"
+    assert documents[0].metadata["relation_count"] == "1"
+    call = mock_client.get.call_args
+    assert call.args[0] == "https://api.crossref.org/works/10.5555/relations.example"
+
+
+@pytest.mark.asyncio
+async def test_crossref_relations_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit with no HTTP call."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref_relations.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefRelationsConnector().search("   ", max_results=5) == []
+        assert await CrossrefRelationsConnector().search("retrieval", max_results=0) == []
+
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_crossref_relations_connector_handles_failed_lookup() -> None:
+    """An unavailable Crossref works response yields an empty list."""
+    mock_client = _crossref_relations_client({}, status_code=503)
+
+    with patch("ingestion.crossref_relations.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefRelationsConnector().search("retrieval", max_results=3)
+
+    assert documents == []
