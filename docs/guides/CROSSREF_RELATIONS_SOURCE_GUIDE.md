@@ -63,9 +63,7 @@ documents = asyncio.run(
 for document in documents:
     print(document.metadata["relation_types"], document.title)
 
-work = asyncio.run(
-    CrossrefRelationsConnector().search("10.5555/example", max_results=1)
-)
+work = asyncio.run(CrossrefRelationsConnector().search("10.5555/example", max_results=1))
 ```
 
 ## Safety notes
