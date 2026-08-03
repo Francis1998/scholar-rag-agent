@@ -4,12 +4,14 @@ from ingestion.biorxiv_collections import BioRxivCollectionsConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_members import CrossrefMembersConnector
+from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dryad import DryadConnector
 from ingestion.openaire_projects import OpenaireProjectsConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
+from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.orcid_works_filter import OrcidWorksFilterConnector
@@ -26,11 +28,13 @@ __all__ = [
     "ClinicalTrialsConnector",
     "CrossrefEventsConnector",
     "CrossrefMembersConnector",
+    "CrossrefRelationsConnector",
     "DataciteRelatedConnector",
     "DryadConnector",
     "OpenAlexAuthorsConnector",
     "OpenAlexConceptsConnector",
     "OpenAlexInstitutionsConnector",
+    "OpenAlexSourcesConnector",
     "OpenAlexTopicsConnector",
     "OpenaireProjectsConnector",
     "OrcidConnector",
