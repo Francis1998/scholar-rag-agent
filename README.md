@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex publishers, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, arXiv HTML abs abstracts, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex publishers, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -118,6 +118,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Configuration (extended)](docs/CONFIGURATION.md) | Full configuration reference with examples. |
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
+| [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common setup and runtime fixes. |

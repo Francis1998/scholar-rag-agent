@@ -1,5 +1,6 @@
 """Paper ingestion connectors and normalization pipeline."""
 
+from ingestion.arxiv_html_abstract import ArxivHtmlAbstractConnector
 from ingestion.biorxiv_collections import BioRxivCollectionsConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.crossref_events import CrossrefEventsConnector
@@ -25,6 +26,7 @@ from ingestion.unpaywall import UnpaywallConnector
 from ingestion.wikidata_scholarly import WikidataScholarlyConnector
 
 __all__ = [
+    "ArxivHtmlAbstractConnector",
     "BioRxivCollectionsConnector",
     "ClinicalTrialsConnector",
     "CrossrefEventsConnector",
