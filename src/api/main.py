@@ -44,7 +44,7 @@ async def ingest_text(request: Request, payload: IngestTextRequest) -> IngestRes
 async def query(request: Request, payload: QueryRequest) -> QueryResponse:
     """Execute an Observe-Decide-Act RAG query."""
     container: AppContainer = request.app.state.container
-    result = await container.runner.run(payload.query)
+    result = await container.runner.run(payload.query, max_sources=payload.max_sources)
     return QueryResponse(result=result)
 
 

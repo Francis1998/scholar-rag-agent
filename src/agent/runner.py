@@ -32,13 +32,19 @@ class AgentRunner:
         self._safety_limits = safety_limits
         self._state_machine = AgentStateMachine()
 
-    async def run(self, query: str, token: CancellationToken | None = None) -> AgentRunResult:
+    async def run(
+        self,
+        query: str,
+        token: CancellationToken | None = None,
+        max_sources: int = 8,
+    ) -> AgentRunResult:
         """Execute an Observe-Decide-Act query and return the final result."""
         run_id = str(uuid4())
         cancellation_token = token or CancellationToken()
         state = AgentState.IDLE
         observation: QueryObservation | None = None
         plan: QueryPlan | None = None
+        source_limit = self._safety_limits.clamp_sources(max_sources)
         try:
             cancellation_token.raise_if_cancelled()
             state = self._transition(run_id, state, AgentState.PLANNING, {"query": query})
@@ -56,7 +62,7 @@ class AgentRunner:
                 run_id, state, AgentState.RETRIEVING, plan.model_dump(mode="json")
             )
             retrieved = await with_timeout(
-                self._executor.retrieve(plan, self._safety_limits.clamp_sources(8)),
+                self._executor.retrieve(plan, source_limit),
                 self._safety_limits.retrieval_timeout_seconds,
                 "retrieval",
             )

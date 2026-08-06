@@ -30,6 +30,7 @@ class QueryRequest(BaseModel):
     """Request body for agent query execution."""
 
     query: str = Field(min_length=1)
+    max_sources: int = Field(default=8, ge=1, le=50)
 
 
 class QueryResponse(BaseModel):
