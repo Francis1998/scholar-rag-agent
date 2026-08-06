@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OpenAlexPublishersConnector`: OpenAlex publishers API connector (`source_type=openalex_publishers`) with free-text search and `P####` id resolve. See `docs/guides/OPENALEX_PUBLISHERS_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OrcidWorksFilterConnector`: ORCID works year/type deep-filter (`source_type=orcid_works_filter`). See `docs/guides/ORCID_WORKS_FILTER_SOURCE_GUIDE.md`.
 - `CrossrefRelationsConnector`: Crossref works relation-types enrichment (`source_type=crossref_relations`). See `docs/guides/CROSSREF_RELATIONS_SOURCE_GUIDE.md`.
 - `OpenAlexSourcesConnector`: OpenAlex sources/venues API connector (`source_type=openalex_sources`) with free-text search and `S####` id resolve. See `docs/guides/OPENALEX_SOURCES_SOURCE_GUIDE.md`.

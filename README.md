@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, OpenAlex publishers, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
 The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
 
@@ -142,6 +142,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [OpenAlex concepts source guide](docs/guides/OPENALEX_CONCEPTS_SOURCE_GUIDE.md) | OpenAlex legacy concepts taxonomy connector. |
 | [OpenAlex institutions source guide](docs/guides/OPENALEX_INSTITUTIONS_SOURCE_GUIDE.md) | OpenAlex research-institution connector. |
 | [OpenAlex sources source guide](docs/guides/OPENALEX_SOURCES_SOURCE_GUIDE.md) | OpenAlex journal/venue sources connector. |
+| [OpenAlex publishers source guide](docs/guides/OPENALEX_PUBLISHERS_SOURCE_GUIDE.md) | OpenAlex publisher-organization connector. |
 | [Crossref relations source guide](docs/guides/CROSSREF_RELATIONS_SOURCE_GUIDE.md) | Crossref works relation-types connector. |
 | [OpenAlex authors source guide](docs/guides/OPENALEX_AUTHORS_SOURCE_GUIDE.md) | OpenAlex researcher-profile connector. |
 | [Retraction check guide](docs/guides/RETRACTION_CHECK_GUIDE.md) | OpenAlex retracted-works alert connector. |
