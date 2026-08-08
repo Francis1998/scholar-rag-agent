@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CrossrefTypesConnector`: Crossref works type-filter connector (`source_type=crossref_types`). See `docs/guides/CROSSREF_TYPES_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `SemanticScholarBulkConnector`: Semantic Scholar Graph `/paper/batch` connector (`source_type=semantic_scholar_bulk`). See `docs/guides/SEMANTIC_SCHOLAR_BULK_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexTopicsHierarchyConnector`: OpenAlex topics hierarchy connector (`source_type=openalex_topics_hierarchy`). See `docs/guides/OPENALEX_TOPICS_HIERARCHY_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `PubmedMeshConnector`: NCBI MeSH vocabulary connector via E-utilities `esearch`/`esummary` (`db=mesh`, `source_type=pubmed_mesh`) with UI, preferred name, and tree numbers in metadata. See `docs/guides/PUBMED_MESH_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

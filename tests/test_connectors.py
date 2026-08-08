@@ -18,6 +18,7 @@ from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_funder import CrossrefFunderConnector
 from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
+from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dblp import DblpConnector
@@ -6229,4 +6230,77 @@ async def test_semantic_scholar_bulk_connector_returns_empty_on_http_error() -> 
         return_value=mock_client,
     ):
         documents = await SemanticScholarBulkConnector().search("abc", max_results=3)
+    assert documents == []
+
+
+def _crossref_types_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref types-filtered works."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_crossref_types_connector_filters_by_type() -> None:
+    """CrossrefTypesConnector applies filter=type and normalizes works."""
+    payload = {
+        "message": {
+            "items": [
+                {
+                    "title": ["Typed GraphRAG Survey"],
+                    "abstract": "<p>A typed survey.</p>",
+                    "DOI": "10.1000/typed",
+                    "type": "journal-article",
+                    "container-title": ["Nature AI"],
+                    "published-print": {"date-parts": [[2025]]},
+                }
+            ]
+        }
+    }
+    mock_client = _crossref_types_client(payload)
+    with patch("ingestion.crossref_types.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefTypesConnector(mailto="dev@example.org").search(
+            "GraphRAG<<<TYPE>>>journal-article",
+            max_results=3,
+        )
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["source_type"] == "crossref_types"
+    assert document.metadata["crossref_type"] == "journal-article"
+    assert "Typed GraphRAG Survey" in document.title
+    assert mock_client.get.await_args.kwargs["params"]["filter"] == "type:journal-article"
+    assert mock_client.get.await_args.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_types_connector_defaults_type_and_rejects_blank() -> None:
+    """Default type is journal-article; blank/non-positive short-circuit."""
+    mock_client = AsyncMock()
+    with patch("ingestion.crossref_types.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefTypesConnector().search(" ", max_results=5) == []
+        assert await CrossrefTypesConnector().search("x", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    payload = {"message": {"items": [{"title": ["Only Title"], "type": "journal-article"}]}}
+    mock_client = _crossref_types_client(payload)
+    with patch("ingestion.crossref_types.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefTypesConnector().search("transformers", max_results=1)
+    assert documents[0].metadata["crossref_type"] == "journal-article"
+    assert mock_client.get.await_args.kwargs["params"]["filter"] == "type:journal-article"
+
+
+@pytest.mark.asyncio
+async def test_crossref_types_connector_returns_empty_on_http_error() -> None:
+    """HTTP failures yield an empty list rather than raising."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.crossref_types.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefTypesConnector().search("x", max_results=3)
     assert documents == []
