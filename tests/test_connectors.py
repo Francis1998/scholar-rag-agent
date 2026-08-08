@@ -43,6 +43,7 @@ from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
 from ingestion.pmc_oa import PmcOaPackageConnector
 from ingestion.pubmed import PubMedConnector
+from ingestion.pubmed_mesh import PubmedMeshConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
 from ingestion.ssrn import SsrnConnector
@@ -5896,3 +5897,136 @@ async def test_arxiv_html_abstract_connector_rejects_blank_and_non_positive() ->
         assert await ArxivHtmlAbstractConnector().search(" ", max_results=5) == []
         assert await ArxivHtmlAbstractConnector().search("graph", max_results=0) == []
     mock_client.get.assert_not_called()
+
+
+def _pubmed_mesh_client(
+    *,
+    esearch: dict[str, object] | None = None,
+    esummary: dict[str, object] | None = None,
+    raise_on: str | None = None,
+) -> AsyncMock:
+    """Build an AsyncClient mock for MeSH esearch/esummary."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        if raise_on and raise_on in str(url):
+            raise httpx.HTTPError("boom")
+        if "esearch.fcgi" in str(url):
+            response.raise_for_status = MagicMock()
+            response.json = MagicMock(return_value=esearch or {})
+            return response
+        if "esummary.fcgi" in str(url):
+            response.raise_for_status = MagicMock()
+            response.json = MagicMock(return_value=esummary or {})
+            return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _pubmed_mesh_esearch_payload() -> dict[str, object]:
+    """Return a sample MeSH esearch payload."""
+    return {"esearchresult": {"idlist": ["68003920"], "count": "1"}}
+
+
+def _pubmed_mesh_esummary_payload() -> dict[str, object]:
+    """Return a sample MeSH esummary payload."""
+    return {
+        "result": {
+            "uids": ["68003920"],
+            "68003920": {
+                "uid": "68003920",
+                "ds_meshui": "D003920",
+                "ds_meshterms": ["Diabetes Mellitus", "Diabetes", "Mellitus, Diabetes"],
+                "ds_scopenote": "A heterogeneous group of disorders with hyperglycemia.",
+                "ds_yearintroduced": "1966",
+                "ds_recordtype": "descriptor",
+                "ds_idxlinks": [
+                    {"parent": 1, "treenum": "C18.452.394.750", "children": []},
+                    {"parent": 2, "treenum": "C19.246", "children": []},
+                ],
+            },
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_pubmed_mesh_connector_searches_and_normalizes() -> None:
+    """PubmedMeshConnector searches MeSH and normalizes descriptor metadata."""
+    mock_client = _pubmed_mesh_client(
+        esearch=_pubmed_mesh_esearch_payload(),
+        esummary=_pubmed_mesh_esummary_payload(),
+    )
+    with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubmedMeshConnector().search("diabetes mellitus", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Diabetes Mellitus"
+    assert document.metadata["source_type"] == "pubmed_mesh"
+    assert document.metadata["mesh_ui"] == "D003920"
+    assert document.metadata["name"] == "Diabetes Mellitus"
+    assert document.metadata["tree_numbers"] == "C18.452.394.750, C19.246"
+    assert "UI: D003920." in document.text
+    assert "Tree numbers: C18.452.394.750, C19.246." in document.text
+    assert document.source.endswith("/D003920")
+    assert mock_client.get.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_pubmed_mesh_connector_returns_empty_on_no_hits() -> None:
+    """Empty MeSH esearch id lists yield no documents."""
+    mock_client = _pubmed_mesh_client(
+        esearch={"esearchresult": {"idlist": [], "count": "0"}},
+        esummary={},
+    )
+    with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubmedMeshConnector().search("zzznomatch", max_results=5)
+    assert documents == []
+    assert mock_client.get.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_pubmed_mesh_connector_returns_empty_on_http_error() -> None:
+    """HTTP failures yield an empty list rather than raising."""
+    mock_client = _pubmed_mesh_client(
+        esearch=_pubmed_mesh_esearch_payload(),
+        raise_on="esearch.fcgi",
+    )
+    with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubmedMeshConnector().search("diabetes", max_results=3)
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_pubmed_mesh_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
+        assert await PubmedMeshConnector().search(" ", max_results=5) == []
+        assert await PubmedMeshConnector().search("diabetes", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_pubmed_mesh_connector_skips_descriptors_without_name() -> None:
+    """Summaries missing preferred names are skipped."""
+    esummary = {
+        "result": {
+            "uids": ["1"],
+            "1": {"uid": "1", "ds_meshui": "D000000", "ds_meshterms": []},
+        }
+    }
+    mock_client = _pubmed_mesh_client(
+        esearch={"esearchresult": {"idlist": ["1"]}},
+        esummary=esummary,
+    )
+    with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubmedMeshConnector().search("x", max_results=5)
+    assert documents == []
