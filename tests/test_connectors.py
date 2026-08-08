@@ -47,6 +47,7 @@ from ingestion.pubmed import PubMedConnector
 from ingestion.pubmed_mesh import PubmedMeshConnector
 from ingestion.retraction_watch import RetractionWatchConnector
 from ingestion.semantic_scholar import SemanticScholarConnector
+from ingestion.semantic_scholar_bulk import SemanticScholarBulkConnector
 from ingestion.ssrn import SsrnConnector
 from ingestion.unpaywall import UnpaywallConnector
 from ingestion.wikidata_scholarly import WIKIDATA_SCHOLARLY_SPARQL_URL, WikidataScholarlyConnector
@@ -6134,4 +6135,98 @@ async def test_openalex_topics_hierarchy_connector_returns_empty_on_http_error()
         return_value=mock_client,
     ):
         documents = await OpenAlexTopicsHierarchyConnector().search("graphs", max_results=3)
+    assert documents == []
+
+
+def _semantic_scholar_bulk_client(payload: list[dict[str, object]]) -> AsyncMock:
+    """Build an AsyncClient mock for the Semantic Scholar bulk endpoint."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.post = AsyncMock(return_value=response)
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_bulk_connector_batches_ids() -> None:
+    """SemanticScholarBulkConnector posts ids to the batch endpoint."""
+    payload = [
+        {
+            "paperId": "abc123",
+            "title": "Bulk Paper One",
+            "abstract": "First abstract.",
+            "year": 2024,
+            "authors": [{"name": "Ada"}],
+            "url": "https://www.semanticscholar.org/paper/abc123",
+            "externalIds": {"DOI": "10.1000/one"},
+        },
+        {
+            "paperId": "def456",
+            "title": "Bulk Paper Two",
+            "abstract": "Second abstract.",
+            "year": 2025,
+            "authors": [{"name": "Grace"}],
+            "url": "https://www.semanticscholar.org/paper/def456",
+            "externalIds": {"DOI": "10.1000/two"},
+        },
+    ]
+    mock_client = _semantic_scholar_bulk_client(payload)
+    with patch(
+        "ingestion.semantic_scholar_bulk.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await SemanticScholarBulkConnector().search(
+            "abc123, def456",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    assert documents[0].metadata["source_type"] == "semantic_scholar_bulk"
+    assert documents[0].title == "Bulk Paper One"
+    assert documents[1].metadata["semantic_scholar_id"] == "def456"
+    mock_client.post.assert_awaited()
+    assert mock_client.post.await_args.kwargs["json"]["ids"] == ["abc123", "def456"]
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_bulk_connector_skips_empty_titles() -> None:
+    """Papers without titles are skipped."""
+    payload = [{"paperId": "x", "title": "", "abstract": "nope"}]
+    mock_client = _semantic_scholar_bulk_client(payload)
+    with patch(
+        "ingestion.semantic_scholar_bulk.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await SemanticScholarBulkConnector().search("x", max_results=3)
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_bulk_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive limits short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.semantic_scholar_bulk.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await SemanticScholarBulkConnector().search("  ", max_results=5) == []
+        assert await SemanticScholarBulkConnector().search("abc", max_results=0) == []
+    mock_client.post.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_semantic_scholar_bulk_connector_returns_empty_on_http_error() -> None:
+    """HTTP failures yield an empty list rather than raising."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.post = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch(
+        "ingestion.semantic_scholar_bulk.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await SemanticScholarBulkConnector().search("abc", max_results=3)
     assert documents == []
