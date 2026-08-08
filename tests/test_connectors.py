@@ -32,6 +32,7 @@ from ingestion.openaire_projects import OpenaireProjectsConnector
 from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
+from ingestion.openalex_funders import OpenAlexFundersConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_publishers import OpenAlexPublishersConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
@@ -6303,4 +6304,123 @@ async def test_crossref_types_connector_returns_empty_on_http_error() -> None:
     mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
     with patch("ingestion.crossref_types.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefTypesConnector().search("x", max_results=3)
+    assert documents == []
+
+
+def _openalex_funders_client(
+    responses: list[tuple[str, dict[str, object]]],
+) -> AsyncMock:
+    """Build an AsyncClient mock that routes OpenAlex funders URLs."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        for prefix, payload in responses:
+            if str(url).startswith(prefix):
+                response.raise_for_status = MagicMock()
+                response.json = MagicMock(return_value=payload)
+                return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_funders_search_payload() -> dict[str, object]:
+    """Return a sample OpenAlex funders search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/F4320306076",
+                "display_name": "National Science Foundation",
+                "description": "United States independent federal science funding agency.",
+                "country_code": "US",
+                "grants_count": 290000,
+                "works_count": 1200000,
+                "cited_by_count": 45000000,
+                "ids": {
+                    "openalex": "https://openalex.org/F4320306076",
+                    "ror": "https://ror.org/021nxhr62",
+                    "wikidata": "https://www.wikidata.org/wiki/Q642946",
+                },
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_funders_connector_searches_and_normalizes() -> None:
+    """OpenAlexFundersConnector searches the funders API for free-text queries."""
+    mock_client = _openalex_funders_client(
+        [("https://api.openalex.org/funders", _openalex_funders_search_payload())]
+    )
+    with patch(
+        "ingestion.openalex_funders.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexFundersConnector(mailto="dev@example.org").search(
+            "National Science Foundation",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "National Science Foundation"
+    assert document.metadata["source_type"] == "openalex_funders"
+    assert document.metadata["openalex_funder_id"] == "F4320306076"
+    assert document.metadata["openalex"] == "https://openalex.org/F4320306076"
+    assert document.metadata["ror"] == "021nxhr62"
+    assert document.metadata["wikidata"] == "Q642946"
+    assert document.metadata["country"] == "US"
+    assert document.metadata["grants_count"] == "290000"
+    assert "OpenAlex funder National Science Foundation." in document.text
+    assert mock_client.get.await_args.kwargs["params"]["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_funders_connector_resolves_funder_url() -> None:
+    """OpenAlex funder ids and URLs resolve via the direct funders endpoint."""
+    payload = _openalex_funders_search_payload()["results"][0]
+    mock_client = _openalex_funders_client(
+        [("https://api.openalex.org/funders/F4320306076", payload)]
+    )
+    with patch(
+        "ingestion.openalex_funders.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexFundersConnector().search(
+            "https://openalex.org/F4320306076",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["openalex_funder_id"] == "F4320306076"
+    assert mock_client.get.await_args.args[0] == "https://api.openalex.org/funders/F4320306076"
+
+
+@pytest.mark.asyncio
+async def test_openalex_funders_connector_rejects_blank_and_handles_http_error() -> None:
+    """Blank/non-positive inputs short-circuit; HTTP failures yield an empty list."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_funders.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexFundersConnector().search(" ", max_results=5) == []
+        assert await OpenAlexFundersConnector().search("NSF", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch(
+        "ingestion.openalex_funders.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexFundersConnector().search("NSF", max_results=3)
     assert documents == []
