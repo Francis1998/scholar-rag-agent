@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OpenAlexTopicsHierarchyConnector`: OpenAlex topics hierarchy connector (`source_type=openalex_topics_hierarchy`). See `docs/guides/OPENALEX_TOPICS_HIERARCHY_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `PubmedMeshConnector`: NCBI MeSH vocabulary connector via E-utilities `esearch`/`esummary` (`db=mesh`, `source_type=pubmed_mesh`) with UI, preferred name, and tree numbers in metadata. See `docs/guides/PUBMED_MESH_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `ArxivHtmlAbstractConnector`: arXiv abs HTML abstract enrichment connector (`source_type=arxiv_html_abstract`) that fetches `https://arxiv.org/abs/{id}` abstract text (or enriches free-text arXiv API hits). See `docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexPublishersConnector`: OpenAlex publishers API connector (`source_type=openalex_publishers`) with free-text search and `P####` id resolve. See `docs/guides/OPENALEX_PUBLISHERS_SOURCE_GUIDE.md`. Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

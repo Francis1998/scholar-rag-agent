@@ -35,6 +35,7 @@ from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_publishers import OpenAlexPublishersConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
+from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.orcid_works_filter import OrcidWorksFilterConnector
@@ -6029,4 +6030,108 @@ async def test_pubmed_mesh_connector_skips_descriptors_without_name() -> None:
     )
     with patch("ingestion.pubmed_mesh.httpx.AsyncClient", return_value=mock_client):
         documents = await PubmedMeshConnector().search("x", max_results=5)
+    assert documents == []
+
+
+def _openalex_topics_hierarchy_client(responses: list[tuple[str, dict[str, object]]]) -> AsyncMock:
+    """Build an AsyncClient mock for OpenAlex topics hierarchy URLs."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        for prefix, payload in responses:
+            if str(url).startswith(prefix):
+                response.raise_for_status = MagicMock()
+                response.json = MagicMock(return_value=payload)
+                return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_topics_hierarchy_payload() -> dict[str, object]:
+    """Return a sample OpenAlex topics hierarchy payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/T11948",
+                "display_name": "Graph Neural Networks",
+                "description": "Message-passing neural networks on graphs.",
+                "works_count": 12000,
+                "domain": {"display_name": "Computer Science"},
+                "field": {"display_name": "Artificial Intelligence"},
+                "subfield": {"display_name": "Machine Learning"},
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_hierarchy_connector_searches_and_normalizes() -> None:
+    """OpenAlexTopicsHierarchyConnector embeds domain/field/subfield ancestry."""
+    mock_client = _openalex_topics_hierarchy_client(
+        [("https://api.openalex.org/topics", _openalex_topics_hierarchy_payload())]
+    )
+    with patch(
+        "ingestion.openalex_topics_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexTopicsHierarchyConnector(mailto="dev@example.org").search(
+            "graph neural",
+            max_results=3,
+        )
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["source_type"] == "openalex_topics_hierarchy"
+    assert document.metadata["hierarchy_path"].startswith("Computer Science")
+    assert "Machine Learning" in document.metadata["hierarchy_path"]
+    assert "OpenAlex topic hierarchy:" in document.text
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_hierarchy_connector_resolves_topic_id() -> None:
+    """Bare topic ids resolve via the direct topics endpoint."""
+    payload = _openalex_topics_hierarchy_payload()["results"][0]
+    mock_client = _openalex_topics_hierarchy_client(
+        [("https://api.openalex.org/topics/T11948", payload)]
+    )
+    with patch(
+        "ingestion.openalex_topics_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexTopicsHierarchyConnector().search("T11948", max_results=1)
+    assert len(documents) == 1
+    assert documents[0].metadata["openalex_topic_id"] == "T11948"
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_hierarchy_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive limits short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_topics_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexTopicsHierarchyConnector().search(" ", max_results=5) == []
+        assert await OpenAlexTopicsHierarchyConnector().search("x", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_openalex_topics_hierarchy_connector_returns_empty_on_http_error() -> None:
+    """HTTP failures yield an empty list rather than raising."""
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch(
+        "ingestion.openalex_topics_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexTopicsHierarchyConnector().search("graphs", max_results=3)
     assert documents == []
