@@ -155,13 +155,11 @@ class OpenAlexFundersConnector:
 
         ids = cls._as_dict(item.get("ids"))
         openalex_ref = (
-            cls._as_str(ids.get("openalex")).strip()
-            or cls._as_str(item.get("id")).strip()
+            cls._as_str(ids.get("openalex")).strip() or cls._as_str(item.get("id")).strip()
         )
         funder_id = cls._extract_funder_id(openalex_ref)
         description = (
-            cls._as_str(item.get("description")).strip()
-            or cls._as_str(item.get("summary")).strip()
+            cls._as_str(item.get("description")).strip() or cls._as_str(item.get("summary")).strip()
         )
         country = (
             cls._as_str(item.get("country")).strip()
