@@ -8,6 +8,7 @@ import pytest
 
 from ingestion.ads import AdsConnector
 from ingestion.arxiv import ArxivConnector
+from ingestion.arxiv_html_abstract import ArxivHtmlAbstractConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.biorxiv_collections import BioRxivCollectionsConnector
 from ingestion.clinicaltrials import ClinicalTrialsConnector
@@ -5757,3 +5758,141 @@ async def test_openalex_publishers_connector_returns_empty_on_http_error() -> No
     ):
         documents = await OpenAlexPublishersConnector().search("Springer", max_results=3)
     assert documents == []
+
+
+ARXIV_HTML_ABS_FIXTURE = """<!DOCTYPE html>
+<html><head>
+<meta name="citation_title" content="GraphRAG Paper">
+<meta name="citation_abstract" content="HTML abs abstract about GraphRAG retrieval.">
+</head><body>
+<blockquote class="abstract mathjax">
+<span class="descriptor">Abstract:</span> Fallback abstract text.
+</blockquote>
+</body></html>
+"""
+
+ARXIV_HTML_API_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <id>http://arxiv.org/abs/2301.00001</id>
+    <title>GraphRAG Paper</title>
+    <summary>Atom API summary about GraphRAG.</summary>
+  </entry>
+</feed>
+"""
+
+
+def _arxiv_html_client(
+    *,
+    abs_html: str | None = ARXIV_HTML_ABS_FIXTURE,
+    api_xml: str | None = None,
+    abs_error: bool = False,
+    api_error: bool = False,
+) -> AsyncMock:
+    """Build an AsyncClient mock for arXiv API + abs HTML fetches."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        url_s = str(url)
+        if "export.arxiv.org/api/query" in url_s:
+            if api_error:
+                raise httpx.HTTPError("api boom")
+            response.raise_for_status = MagicMock()
+            response.text = api_xml or ARXIV_HTML_API_FIXTURE
+            return response
+        if "arxiv.org/abs/" in url_s:
+            if abs_error:
+                raise httpx.HTTPError("abs boom")
+            response.raise_for_status = MagicMock()
+            response.text = abs_html or ""
+            return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+@pytest.mark.asyncio
+async def test_arxiv_html_abstract_connector_fetches_abs_for_id() -> None:
+    """Arxiv id queries fetch the abs HTML page abstract."""
+    mock_client = _arxiv_html_client()
+    with patch(
+        "ingestion.arxiv_html_abstract.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await ArxivHtmlAbstractConnector().search("2301.00001", max_results=1)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "GraphRAG Paper"
+    assert document.text == "HTML abs abstract about GraphRAG retrieval."
+    assert document.metadata["source_type"] == "arxiv_html_abstract"
+    assert document.metadata["arxiv_id"] == "2301.00001"
+    assert document.metadata["abstract_source"] == "html_abs"
+    assert document.source == "https://arxiv.org/abs/2301.00001"
+
+
+@pytest.mark.asyncio
+async def test_arxiv_html_abstract_connector_enriches_search_hits() -> None:
+    """Free-text queries search the Atom API then enrich with HTML abs text."""
+    mock_client = _arxiv_html_client(api_xml=ARXIV_HTML_API_FIXTURE)
+    with patch(
+        "ingestion.arxiv_html_abstract.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await ArxivHtmlAbstractConnector().search(
+            "graph retrieval",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["source_type"] == "arxiv_html_abstract"
+    assert document.metadata["abstract_source"] == "html_abs"
+    assert "HTML abs abstract" in document.text
+    assert mock_client.get.await_count >= 2
+
+
+@pytest.mark.asyncio
+async def test_arxiv_html_abstract_connector_falls_back_to_atom_summary() -> None:
+    """When abs HTML has no abstract, Atom API summary is used for search hits."""
+    mock_client = _arxiv_html_client(abs_html="<html><body>no abstract</body></html>")
+    with patch(
+        "ingestion.arxiv_html_abstract.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await ArxivHtmlAbstractConnector().search("graph", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].text == "Atom API summary about GraphRAG."
+    assert documents[0].metadata["abstract_source"] == "atom_api"
+
+
+@pytest.mark.asyncio
+async def test_arxiv_html_abstract_connector_returns_empty_on_abs_failure_for_id() -> None:
+    """Direct id lookups return empty when abs HTML fetch fails."""
+    mock_client = _arxiv_html_client(abs_error=True)
+    with patch(
+        "ingestion.arxiv_html_abstract.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await ArxivHtmlAbstractConnector().search("2301.00001", max_results=1)
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_arxiv_html_abstract_connector_rejects_blank_and_non_positive() -> None:
+    """Blank queries and non-positive max_results short-circuit without HTTP."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.arxiv_html_abstract.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await ArxivHtmlAbstractConnector().search(" ", max_results=5) == []
+        assert await ArxivHtmlAbstractConnector().search("graph", max_results=0) == []
+    mock_client.get.assert_not_called()
