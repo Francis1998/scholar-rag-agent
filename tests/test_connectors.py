@@ -16,6 +16,7 @@ from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
 from ingestion.crossref_events import CrossrefEventsConnector
 from ingestion.crossref_funder import CrossrefFunderConnector
+from ingestion.crossref_journals import CrossrefJournalsConnector
 from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
@@ -6642,3 +6643,91 @@ async def test_europepmc_grants_connector_passes_fielded_queries() -> None:
         documents = await EuropePmcGrantsConnector().search("ga:BBSRC", max_results=2)
     assert documents == []
     assert "query=ga:BBSRC" in str(mock_client.get.await_args.args[0])
+
+
+def _crossref_journals_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref journals."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_journals_search_payload() -> dict[str, object]:
+    """Return a sample Crossref journals search payload."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": "Journal of Machine Learning Research",
+                    "publisher": "JMLR",
+                    "ISSN": ["1532-4435", "1533-7928"],
+                    "issn-type": [
+                        {"type": "print", "value": "1532-4435"},
+                        {"type": "electronic", "value": "1533-7928"},
+                    ],
+                    "subjects": [{"name": "Artificial Intelligence"}],
+                    "counts": {"total-dois": 4200, "current-dois": 120},
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_journals_connector_searches_and_normalizes() -> None:
+    """CrossrefJournalsConnector searches journals and normalizes serials."""
+    mock_client = _crossref_journals_client(_crossref_journals_search_payload())
+    with patch("ingestion.crossref_journals.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefJournalsConnector(mailto="dev@example.org").search(
+            "Journal of Machine Learning Research",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Journal of Machine Learning Research"
+    assert document.metadata["source_type"] == "crossref_journals"
+    assert document.metadata["issn"] == "1532-4435"
+    assert "1533-7928" in document.metadata["issns"]
+    assert document.metadata["publisher"] == "JMLR"
+    assert document.metadata["subjects"] == "Artificial Intelligence"
+    assert document.metadata["total_dois"] == "4200"
+    assert "Crossref journal Journal of Machine Learning Research." in document.text
+    assert mock_client.get.await_args.kwargs["params"]["mailto"] == "dev@example.org"
+    assert mock_client.get.await_args.args[0] == "https://api.crossref.org/journals"
+
+
+@pytest.mark.asyncio
+async def test_crossref_journals_connector_resolves_issn() -> None:
+    """ISSN-shaped queries resolve via the direct journals endpoint."""
+    payload = {"message": _crossref_journals_search_payload()["message"]["items"][0]}
+    mock_client = _crossref_journals_client(payload)
+    with patch("ingestion.crossref_journals.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefJournalsConnector().search("1532-4435", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["issn"] == "1532-4435"
+    assert mock_client.get.await_args.args[0] == "https://api.crossref.org/journals/1532-4435"
+
+
+@pytest.mark.asyncio
+async def test_crossref_journals_connector_rejects_blank_and_handles_http_error() -> None:
+    """Blank/non-positive inputs short-circuit; HTTP failures yield an empty list."""
+    mock_client = AsyncMock()
+    with patch("ingestion.crossref_journals.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefJournalsConnector().search(" ", max_results=5) == []
+        assert await CrossrefJournalsConnector().search("Nature", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.crossref_journals.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefJournalsConnector().search("Nature", max_results=3)
+    assert documents == []
