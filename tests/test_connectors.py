@@ -34,6 +34,7 @@ from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_funders import OpenAlexFundersConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
+from ingestion.openalex_keywords import OpenAlexKeywordsConnector
 from ingestion.openalex_publishers import OpenAlexPublishersConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
@@ -6423,4 +6424,119 @@ async def test_openalex_funders_connector_rejects_blank_and_handles_http_error()
         return_value=mock_client,
     ):
         documents = await OpenAlexFundersConnector().search("NSF", max_results=3)
+    assert documents == []
+
+
+def _openalex_keywords_client(
+    responses: list[tuple[str, dict[str, object]]],
+) -> AsyncMock:
+    """Build an AsyncClient mock that routes OpenAlex keywords URLs."""
+
+    async def _get(url: str, params: dict[str, object] | None = None) -> MagicMock:
+        del params
+        response = MagicMock()
+        for prefix, payload in responses:
+            if str(url).startswith(prefix):
+                response.raise_for_status = MagicMock()
+                response.json = MagicMock(return_value=payload)
+                return response
+        response.raise_for_status = MagicMock(side_effect=httpx.HTTPError("missing"))
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_keywords_search_payload() -> dict[str, object]:
+    """Return a sample OpenAlex keywords search payload."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/keywords/machine-learning",
+                "display_name": "Machine learning",
+                "works_count": 2042668,
+                "cited_by_count": 47360185,
+                "works_api_url": (
+                    "https://api.openalex.org/works?filter=keywords.id:keywords/machine-learning"
+                ),
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_keywords_connector_searches_and_normalizes() -> None:
+    """OpenAlexKeywordsConnector searches the keywords API for free-text queries."""
+    mock_client = _openalex_keywords_client(
+        [("https://api.openalex.org/keywords", _openalex_keywords_search_payload())]
+    )
+    with patch(
+        "ingestion.openalex_keywords.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexKeywordsConnector(mailto="dev@example.org").search(
+            "machine learning",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Machine learning"
+    assert document.metadata["source_type"] == "openalex_keywords"
+    assert document.metadata["openalex_keyword_id"] == "machine-learning"
+    assert document.metadata["openalex"] == "https://openalex.org/keywords/machine-learning"
+    assert document.metadata["works_count"] == "2042668"
+    assert document.metadata["cited_by_count"] == "47360185"
+    assert "OpenAlex keyword Machine learning." in document.text
+    assert mock_client.get.await_args.kwargs["params"]["mailto"] == "dev@example.org"
+    assert mock_client.get.await_args.kwargs["params"]["search"] == "machine learning"
+
+
+@pytest.mark.asyncio
+async def test_openalex_keywords_connector_resolves_keyword_url() -> None:
+    """OpenAlex keyword URLs and keywords/ ids resolve via the direct endpoint."""
+    payload = _openalex_keywords_search_payload()["results"][0]
+    mock_client = _openalex_keywords_client(
+        [("https://api.openalex.org/keywords/machine-learning", payload)]
+    )
+    with patch(
+        "ingestion.openalex_keywords.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexKeywordsConnector().search(
+            "https://openalex.org/keywords/machine-learning",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["openalex_keyword_id"] == "machine-learning"
+    assert mock_client.get.await_args.args[0] == (
+        "https://api.openalex.org/keywords/machine-learning"
+    )
+
+
+@pytest.mark.asyncio
+async def test_openalex_keywords_connector_rejects_blank_and_handles_http_error() -> None:
+    """Blank/non-positive inputs short-circuit; HTTP failures yield an empty list."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_keywords.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexKeywordsConnector().search(" ", max_results=5) == []
+        assert await OpenAlexKeywordsConnector().search("ml", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch(
+        "ingestion.openalex_keywords.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexKeywordsConnector().search("machine learning", max_results=3)
     assert documents == []

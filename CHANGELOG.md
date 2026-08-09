@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OpenAlexKeywordsConnector`: OpenAlex keywords API connector (`source_type=openalex_keywords`) with free-text search and keyword URL / `keywords/{slug}` resolve. See `docs/guides/OPENALEX_KEYWORDS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefTypesConnector`: Crossref works type-filter connector (`source_type=crossref_types`). See `docs/guides/CROSSREF_TYPES_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `SemanticScholarBulkConnector`: Semantic Scholar Graph `/paper/batch` connector (`source_type=semantic_scholar_bulk`). See `docs/guides/SEMANTIC_SCHOLAR_BULK_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexTopicsHierarchyConnector`: OpenAlex topics hierarchy connector (`source_type=openalex_topics_hierarchy`). See `docs/guides/OPENALEX_TOPICS_HIERARCHY_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
