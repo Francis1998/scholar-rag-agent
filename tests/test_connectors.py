@@ -25,6 +25,7 @@ from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.dryad import DryadConnector
 from ingestion.europepmc import EuropePmcConnector
+from ingestion.europepmc_grants import EuropePmcGrantsConnector
 from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
@@ -6540,3 +6541,104 @@ async def test_openalex_keywords_connector_rejects_blank_and_handles_http_error(
     ):
         documents = await OpenAlexKeywordsConnector().search("machine learning", max_results=3)
     assert documents == []
+
+
+def _europepmc_grants_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock for Europe PMC GRIST grants."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _europepmc_grants_payload() -> dict[str, object]:
+    """Return a sample Europe PMC GRIST grants payload."""
+    return {
+        "HitCount": "1",
+        "Request": {"Query": "malaria", "ResultType": "Core", "Page": "1"},
+        "RecordList": {
+            "Record": [
+                {
+                    "Person": {
+                        "FamilyName": "Keller",
+                        "GivenName": "Claudia",
+                        "Initials": "C",
+                    },
+                    "Grant": {
+                        "Funder": {
+                            "Name": "European Research Council",
+                            "FundRefID": "https://doi.org/10.13039/501100000781",
+                        },
+                        "Id": "101231026",
+                        "Doi": "10.3030/101231026",
+                        "Title": "Evolution of Mechanisms for Gene Regulation",
+                        "Abstract": {"value": "A grant about gene regulation."},
+                        "Type": "Consolidator Grant",
+                        "Stream": "Frontier Research",
+                        "Category": "Horizon Europe",
+                        "StartDate": "2026-08-01",
+                        "EndDate": "2031-07-31",
+                        "Amount": {"value": 1999177.0, "Currency": "EUR"},
+                    },
+                    "Institution": {"Name": "University of Basel", "RORID": "02s6k3f65"},
+                }
+            ]
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_europepmc_grants_connector_searches_and_normalizes() -> None:
+    """EuropePmcGrantsConnector searches GRIST and normalizes grant records."""
+    mock_client = _europepmc_grants_client(_europepmc_grants_payload())
+    with patch("ingestion.europepmc_grants.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcGrantsConnector(email="dev@example.org").search(
+            "malaria",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Evolution of Mechanisms for Gene Regulation"
+    assert document.metadata["source_type"] == "europepmc_grants"
+    assert document.metadata["grant_id"] == "101231026"
+    assert document.metadata["funder"] == "European Research Council"
+    assert document.metadata["pi"] == "Claudia Keller"
+    assert document.metadata["institution"] == "University of Basel"
+    assert document.metadata["amount"] == "1999177 EUR"
+    assert document.source == "https://doi.org/10.3030/101231026"
+    assert "Europe PMC grant" in document.text
+    assert "query=malaria" in str(mock_client.get.await_args.args[0])
+    assert "email=dev%40example.org" in str(mock_client.get.await_args.args[0])
+
+
+@pytest.mark.asyncio
+async def test_europepmc_grants_connector_rejects_blank_and_handles_http_error() -> None:
+    """Blank/non-positive inputs short-circuit; HTTP failures yield an empty list."""
+    mock_client = AsyncMock()
+    with patch("ingestion.europepmc_grants.httpx.AsyncClient", return_value=mock_client):
+        assert await EuropePmcGrantsConnector().search(" ", max_results=5) == []
+        assert await EuropePmcGrantsConnector().search("malaria", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.europepmc_grants.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcGrantsConnector().search("malaria", max_results=3)
+    assert documents == []
+
+
+@pytest.mark.asyncio
+async def test_europepmc_grants_connector_passes_fielded_queries() -> None:
+    """Fielded Grist queries are embedded in the request path."""
+    mock_client = _europepmc_grants_client({"RecordList": {"Record": []}})
+    with patch("ingestion.europepmc_grants.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcGrantsConnector().search("ga:BBSRC", max_results=2)
+    assert documents == []
+    assert "query=ga:BBSRC" in str(mock_client.get.await_args.args[0])
