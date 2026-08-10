@@ -14,7 +14,7 @@ The Open Funder Registry is the authoritative index of funding organizations
 used in grant acknowledgements and Crossref funding metadata. Alongside Crossref
 works, DataCite, OpenAlex, and Semantic Scholar it supplies stable funder IDs
 (`10.13039/...`), preferred names, alternate names / acronyms, and locations —
-useful context for grant-aware RAG and NIW-style evidence synthesis.
+useful context for grant-aware RAG and research evidence synthesis.
 
 Free-text search (optional polite-pool `mailto`):
 

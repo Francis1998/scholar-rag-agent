@@ -57,7 +57,7 @@ STORIES: dict[str, Story] = {
         (
             "Result: faster grounded synthesis",
             "Researchers get audit-friendly answers for reviews, grants, and prior art.",
-            ["review", "NIW evidence", "hypothesis", "comparison"],
+            ["review", "research evidence", "hypothesis", "comparison"],
         ),
     ],
     "planning_trace.gif": [

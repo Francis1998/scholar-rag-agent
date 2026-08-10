@@ -7,7 +7,7 @@
 
 Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, arXiv HTML abs abstracts, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex concepts, OpenAlex institutions, OpenAlex sources/venues, PubMed MeSH, OpenAlex topics hierarchy, Semantic Scholar bulk, OpenAlex publishers, OpenAlex funders, OpenAlex keywords, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref types filter, Crossref members, Crossref relations, Crossref Funder Registry, Crossref Event Data, Crossref journals, Europe PMC, Europe PMC grants, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, OpenCitations, OSF, ORCID, ORCID works filter, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
 
-The project is designed for the scientific knowledge synthesis narrative behind NIW-style research impact: researchers can accelerate literature review, hypothesis validation, and grounded comparison across large corpora without losing provenance.
+Scholar RAG Agent supports reproducible scientific knowledge synthesis, helping researchers accelerate literature review, hypothesis validation, and grounded comparison across large corpora while preserving source provenance.
 
 ## Why Researchers Need This
 
@@ -31,11 +31,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: teams need reproducible evidence trails for reviews, grants, and publications.
   The SQLite event log records state transitions, timestamps, agent IDs, run IDs, plans, retrieval payloads, and final answer provenance.
 
-## Actual Use Cases
+## Example Use Cases
 
 - Systematic literature review: ingest a folder of PDFs plus arXiv IDs, ask for the strongest themes, and receive cited claims grouped by supporting chunks.
 
-- Grant or NIW evidence synthesis: collect papers around a research contribution, validate novelty claims, and export citation-backed reasoning traces that show why each claim is supported.
+- Research and grant evidence synthesis: collect papers around a research question or contribution, assess novelty claims, and export citation-backed reasoning traces showing the evidence for each claim.
 
 - Hypothesis validation: ask whether the literature supports or refutes a hypothesis, then inspect supporting and counter-evidence retrieval tasks separately.
 
