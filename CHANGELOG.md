@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `DataCiteEventsConnector`: DataCite Event Data connector (`source_type=datacite_events`) for DOI citation, usage, and relationship events. See `docs/guides/DATACITE_EVENTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefJournalsConnector`: Crossref journals API connector (`source_type=crossref_journals`) with free-text search and ISSN resolve. See `docs/guides/CROSSREF_JOURNALS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `EuropePmcGrantsConnector`: Europe PMC GRIST grants connector (`source_type=europepmc_grants`). See `docs/guides/EUROPEPMC_GRANTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexKeywordsConnector`: OpenAlex keywords API connector (`source_type=openalex_keywords`) with free-text search and keyword URL / `keywords/{slug}` resolve. See `docs/guides/OPENALEX_KEYWORDS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

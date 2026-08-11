@@ -21,6 +21,7 @@ from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.datacite import DataCiteConnector
+from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
@@ -6730,4 +6731,95 @@ async def test_crossref_journals_connector_rejects_blank_and_handles_http_error(
     mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
     with patch("ingestion.crossref_journals.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefJournalsConnector().search("Nature", max_results=3)
+    assert documents == []
+
+
+def _datacite_events_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock for DataCite Event Data."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _datacite_events_payload() -> dict[str, object]:
+    """Return one representative DataCite citation event."""
+    return {
+        "data": [
+            {
+                "id": "297c9886-5f6b-4638-82bd-b67973677117",
+                "type": "events",
+                "attributes": {
+                    "subj-id": "https://doi.org/10.5061/dryad.qjq2bvqhq",
+                    "obj-id": "https://doi.org/10.1007/s10336-022-01988-z",
+                    "source-id": "datacite-crossref",
+                    "relation-type-id": "is-cited-by",
+                    "total": 1,
+                    "occurred-at": "2022-05-30T05:37:36.000Z",
+                    "timestamp": "2022-05-30T05:37:37.828Z",
+                    "citation-type": "citation",
+                },
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_events_connector_searches_doi_and_normalizes() -> None:
+    """DOI queries use the DOI filter and normalize a citation event."""
+    mock_client = _datacite_events_client(_datacite_events_payload())
+    with patch("ingestion.datacite_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteEventsConnector().search(
+            "https://doi.org/10.5061/dryad.qjq2bvqhq",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.metadata["source_type"] == "datacite_events"
+    assert document.metadata["event_id"] == "297c9886-5f6b-4638-82bd-b67973677117"
+    assert document.metadata["subject_doi"] == "10.5061/dryad.qjq2bvqhq"
+    assert document.metadata["object_doi"] == "10.1007/s10336-022-01988-z"
+    assert document.metadata["relation_type"] == "is-cited-by"
+    assert document.metadata["event_source"] == "datacite-crossref"
+    assert document.source.endswith("297c9886-5f6b-4638-82bd-b67973677117")
+    assert "DataCite Event Data record." in document.text
+    assert mock_client.get.await_args.kwargs["params"] == {
+        "page[size]": 3,
+        "doi": "10.5061/dryad.qjq2bvqhq",
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_events_connector_uses_general_query_filter() -> None:
+    """Non-DOI searches use DataCite's general event query parameter."""
+    mock_client = _datacite_events_client({"data": []})
+    with patch("ingestion.datacite_events.httpx.AsyncClient", return_value=mock_client):
+        assert await DataCiteEventsConnector().search("citation usage", max_results=2) == []
+
+    assert mock_client.get.await_args.kwargs["params"] == {
+        "page[size]": 2,
+        "query": "citation usage",
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_events_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and unavailable Event Data yields no documents."""
+    mock_client = AsyncMock()
+    with patch("ingestion.datacite_events.httpx.AsyncClient", return_value=mock_client):
+        assert await DataCiteEventsConnector().search(" ", max_results=5) == []
+        assert await DataCiteEventsConnector().search("10.1234/example", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.datacite_events.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteEventsConnector().search("10.1234/example", max_results=3)
     assert documents == []
