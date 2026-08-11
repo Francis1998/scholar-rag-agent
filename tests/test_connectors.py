@@ -28,6 +28,7 @@ from ingestion.doaj import DoajConnector
 from ingestion.dryad import DryadConnector
 from ingestion.europepmc import EuropePmcConnector
 from ingestion.europepmc_grants import EuropePmcGrantsConnector
+from ingestion.europepmc_preprints import EuropePmcPreprintsConnector
 from ingestion.figshare import FigshareConnector
 from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
@@ -6945,4 +6946,123 @@ async def test_orcid_employments_connector_rejects_blank_and_handles_http_error(
             "0000-0002-1825-0097",
             max_results=3,
         )
+    assert documents == []
+
+
+def _europepmc_preprints_client(payload: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock for Europe PMC preprint searches."""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _europepmc_preprints_payload() -> dict[str, object]:
+    """Return a mixed-source payload containing one preprint."""
+    return {
+        "resultList": {
+            "result": [
+                {
+                    "id": "PPR123456",
+                    "source": "PPR",
+                    "title": "Foundation Models for Protein Design",
+                    "abstractText": "A preprint about generative protein models.",
+                    "doi": "10.1101/2026.01.02.123456",
+                    "authorString": "Lovelace A, Hopper G",
+                    "journalTitle": "bioRxiv",
+                    "firstPublicationDate": "2026-01-02",
+                    "citedByCount": 7,
+                    "isOpenAccess": True,
+                },
+                {
+                    "id": "40012345",
+                    "source": "MED",
+                    "title": "Peer-reviewed article that must be excluded",
+                },
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_europepmc_preprints_connector_filters_and_normalizes() -> None:
+    """The connector enforces SRC:PPR and normalizes only preprint records."""
+    mock_client = _europepmc_preprints_client(_europepmc_preprints_payload())
+    with patch("ingestion.europepmc_preprints.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcPreprintsConnector(email="dev@example.org").search(
+            "protein design",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Foundation Models for Protein Design"
+    assert document.text == "A preprint about generative protein models."
+    assert document.source == "https://europepmc.org/article/PPR/PPR123456"
+    assert document.metadata["source_type"] == "europepmc_preprints"
+    assert document.metadata["preprint_id"] == "PPR123456"
+    assert document.metadata["doi"] == "10.1101/2026.01.02.123456"
+    assert document.metadata["year"] == "2026"
+    assert document.metadata["authors"] == "Lovelace A, Hopper G"
+    assert document.metadata["preprint_server"] == "bioRxiv"
+    assert document.metadata["cited_by_count"] == "7"
+    assert document.metadata["is_open_access"] == "true"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "(protein design) AND SRC:PPR"
+    assert params["resultType"] == "core"
+    assert params["format"] == "json"
+    assert params["pageSize"] == 5
+    assert params["email"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_europepmc_preprints_connector_builds_sparse_descriptor() -> None:
+    """Preprints without abstracts retain useful searchable metadata."""
+    payload: dict[str, object] = {
+        "resultList": {
+            "result": [
+                {
+                    "id": "PPR999",
+                    "source": "PPR",
+                    "title": "Sparse Preprint",
+                    "authorString": "Turing A",
+                    "journalTitle": "Research Square",
+                    "pubYear": 2025,
+                    "doi": "10.21203/rs.3.rs-999/v1",
+                }
+            ]
+        }
+    }
+    mock_client = _europepmc_preprints_client(payload)
+    with patch("ingestion.europepmc_preprints.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcPreprintsConnector().search("sparse", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2025"
+    assert documents[0].text == (
+        "Europe PMC preprint. Authors: Turing A. Preprint server: Research Square. "
+        "Year: 2025. DOI: 10.21203/rs.3.rs-999/v1."
+    )
+
+
+@pytest.mark.asyncio
+async def test_europepmc_preprints_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no preprints."""
+    mock_client = AsyncMock()
+    with patch("ingestion.europepmc_preprints.httpx.AsyncClient", return_value=mock_client):
+        assert await EuropePmcPreprintsConnector().search(" ", max_results=5) == []
+        assert await EuropePmcPreprintsConnector().search("protein", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.europepmc_preprints.httpx.AsyncClient", return_value=mock_client):
+        documents = await EuropePmcPreprintsConnector().search("protein", max_results=3)
     assert documents == []
