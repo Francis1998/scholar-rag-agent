@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OrcidEmploymentsConnector`: ORCID public employments/affiliations connector (`source_type=orcid_employments`) with direct ORCID iD lookup and researcher profile search. See `docs/guides/ORCID_EMPLOYMENTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `DataCiteEventsConnector`: DataCite Event Data connector (`source_type=datacite_events`) for DOI citation, usage, and relationship events. See `docs/guides/DATACITE_EVENTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefJournalsConnector`: Crossref journals API connector (`source_type=crossref_journals`) with free-text search and ISSN resolve. See `docs/guides/CROSSREF_JOURNALS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `EuropePmcGrantsConnector`: Europe PMC GRIST grants connector (`source_type=europepmc_grants`). See `docs/guides/EUROPEPMC_GRANTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

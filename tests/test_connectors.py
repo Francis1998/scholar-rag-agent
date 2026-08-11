@@ -44,6 +44,7 @@ from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
+from ingestion.orcid_employments import OrcidEmploymentsConnector
 from ingestion.orcid_works_filter import OrcidWorksFilterConnector
 from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
@@ -6822,4 +6823,126 @@ async def test_datacite_events_connector_rejects_blank_and_handles_http_error() 
     mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
     with patch("ingestion.datacite_events.httpx.AsyncClient", return_value=mock_client):
         documents = await DataCiteEventsConnector().search("10.1234/example", max_results=3)
+    assert documents == []
+
+
+def _orcid_employments_client(*payloads: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock returning ORCID employment payloads in order."""
+    responses = [
+        httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+        for payload in payloads
+    ]
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=responses)
+    return mock_client
+
+
+def _orcid_employments_payload() -> dict[str, object]:
+    """Return a representative ORCID employments response."""
+    return {
+        "affiliation-group": [
+            {
+                "summaries": [
+                    {
+                        "employment-summary": {
+                            "put-code": 22411,
+                            "role-title": "Professor of Chemistry",
+                            "department-name": "Department of Chemistry",
+                            "start-date": {
+                                "year": {"value": "2018"},
+                                "month": {"value": "9"},
+                            },
+                            "end-date": None,
+                            "organization": {
+                                "name": "Example University",
+                                "address": {
+                                    "city": "Cambridge",
+                                    "region": "MA",
+                                    "country": "US",
+                                },
+                                "disambiguated-organization": {
+                                    "disambiguated-organization-identifier": (
+                                        "https://ror.org/012345678"
+                                    ),
+                                    "disambiguation-source": "ROR",
+                                },
+                            },
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_orcid_employments_connector_resolves_id_and_normalizes() -> None:
+    """ORCID iD queries fetch public employments without calling works."""
+    mock_client = _orcid_employments_client(_orcid_employments_payload())
+    with patch("ingestion.orcid_employments.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidEmploymentsConnector().search(
+            "https://orcid.org/0000-0002-1825-0097",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Professor of Chemistry at Example University"
+    assert document.metadata["source_type"] == "orcid_employments"
+    assert document.metadata["orcid"] == "0000-0002-1825-0097"
+    assert document.metadata["organization"] == "Example University"
+    assert document.metadata["organization_id"] == "https://ror.org/012345678"
+    assert document.metadata["role_title"] == "Professor of Chemistry"
+    assert document.metadata["start_date"] == "2018-09"
+    assert document.metadata["end_date"] == ""
+    assert document.source == "https://orcid.org/0000-0002-1825-0097/employment/22411"
+    assert "Dates: 2018-09 to present." in document.text
+    assert mock_client.get.await_args.args[0].endswith("/0000-0002-1825-0097/employments")
+
+
+@pytest.mark.asyncio
+async def test_orcid_employments_connector_searches_researcher_profiles() -> None:
+    """Name queries resolve a profile before fetching its employments."""
+    search_payload: dict[str, object] = {
+        "expanded-result": [
+            {
+                "orcid-id": "0000-0001-2345-6789",
+                "given-names": "Ada",
+                "family-names": "Lovelace",
+            }
+        ]
+    }
+    mock_client = _orcid_employments_client(search_payload, _orcid_employments_payload())
+    with patch("ingestion.orcid_employments.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidEmploymentsConnector().search("Ada Lovelace", max_results=2)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["profile_name"] == "Ada Lovelace"
+    assert mock_client.get.await_args_list[0].kwargs["params"] == {
+        "q": "Ada Lovelace",
+        "rows": 2,
+    }
+    assert mock_client.get.await_args_list[1].args[0].endswith("/0000-0001-2345-6789/employments")
+
+
+@pytest.mark.asyncio
+async def test_orcid_employments_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input and unavailable public records produce no documents."""
+    mock_client = AsyncMock()
+    with patch("ingestion.orcid_employments.httpx.AsyncClient", return_value=mock_client):
+        assert await OrcidEmploymentsConnector().search(" ", max_results=5) == []
+        assert await OrcidEmploymentsConnector().search("Ada Lovelace", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.orcid_employments.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidEmploymentsConnector().search(
+            "0000-0002-1825-0097",
+            max_results=3,
+        )
     assert documents == []
