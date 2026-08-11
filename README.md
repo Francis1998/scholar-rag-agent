@@ -164,6 +164,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [ClinicalTrials.gov source guide](docs/guides/CLINICALTRIALS_SOURCE_GUIDE.md) | ClinicalTrials.gov clinical-study registry connector. |
 | [Wikidata scholarly source guide](docs/guides/WIKIDATA_SCHOLARLY_SOURCE_GUIDE.md) | Wikidata scholarly-entity search connector. |
 | [SSRN source guide](docs/guides/SSRN_SOURCE_GUIDE.md) | SSRN preprint DOI bridge via Crossref connector. |
+| [ORCID employments source guide](docs/guides/ORCID_EMPLOYMENTS_SOURCE_GUIDE.md) | ORCID public employment affiliations connector. |
 
 ## Provider Keys
 
