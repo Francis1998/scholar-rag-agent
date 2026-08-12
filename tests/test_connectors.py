@@ -36,6 +36,7 @@ from ingestion.hal import HalConnector
 from ingestion.openaire import OpenAireConnector
 from ingestion.openaire_projects import OpenaireProjectsConnector
 from ingestion.openalex import OpenAlexConnector
+from ingestion.openalex_author_works import OpenAlexAuthorWorksConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
 from ingestion.openalex_funders import OpenAlexFundersConnector
@@ -7309,4 +7310,147 @@ async def test_datacite_reports_connector_rejects_blank_and_handles_http_error()
     mock_client = _datacite_reports_client({}, status_code=503)
     with patch("ingestion.datacite_reports.httpx.AsyncClient", return_value=mock_client):
         documents = await DataCiteReportsConnector().search("climate", max_results=3)
+    assert documents == []
+
+
+def _openalex_author_works_client(
+    responses: list[tuple[str, object]],
+) -> AsyncMock:
+    """Build an AsyncClient mock keyed by OpenAlex URL prefix."""
+    by_url = dict(responses)
+
+    async def _get(url: str, params: object = None) -> MagicMock:
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        matched = None
+        for prefix, payload in by_url.items():
+            if url.startswith(prefix):
+                matched = payload
+                break
+        if matched is None:
+            response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "error",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=404),
+                )
+            )
+            matched = {}
+        response.json = MagicMock(return_value=matched)
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_author_works_payload() -> dict[str, object]:
+    """Return an OpenAlex works payload with citation counts."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/W123",
+                "title": "Foundational Paper",
+                "doi": "https://doi.org/10.1000/foundational",
+                "publication_year": 2020,
+                "cited_by_count": 42,
+                "authorships": [
+                    {
+                        "author": {
+                            "id": "https://openalex.org/A2208157607",
+                            "display_name": "Ada Lovelace",
+                        }
+                    }
+                ],
+                "primary_location": {
+                    "landing_page_url": "https://example.org/w123",
+                    "source": {"display_name": "Nature Methods"},
+                },
+                "abstract_inverted_index": {"Foundational": [0], "abstract": [1]},
+            },
+            {
+                "id": "https://openalex.org/W456",
+                "display_name": "Sparse Work",
+                "publication_date": "2021-03-15",
+                "cited_by_count": 7,
+                "authorships": [{"author": {"display_name": "Ada Lovelace"}}],
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_author_works_connector_resolves_id_and_normalizes() -> None:
+    """Author-id queries fetch works filtered by authorships.author.id."""
+    mock_client = _openalex_author_works_client(
+        [("https://api.openalex.org/works", _openalex_author_works_payload())]
+    )
+    with patch("ingestion.openalex_author_works.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorWorksConnector(mailto="dev@example.org").search(
+            "A2208157607",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Foundational Paper"
+    assert first.text == "Foundational abstract"
+    assert first.source == "https://openalex.org/W123"
+    assert first.metadata["source_type"] == "openalex_author_works"
+    assert first.metadata["author_id"] == "A2208157607"
+    assert first.metadata["doi"] == "10.1000/foundational"
+    assert first.metadata["year"] == "2020"
+    assert first.metadata["cited_by_count"] == "42"
+    assert first.metadata["journal"] == "Nature Methods"
+    assert documents[1].metadata["year"] == "2021"
+    assert "Cited by count: 7." in documents[1].text
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == "authorships.author.id:A2208157607"
+    assert params["sort"] == "cited_by_count:desc"
+    assert params["per-page"] == 5
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_author_works_connector_searches_author_then_works() -> None:
+    """Free-text author names resolve the top author before fetching works."""
+    authors_payload = {
+        "results": [{"id": "https://openalex.org/A2208157607", "display_name": "Ada Lovelace"}]
+    }
+    mock_client = _openalex_author_works_client(
+        [
+            ("https://api.openalex.org/authors", authors_payload),
+            ("https://api.openalex.org/works", _openalex_author_works_payload()),
+        ]
+    )
+    with patch("ingestion.openalex_author_works.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorWorksConnector().search("Ada Lovelace", max_results=2)
+
+    assert len(documents) == 2
+    assert documents[0].metadata["author_id"] == "A2208157607"
+    assert mock_client.get.await_count == 2
+    first_url = mock_client.get.await_args_list[0].args[0]
+    second_url = mock_client.get.await_args_list[1].args[0]
+    assert first_url.startswith("https://api.openalex.org/authors")
+    assert second_url.startswith("https://api.openalex.org/works")
+
+
+@pytest.mark.asyncio
+async def test_openalex_author_works_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no works."""
+    mock_client = AsyncMock()
+    with patch("ingestion.openalex_author_works.httpx.AsyncClient", return_value=mock_client):
+        assert await OpenAlexAuthorWorksConnector().search(" ", max_results=5) == []
+        assert await OpenAlexAuthorWorksConnector().search("Ada", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch("ingestion.openalex_author_works.httpx.AsyncClient", return_value=mock_client):
+        documents = await OpenAlexAuthorWorksConnector().search("A2208157607", max_results=3)
     assert documents == []
