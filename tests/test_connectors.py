@@ -20,6 +20,7 @@ from ingestion.crossref_journals import CrossrefJournalsConnector
 from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
+from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
@@ -7065,4 +7066,115 @@ async def test_europepmc_preprints_connector_rejects_blank_and_handles_http_erro
     mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
     with patch("ingestion.europepmc_preprints.httpx.AsyncClient", return_value=mock_client):
         documents = await EuropePmcPreprintsConnector().search("protein", max_results=3)
+    assert documents == []
+
+
+def _crossref_works_funder_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref works-by-funder searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_works_funder_payload() -> dict[str, object]:
+    """Return a Crossref works payload with funding acknowledgements."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": ["Foundation Models for Protein Design"],
+                    "DOI": "10.1000/funded.example",
+                    "abstract": "<jats:p>A funded study of generative protein models.</jats:p>",
+                    "issued": {"date-parts": [[2024, 6, 1]]},
+                    "author": [{"given": "Ada", "family": "Lovelace"}],
+                    "funder": [
+                        {"name": "National Science Foundation", "DOI": "10.13039/100000001"}
+                    ],
+                },
+                {
+                    "DOI": "10.1000/untitled",
+                    "funder": [{"name": "NSF"}],
+                },
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_funder_connector_searches_and_normalizes() -> None:
+    """Free-text queries request has-funder works and normalize funding metadata."""
+    mock_client = _crossref_works_funder_client(_crossref_works_funder_payload())
+    with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksFunderConnector(mailto="dev@example.org").search(
+            "protein design",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Foundation Models for Protein Design"
+    assert first.text == "A funded study of generative protein models."
+    assert first.source == "https://doi.org/10.1000/funded.example"
+    assert first.metadata["source_type"] == "crossref_works_funder"
+    assert first.metadata["doi"] == "10.1000/funded.example"
+    assert first.metadata["year"] == "2024"
+    assert first.metadata["authors"] == "Ada Lovelace"
+    assert first.metadata["funders"] == "National Science Foundation"
+    assert documents[1].title == "Crossref work 10.1000/untitled"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "protein design"
+    assert params["filter"] == "has-funder:true"
+    assert params["rows"] == 5
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_funder_connector_filters_by_funder_id() -> None:
+    """Funder-id shaped queries apply filter=funder:{id} without a free-text query."""
+    mock_client = _crossref_works_funder_client(_crossref_works_funder_payload())
+    with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksFunderConnector().search(
+            "10.13039/100000001",
+            max_results=3,
+        )
+
+    assert len(documents) == 2
+    assert documents[0].metadata["funder_id"] == "10.13039/100000001"
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == "funder:10.13039/100000001"
+    assert "query" not in params
+
+    mock_client = _crossref_works_funder_client(_crossref_works_funder_payload())
+    with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
+        await CrossrefWorksFunderConnector().search("100000001", max_results=1)
+    assert mock_client.get.await_args.kwargs["params"]["filter"] == "funder:100000001"
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_funder_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no works."""
+    mock_client = AsyncMock()
+    with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefWorksFunderConnector().search(" ", max_results=5) == []
+        assert await CrossrefWorksFunderConnector().search("protein", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _crossref_works_funder_client({}, status_code=503)
+    with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksFunderConnector().search("protein", max_results=3)
     assert documents == []
