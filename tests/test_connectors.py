@@ -24,6 +24,7 @@ from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
+from ingestion.datacite_reports import DataCiteReportsConnector
 from ingestion.dblp import DblpConnector
 from ingestion.doaj import DoajConnector
 from ingestion.dryad import DryadConnector
@@ -7177,4 +7178,135 @@ async def test_crossref_works_funder_connector_rejects_blank_and_handles_http_er
     mock_client = _crossref_works_funder_client({}, status_code=503)
     with patch("ingestion.crossref_works_funder.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefWorksFunderConnector().search("protein", max_results=3)
+    assert documents == []
+
+
+def _datacite_reports_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build an AsyncClient mock for DataCite reports searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _datacite_reports_payload() -> dict[str, object]:
+    """Return a DataCite dois payload containing report resources."""
+    return {
+        "data": [
+            {
+                "id": "10.5281/report.example",
+                "attributes": {
+                    "doi": "10.5281/report.example",
+                    "titles": [{"title": "National Climate Assessment Report"}],
+                    "creators": [{"name": "Climate Office"}],
+                    "descriptions": [
+                        {
+                            "description": "A technical assessment of climate impacts.",
+                            "descriptionType": "Abstract",
+                        }
+                    ],
+                    "publicationYear": 2025,
+                    "publisher": "DataCite Reports Press",
+                    "url": "https://example.org/reports/climate",
+                    "types": {
+                        "resourceTypeGeneral": "Report",
+                        "resourceType": "Technical Report",
+                    },
+                },
+            },
+            {
+                "id": "10.5281/dataset.skip",
+                "attributes": {
+                    "doi": "10.5281/dataset.skip",
+                    "titles": [{"title": "Should Be Skipped Dataset"}],
+                    "types": {"resourceTypeGeneral": "Dataset"},
+                },
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_reports_connector_searches_and_normalizes() -> None:
+    """The connector requests report DOIs and normalizes report metadata."""
+    mock_client = _datacite_reports_client(_datacite_reports_payload())
+    with patch("ingestion.datacite_reports.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteReportsConnector().search(
+            "climate assessment",
+            max_results=5,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "National Climate Assessment Report"
+    assert document.text == "A technical assessment of climate impacts."
+    assert document.source == "https://example.org/reports/climate"
+    assert document.metadata["source_type"] == "datacite_reports"
+    assert document.metadata["doi"] == "10.5281/report.example"
+    assert document.metadata["year"] == "2025"
+    assert document.metadata["authors"] == "Climate Office"
+    assert document.metadata["publisher"] == "DataCite Reports Press"
+    assert document.metadata["resource_type"] == "Technical Report"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "climate assessment"
+    assert params["resource-type-id"] == "report"
+    assert params["page[size]"] == 5
+
+
+@pytest.mark.asyncio
+async def test_datacite_reports_connector_builds_sparse_descriptor() -> None:
+    """Reports without descriptions retain useful searchable metadata."""
+    payload: dict[str, object] = {
+        "data": [
+            {
+                "id": "10.5281/sparse.report",
+                "attributes": {
+                    "doi": "10.5281/sparse.report",
+                    "titles": [{"title": "Sparse Report"}],
+                    "creators": [{"givenName": "Grace", "familyName": "Hopper"}],
+                    "publicationYear": "2024.0",
+                    "publisher": {"name": "Navy Press"},
+                    "types": {"resourceTypeGeneral": "Report"},
+                },
+            }
+        ]
+    }
+    mock_client = _datacite_reports_client(payload)
+    with patch("ingestion.datacite_reports.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteReportsConnector().search("sparse", max_results=1)
+
+    assert len(documents) == 1
+    assert documents[0].metadata["year"] == "2024"
+    assert documents[0].text == (
+        "DataCite research report. Authors: Grace Hopper. Publisher: Navy Press. "
+        "Year: 2024. DOI: 10.5281/sparse.report."
+    )
+
+
+@pytest.mark.asyncio
+async def test_datacite_reports_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no reports."""
+    mock_client = AsyncMock()
+    with patch("ingestion.datacite_reports.httpx.AsyncClient", return_value=mock_client):
+        assert await DataCiteReportsConnector().search(" ", max_results=5) == []
+        assert await DataCiteReportsConnector().search("climate", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _datacite_reports_client({}, status_code=503)
+    with patch("ingestion.datacite_reports.httpx.AsyncClient", return_value=mock_client):
+        documents = await DataCiteReportsConnector().search("climate", max_results=3)
     assert documents == []

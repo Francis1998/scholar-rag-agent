@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `DataCiteReportsConnector`: DataCite reports DOI connector (`source_type=datacite_reports`) via `GET /dois?query=...&resource-type-id=report`. See `docs/guides/DATACITE_REPORTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefWorksFunderConnector`: Crossref works-by-funder connector (`source_type=crossref_works_funder`) with `filter=funder:{id}` for Open Funder Registry ids and `has-funder:true` free-text search. See `docs/guides/CROSSREF_WORKS_FUNDER_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `EuropePmcPreprintsConnector`: Europe PMC preprint-only search connector (`source_type=europepmc_preprints`) with an enforced `SRC:PPR` filter. See `docs/guides/EUROPEPMC_PREPRINTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OrcidEmploymentsConnector`: ORCID public employments/affiliations connector (`source_type=orcid_employments`) with direct ORCID iD lookup and researcher profile search. See `docs/guides/ORCID_EMPLOYMENTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
