@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OpenAlexConceptsAncestorsConnector`: OpenAlex concepts ancestors hierarchy connector (`source_type=openalex_concepts_ancestors`) normalizing `ancestors` into `ancestor_path`. See `docs/guides/OPENALEX_CONCEPTS_ANCESTORS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefWorksLicenseConnector`: Crossref works-by-license connector (`source_type=crossref_works_license`) with `filter=license.url:{url}` for license URLs and `has-license:true` free-text search. See `docs/guides/CROSSREF_WORKS_LICENSE_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexAuthorWorksConnector`: OpenAlex author works citations-blend connector (`source_type=openalex_author_works`) resolving author ids/names then `GET /works?filter=authorships.author.id:{id}` with `cited_by_count`. See `docs/guides/OPENALEX_AUTHOR_WORKS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `DataCiteReportsConnector`: DataCite reports DOI connector (`source_type=datacite_reports`) via `GET /dois?query=...&resource-type-id=report`. See `docs/guides/DATACITE_REPORTS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
