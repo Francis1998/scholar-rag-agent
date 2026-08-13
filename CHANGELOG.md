@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OrcidWorksSummariesConnector`: ORCID works summaries connector (`source_type=orcid_works_summaries`) for ORCID-iD-first public work summaries with external ids. See `docs/guides/ORCID_WORKS_SUMMARIES_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexConceptsAncestorsConnector`: OpenAlex concepts ancestors hierarchy connector (`source_type=openalex_concepts_ancestors`) normalizing `ancestors` into `ancestor_path`. See `docs/guides/OPENALEX_CONCEPTS_ANCESTORS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefWorksLicenseConnector`: Crossref works-by-license connector (`source_type=crossref_works_license`) with `filter=license.url:{url}` for license URLs and `has-license:true` free-text search. See `docs/guides/CROSSREF_WORKS_LICENSE_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexAuthorWorksConnector`: OpenAlex author works citations-blend connector (`source_type=openalex_author_works`) resolving author ids/names then `GET /works?filter=authorships.author.id:{id}` with `cited_by_count`. See `docs/guides/OPENALEX_AUTHOR_WORKS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

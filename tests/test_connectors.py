@@ -52,6 +52,7 @@ from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.orcid_employments import OrcidEmploymentsConnector
 from ingestion.orcid_works_filter import OrcidWorksFilterConnector
+from ingestion.orcid_works_summaries import OrcidWorksSummariesConnector
 from ingestion.osf import OsfConnector
 from ingestion.pdf import PDFConnector
 from ingestion.pmc import PmcConnector
@@ -7705,6 +7706,136 @@ async def test_openalex_concepts_ancestors_connector_rejects_blank_and_handles_h
     ):
         documents = await OpenAlexConceptsAncestorsConnector().search(
             "C119857082",
+            max_results=3,
+        )
+    assert documents == []
+
+
+def _orcid_works_summaries_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build an AsyncClient mock for ORCID works summaries."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _orcid_works_summaries_payload() -> dict[str, object]:
+    """Return an ORCID works payload with summary metadata."""
+    return {
+        "group": [
+            {
+                "work-summary": [
+                    {
+                        "title": {"title": {"value": "Analytical Engine Notes"}},
+                        "type": "journal-article",
+                        "put-code": 12345,
+                        "publication-date": {"year": {"value": "1843"}},
+                        "journal-title": {"value": "Scientific Memoirs"},
+                        "external-ids": {
+                            "external-id": [
+                                {
+                                    "external-id-type": "doi",
+                                    "external-id-value": "10.1000/ae.notes",
+                                    "external-id-url": {
+                                        "value": "https://doi.org/10.1000/ae.notes"
+                                    },
+                                }
+                            ]
+                        },
+                        "url": {"value": "https://example.org/ae-notes"},
+                    }
+                ]
+            },
+            {
+                "work-summary": [
+                    {
+                        "title": {"title": {"value": ""}},
+                    },
+                    {
+                        "title": {"title": {"value": "Sparse Summary"}},
+                        "type": "preprint",
+                        "put-code": 99,
+                    },
+                ]
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_summaries_connector_resolves_id_and_normalizes() -> None:
+    """ORCID iD queries fetch works and normalize summary metadata."""
+    mock_client = _orcid_works_summaries_client(_orcid_works_summaries_payload())
+    with patch("ingestion.orcid_works_summaries.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksSummariesConnector().search(
+            "0000-0002-1825-0097",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Analytical Engine Notes"
+    assert first.metadata["source_type"] == "orcid_works_summaries"
+    assert first.metadata["orcid"] == "0000-0002-1825-0097"
+    assert first.metadata["doi"] == "10.1000/ae.notes"
+    assert first.metadata["year"] == "1843"
+    assert first.metadata["journal"] == "Scientific Memoirs"
+    assert first.metadata["work_type"] == "journal-article"
+    assert first.metadata["put_code"] == "12345"
+    assert "doi:10.1000/ae.notes" in first.metadata["external_ids"]
+    assert "ORCID work summary: Analytical Engine Notes." in first.text
+    assert documents[1].title == "Sparse Summary"
+
+    assert mock_client.get.await_args.args[0].endswith("/0000-0002-1825-0097/works")
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_summaries_connector_accepts_orcid_url() -> None:
+    """ORCID URL queries extract the iD before fetching works."""
+    mock_client = _orcid_works_summaries_client(_orcid_works_summaries_payload())
+    with patch("ingestion.orcid_works_summaries.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksSummariesConnector().search(
+            "https://orcid.org/0000-0002-1825-0097",
+            max_results=1,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["orcid"] == "0000-0002-1825-0097"
+
+
+@pytest.mark.asyncio
+async def test_orcid_works_summaries_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no works."""
+    mock_client = AsyncMock()
+    with patch("ingestion.orcid_works_summaries.httpx.AsyncClient", return_value=mock_client):
+        assert await OrcidWorksSummariesConnector().search(" ", max_results=5) == []
+        assert await OrcidWorksSummariesConnector().search("Ada Lovelace", max_results=5) == []
+        assert (
+            await OrcidWorksSummariesConnector().search(
+                "0000-0002-1825-0097",
+                max_results=0,
+            )
+            == []
+        )
+    mock_client.get.assert_not_called()
+
+    mock_client = _orcid_works_summaries_client({}, status_code=503)
+    with patch("ingestion.orcid_works_summaries.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidWorksSummariesConnector().search(
+            "0000-0002-1825-0097",
             max_results=3,
         )
     assert documents == []
