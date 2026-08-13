@@ -40,6 +40,7 @@ from ingestion.openalex import OpenAlexConnector
 from ingestion.openalex_author_works import OpenAlexAuthorWorksConnector
 from ingestion.openalex_authors import OpenAlexAuthorsConnector
 from ingestion.openalex_concepts import OpenAlexConceptsConnector
+from ingestion.openalex_concepts_ancestors import OpenAlexConceptsAncestorsConnector
 from ingestion.openalex_funders import OpenAlexFundersConnector
 from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_keywords import OpenAlexKeywordsConnector
@@ -7559,4 +7560,151 @@ async def test_crossref_works_license_connector_rejects_blank_and_handles_http_e
     mock_client = _crossref_works_license_client({}, status_code=503)
     with patch("ingestion.crossref_works_license.httpx.AsyncClient", return_value=mock_client):
         documents = await CrossrefWorksLicenseConnector().search("protein", max_results=3)
+    assert documents == []
+
+
+def _openalex_concepts_ancestors_client(
+    responses: list[tuple[str, object]],
+) -> AsyncMock:
+    """Build an AsyncClient mock keyed by OpenAlex URL prefix."""
+    by_url = dict(responses)
+
+    async def _get(url: str, params: object = None) -> MagicMock:
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        matched = None
+        for prefix, payload in by_url.items():
+            if url.startswith(prefix):
+                matched = payload
+                break
+        if matched is None:
+            response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "error",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=404),
+                )
+            )
+            matched = {}
+        response.json = MagicMock(return_value=matched)
+        return response
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=_get)
+    return mock_client
+
+
+def _openalex_concepts_ancestors_payload() -> dict[str, object]:
+    """Return an OpenAlex concepts payload with ancestors."""
+    return {
+        "results": [
+            {
+                "id": "https://openalex.org/C119857082",
+                "display_name": "Machine learning",
+                "description": "Algorithms that learn from data.",
+                "level": 1,
+                "works_count": 1000,
+                "cited_by_count": 5000,
+                "ancestors": [
+                    {
+                        "id": "https://openalex.org/C41008148",
+                        "display_name": "Computer science",
+                        "level": 0,
+                    }
+                ],
+            },
+            {
+                "id": "https://openalex.org/C2778793908",
+                "display_name": "Deep learning",
+                "level": 2,
+                "works_count": 400,
+                "ancestors": [
+                    {"display_name": "Computer science", "level": 0},
+                    {"display_name": "Machine learning", "level": 1},
+                ],
+            },
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_ancestors_connector_searches_and_normalizes() -> None:
+    """Free-text searches normalize ancestor hierarchy paths."""
+    mock_client = _openalex_concepts_ancestors_client(
+        [("https://api.openalex.org/concepts", _openalex_concepts_ancestors_payload())]
+    )
+    with patch(
+        "ingestion.openalex_concepts_ancestors.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexConceptsAncestorsConnector(mailto="dev@example.org").search(
+            "machine learning",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Machine learning"
+    assert first.metadata["source_type"] == "openalex_concepts_ancestors"
+    assert first.metadata["concept_id"] == "C119857082"
+    assert first.metadata["ancestors"] == "Computer science"
+    assert first.metadata["ancestor_path"] == "Computer science > Machine learning"
+    assert "Algorithms that learn from data." in first.text
+    assert documents[1].metadata["ancestor_path"] == (
+        "Computer science > Machine learning > Deep learning"
+    )
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["search"] == "machine learning"
+    assert params["per-page"] == 5
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_ancestors_connector_resolves_concept_id() -> None:
+    """Concept-id queries resolve a single concept with ancestors."""
+    concept = _openalex_concepts_ancestors_payload()["results"][0]
+    mock_client = _openalex_concepts_ancestors_client(
+        [("https://api.openalex.org/concepts/C119857082", concept)]
+    )
+    with patch(
+        "ingestion.openalex_concepts_ancestors.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexConceptsAncestorsConnector().search(
+            "C119857082",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["concept_id"] == "C119857082"
+    assert mock_client.get.await_args.args[0].endswith("/concepts/C119857082")
+
+
+@pytest.mark.asyncio
+async def test_openalex_concepts_ancestors_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no concepts."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_concepts_ancestors.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexConceptsAncestorsConnector().search(" ", max_results=5) == []
+        assert await OpenAlexConceptsAncestorsConnector().search("ml", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
+    with patch(
+        "ingestion.openalex_concepts_ancestors.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexConceptsAncestorsConnector().search(
+            "C119857082",
+            max_results=3,
+        )
     assert documents == []
