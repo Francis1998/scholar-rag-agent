@@ -21,6 +21,7 @@ from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
+from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
@@ -7453,4 +7454,109 @@ async def test_openalex_author_works_connector_rejects_blank_and_handles_http_er
     mock_client.get = AsyncMock(side_effect=httpx.HTTPError("boom"))
     with patch("ingestion.openalex_author_works.httpx.AsyncClient", return_value=mock_client):
         documents = await OpenAlexAuthorWorksConnector().search("A2208157607", max_results=3)
+    assert documents == []
+
+
+def _crossref_works_license_client(payload: object, *, status_code: int = 200) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref works-by-license searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_works_license_payload() -> dict[str, object]:
+    """Return a Crossref works payload with license metadata."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": ["Open Licensed Protein Models"],
+                    "DOI": "10.1000/licensed.example",
+                    "abstract": "<jats:p>A CC-BY study of generative protein models.</jats:p>",
+                    "issued": {"date-parts": [[2024, 6, 1]]},
+                    "author": [{"given": "Ada", "family": "Lovelace"}],
+                    "license": [{"URL": "https://creativecommons.org/licenses/by/4.0"}],
+                },
+                {
+                    "DOI": "10.1000/untitled-license",
+                    "license": [{"URL": "https://creativecommons.org/licenses/by/4.0"}],
+                },
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_license_connector_searches_and_normalizes() -> None:
+    """Free-text queries request has-license works and normalize license metadata."""
+    mock_client = _crossref_works_license_client(_crossref_works_license_payload())
+    with patch("ingestion.crossref_works_license.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksLicenseConnector(mailto="dev@example.org").search(
+            "protein design",
+            max_results=5,
+        )
+
+    assert len(documents) == 2
+    first = documents[0]
+    assert first.title == "Open Licensed Protein Models"
+    assert first.text == "A CC-BY study of generative protein models."
+    assert first.source == "https://doi.org/10.1000/licensed.example"
+    assert first.metadata["source_type"] == "crossref_works_license"
+    assert first.metadata["doi"] == "10.1000/licensed.example"
+    assert first.metadata["year"] == "2024"
+    assert first.metadata["authors"] == "Ada Lovelace"
+    assert first.metadata["licenses"] == "https://creativecommons.org/licenses/by/4.0"
+    assert documents[1].title == "Crossref work 10.1000/untitled-license"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "protein design"
+    assert params["filter"] == "has-license:true"
+    assert params["rows"] == 5
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_license_connector_filters_by_license_url() -> None:
+    """License-URL shaped queries apply filter=license.url:{url} without free-text."""
+    mock_client = _crossref_works_license_client(_crossref_works_license_payload())
+    license_url = "https://creativecommons.org/licenses/by/4.0"
+    with patch("ingestion.crossref_works_license.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksLicenseConnector().search(
+            license_url,
+            max_results=3,
+        )
+
+    assert len(documents) == 2
+    assert documents[0].metadata["license_url"] == license_url
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == f"license.url:{license_url}"
+    assert "query" not in params
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_license_connector_rejects_blank_and_handles_http_error() -> None:
+    """Invalid input short-circuits and API failures yield no works."""
+    mock_client = AsyncMock()
+    with patch("ingestion.crossref_works_license.httpx.AsyncClient", return_value=mock_client):
+        assert await CrossrefWorksLicenseConnector().search(" ", max_results=5) == []
+        assert await CrossrefWorksLicenseConnector().search("protein", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _crossref_works_license_client({}, status_code=503)
+    with patch("ingestion.crossref_works_license.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefWorksLicenseConnector().search("protein", max_results=3)
     assert documents == []
