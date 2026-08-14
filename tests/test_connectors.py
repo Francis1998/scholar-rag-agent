@@ -46,6 +46,7 @@ from ingestion.openalex_institutions import OpenAlexInstitutionsConnector
 from ingestion.openalex_keywords import OpenAlexKeywordsConnector
 from ingestion.openalex_publishers import OpenAlexPublishersConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
+from ingestion.openalex_sources_hierarchy import OpenAlexSourcesHierarchyConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
 from ingestion.opencitations import OpenCitationsConnector
@@ -7838,4 +7839,121 @@ async def test_orcid_works_summaries_connector_rejects_blank_and_handles_http_er
             "0000-0002-1825-0097",
             max_results=3,
         )
+    assert documents == []
+
+
+def _openalex_sources_hierarchy_client(
+    payload: object,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for OpenAlex source hierarchy requests."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _openalex_sources_hierarchy_source() -> dict[str, object]:
+    """Return an OpenAlex source with host and ISSN hierarchy fields."""
+    return {
+        "id": "https://openalex.org/S196734849",
+        "display_name": "Scientific Reports",
+        "type": "journal",
+        "host_organization": "https://openalex.org/P4310319965",
+        "host_organization_name": "Springer Nature",
+        "issn_l": "2045-2322",
+        "issn": ["2045-2322", "2045-2322"],
+        "is_oa": True,
+        "works_count": 250000,
+        "cited_by_count": 4000000,
+        "summary_stats": {"h_index": 300},
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_hierarchy_connector_searches_and_normalizes() -> None:
+    """Free-text source searches normalize host, type, ISSN, and ancestry."""
+    payload = {"results": [_openalex_sources_hierarchy_source()]}
+    mock_client = _openalex_sources_hierarchy_client(payload)
+    with patch(
+        "ingestion.openalex_sources_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHierarchyConnector(mailto="dev@example.org").search(
+            "Scientific Reports",
+            max_results=4,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Scientific Reports"
+    assert document.metadata["source_type"] == "openalex_sources_hierarchy"
+    assert document.metadata["openalex_source_id"] == "S196734849"
+    assert document.metadata["host_organization"] == "P4310319965"
+    assert document.metadata["host_organization_name"] == "Springer Nature"
+    assert document.metadata["type"] == "journal"
+    assert document.metadata["issn_l"] == "2045-2322"
+    assert document.metadata["issn"] == "2045-2322"
+    assert document.metadata["ancestry_path"] == (
+        "Springer Nature > journal > 2045-2322 > Scientific Reports"
+    )
+    assert document.metadata["hierarchy_path"] == document.metadata["ancestry_path"]
+    assert document.text.startswith("OpenAlex source hierarchy: Springer Nature")
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["search"] == "Scientific Reports"
+    assert params["per-page"] == 4
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_hierarchy_connector_resolves_source_id() -> None:
+    """Source-id queries resolve one source directly."""
+    mock_client = _openalex_sources_hierarchy_client(_openalex_sources_hierarchy_source())
+    with patch(
+        "ingestion.openalex_sources_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHierarchyConnector().search(
+            "https://openalex.org/S196734849",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["openalex_source_id"] == "S196734849"
+    assert mock_client.get.await_args.args[0].endswith("/sources/S196734849")
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_hierarchy_connector_handles_invalid_input_and_http_error() -> None:
+    """Invalid input short-circuits and unavailable OpenAlex yields no sources."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_sources_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexSourcesHierarchyConnector().search(" ", max_results=5) == []
+        assert await OpenAlexSourcesHierarchyConnector().search("Nature", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _openalex_sources_hierarchy_client({}, status_code=503)
+    with patch(
+        "ingestion.openalex_sources_hierarchy.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHierarchyConnector().search("Nature", max_results=3)
     assert documents == []
