@@ -24,6 +24,7 @@ from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
 from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
 from ingestion.crossref_works_type_license import CrossrefWorksTypeLicenseConnector
 from ingestion.datacite import DataCiteConnector
+from ingestion.datacite_dois_prefix import DataCiteDoisPrefixConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
 from ingestion.datacite_reports import DataCiteReportsConnector
@@ -8071,4 +8072,121 @@ async def test_crossref_works_type_license_connector_handles_invalid_input_and_h
         return_value=mock_client,
     ):
         documents = await CrossrefWorksTypeLicenseConnector().search("protein", max_results=3)
+    assert documents == []
+
+
+def _datacite_dois_prefix_client(
+    payload: object,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for DataCite DOI-prefix requests."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _datacite_dois_prefix_payload() -> dict[str, object]:
+    """Return a DataCite DOI payload in one registration prefix."""
+    return {
+        "data": [
+            {
+                "id": "10.5281/zenodo.1234567",
+                "attributes": {
+                    "doi": "10.5281/zenodo.1234567",
+                    "titles": [{"title": "Open Retrieval Benchmark"}],
+                    "creators": [{"name": "Ada Lovelace"}],
+                    "descriptions": [
+                        {
+                            "description": "A reusable benchmark for scholarly retrieval.",
+                            "descriptionType": "Abstract",
+                        }
+                    ],
+                    "publicationYear": 2025,
+                    "publisher": "Zenodo",
+                    "url": "https://zenodo.org/records/1234567",
+                    "types": {"resourceTypeGeneral": "Dataset"},
+                },
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_dois_prefix_connector_uses_prefix_query() -> None:
+    """Prefix-shaped input applies the DataCite prefix filter without free text."""
+    mock_client = _datacite_dois_prefix_client(_datacite_dois_prefix_payload())
+    with patch(
+        "ingestion.datacite_dois_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await DataCiteDoisPrefixConnector().search("10.5281", max_results=3)
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Open Retrieval Benchmark"
+    assert document.text == "A reusable benchmark for scholarly retrieval."
+    assert document.metadata["source_type"] == "datacite_dois_prefix"
+    assert document.metadata["doi"] == "10.5281/zenodo.1234567"
+    assert document.metadata["doi_prefix"] == "10.5281"
+    assert document.metadata["publisher"] == "Zenodo"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["prefix"] == "10.5281"
+    assert params["page[size]"] == 3
+    assert "query" not in params
+
+
+@pytest.mark.asyncio
+async def test_datacite_dois_prefix_connector_scopes_free_text_to_default() -> None:
+    """Free text includes the optional default prefix filter."""
+    mock_client = _datacite_dois_prefix_client(_datacite_dois_prefix_payload())
+    with patch(
+        "ingestion.datacite_dois_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await DataCiteDoisPrefixConnector(default_prefix="10.5281").search(
+            "retrieval benchmark",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "retrieval benchmark"
+    assert params["prefix"] == "10.5281"
+    assert params["page[size]"] == 2
+
+
+@pytest.mark.asyncio
+async def test_datacite_dois_prefix_connector_handles_invalid_input_and_http_error() -> None:
+    """Invalid input short-circuits and unavailable DataCite yields no DOIs."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.datacite_dois_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await DataCiteDoisPrefixConnector().search(" ", max_results=5) == []
+        assert await DataCiteDoisPrefixConnector().search("10.5281", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _datacite_dois_prefix_client({}, status_code=503)
+    with patch(
+        "ingestion.datacite_dois_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await DataCiteDoisPrefixConnector().search("10.5281", max_results=3)
     assert documents == []
