@@ -22,6 +22,7 @@ from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
 from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
+from ingestion.crossref_works_type_license import CrossrefWorksTypeLicenseConnector
 from ingestion.datacite import DataCiteConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
@@ -7956,4 +7957,118 @@ async def test_openalex_sources_hierarchy_connector_handles_invalid_input_and_ht
         return_value=mock_client,
     ):
         documents = await OpenAlexSourcesHierarchyConnector().search("Nature", max_results=3)
+    assert documents == []
+
+
+def _crossref_works_type_license_client(
+    payload: object,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref type-and-license searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_works_type_license_payload() -> dict[str, object]:
+    """Return a Crossref work carrying type and license metadata."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": ["Licensed Retrieval Study"],
+                    "DOI": "10.1000/licensed-retrieval",
+                    "type": "journal-article",
+                    "abstract": "<jats:p>Evidence from an open retrieval study.</jats:p>",
+                    "issued": {"date-parts": [[2025, 2]]},
+                    "author": [{"given": "Ada", "family": "Lovelace"}],
+                    "license": [{"URL": "https://creativecommons.org/licenses/by/4.0"}],
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_type_license_connector_combines_exact_filters() -> None:
+    """Structured queries apply type and license filters without free text."""
+    mock_client = _crossref_works_type_license_client(_crossref_works_type_license_payload())
+    license_url = "https://creativecommons.org/licenses/by/4.0"
+    with patch(
+        "ingestion.crossref_works_type_license.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksTypeLicenseConnector(mailto="dev@example.org").search(
+            f"journal-article|{license_url}",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Licensed Retrieval Study"
+    assert document.text == "Evidence from an open retrieval study."
+    assert document.metadata["source_type"] == "crossref_works_type_license"
+    assert document.metadata["crossref_type"] == "journal-article"
+    assert document.metadata["license_url"] == license_url
+    assert document.metadata["year"] == "2025"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == f"type:journal-article,license.url:{license_url}"
+    assert params["rows"] == 3
+    assert params["mailto"] == "dev@example.org"
+    assert "query" not in params
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_type_license_connector_scopes_free_text() -> None:
+    """Free text uses the configured type together with has-license."""
+    mock_client = _crossref_works_type_license_client(_crossref_works_type_license_payload())
+    with patch(
+        "ingestion.crossref_works_type_license.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksTypeLicenseConnector(default_type="dataset").search(
+            "retrieval benchmarks",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "retrieval benchmarks"
+    assert params["filter"] == "type:dataset,has-license:true"
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_type_license_connector_handles_invalid_input_and_http_error() -> None:
+    """Invalid input short-circuits and request failures yield no works."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.crossref_works_type_license.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await CrossrefWorksTypeLicenseConnector().search(" ", max_results=5) == []
+        assert await CrossrefWorksTypeLicenseConnector().search("protein", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _crossref_works_type_license_client({}, status_code=503)
+    with patch(
+        "ingestion.crossref_works_type_license.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksTypeLicenseConnector().search("protein", max_results=3)
     assert documents == []
