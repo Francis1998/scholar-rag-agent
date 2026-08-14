@@ -15,12 +15,73 @@ Gemini 3.x / Kimi K2.
 
 from __future__ import annotations
 
+import httpx
+
 from ingestion.openalex_sources import OpenAlexSourcesConnector
 from retrieval.models import Document
+
+OPENALEX_SOURCES_URL = "https://api.openalex.org/sources"
+_PAGE_SIZE_CAP = 200
 
 
 class OpenAlexSourcesHierarchyConnector(OpenAlexSourcesConnector):
     """Search OpenAlex sources and normalize venue hierarchy paths."""
+
+    async def search(self, query: str, max_results: int = 5) -> list[Document]:
+        """Return source hierarchy documents for free text or a source id."""
+        stripped = query.strip()
+        if max_results <= 0 or not stripped:
+            return []
+
+        source_id = self._normalize_source_id(stripped)
+        if source_id is not None:
+            return await self._search_by_source_id(source_id, max_results)
+
+        params: dict[str, str | int] = {
+            "search": stripped,
+            "per-page": min(max_results, _PAGE_SIZE_CAP),
+        }
+        if self._mailto:
+            params["mailto"] = self._mailto
+
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            payload = await self._fetch_payload(client, OPENALEX_SOURCES_URL, params)
+        return self._parse_source_results(payload, max_results)
+
+    async def _search_by_source_id(
+        self,
+        source_id: str,
+        max_results: int,
+    ) -> list[Document]:
+        """Resolve one OpenAlex source id directly."""
+        params: dict[str, str | int] = {}
+        if self._mailto:
+            params["mailto"] = self._mailto
+
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            payload = await self._fetch_payload(
+                client,
+                f"{OPENALEX_SOURCES_URL}/{source_id}",
+                params,
+            )
+        return self._parse_source_results(
+            {"results": [payload]} if isinstance(payload, dict) else {},
+            max_results,
+        )
+
+    @staticmethod
+    async def _fetch_payload(
+        client: httpx.AsyncClient,
+        url: str,
+        params: dict[str, str | int],
+    ) -> object:
+        """Fetch OpenAlex, returning an empty payload on request failures."""
+        try:
+            response = await client.get(url, params=params or None)
+            response.raise_for_status()
+            return response.json()
+        except (httpx.HTTPError, ValueError):
+            return {}
 
     @classmethod
     def _build_source_document(cls, item: dict[str, object]) -> Document | None:
