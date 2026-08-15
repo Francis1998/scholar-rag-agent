@@ -50,6 +50,7 @@ from ingestion.openalex_keywords import OpenAlexKeywordsConnector
 from ingestion.openalex_publishers import OpenAlexPublishersConnector
 from ingestion.openalex_sources import OpenAlexSourcesConnector
 from ingestion.openalex_sources_hierarchy import OpenAlexSourcesHierarchyConnector
+from ingestion.openalex_sources_host_org import OpenAlexSourcesHostOrgConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
 from ingestion.opencitations import OpenCitationsConnector
@@ -8303,4 +8304,126 @@ async def test_crossref_works_issn_type_connector_handles_invalid_input_and_http
         return_value=mock_client,
     ):
         documents = await CrossrefWorksIssnTypeConnector().search("protein", max_results=3)
+    assert documents == []
+
+
+def _openalex_sources_host_org_client(
+    *payloads: object,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for OpenAlex host-organization source requests."""
+    responses = []
+    for payload in payloads:
+        response = MagicMock()
+        if status_code >= 400:
+            response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "error",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=status_code),
+                )
+            )
+        else:
+            response.raise_for_status = MagicMock()
+        response.json = MagicMock(return_value=payload)
+        responses.append(response)
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=responses)
+    return mock_client
+
+
+def _openalex_sources_host_org_source() -> dict[str, object]:
+    """Return an OpenAlex source hosted by a publisher."""
+    return {
+        "id": "https://openalex.org/S196734849",
+        "display_name": "Scientific Reports",
+        "type": "journal",
+        "host_organization": "https://openalex.org/P4310319965",
+        "host_organization_name": "Springer Nature",
+        "issn_l": "2045-2322",
+        "issn": ["2045-2322"],
+        "works_count": 250000,
+        "cited_by_count": 4000000,
+        "summary_stats": {"h_index": 300},
+        "is_oa": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_host_org_connector_filters_by_publisher_id() -> None:
+    """Publisher ids fetch sources filtered by host organization."""
+    payload = {"results": [_openalex_sources_host_org_source()]}
+    mock_client = _openalex_sources_host_org_client(payload)
+    with patch(
+        "ingestion.openalex_sources_host_org.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHostOrgConnector(mailto="dev@example.org").search(
+            "P4310319965",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Scientific Reports"
+    assert document.metadata["source_type"] == "openalex_sources_host_org"
+    assert document.metadata["host_organization"] == "P4310319965"
+    assert document.metadata["host_organization_name"] == "Springer Nature"
+    assert document.metadata["host_org_works_count"] == "250000"
+    assert document.text.startswith("OpenAlex source hosted by Springer Nature:")
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == "host_organization:https://openalex.org/P4310319965"
+    assert params["per-page"] == 3
+    assert params["mailto"] == "dev@example.org"
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_host_org_connector_searches_publishers_then_sources() -> None:
+    """Free text resolves publishers before fetching hosted sources."""
+    publisher_payload = {
+        "results": [
+            {
+                "id": "https://openalex.org/P4310319965",
+                "display_name": "Springer Nature",
+            }
+        ]
+    }
+    source_payload = {"results": [_openalex_sources_host_org_source()]}
+    mock_client = _openalex_sources_host_org_client(publisher_payload, source_payload)
+    with patch(
+        "ingestion.openalex_sources_host_org.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHostOrgConnector().search(
+            "Springer Nature",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    assert mock_client.get.await_args_list[0].args[0].endswith("/publishers")
+    assert mock_client.get.await_args_list[1].args[0].endswith("/sources")
+
+
+@pytest.mark.asyncio
+async def test_openalex_sources_host_org_connector_handles_invalid_input_and_http_error() -> None:
+    """Invalid input short-circuits and request failures yield no sources."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_sources_host_org.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexSourcesHostOrgConnector().search(" ", max_results=5) == []
+        assert await OpenAlexSourcesHostOrgConnector().search("Nature", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _openalex_sources_host_org_client({}, status_code=503)
+    with patch(
+        "ingestion.openalex_sources_host_org.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexSourcesHostOrgConnector().search("P4310319965", max_results=3)
     assert documents == []
