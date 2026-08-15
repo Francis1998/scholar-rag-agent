@@ -55,6 +55,7 @@ from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
+from ingestion.orcid_education import OrcidEducationConnector
 from ingestion.orcid_employments import OrcidEmploymentsConnector
 from ingestion.orcid_works_filter import OrcidWorksFilterConnector
 from ingestion.orcid_works_summaries import OrcidWorksSummariesConnector
@@ -8426,4 +8427,123 @@ async def test_openalex_sources_host_org_connector_handles_invalid_input_and_htt
         return_value=mock_client,
     ):
         documents = await OpenAlexSourcesHostOrgConnector().search("P4310319965", max_results=3)
+    assert documents == []
+
+
+def _orcid_education_client(*payloads: dict[str, object]) -> AsyncMock:
+    """Build an AsyncClient mock returning ORCID education payloads in order."""
+    responses = [
+        httpx.Response(200, json=payload, request=httpx.Request("GET", "http://test"))
+        for payload in payloads
+    ]
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=responses)
+    return mock_client
+
+
+def _orcid_education_payload() -> dict[str, object]:
+    """Return a representative ORCID educations response."""
+    return {
+        "affiliation-group": [
+            {
+                "summaries": [
+                    {
+                        "education-summary": {
+                            "put-code": 33511,
+                            "role-title": "PhD in Computer Science",
+                            "department-name": "School of Engineering",
+                            "start-date": {
+                                "year": {"value": "2010"},
+                                "month": {"value": "9"},
+                            },
+                            "end-date": {
+                                "year": {"value": "2014"},
+                                "month": {"value": "6"},
+                            },
+                            "organization": {
+                                "name": "Example Institute of Technology",
+                                "address": {
+                                    "city": "Boston",
+                                    "region": "MA",
+                                    "country": "US",
+                                },
+                                "disambiguated-organization": {
+                                    "disambiguated-organization-identifier": (
+                                        "https://ror.org/098765432"
+                                    ),
+                                    "disambiguation-source": "ROR",
+                                },
+                            },
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_orcid_education_connector_resolves_id_and_normalizes() -> None:
+    """ORCID iD queries fetch public educations without calling works."""
+    mock_client = _orcid_education_client(_orcid_education_payload())
+    with patch("ingestion.orcid_education.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidEducationConnector().search(
+            "https://orcid.org/0000-0002-1825-0097",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "PhD in Computer Science at Example Institute of Technology"
+    assert document.metadata["source_type"] == "orcid_education"
+    assert document.metadata["orcid"] == "0000-0002-1825-0097"
+    assert document.metadata["organization"] == "Example Institute of Technology"
+    assert document.metadata["organization_id"] == "https://ror.org/098765432"
+    assert document.metadata["degree_title"] == "PhD in Computer Science"
+    assert document.metadata["start_date"] == "2010-09"
+    assert document.metadata["end_date"] == "2014-06"
+    assert document.source == "https://orcid.org/0000-0002-1825-0097/education/33511"
+    assert "Dates: 2010-09 to 2014-06." in document.text
+    assert mock_client.get.await_args.args[0].endswith("/0000-0002-1825-0097/educations")
+
+
+@pytest.mark.asyncio
+async def test_orcid_education_connector_searches_researcher_profiles() -> None:
+    """Researcher name queries search expanded-search then fetch educations."""
+    search_payload = {
+        "expanded-result": [
+            {
+                "orcid-id": "0000-0002-1825-0097",
+                "given-names": "Josiah",
+                "family-names": "Carberry",
+            }
+        ]
+    }
+    mock_client = _orcid_education_client(search_payload, _orcid_education_payload())
+    with patch("ingestion.orcid_education.httpx.AsyncClient", return_value=mock_client):
+        documents = await OrcidEducationConnector().search("Josiah Carberry", max_results=2)
+
+    assert len(documents) == 1
+    assert mock_client.get.await_args_list[0].args[0].endswith("/expanded-search/")
+    assert mock_client.get.await_args_list[1].args[0].endswith("/0000-0002-1825-0097/educations")
+
+
+@pytest.mark.asyncio
+async def test_orcid_education_connector_rejects_blank_and_handles_http_error() -> None:
+    """Blank input short-circuits and unavailable ORCID yields no educations."""
+    mock_client = AsyncMock()
+    with patch("ingestion.orcid_education.httpx.AsyncClient", return_value=mock_client):
+        assert await OrcidEducationConnector().search(" ", max_results=5) == []
+        assert await OrcidEducationConnector().search("0000-0002-1825-0097", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    error_client = _orcid_education_client({})
+    error_client.get = AsyncMock(side_effect=httpx.HTTPError("unavailable"))
+    with patch("ingestion.orcid_education.httpx.AsyncClient", return_value=error_client):
+        documents = await OrcidEducationConnector().search(
+            "0000-0002-1825-0097",
+            max_results=3,
+        )
     assert documents == []
