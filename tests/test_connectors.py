@@ -21,6 +21,7 @@ from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
+from ingestion.crossref_works_issn_type import CrossrefWorksIssnTypeConnector
 from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
 from ingestion.crossref_works_type_license import CrossrefWorksTypeLicenseConnector
 from ingestion.datacite import DataCiteConnector
@@ -8189,4 +8190,117 @@ async def test_datacite_dois_prefix_connector_handles_invalid_input_and_http_err
         return_value=mock_client,
     ):
         documents = await DataCiteDoisPrefixConnector().search("10.5281", max_results=3)
+    assert documents == []
+
+
+def _crossref_works_issn_type_client(
+    payload: object,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref ISSN-and-type searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_works_issn_type_payload() -> dict[str, object]:
+    """Return a Crossref work carrying ISSN and type metadata."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": ["ISSN-Scoped Retrieval Study"],
+                    "DOI": "10.1000/issn-retrieval",
+                    "type": "journal-article",
+                    "abstract": "<jats:p>Evidence from an ISSN-scoped study.</jats:p>",
+                    "issued": {"date-parts": [[2025, 3]]},
+                    "author": [{"given": "Grace", "family": "Hopper"}],
+                    "issn-type": [{"value": "1532-4435", "type": "print"}],
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_issn_type_connector_combines_exact_filters() -> None:
+    """Structured queries apply ISSN and type filters without free text."""
+    mock_client = _crossref_works_issn_type_client(_crossref_works_issn_type_payload())
+    with patch(
+        "ingestion.crossref_works_issn_type.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksIssnTypeConnector(mailto="dev@example.org").search(
+            "1532-4435|journal-article",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "ISSN-Scoped Retrieval Study"
+    assert document.text == "Evidence from an ISSN-scoped study."
+    assert document.metadata["source_type"] == "crossref_works_issn_type"
+    assert document.metadata["crossref_type"] == "journal-article"
+    assert document.metadata["issn"] == "1532-4435"
+    assert document.metadata["year"] == "2025"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == "issn:1532-4435,type:journal-article"
+    assert params["rows"] == 3
+    assert params["mailto"] == "dev@example.org"
+    assert "query" not in params
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_issn_type_connector_scopes_free_text() -> None:
+    """Free text uses the configured type together with has-issn."""
+    mock_client = _crossref_works_issn_type_client(_crossref_works_issn_type_payload())
+    with patch(
+        "ingestion.crossref_works_issn_type.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksIssnTypeConnector(default_type="dataset").search(
+            "retrieval benchmarks",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "retrieval benchmarks"
+    assert params["filter"] == "type:dataset,has-issn:true"
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_issn_type_connector_handles_invalid_input_and_http_error() -> None:
+    """Invalid input short-circuits and request failures yield no works."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.crossref_works_issn_type.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await CrossrefWorksIssnTypeConnector().search(" ", max_results=5) == []
+        assert await CrossrefWorksIssnTypeConnector().search("protein", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    mock_client = _crossref_works_issn_type_client({}, status_code=503)
+    with patch(
+        "ingestion.crossref_works_issn_type.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksIssnTypeConnector().search("protein", max_results=3)
     assert documents == []

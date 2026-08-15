@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CrossrefWorksIssnTypeConnector`: Crossref works-by-ISSN+type connector (`source_type=crossref_works_issn_type`) with `filter=issn:{issn},type:{type}` for structured queries and `has-issn:true` free-text search. See `docs/guides/CROSSREF_WORKS_ISSN_TYPE_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - DataCite DOIs-by-prefix connector (`datacite_dois_prefix`). See `docs/guides/DATACITE_DOIS_PREFIX_SOURCE_GUIDE.md`.
 - Crossref works type+license connector (). See .
 - `OpenAlexSourcesHierarchyConnector`: OpenAlex sources hierarchy connector (`source_type=openalex_sources_hierarchy`) normalizing host organization, source type, primary ISSN, and venue into an ancestry path. See `docs/guides/OPENALEX_SOURCES_HIERARCHY_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
