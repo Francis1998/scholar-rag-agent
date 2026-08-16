@@ -26,6 +26,7 @@ from ingestion.crossref_works_issn_type import CrossrefWorksIssnTypeConnector
 from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
 from ingestion.crossref_works_type_license import CrossrefWorksTypeLicenseConnector
 from ingestion.datacite import DataCiteConnector
+from ingestion.datacite_client_prefix import DataCiteClientPrefixConnector
 from ingestion.datacite_dois_prefix import DataCiteDoisPrefixConnector
 from ingestion.datacite_events import DataCiteEventsConnector
 from ingestion.datacite_related import DataciteRelatedConnector
@@ -8785,4 +8786,149 @@ async def test_openalex_works_ngrams_connector_handles_blank_and_http_error() ->
         return_value=error_client,
     ):
         documents = await OpenAlexWorksNgramsConnector().search("W2741809807", max_results=3)
+    assert documents == []
+
+
+def _datacite_client_prefix_client(
+    *payloads: object,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for DataCite client and prefix requests."""
+    responses = []
+    for payload in payloads:
+        response = MagicMock()
+        if status_code >= 400:
+            response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "error",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=status_code),
+                )
+            )
+        else:
+            response.raise_for_status = MagicMock()
+        response.json = MagicMock(return_value=payload)
+        responses.append(response)
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=responses)
+    return mock_client
+
+
+def _datacite_client_prefix_payload() -> dict[str, object]:
+    """Return a representative DataCite DOI resource with client provenance."""
+    return {
+        "data": [
+            {
+                "id": "10.5281/zenodo.1234567",
+                "type": "dois",
+                "attributes": {
+                    "doi": "10.5281/zenodo.1234567",
+                    "titles": [{"title": "Client-Scoped Retrieval Dataset"}],
+                    "creators": [{"name": "Lovelace, Ada"}],
+                    "descriptions": [
+                        {
+                            "description": "A dataset for grounded scholarly retrieval.",
+                            "descriptionType": "Abstract",
+                        }
+                    ],
+                    "publicationYear": 2026,
+                    "publisher": "Zenodo",
+                    "url": "https://zenodo.org/records/1234567",
+                    "types": {"resourceTypeGeneral": "Dataset"},
+                },
+                "relationships": {
+                    "client": {
+                        "data": {
+                            "type": "clients",
+                            "id": "cern.zenodo",
+                        }
+                    }
+                },
+            }
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_datacite_client_prefix_connector_filters_client_and_normalizes() -> None:
+    """Client-id input lists that repository's DOI records."""
+    mock_client = _datacite_client_prefix_client(_datacite_client_prefix_payload())
+    with patch(
+        "ingestion.datacite_client_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await DataCiteClientPrefixConnector().search(
+            "client-id:CERN.ZENODO",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Client-Scoped Retrieval Dataset"
+    assert document.text == "A dataset for grounded scholarly retrieval."
+    assert document.metadata["source_type"] == "datacite_client_prefix"
+    assert document.metadata["client_id"] == "cern.zenodo"
+    assert document.metadata["doi"] == "10.5281/zenodo.1234567"
+    assert document.metadata["doi_prefix"] == "10.5281"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["client-id"] == "cern.zenodo"
+    assert params["page[size]"] == 3
+    assert "query" not in params
+    assert "prefix" not in params
+
+
+@pytest.mark.asyncio
+async def test_datacite_client_prefix_connector_scopes_text_and_accepts_prefix() -> None:
+    """Free text can use a default client, while DOI prefixes use prefix filtering."""
+    payload = _datacite_client_prefix_payload()
+    mock_client = _datacite_client_prefix_client(payload, payload)
+    with patch(
+        "ingestion.datacite_client_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        text_documents = await DataCiteClientPrefixConnector(
+            default_client_id="cern.zenodo"
+        ).search(
+            "retrieval dataset",
+            max_results=2,
+        )
+        prefix_documents = await DataCiteClientPrefixConnector().search(
+            "10.5281",
+            max_results=4,
+        )
+
+    assert len(text_documents) == 1
+    assert len(prefix_documents) == 1
+    first_params = mock_client.get.await_args_list[0].kwargs["params"]
+    assert first_params["query"] == "retrieval dataset"
+    assert first_params["client-id"] == "cern.zenodo"
+    assert first_params["page[size]"] == 2
+    second_params = mock_client.get.await_args_list[1].kwargs["params"]
+    assert second_params["prefix"] == "10.5281"
+    assert second_params["page[size]"] == 4
+    assert "client-id" not in second_params
+
+
+@pytest.mark.asyncio
+async def test_datacite_client_prefix_connector_handles_blank_and_http_error() -> None:
+    """Blank input short-circuits and unavailable DataCite yields no DOIs."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.datacite_client_prefix.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await DataCiteClientPrefixConnector().search(" ", max_results=5) == []
+        assert await DataCiteClientPrefixConnector().search("cern.zenodo", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    error_client = _datacite_client_prefix_client({}, status_code=503)
+    with patch(
+        "ingestion.datacite_client_prefix.httpx.AsyncClient",
+        return_value=error_client,
+    ):
+        documents = await DataCiteClientPrefixConnector().search("cern.zenodo", max_results=3)
     assert documents == []

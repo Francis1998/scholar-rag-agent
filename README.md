@@ -171,6 +171,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [ORCID employments source guide](docs/guides/ORCID_EMPLOYMENTS_SOURCE_GUIDE.md) | ORCID public employment affiliations connector. |
 | [ORCID education source guide](docs/guides/ORCID_EDUCATION_SOURCE_GUIDE.md) | ORCID public education affiliations connector. |
 | [OpenAlex works n-grams source guide](docs/guides/OPENALEX_WORKS_NGRAMS_SOURCE_GUIDE.md) | OpenAlex salient phrase and frequency connector for individual works. |
+| [DataCite client and prefix source guide](docs/guides/DATACITE_CLIENT_PREFIX_SOURCE_GUIDE.md) | DataCite client-id scoped DOI listing with prefix compatibility. |
 | [Crossref works-by-funder source guide](docs/guides/CROSSREF_WORKS_FUNDER_SOURCE_GUIDE.md) | Crossref funded-works / funder-filter connector. |
 | [Crossref works-by-license source guide](docs/guides/CROSSREF_WORKS_LICENSE_SOURCE_GUIDE.md) | Crossref licensed-works / license-URL filter connector. |
 | [Crossref works type+license source guide](docs/guides/CROSSREF_WORKS_TYPE_LICENSE_SOURCE_GUIDE.md) | Crossref type+license filter connector. |
