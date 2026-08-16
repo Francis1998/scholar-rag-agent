@@ -7,7 +7,6 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - `OpenAlexWorksNgramsConnector`: OpenAlex work n-grams connector (`source_type=openalex_works_ngrams`) accepting work IDs/URLs and DOIs via `GET /works/{id}/ngrams`. See `docs/guides/OPENALEX_WORKS_NGRAMS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
-
 - `CrossrefWorksIsbnConnector`: Crossref works-by-ISBN connector (`source_type=crossref_works_isbn`) with exact `filter=isbn:{isbn}` lookup and ISBN-bearing free-text search. See `docs/guides/CROSSREF_WORKS_ISBN_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OrcidEducationConnector`: ORCID public education affiliations connector (`source_type=orcid_education`) with direct ORCID iD lookup and researcher profile search. See `docs/guides/ORCID_EDUCATION_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexSourcesHostOrgConnector`: OpenAlex sources host-organization connector (`source_type=openalex_sources_host_org`) filtering venues by publisher/host organization id or name. See `docs/guides/OPENALEX_SOURCES_HOST_ORG_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
