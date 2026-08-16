@@ -6,6 +6,8 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `DataCiteClientPrefixConnector`: DataCite client-id DOI listing connector (`source_type=datacite_client_prefix`) with client-scoped free text and DOI-prefix compatibility. See `docs/guides/DATACITE_CLIENT_PREFIX_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+
 - `OpenAlexWorksNgramsConnector`: OpenAlex work n-grams connector (`source_type=openalex_works_ngrams`) accepting work IDs/URLs and DOIs via `GET /works/{id}/ngrams`. See `docs/guides/OPENALEX_WORKS_NGRAMS_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 
 - `CrossrefWorksIsbnConnector`: Crossref works-by-ISBN connector (`source_type=crossref_works_isbn`) with exact `filter=isbn:{isbn}` lookup and ISBN-bearing free-text search. See `docs/guides/CROSSREF_WORKS_ISBN_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
