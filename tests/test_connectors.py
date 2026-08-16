@@ -54,6 +54,7 @@ from ingestion.openalex_sources_hierarchy import OpenAlexSourcesHierarchyConnect
 from ingestion.openalex_sources_host_org import OpenAlexSourcesHostOrgConnector
 from ingestion.openalex_topics import OpenAlexTopicsConnector
 from ingestion.openalex_topics_hierarchy import OpenAlexTopicsHierarchyConnector
+from ingestion.openalex_works_ngrams import OpenAlexWorksNgramsConnector
 from ingestion.opencitations import OpenCitationsConnector
 from ingestion.orcid import OrcidConnector
 from ingestion.orcid_education import OrcidEducationConnector
@@ -8660,4 +8661,128 @@ async def test_crossref_works_isbn_connector_handles_blank_and_http_error() -> N
         return_value=error_client,
     ):
         documents = await CrossrefWorksIsbnConnector().search("9781402894626", max_results=3)
+    assert documents == []
+
+
+def _openalex_works_ngrams_client(
+    *payloads: object,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for OpenAlex work n-gram requests."""
+    responses = []
+    for payload in payloads:
+        response = MagicMock()
+        if status_code >= 400:
+            response.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "error",
+                    request=MagicMock(),
+                    response=MagicMock(status_code=status_code),
+                )
+            )
+        else:
+            response.raise_for_status = MagicMock()
+        response.json = MagicMock(return_value=payload)
+        responses.append(response)
+
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(side_effect=responses)
+    return mock_client
+
+
+def _openalex_works_ngrams_payload() -> dict[str, object]:
+    """Return representative OpenAlex n-gram statistics."""
+    return {
+        "meta": {"count": 2},
+        "ngrams": [
+            {
+                "ngram": "retrieval augmented generation",
+                "ngram_tokens": 3,
+                "ngram_count": 4,
+                "term_frequency": 0.0125,
+            },
+            {
+                "ngram": "grounded scholarly synthesis",
+                "ngram_tokens": 3,
+                "ngram_count": 2,
+                "term_frequency": 0.00625,
+            },
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_openalex_works_ngrams_connector_fetches_and_normalizes() -> None:
+    """A work id resolves its n-grams into separate stable documents."""
+    mock_client = _openalex_works_ngrams_client(_openalex_works_ngrams_payload())
+    with patch(
+        "ingestion.openalex_works_ngrams.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await OpenAlexWorksNgramsConnector(mailto="dev@example.org").search(
+            "W2741809807",
+            max_results=2,
+        )
+
+    assert len(documents) == 2
+    document = documents[0]
+    assert document.title == "OpenAlex n-gram: retrieval augmented generation"
+    assert document.text == "retrieval augmented generation"
+    assert document.metadata["source_type"] == "openalex_works_ngrams"
+    assert document.metadata["openalex_work_id"] == "W2741809807"
+    assert document.metadata["ngram_tokens"] == "3"
+    assert document.metadata["ngram_count"] == "4"
+    assert document.metadata["term_frequency"] == "0.0125"
+    assert documents[0].document_id != documents[1].document_id
+
+    assert mock_client.get.await_args.args[0].endswith("/works/W2741809807/ngrams")
+    assert mock_client.get.await_args.kwargs["params"] == {"mailto": "dev@example.org"}
+
+
+@pytest.mark.asyncio
+async def test_openalex_works_ngrams_connector_accepts_work_url_and_doi() -> None:
+    """OpenAlex URLs and DOI URLs normalize to accepted work identifiers."""
+    payload = _openalex_works_ngrams_payload()
+    mock_client = _openalex_works_ngrams_client(payload, payload)
+    with patch(
+        "ingestion.openalex_works_ngrams.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        url_documents = await OpenAlexWorksNgramsConnector().search(
+            "https://openalex.org/W2741809807",
+            max_results=1,
+        )
+        doi_documents = await OpenAlexWorksNgramsConnector().search(
+            "https://doi.org/10.1000/RAG",
+            max_results=1,
+        )
+
+    assert url_documents[0].metadata["openalex_work_id"] == "W2741809807"
+    assert doi_documents[0].metadata["doi"] == "10.1000/rag"
+    request_urls = [call.args[0] for call in mock_client.get.await_args_list]
+    assert request_urls[0].endswith("/works/W2741809807/ngrams")
+    assert request_urls[1].endswith("/works/https%3A%2F%2Fdoi.org%2F10.1000%2Frag/ngrams")
+
+
+@pytest.mark.asyncio
+async def test_openalex_works_ngrams_connector_handles_blank_and_http_error() -> None:
+    """Invalid input short-circuits and unavailable OpenAlex yields no n-grams."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.openalex_works_ngrams.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await OpenAlexWorksNgramsConnector().search(" ", max_results=5) == []
+        assert await OpenAlexWorksNgramsConnector().search("W2741809807", max_results=0) == []
+        assert await OpenAlexWorksNgramsConnector().search("not a work", max_results=2) == []
+    mock_client.get.assert_not_called()
+
+    error_client = _openalex_works_ngrams_client({}, status_code=503)
+    with patch(
+        "ingestion.openalex_works_ngrams.httpx.AsyncClient",
+        return_value=error_client,
+    ):
+        documents = await OpenAlexWorksNgramsConnector().search("W2741809807", max_results=3)
     assert documents == []
