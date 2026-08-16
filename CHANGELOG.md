@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CrossrefWorksIsbnConnector`: Crossref works-by-ISBN connector (`source_type=crossref_works_isbn`) with exact `filter=isbn:{isbn}` lookup and ISBN-bearing free-text search. See `docs/guides/CROSSREF_WORKS_ISBN_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OrcidEducationConnector`: ORCID public education affiliations connector (`source_type=orcid_education`) with direct ORCID iD lookup and researcher profile search. See `docs/guides/ORCID_EDUCATION_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `OpenAlexSourcesHostOrgConnector`: OpenAlex sources host-organization connector (`source_type=openalex_sources_host_org`) filtering venues by publisher/host organization id or name. See `docs/guides/OPENALEX_SOURCES_HOST_ORG_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
 - `CrossrefWorksIssnTypeConnector`: Crossref works-by-ISSN+type connector (`source_type=crossref_works_issn_type`) with `filter=issn:{issn},type:{type}` for structured queries and `has-issn:true` free-text search. See `docs/guides/CROSSREF_WORKS_ISSN_TYPE_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.

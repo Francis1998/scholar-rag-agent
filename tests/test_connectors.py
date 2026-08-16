@@ -21,6 +21,7 @@ from ingestion.crossref_members import CrossrefMembersConnector
 from ingestion.crossref_relations import CrossrefRelationsConnector
 from ingestion.crossref_types import CrossrefTypesConnector
 from ingestion.crossref_works_funder import CrossrefWorksFunderConnector
+from ingestion.crossref_works_isbn import CrossrefWorksIsbnConnector
 from ingestion.crossref_works_issn_type import CrossrefWorksIssnTypeConnector
 from ingestion.crossref_works_license import CrossrefWorksLicenseConnector
 from ingestion.crossref_works_type_license import CrossrefWorksTypeLicenseConnector
@@ -8546,4 +8547,117 @@ async def test_orcid_education_connector_rejects_blank_and_handles_http_error() 
             "0000-0002-1825-0097",
             max_results=3,
         )
+    assert documents == []
+
+
+def _crossref_works_isbn_client(
+    payload: object,
+    *,
+    status_code: int = 200,
+) -> AsyncMock:
+    """Build an AsyncClient mock for Crossref ISBN work searches."""
+    response = MagicMock()
+    if status_code >= 400:
+        response.raise_for_status = MagicMock(
+            side_effect=httpx.HTTPStatusError(
+                "error",
+                request=MagicMock(),
+                response=MagicMock(status_code=status_code),
+            )
+        )
+    else:
+        response.raise_for_status = MagicMock()
+    response.json = MagicMock(return_value=payload)
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = False
+    mock_client.get = AsyncMock(return_value=response)
+    return mock_client
+
+
+def _crossref_works_isbn_payload() -> dict[str, object]:
+    """Return a representative ISBN-bearing Crossref work."""
+    return {
+        "message": {
+            "items": [
+                {
+                    "title": ["Grounded Retrieval Handbook"],
+                    "DOI": "10.1000/retrieval-book",
+                    "ISBN": ["978-1-4028-9462-6"],
+                    "abstract": "<jats:p>A handbook for grounded retrieval systems.</jats:p>",
+                    "issued": {"date-parts": [[2026]]},
+                    "author": [{"given": "Ada", "family": "Lovelace"}],
+                }
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_isbn_connector_filters_and_normalizes() -> None:
+    """ISBN input applies an exact filter and returns stable work metadata."""
+    mock_client = _crossref_works_isbn_client(_crossref_works_isbn_payload())
+    with patch(
+        "ingestion.crossref_works_isbn.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksIsbnConnector(mailto="dev@example.org").search(
+            "ISBN 978-1-4028-9462-6",
+            max_results=3,
+        )
+
+    assert len(documents) == 1
+    document = documents[0]
+    assert document.title == "Grounded Retrieval Handbook"
+    assert document.text == "A handbook for grounded retrieval systems."
+    assert document.source == "https://doi.org/10.1000/retrieval-book"
+    assert document.metadata["source_type"] == "crossref_works_isbn"
+    assert document.metadata["isbn"] == "9781402894626"
+    assert document.metadata["doi"] == "10.1000/retrieval-book"
+
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["filter"] == "isbn:9781402894626"
+    assert params["rows"] == 3
+    assert params["mailto"] == "dev@example.org"
+    assert "query" not in params
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_isbn_connector_scopes_free_text() -> None:
+    """Free text searches only Crossref records carrying an ISBN."""
+    mock_client = _crossref_works_isbn_client(_crossref_works_isbn_payload())
+    with patch(
+        "ingestion.crossref_works_isbn.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        documents = await CrossrefWorksIsbnConnector().search(
+            "grounded retrieval handbook",
+            max_results=2,
+        )
+
+    assert len(documents) == 1
+    params = mock_client.get.await_args.kwargs["params"]
+    assert params["query"] == "grounded retrieval handbook"
+    assert params["filter"] == "has-isbn:true"
+    assert params["rows"] == 2
+
+
+@pytest.mark.asyncio
+async def test_crossref_works_isbn_connector_handles_blank_and_http_error() -> None:
+    """Blank input short-circuits and unavailable Crossref yields no works."""
+    mock_client = AsyncMock()
+    with patch(
+        "ingestion.crossref_works_isbn.httpx.AsyncClient",
+        return_value=mock_client,
+    ):
+        assert await CrossrefWorksIsbnConnector().search(" ", max_results=5) == []
+        assert await CrossrefWorksIsbnConnector().search("9781402894626", max_results=0) == []
+    mock_client.get.assert_not_called()
+
+    error_client = _crossref_works_isbn_client({}, status_code=503)
+    with patch(
+        "ingestion.crossref_works_isbn.httpx.AsyncClient",
+        return_value=error_client,
+    ):
+        documents = await CrossrefWorksIsbnConnector().search("9781402894626", max_results=3)
     assert documents == []
