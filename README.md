@@ -27,6 +27,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic contextual compressor extracts bounded lexical-overlap spans,
   reducing token use without an LLM or network call.
 
+- Issue: small chunks retrieve precisely but can omit the surrounding evidence needed for synthesis.
+  A deterministic parent-document expander replaces child hits with deduplicated
+  full parent text from a provided in-memory store.
+
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
@@ -128,6 +132,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
+| [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
