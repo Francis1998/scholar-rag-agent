@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ParentDocumentExpander`: deterministic expansion of child chunk hits to deduplicated parent text from a provided in-memory `Document`, `Chunk`, or string store. See `docs/guides/PARENT_DOCUMENT_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `ContextualCompressor`: deterministic, bounded extraction of query-relevant sentence spans from retrieved chunk text using lexical overlap. See `docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `FreshnessBooster`: deterministic retrieval re-scoring that blends normalized relevance with exponential recency from `published_at`, `year`, or `date` chunk metadata. See `docs/guides/FRESHNESS_BOOST_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `DataCiteClientPrefixConnector`: DataCite client-id DOI listing connector (`source_type=datacite_client_prefix`) with client-scoped free text and DOI-prefix compatibility. See `docs/guides/DATACITE_CLIENT_PREFIX_SOURCE_GUIDE.md`. Prefer frontier models: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
