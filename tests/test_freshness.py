@@ -37,9 +37,7 @@ def _result(
         ({"relevance_weight": 1.1}, "relevance_weight"),
     ],
 )
-def test_freshness_rejects_invalid_configuration(
-    kwargs: dict[str, float], message: str
-) -> None:
+def test_freshness_rejects_invalid_configuration(kwargs: dict[str, float], message: str) -> None:
     with pytest.raises(ValueError, match=message):
         FreshnessBooster(**kwargs)
 

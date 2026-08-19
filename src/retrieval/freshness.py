@@ -35,9 +35,7 @@ class FreshnessBooster:
         self._relevance_weight = relevance_weight
         self._as_of = self._as_utc_datetime(as_of or datetime.now(timezone.utc))
 
-    def boost(
-        self, results: list[SearchResult], top_k: int | None = None
-    ) -> list[SearchResult]:
+    def boost(self, results: list[SearchResult], top_k: int | None = None) -> list[SearchResult]:
         """Return results ordered by combined relevance and publication recency.
 
         Relevance scores are min-max normalized before blending. Publication dates
