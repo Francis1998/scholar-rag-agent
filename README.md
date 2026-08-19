@@ -19,6 +19,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: fused results are dominated by near-duplicate passages that waste the context window.
   An optional Maximal Marginal Relevance (MMR) re-ranker balances relevance against novelty, dropping redundant chunks so the model sees complementary evidence.
 
+- Issue: relevance-only rankings can bury recent findings in fast-moving fields.
+  A deterministic freshness booster blends normalized relevance with exponential
+  publication-date decay from chunk metadata.
+
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
@@ -118,6 +122,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Configuration (extended)](docs/CONFIGURATION.md) | Full configuration reference with examples. |
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
+| [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
