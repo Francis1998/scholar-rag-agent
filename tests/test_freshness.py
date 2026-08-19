@@ -1,6 +1,6 @@
 """Tests for publication-recency retrieval boosting."""
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -50,7 +50,7 @@ def test_freshness_can_promote_recent_evidence_over_more_relevant_old_evidence()
     booster = FreshnessBooster(
         half_life_days=365,
         relevance_weight=0.25,
-        as_of=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        as_of=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     boosted = booster.boost(results)

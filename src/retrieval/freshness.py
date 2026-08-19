@@ -1,7 +1,7 @@
 """Deterministic relevance and publication-recency re-scoring."""
 
 import math
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from retrieval.models import SearchResult
 
@@ -33,7 +33,7 @@ class FreshnessBooster:
             raise ValueError("relevance_weight must be within [0.0, 1.0]")
         self._half_life_days = half_life_days
         self._relevance_weight = relevance_weight
-        self._as_of = self._as_utc_datetime(as_of or datetime.now(timezone.utc))
+        self._as_of = self._as_utc_datetime(as_of or datetime.now(UTC))
 
     def boost(self, results: list[SearchResult], top_k: int | None = None) -> list[SearchResult]:
         """Return results ordered by combined relevance and publication recency.
@@ -87,7 +87,7 @@ class FreshnessBooster:
             return None
         if len(candidate) == 4 and candidate.isdigit():
             try:
-                return datetime(int(candidate), 1, 1, tzinfo=timezone.utc)
+                return datetime(int(candidate), 1, 1, tzinfo=UTC)
             except ValueError:
                 return None
         try:
@@ -103,10 +103,10 @@ class FreshnessBooster:
     @staticmethod
     def _as_utc_datetime(value: date | datetime) -> datetime:
         if not isinstance(value, datetime):
-            return datetime(value.year, value.month, value.day, tzinfo=timezone.utc)
+            return datetime(value.year, value.month, value.day, tzinfo=UTC)
         if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
     @staticmethod
     def _normalized_relevance(scores: list[float]) -> list[float]:
