@@ -31,6 +31,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic parent-document expander replaces child hits with deduplicated
   full parent text from a provided in-memory store.
 
+- Issue: retrieval can return evidence too weak to support grounded synthesis.
+  A deterministic corrective-RAG gate grades lexical query coverage, filters
+  weak hits, and signals when a retry with rewritten terminology is needed.
+
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
@@ -133,6 +137,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
+| [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
