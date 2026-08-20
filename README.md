@@ -45,6 +45,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: generated summaries sound plausible but are hard to audit.
   Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
 
+- Issue: rankings ignore whether a query needs background, methods, results, or comparisons.
+  A deterministic citation-intent classifier labels the query and attaches that
+  intent to result metadata for downstream citation-aware ranking.
+
 - Issue: research questions often need a plan, not just one search call.
   The Observe -> Decide -> Act runtime classifies intent, decomposes the query into retrieval sub-tasks, and persists a JSON rationale trace for every decision.
 
@@ -143,6 +147,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
+| [Citation intent guide](docs/guides/CITATION_INTENT_GUIDE.md) | Label background, method, result, comparison, or unknown evidence needs. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
