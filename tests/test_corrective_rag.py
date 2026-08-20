@@ -59,7 +59,7 @@ def test_gate_filters_to_borderline_results_when_none_are_strong() -> None:
         _result("borderline", "Graph retrieval", "A baseline evaluation."),
         _result("irrelevant", "Ocean study", "Coral temperatures increased."),
     ]
-    gate = CorrectiveRagGate(keep_threshold=0.75, filter_threshold=0.5)
+    gate = CorrectiveRagGate(keep_threshold=0.8, filter_threshold=0.5)
 
     decision = gate.evaluate("graph retrieval evaluation accuracy", results)
 
