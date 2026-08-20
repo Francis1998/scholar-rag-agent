@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `QueryRewriter`: deterministic stopword removal, whitespace normalization, caller-provided synonym expansion, and bounded multi-query variants for retrieval fusion. See `docs/guides/QUERY_REWRITE_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `CorrectiveRagGate`: deterministic lexical query-coverage grading that keeps strong evidence, filters borderline hits, or signals a retry with a rewrite hint. See `docs/guides/CORRECTIVE_RAG_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `ParentDocumentExpander`: deterministic expansion of child chunk hits to deduplicated parent text from a provided in-memory `Document`, `Chunk`, or string store. See `docs/guides/PARENT_DOCUMENT_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `ContextualCompressor`: deterministic, bounded extraction of query-relevant sentence spans from retrieved chunk text using lexical overlap. See `docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md`. Optional downstream LLM stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.

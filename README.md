@@ -16,6 +16,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: keyword search misses papers that use different terminology.
   Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
 
+- Issue: domain synonyms fragment lexical retrieval across different terms.
+  A deterministic query rewriter drops stopwords, expands a provided synonym
+  map, and emits bounded query variants for reciprocal-rank fusion.
+
 - Issue: fused results are dominated by near-duplicate passages that waste the context window.
   An optional Maximal Marginal Relevance (MMR) re-ranker balances relevance against novelty, dropping redundant chunks so the model sees complementary evidence.
 
@@ -138,6 +142,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
+| [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
 | [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
 | [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
