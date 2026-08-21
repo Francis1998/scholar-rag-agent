@@ -16,6 +16,12 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: keyword search misses papers that use different terminology.
   Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
 
+- Issue: one hypothetical answer can overfit retrieval to a single framing.
+  Multi-HyDE generates deterministic background, methods, findings, and
+  limitations abstracts, retrieves each expansion, and fuses shared hits with
+  RRF. Optional generation supports GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, and
+  Kimi K2.
+
 - Issue: domain synonyms fragment lexical retrieval across different terms.
   A deterministic query rewriter drops stopwords, expands a provided synonym
   map, and emits bounded query variants for reciprocal-rank fusion.
@@ -142,6 +148,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Configuration (extended)](docs/CONFIGURATION.md) | Full configuration reference with examples. |
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
+| [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
