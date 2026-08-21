@@ -6,6 +6,10 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `EvidenceSpanAligner`: deterministic, Unicode-aware alignment of query terms to exact half-open character spans in retrieved chunk text for citation highlighting. See `docs/guides/EVIDENCE_SPAN_ALIGN_GUIDE.md`. Highlighted evidence can feed downstream stages using **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
+
+- `EvidenceSpanAligner`: deterministic, Unicode-aware alignment of query terms to exact half-open character spans in retrieved chunk text for citation highlighting. See `docs/guides/EVIDENCE_SPAN_ALIGN_GUIDE.md`. Highlighted evidence can feed downstream stages using **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
+
 - `SelfRagReflectionGate`: deterministic Self-RAG-style `SUPPORT` / `PARTIAL` / `REFUSE` decisions using aggregate query-term coverage, negation-aware opposing-cue heuristics, and inspectable conflict provenance. See `docs/guides/SELF_RAG_REFLECTION_GATE_GUIDE.md`. Accepted evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 
 - `MultiHydeFusion`: deterministic multi-perspective hypothetical abstracts, optional provider-adapter generation, expanded-query retrieval, and shared reciprocal-rank fusion with per-variant provenance. See `docs/guides/MULTI_HYDE_FUSION_GUIDE.md`. Optional generation can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.

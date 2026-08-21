@@ -51,6 +51,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: generated summaries sound plausible but are hard to audit.
   Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
 
+- Issue: citation interfaces need exact source offsets, not approximate excerpts.
+  A deterministic evidence-span aligner maps query terms to Unicode-aware
+  half-open character spans in retrieved chunk text for reliable highlighting.
+
 - Issue: rankings ignore whether a query needs background, methods, results, or comparisons.
   A deterministic citation-intent classifier labels the query and attaches that
   intent to result metadata for downstream citation-aware ranking.
