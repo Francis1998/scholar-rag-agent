@@ -76,7 +76,10 @@ async def test_retrieves_each_expansion_and_promotes_shared_results_with_rrf() -
     fused = await fusion.retrieve("retrieval evaluation", limit=2)
 
     assert len(retriever.queries) == 3
-    assert all(query.startswith("retrieval evaluation\nHypothetical abstract:") for query in retriever.queries)
+    assert all(
+        query.startswith("retrieval evaluation\nHypothetical abstract:")
+        for query in retriever.queries
+    )
     assert [result.chunk.chunk_id for result in fused] == ["shared", "methods"]
     assert fused[0].retriever == "rrf"
     assert fused[0].score == pytest.approx(1 / 11 + 1 / 12 + 1 / 11)

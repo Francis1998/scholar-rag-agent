@@ -76,13 +76,15 @@ class MultiHydeFusion:
             if self._llm is None:
                 abstract = fallback
             else:
+                perspective = _PERSPECTIVES[index % len(_PERSPECTIVES)][0].lower()
                 response = await self._llm.generate(
                     LLMRequest(
                         task_type=TaskType.SPEED,
                         prompt=(
                             "Write one concise hypothetical scientific abstract for the "
-                            f"research question below. Use the {_PERSPECTIVES[index % 4][0].lower()} "
-                            f"perspective and do not include citations.\nQuestion: {normalized_query}"
+                            f"research question below. Use the {perspective} perspective and "
+                            "do not include citations.\n"
+                            f"Question: {normalized_query}"
                         ),
                         context=f"Multi-HyDE variant {index + 1} of {self._num_hypotheses}",
                         citation_chunk_ids=[],
