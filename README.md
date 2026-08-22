@@ -45,6 +45,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic parent-document expander replaces child hits with deduplicated
   full parent text from a provided in-memory store.
 
+- Issue: greetings and meta capability questions waste retrieval budget.
+  A deterministic adaptive retrieval gate chooses RETRIEVE or SKIP from
+  lexical chitchat versus knowledge-seeking cues before any corpus lookup.
+
 - Issue: retrieval can return evidence too weak to support grounded synthesis.
   A deterministic corrective-RAG gate grades lexical query coverage, filters
   weak hits, and signals when a retry with rewritten terminology is needed.
@@ -166,6 +170,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
+| [Adaptive retrieval gate guide](docs/guides/ADAPTIVE_RETRIEVAL_GATE_GUIDE.md) | Decide RETRIEVE vs SKIP before lookup using chitchat and knowledge-seeking cues. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [Query decomposition guide](docs/guides/QUERY_DECOMPOSITION_GUIDE.md) | Split compound questions into distinct retrieval sub-queries for multi-query fusion. |
 | [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
