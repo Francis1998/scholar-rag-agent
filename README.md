@@ -48,6 +48,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
+- Issue: draft answers can mix grounded sentences with unsupported claims.
+  A deterministic claim-verification gate splits the answer into claim
+  sentences, scores lexical support against retrieved chunks, and reports
+  per-claim groundedness before synthesis is trusted.
+
 - Issue: generated summaries sound plausible but are hard to audit.
   Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
 
@@ -156,6 +161,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
+| [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
 | [Citation intent guide](docs/guides/CITATION_INTENT_GUIDE.md) | Label background, method, result, comparison, or unknown evidence needs. |
