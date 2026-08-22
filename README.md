@@ -22,6 +22,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   RRF. Optional generation supports GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, and
   Kimi K2.
 
+- Issue: compound questions bury multiple retrieval intents in one string.
+  A deterministic query decomposer splits on conjunctions and question marks,
+  deduplicates sub-queries, and keeps the original question first for fusion.
+
 - Issue: domain synonyms fragment lexical retrieval across different terms.
   A deterministic query rewriter drops stopwords, expands a provided synonym
   map, and emits bounded query variants for reciprocal-rank fusion.
@@ -163,6 +167,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
+| [Query decomposition guide](docs/guides/QUERY_DECOMPOSITION_GUIDE.md) | Split compound questions into distinct retrieval sub-queries for multi-query fusion. |
 | [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
 | [Citation intent guide](docs/guides/CITATION_INTENT_GUIDE.md) | Label background, method, result, comparison, or unknown evidence needs. |
 | [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |

@@ -6,6 +6,8 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `QueryDecomposer`: deterministic LlamaIndex/Haystack-style multi-query splitting on conjunctions and question marks, with deduplication and the original query preserved first. See `docs/guides/QUERY_DECOMPOSITION_GUIDE.md`. Optional downstream stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
+
 - `ClaimVerificationGate`: deterministic RAGAS/TruLens-style claim splitting with lexical support scoring against retrieved chunks, per-claim supported/unsupported verdicts, and overall groundedness. See `docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md`. Optional downstream stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 
 - `EvidenceSpanAligner`: deterministic, Unicode-aware alignment of query terms to exact half-open character spans in retrieved chunk text for citation highlighting. See `docs/guides/EVIDENCE_SPAN_ALIGN_GUIDE.md`. Highlighted evidence can feed downstream stages using **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
