@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AgenticChunkBoundarySplitter`: deterministic LlamaIndex sentence-window/Chonkie/LangChain `MarkdownHeaderTextSplitter`-style text chunker that prefers markdown heading, paragraph, and sentence boundaries over fixed-size character windows, falling back to word- or character-level cuts only when a unit still exceeds `max_chars`. No LLM or network call required despite the name. See `docs/guides/AGENTIC_CHUNK_BOUNDARY_GUIDE.md`. Agent-ready chunks can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `TemporalFreshnessCutoff`: deterministic LlamaIndex `TemporalRetriever`/Haystack-style hard age cutoff that drops chunks older than `max_age_days` from `published_at`/`year`/`date` chunk metadata, independent of relevance-based re-scoring. See `docs/guides/TEMPORAL_FRESHNESS_CUTOFF_GUIDE.md`. Surviving evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `CitationGroundednessScorer`: deterministic RAGAS `context_precision`/TruLens-style scoring that resolves `[n]` and `(Author, Year)` inline citation markers to specific retrieved chunks and measures lexical overlap between the cited sentence and its named source (distinct from `ClaimVerificationGate`, which checks any-chunk support without regard to citation attribution). See `docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md`. Optional downstream stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 
