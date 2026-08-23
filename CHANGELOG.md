@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `TemporalFreshnessCutoff`: deterministic LlamaIndex `TemporalRetriever`/Haystack-style hard age cutoff that drops chunks older than `max_age_days` from `published_at`/`year`/`date` chunk metadata, independent of relevance-based re-scoring. See `docs/guides/TEMPORAL_FRESHNESS_CUTOFF_GUIDE.md`. Surviving evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `CitationGroundednessScorer`: deterministic RAGAS `context_precision`/TruLens-style scoring that resolves `[n]` and `(Author, Year)` inline citation markers to specific retrieved chunks and measures lexical overlap between the cited sentence and its named source (distinct from `ClaimVerificationGate`, which checks any-chunk support without regard to citation attribution). See `docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md`. Optional downstream stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 
 - `AdaptiveRetrievalGate`: deterministic Adaptive-RAG / Self-RAG-style pre-retrieval `RETRIEVE` / `SKIP` decisions from chitchat, meta, and knowledge-seeking lexical cues (distinct from post-retrieval `SelfRagReflectionGate`). See `docs/guides/ADAPTIVE_RETRIEVAL_GATE_GUIDE.md`. Optional downstream stages can use **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
