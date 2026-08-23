@@ -41,6 +41,12 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic contextual compressor extracts bounded lexical-overlap spans,
   reducing token use without an LLM or network call.
 
+- Issue: fixed-size character windows split mid-sentence and separate headings from their content.
+  A deterministic agentic chunk-boundary splitter prefers markdown headings,
+  then paragraph breaks, then sentence and word boundaries, falling back to
+  raw characters only when a single token exceeds `max_chars`, then merges
+  any resulting chunk under `min_chars` into a neighbor when it still fits.
+
 - Issue: small chunks retrieve precisely but can omit the surrounding evidence needed for synthesis.
   A deterministic parent-document expander replaces child hits with deduplicated
   full parent text from a provided in-memory store.
