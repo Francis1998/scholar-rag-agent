@@ -2,7 +2,7 @@
 
 import pytest
 
-from ingestion.agentic_chunk_boundary import AgenticChunkBoundarySplitter
+from retrieval.agentic_chunk_boundary import AgenticChunkBoundarySplitter
 from retrieval.models import Document
 
 
@@ -13,15 +13,24 @@ def test_rejects_non_positive_max_chars() -> None:
         AgenticChunkBoundarySplitter(max_chars=-5)
 
 
+def test_rejects_invalid_min_chars() -> None:
+    with pytest.raises(ValueError, match="min_chars"):
+        AgenticChunkBoundarySplitter(max_chars=100, min_chars=-1)
+    with pytest.raises(ValueError, match="min_chars"):
+        AgenticChunkBoundarySplitter(max_chars=100, min_chars=100)
+    with pytest.raises(ValueError, match="min_chars"):
+        AgenticChunkBoundarySplitter(max_chars=100, min_chars=150)
+
+
 def test_empty_or_whitespace_input_returns_empty_list() -> None:
-    splitter = AgenticChunkBoundarySplitter(max_chars=100)
+    splitter = AgenticChunkBoundarySplitter(max_chars=100, min_chars=0)
 
     assert splitter.split("") == []
     assert splitter.split("   \n\n  ") == []
 
 
 def test_text_within_limit_is_returned_as_single_chunk() -> None:
-    splitter = AgenticChunkBoundarySplitter(max_chars=200)
+    splitter = AgenticChunkBoundarySplitter(max_chars=200, min_chars=0)
     text = "Graph neural networks improve molecular property prediction."
 
     assert splitter.split(text) == [text]
@@ -34,7 +43,7 @@ def test_splits_on_markdown_headings_keeping_heading_with_body() -> None:
         "## Methods\n\n"
         "We combine BM25 and dense retrieval with reciprocal rank fusion."
     )
-    splitter = AgenticChunkBoundarySplitter(max_chars=200)
+    splitter = AgenticChunkBoundarySplitter(max_chars=200, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -51,7 +60,7 @@ def test_oversized_heading_section_splits_on_blank_line_paragraphs() -> None:
         "First paragraph with some scientific content about retrieval.\n\n"
         "Second paragraph with different scientific content about ranking."
     )
-    splitter = AgenticChunkBoundarySplitter(max_chars=90)
+    splitter = AgenticChunkBoundarySplitter(max_chars=90, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -66,7 +75,7 @@ def test_oversized_paragraph_splits_on_sentence_boundaries() -> None:
         "Graph neural networks improve molecular property prediction. "
         "Dense retrieval complements sparse BM25 search well."
     )
-    splitter = AgenticChunkBoundarySplitter(max_chars=65)
+    splitter = AgenticChunkBoundarySplitter(max_chars=65, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -79,7 +88,7 @@ def test_oversized_paragraph_splits_on_sentence_boundaries() -> None:
 
 def test_oversized_sentence_splits_on_word_boundaries() -> None:
     text = "This sentence has many words that together exceed the small limit set here."
-    splitter = AgenticChunkBoundarySplitter(max_chars=30)
+    splitter = AgenticChunkBoundarySplitter(max_chars=30, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -90,7 +99,7 @@ def test_oversized_sentence_splits_on_word_boundaries() -> None:
 
 def test_single_oversized_word_falls_back_to_character_slicing() -> None:
     token = "x" * 75
-    splitter = AgenticChunkBoundarySplitter(max_chars=30)
+    splitter = AgenticChunkBoundarySplitter(max_chars=30, min_chars=0)
 
     chunks = splitter.split(token)
 
@@ -108,7 +117,7 @@ def test_no_chunk_ever_exceeds_max_chars_across_all_boundary_levels() -> None:
         "## Next\n\n"
         "Final section."
     )
-    splitter = AgenticChunkBoundarySplitter(max_chars=40)
+    splitter = AgenticChunkBoundarySplitter(max_chars=40, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -118,7 +127,7 @@ def test_no_chunk_ever_exceeds_max_chars_across_all_boundary_levels() -> None:
 
 def test_multiple_consecutive_headings_without_body_are_kept_separate() -> None:
     text = "# H1\n## H2\nBody text under second heading."
-    splitter = AgenticChunkBoundarySplitter(max_chars=200)
+    splitter = AgenticChunkBoundarySplitter(max_chars=200, min_chars=0)
 
     chunks = splitter.split(text)
 
@@ -128,12 +137,58 @@ def test_multiple_consecutive_headings_without_body_are_kept_separate() -> None:
 
 def test_preamble_before_first_heading_is_its_own_section() -> None:
     text = "Some preamble text before any heading appears.\n\n# Heading\n\nBody content."
-    splitter = AgenticChunkBoundarySplitter(max_chars=200)
+    splitter = AgenticChunkBoundarySplitter(max_chars=200, min_chars=0)
 
     chunks = splitter.split(text)
 
     assert chunks[0] == "Some preamble text before any heading appears."
     assert chunks[1].startswith("# Heading")
+
+
+def test_small_adjacent_heading_sections_merge_up_to_max_chars() -> None:
+    text = "# A\n\nShort.\n\n# B\n\nAlso short."
+    splitter = AgenticChunkBoundarySplitter(max_chars=200, min_chars=50)
+
+    chunks = splitter.split(text)
+
+    assert chunks == [text]
+
+
+def test_merge_is_skipped_when_it_would_exceed_max_chars() -> None:
+    text = "# A\n\nShort.\n\n# B\n\nAlso short."
+    splitter = AgenticChunkBoundarySplitter(max_chars=25, min_chars=20)
+
+    chunks = splitter.split(text)
+
+    assert chunks == ["# A\n\nShort.", "# B\n\nAlso short."]
+    assert all(len(chunk) <= 25 for chunk in chunks)
+
+
+def test_small_middle_chunk_merges_with_previous_when_forward_merge_would_overflow() -> None:
+    chunk0_body = "x" * 30
+    chunk1_body = "x" * 5
+    chunk2_body = "x" * 40
+    text = f"# H0\n\n{chunk0_body}\n\n# H1\n\n{chunk1_body}\n\n# H2\n\n{chunk2_body}"
+    splitter = AgenticChunkBoundarySplitter(max_chars=50, min_chars=15)
+
+    chunks = splitter.split(text)
+
+    assert len(chunks) == 2
+    assert chunks[0] == f"# H0\n\n{chunk0_body}\n\n# H1\n\n{chunk1_body}"
+    assert chunks[1] == f"# H2\n\n{chunk2_body}"
+    assert all(len(chunk) <= 50 for chunk in chunks)
+
+
+def test_default_bounds_keep_short_headings_together_and_long_text_bounded() -> None:
+    splitter = AgenticChunkBoundarySplitter()
+    text = "# A\n\nShort section one.\n\n# B\n\nShort section two."
+
+    assert splitter.split(text) == [text]
+
+    long_text = "word " * 400
+    chunks = splitter.split(long_text)
+    assert all(len(chunk) <= 1200 for chunk in chunks)
+    assert " ".join(chunks) == long_text.strip()
 
 
 def test_chunk_returns_retrieval_chunks_with_deterministic_ids() -> None:
@@ -146,7 +201,7 @@ def test_chunk_returns_retrieval_chunks_with_deterministic_ids() -> None:
         source="fixture",
         metadata={"year": "2024"},
     )
-    splitter = AgenticChunkBoundarySplitter(max_chars=50)
+    splitter = AgenticChunkBoundarySplitter(max_chars=50, min_chars=0)
 
     chunks = splitter.chunk(document)
     chunks_again = splitter.chunk(document)
@@ -161,6 +216,6 @@ def test_chunk_returns_retrieval_chunks_with_deterministic_ids() -> None:
 
 def test_chunk_on_empty_document_text_returns_no_chunks() -> None:
     document = Document(document_id="doc-2", title="Empty", text="   ", source="fixture")
-    splitter = AgenticChunkBoundarySplitter(max_chars=50)
+    splitter = AgenticChunkBoundarySplitter(max_chars=50, min_chars=0)
 
     assert splitter.chunk(document) == []

@@ -8,7 +8,8 @@ It is inspired by LlamaIndex's sentence-window parsing, Chonkie's recursive
 chunkers, and LangChain's `MarkdownHeaderTextSplitter`. Despite the
 "agentic" name, it requires no LLM or network call: splitting is pure and
 deterministic, which is what makes the resulting chunks safe inputs for
-downstream agent tool calls and retrieval indexing.
+downstream agent tool calls and retrieval indexing feeding **GPT-5.5**,
+**Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 
 ## How it differs from `TextChunker`
 
@@ -19,7 +20,8 @@ downstream agent tool calls and retrieval indexing.
 - `AgenticChunkBoundarySplitter` tries the most semantic boundary first and
   only descends to a coarser one when a unit still exceeds `max_chars`. It
   never overlaps chunks, and small heading sections are kept intact rather
-  than force-split.
+  than force-split. A `min_chars` floor additionally reunites undersized
+  neighboring chunks so retrieval does not index tiny fragments.
 
 ## Boundary priority
 
@@ -34,17 +36,22 @@ downstream agent tool calls and retrieval indexing.
    sentence breaks.
 5. **Raw character slicing** is the last resort, used only for a single
    token that alone exceeds `max_chars` (e.g. a long identifier or URL).
+6. **Small-chunk merging** runs last: any chunk under `min_chars` is folded
+   into a neighbor (the next chunk first, otherwise the previous one) when
+   the merge still fits under `max_chars`. This mainly reunites short
+   heading sections (like a lone `## Acknowledgments`) with adjacent
+   content instead of leaving them as tiny standalone chunks.
 
 ```text
-headings -> paragraphs -> sentences -> words -> characters
+headings -> paragraphs -> sentences -> words -> characters -> merge-small
 ```
 
 ## Example
 
 ```python
-from ingestion.agentic_chunk_boundary import AgenticChunkBoundarySplitter
+from retrieval.agentic_chunk_boundary import AgenticChunkBoundarySplitter
 
-splitter = AgenticChunkBoundarySplitter(max_chars=800)
+splitter = AgenticChunkBoundarySplitter(max_chars=1200, min_chars=200)
 chunks = splitter.split(markdown_text)
 ```
 
@@ -66,9 +73,15 @@ ids derived from the document id, chunk index, and chunk text, and a
 - Paragraph and sentence text has internal whitespace (including line wraps)
   collapsed to single spaces before packing; markdown headings and blank
   lines between paragraphs are preserved as boundaries.
-- No chunk exceeds `max_chars`, except that this is only guaranteed once
-  splitting reaches the character-level fallback; every higher level
-  recurses into a finer boundary before falling back further.
-- `max_chars` must be a positive integer; invalid values raise `ValueError`
-  at construction time.
+- No chunk ever exceeds `max_chars`. Splitting always recurses into a finer
+  boundary (or the character-level fallback) before packing, and the final
+  small-chunk merge pass only combines two chunks when the result still
+  fits under `max_chars`.
+- `min_chars` is best-effort: a chunk that cannot merge with either neighbor
+  without exceeding `max_chars` (or that has no eligible neighbor at all)
+  may still be returned shorter than `min_chars`.
+- `max_chars` must be a positive integer, `min_chars` must be a non-negative
+  integer strictly smaller than `max_chars`; invalid values raise
+  `ValueError` at construction time. Defaults are `max_chars=1200` and
+  `min_chars=200`.
 - Blank or whitespace-only input returns an empty list.
