@@ -64,6 +64,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: generated summaries sound plausible but are hard to audit.
   Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
 
+- Issue: an answer can cite a source that does not actually support the sentence next to it.
+  A deterministic citation-groundedness scorer resolves `[n]` and
+  `(Author, Year)` markers to specific retrieved chunks and measures whether
+  each cited sentence lexically overlaps the source it names.
+
 - Issue: citation interfaces need exact source offsets, not approximate excerpts.
   A deterministic evidence-span aligner maps query terms to Unicode-aware
   half-open character spans in retrieved chunk text for reliable highlighting.
@@ -170,6 +175,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
+| [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
 | [Adaptive retrieval gate guide](docs/guides/ADAPTIVE_RETRIEVAL_GATE_GUIDE.md) | Decide RETRIEVE vs SKIP before lookup using chitchat and knowledge-seeking cues. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [Query decomposition guide](docs/guides/QUERY_DECOMPOSITION_GUIDE.md) | Split compound questions into distinct retrieval sub-queries for multi-query fusion. |
