@@ -176,6 +176,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
+| [Temporal freshness cutoff guide](docs/guides/TEMPORAL_FRESHNESS_CUTOFF_GUIDE.md) | Drop chunks older than a configured maximum age before synthesis. |
 | [Adaptive retrieval gate guide](docs/guides/ADAPTIVE_RETRIEVAL_GATE_GUIDE.md) | Decide RETRIEVE vs SKIP before lookup using chitchat and knowledge-seeking cues. |
 | [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
 | [Query decomposition guide](docs/guides/QUERY_DECOMPOSITION_GUIDE.md) | Split compound questions into distinct retrieval sub-queries for multi-query fusion. |
