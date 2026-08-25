@@ -33,6 +33,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: fused results are dominated by near-duplicate passages that waste the context window.
   An optional Maximal Marginal Relevance (MMR) re-ranker balances relevance against novelty, dropping redundant chunks so the model sees complementary evidence.
 
+- Issue: dense or fused rankings can under-weight chunks that share exact query terms.
+  A deterministic lexical-overlap booster blends prior relevance with Jaccard
+  query-chunk term overlap and re-sorts stably by the blended score.
+
 - Issue: relevance-only rankings can bury recent findings in fast-moving fields.
   A deterministic freshness booster blends normalized relevance with exponential
   publication-date decay from chunk metadata.
@@ -186,6 +190,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
 | [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
+| [Lexical overlap boost guide](docs/guides/LEXICAL_OVERLAP_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-chunk term overlap. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
