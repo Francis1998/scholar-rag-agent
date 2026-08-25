@@ -47,6 +47,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   raw characters only when a single token exceeds `max_chars`, then merges
   any resulting chunk under `min_chars` into a neighbor when it still fits.
 
+- Issue: precise child chunks omit neighboring sentences that clarify methods or results.
+  A deterministic sentence-window expander widens each hit by ±N sentences from
+  `document_text` / `full_text` metadata without swapping in the entire parent.
+
 - Issue: small chunks retrieve precisely but can omit the surrounding evidence needed for synthesis.
   A deterministic parent-document expander replaces child hits with deduplicated
   full parent text from a provided in-memory store.
@@ -184,6 +188,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
+| [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
