@@ -74,6 +74,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   refuses the whole batch when mean coverage is too low, and otherwise drops
   weak hits before synthesis.
 
+- Issue: synthesis stages may require provenance fields that some hits lack.
+  A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
+
 - Issue: retrieval can return evidence too weak to support grounded synthesis.
   A deterministic corrective-RAG gate grades lexical query coverage, filters
   weak hits, and signals when a retry with rewritten terminology is needed.
@@ -197,6 +200,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
 | [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
 | [Near duplicate collapse guide](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) | Collapse near-duplicate chunks by text Jaccard similarity, keeping top scorers. |
+| [Required metadata gate guide](docs/guides/REQUIRED_METADATA_GATE_GUIDE.md) | Drop results missing any required non-empty chunk metadata keys. |
 | [Title match boost guide](docs/guides/TITLE_MATCH_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-title term overlap. |
 | [Lexical overlap boost guide](docs/guides/LEXICAL_OVERLAP_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-chunk term overlap. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
