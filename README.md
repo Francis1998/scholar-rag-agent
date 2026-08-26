@@ -37,6 +37,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic lexical-overlap booster blends prior relevance with Jaccard
   query-chunk term overlap and re-sorts stably by the blended score.
 
+- Issue: fused rankings can under-weight papers whose titles match the query even when body overlap is weak.
+  A deterministic title-match booster blends prior relevance with Jaccard overlap against `chunk.title` only (distinct from title+text lexical overlap) and re-sorts stably by the blended score.
+
 - Issue: relevance-only rankings can bury recent findings in fast-moving fields.
   A deterministic freshness booster blends normalized relevance with exponential
   publication-date decay from chunk metadata.
@@ -190,6 +193,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
 | [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
 | [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
+| [Title match boost guide](docs/guides/TITLE_MATCH_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-title term overlap. |
 | [Lexical overlap boost guide](docs/guides/LEXICAL_OVERLAP_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-chunk term overlap. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
