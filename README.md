@@ -284,6 +284,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [DataCite reports source guide](docs/guides/DATACITE_REPORTS_SOURCE_GUIDE.md) | DataCite research-report DOI connector. |
 | [DataCite DOIs-by-prefix source guide](docs/guides/DATACITE_DOIS_PREFIX_SOURCE_GUIDE.md) | DataCite DOI prefix filter connector. |
 | [Europe PMC preprints source guide](docs/guides/EUROPEPMC_PREPRINTS_SOURCE_GUIDE.md) | Europe PMC PPR-filtered preprint connector. |
+| [Open access prefer guide](docs/guides/OPEN_ACCESS_PREFER_GUIDE.md) | Prefer open-access hits via score boost or soft filter when any OA exists. |
 
 ## Provider Keys
 
