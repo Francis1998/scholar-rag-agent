@@ -81,6 +81,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic preprint demoter soft-blends prior relevance with a demote score
   (`0.2` for arXiv/bioRxiv/medRxiv/SSRN/preprint metadata, else `1.0`) and re-sorts stably.
 
+- Issue: multilingual corpora can bury preferred-language evidence under higher-scoring foreign-language hits.
+  A deterministic language preferencer boosts or soft-filters results whose `language`/`lang` metadata matches a preferred set (default `en`).
+
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
 
@@ -291,6 +294,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Open access prefer guide](docs/guides/OPEN_ACCESS_PREFER_GUIDE.md) | Prefer open-access hits via score boost or soft filter when any OA exists. |
 | [Venue tier boost guide](docs/guides/VENUE_TIER_BOOST_GUIDE.md) | Re-rank results by blending relevance with venue prestige tier scores. |
 | [Preprint demote guide](docs/guides/PREPRINT_DEMOTE_GUIDE.md) | Soft-demote preprint venues via blended demote scores from publication_type/type/venue metadata. |
+| [Language prefer guide](docs/guides/LANGUAGE_PREFER_GUIDE.md) | Prefer preferred-language hits via score boost or soft filter when any match exists. |
 
 ## Provider Keys
 
