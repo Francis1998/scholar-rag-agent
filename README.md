@@ -77,6 +77,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: relevance-only rankings can under-weight highly cited papers that anchor a field.
   A deterministic citation-count booster blends prior relevance with batch-normalized `log1p(citation_count)` / `cited_by_count` from chunk metadata and re-sorts stably by the blended score.
 
+- Issue: fused rankings can over-promote preprint servers relative to peer-reviewed venues.
+  A deterministic preprint demoter soft-blends prior relevance with a demote score
+  (`0.2` for arXiv/bioRxiv/medRxiv/SSRN/preprint metadata, else `1.0`) and re-sorts stably.
+
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
 
@@ -286,6 +290,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Europe PMC preprints source guide](docs/guides/EUROPEPMC_PREPRINTS_SOURCE_GUIDE.md) | Europe PMC PPR-filtered preprint connector. |
 | [Open access prefer guide](docs/guides/OPEN_ACCESS_PREFER_GUIDE.md) | Prefer open-access hits via score boost or soft filter when any OA exists. |
 | [Venue tier boost guide](docs/guides/VENUE_TIER_BOOST_GUIDE.md) | Re-rank results by blending relevance with venue prestige tier scores. |
+| [Preprint demote guide](docs/guides/PREPRINT_DEMOTE_GUIDE.md) | Soft-demote preprint venues via blended demote scores from publication_type/type/venue metadata. |
 
 ## Provider Keys
 
