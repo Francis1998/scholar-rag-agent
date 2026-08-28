@@ -84,6 +84,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: multilingual corpora can bury preferred-language evidence under higher-scoring foreign-language hits.
   A deterministic language preferencer boosts or soft-filters results whose `language`/`lang` metadata matches a preferred set (default `en`).
 
+- Issue: fused rankings treat introduction and results chunks equally even when the query needs methods or findings.
+  A deterministic section-type booster blends prior relevance with preferred `section`/`section_type` scores (default results/methods/conclusion/abstract) and re-sorts stably.
+
+
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
 
@@ -295,6 +299,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Venue tier boost guide](docs/guides/VENUE_TIER_BOOST_GUIDE.md) | Re-rank results by blending relevance with venue prestige tier scores. |
 | [Preprint demote guide](docs/guides/PREPRINT_DEMOTE_GUIDE.md) | Soft-demote preprint venues via blended demote scores from publication_type/type/venue metadata. |
 | [Language prefer guide](docs/guides/LANGUAGE_PREFER_GUIDE.md) | Prefer preferred-language hits via score boost or soft filter when any match exists. |
+| [Section type boost guide](docs/guides/SECTION_TYPE_BOOST_GUIDE.md) | Re-rank results by blending relevance with preferred section/section_type scores. |
 
 ## Provider Keys
 
