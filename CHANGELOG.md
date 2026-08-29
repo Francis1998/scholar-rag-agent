@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AuthorCountBooster` (`author_count_boost`): Inspired by bibliometric priors in scholarly RAG (Haystack-style metadata boosts); softly prefers mid-sized author lists over single-author or extreme mega-author rows (not a DOI connector). See `docs/guides/AUTHOR_COUNT_BOOST_GUIDE.md`.
 - `AbstractOverlapBooster` (`abstract_overlap_boost`): Inspired by LlamaIndex/Haystack keyword-overlap postprocessors; boosts hits whose abstract/summary metadata overlaps the query tokens (not a DOI connector). See `docs/guides/ABSTRACT_OVERLAP_BOOST_GUIDE.md`.
 - `SectionTypeBooster`: deterministic LlamaIndex/Haystack metadata boost-style re-scoring that blends prior relevance with preferred `section`/`section_type` scores (default results/methods/conclusion/abstract → `1.0`, unknown → `0.2`), then stably re-sorts by the blended score. See `docs/guides/SECTION_TYPE_BOOST_GUIDE.md`. Re-ranked evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `LanguagePreferencer`: deterministic Haystack LanguageClassifier / LlamaIndex metadata-filter-style preference that boosts or soft-filters results whose `language`/`lang` metadata matches a preferred set (default `en`). See `docs/guides/LANGUAGE_PREFER_GUIDE.md`. Preferred evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.

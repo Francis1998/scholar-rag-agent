@@ -14,6 +14,7 @@ Scholar RAG Agent supports reproducible scientific knowledge synthesis, helping 
 Most literature workflows break down when the corpus grows beyond a few papers:
 
 - Issue: keyword search misses papers that use different terminology.
+- : Inspired by bibliometric priors in scholarly RAG (Haystack-style metadata boosts); softly prefers mid-sized author lists over single-author or extreme mega-author rows (not a DOI connector).
   Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
 
 - Issue: one hypothetical answer can overfit retrieval to a single framing.
