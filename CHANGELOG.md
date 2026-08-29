@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AbstractOverlapBooster` (`abstract_overlap_boost`): Inspired by LlamaIndex/Haystack keyword-overlap postprocessors; boosts hits whose abstract/summary metadata overlaps the query tokens (not a DOI connector). See `docs/guides/ABSTRACT_OVERLAP_BOOST_GUIDE.md`.
 - `SectionTypeBooster`: deterministic LlamaIndex/Haystack metadata boost-style re-scoring that blends prior relevance with preferred `section`/`section_type` scores (default results/methods/conclusion/abstract → `1.0`, unknown → `0.2`), then stably re-sorts by the blended score. See `docs/guides/SECTION_TYPE_BOOST_GUIDE.md`. Re-ranked evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `LanguagePreferencer`: deterministic Haystack LanguageClassifier / LlamaIndex metadata-filter-style preference that boosts or soft-filters results whose `language`/`lang` metadata matches a preferred set (default `en`). See `docs/guides/LANGUAGE_PREFER_GUIDE.md`. Preferred evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
 - `PreprintDemoter`: deterministic LlamaIndex/Haystack metadata boost-style soft demotion that blends prior relevance with demote score `0.2` when `publication_type`/`type`/`venue` indicates arXiv/bioRxiv/medRxiv/SSRN/preprint (else `1.0`), then stably re-sorts by the blended score. See `docs/guides/PREPRINT_DEMOTE_GUIDE.md`. Re-ranked evidence can feed **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
