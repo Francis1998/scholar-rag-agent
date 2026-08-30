@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `EntityOverlapBooster`: GraphRAG/Haystack-style entity Jaccard overlap postprocessor for scholarly RAG (GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/ENTITY_OVERLAP_BOOST_GUIDE.md`.
 - `RecencyHalfLifeBooster` (`recency_half_life`): Inspired by temporal decay ranking in Haystack/Elasticsearch; blends relevance with publication-year half-life decay from chunk metadata (not a DOI connector). See `docs/guides/RECENCY_HALF_LIFE_GUIDE.md`.
 - `ClaimDensityBooster` (`claim_density_boost`): Inspired by claim-centric reranking in scholarly RAG (PaperQA/LlamaIndex); boosts hits whose chunk text has higher density of claim-like sentences (not a DOI connector). See `docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md`.
 - `RetractedFilter` (`retracted_filter`): Inspired by Retraction Watch / OpenAlex retraction flags used in scholarly search stacks; drops or soft-demotes retracted works via local metadata (not a DOI connector). See `docs/guides/RETRACTED_FILTER_GUIDE.md`.
