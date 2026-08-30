@@ -88,6 +88,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: fused rankings treat introduction and results chunks equally even when the query needs methods or findings.
   A deterministic section-type booster blends prior relevance with preferred `section`/`section_type` scores (default results/methods/conclusion/abstract) and re-sorts stably.
 
+- Issue: dense rankings can bury chunks that state explicit findings and conclusions.
+  A deterministic claim-density booster blends prior relevance with the fraction of claim-like sentences in chunk text (reporting verbs or ``we`` / ``our results`` heuristics) and re-sorts stably.
+
 
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
@@ -301,6 +304,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Preprint demote guide](docs/guides/PREPRINT_DEMOTE_GUIDE.md) | Soft-demote preprint venues via blended demote scores from publication_type/type/venue metadata. |
 | [Language prefer guide](docs/guides/LANGUAGE_PREFER_GUIDE.md) | Prefer preferred-language hits via score boost or soft filter when any match exists. |
 | [Section type boost guide](docs/guides/SECTION_TYPE_BOOST_GUIDE.md) | Re-rank results by blending relevance with preferred section/section_type scores. |
+| [Claim density boost guide](docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with claim-like sentence density in chunk text. |
 
 ## Provider Keys
 
