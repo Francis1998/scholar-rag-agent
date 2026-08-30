@@ -48,6 +48,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic freshness booster blends normalized relevance with exponential
   publication-date decay from chunk metadata.
 
+- Issue: fused rankings can under-weight recent papers when only a publication year is available.
+  A deterministic recency half-life booster blends prior relevance with ``0.5 ** ((ref_year - year) / half_life)`` decay from year metadata and re-sorts stably.
+
 - Issue: relevant chunks still contain sentences unrelated to the current query.
   A deterministic contextual compressor extracts bounded lexical-overlap spans,
   reducing token use without an LLM or network call.
@@ -223,6 +226,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Title match boost guide](docs/guides/TITLE_MATCH_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-title term overlap. |
 | [Lexical overlap boost guide](docs/guides/LEXICAL_OVERLAP_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-chunk term overlap. |
 | [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
+| [Recency half life boost guide](docs/guides/RECENCY_HALF_LIFE_GUIDE.md) | Re-rank results by blending relevance with publication-year half-life decay. |
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
