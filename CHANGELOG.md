@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `RecencyHalfLifeBooster` (`recency_half_life`): Inspired by temporal decay ranking in Haystack/Elasticsearch; blends relevance with publication-year half-life decay from chunk metadata (not a DOI connector). See `docs/guides/RECENCY_HALF_LIFE_GUIDE.md`.
 - `ClaimDensityBooster` (`claim_density_boost`): Inspired by claim-centric reranking in scholarly RAG (PaperQA/LlamaIndex); boosts hits whose chunk text has higher density of claim-like sentences (not a DOI connector). See `docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md`.
 - `RetractedFilter` (`retracted_filter`): Inspired by Retraction Watch / OpenAlex retraction flags used in scholarly search stacks; drops or soft-demotes retracted works via local metadata (not a DOI connector). See `docs/guides/RETRACTED_FILTER_GUIDE.md`.
 - `AuthorCountBooster` (`author_count_boost`): Inspired by bibliometric priors in scholarly RAG (Haystack-style metadata boosts); softly prefers mid-sized author lists over single-author or extreme mega-author rows (not a DOI connector). See `docs/guides/AUTHOR_COUNT_BOOST_GUIDE.md`.
