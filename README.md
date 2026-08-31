@@ -94,6 +94,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: dense rankings can bury chunks that state explicit findings and conclusions.
   A deterministic claim-density booster blends prior relevance with the fraction of claim-like sentences in chunk text (reporting verbs or ``we`` / ``our results`` heuristics) and re-sorts stably.
 
+- Issue: relevance-only rankings ignore soft authority cues such as peer review and impact.
+  A deterministic authority booster blends prior relevance with `source_authority` / `venue_rank` / `is_peer_reviewed` / `impact_factor` metadata (neutral when missing).
+
 
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
@@ -309,6 +312,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Language prefer guide](docs/guides/LANGUAGE_PREFER_GUIDE.md) | Prefer preferred-language hits via score boost or soft filter when any match exists. |
 | [Section type boost guide](docs/guides/SECTION_TYPE_BOOST_GUIDE.md) | Re-rank results by blending relevance with preferred section/section_type scores. |
 | [Claim density boost guide](docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with claim-like sentence density in chunk text. |
+| [Authority boost guide](docs/guides/AUTHORITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with source_authority / venue_rank / peer-review / impact_factor signals. |
 
 ## Provider Keys
 
