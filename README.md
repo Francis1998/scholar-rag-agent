@@ -98,6 +98,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic authority booster blends prior relevance with `source_authority` / `venue_rank` / `is_peer_reviewed` / `impact_factor` metadata (neutral when missing).
 
 
+- Issue: fused rankings can promote internally disjoint passages that jump topics mid-chunk.
+  A deterministic coherence booster blends prior relevance with adjacent-sentence token
+  overlap and query-term continuity across sentences, then re-sorts stably.
+
+
 - Issue: synthesis stages may require provenance fields that some hits lack.
   A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
 
@@ -313,6 +318,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Section type boost guide](docs/guides/SECTION_TYPE_BOOST_GUIDE.md) | Re-rank results by blending relevance with preferred section/section_type scores. |
 | [Claim density boost guide](docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with claim-like sentence density in chunk text. |
 | [Authority boost guide](docs/guides/AUTHORITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with source_authority / venue_rank / peer-review / impact_factor signals. |
+| [Coherence boost guide](docs/guides/COHERENCE_BOOST_GUIDE.md) | Re-rank results by blending relevance with adjacent-sentence overlap and query-term continuity. |
 
 ## Provider Keys
 

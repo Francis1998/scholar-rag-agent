@@ -7,6 +7,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - `AuthorityBooster` (`authority_boost`): Inspired by LlamaIndex/Haystack metadata boosts; soft-boosts via `source_authority` / `venue_rank` / `is_peer_reviewed` / `impact_factor` (neutral fallback; distinct from venue-tier and citation-count boosters; not a DOI connector). See `docs/guides/AUTHORITY_BOOST_GUIDE.md`.
+- `CoherenceBooster` (`coherence_boost`): Inspired by LlamaIndex/Haystack coherence-aware rerankers; blends relevance with adjacent-sentence token overlap and query-term continuity (not a DOI connector). See `docs/guides/COHERENCE_BOOST_GUIDE.md`.
 - `EntityOverlapBooster`: GraphRAG/Haystack-style entity Jaccard overlap postprocessor for scholarly RAG (GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/ENTITY_OVERLAP_BOOST_GUIDE.md`.
 - `RecencyHalfLifeBooster` (`recency_half_life`): Inspired by temporal decay ranking in Haystack/Elasticsearch; blends relevance with publication-year half-life decay from chunk metadata (not a DOI connector). See `docs/guides/RECENCY_HALF_LIFE_GUIDE.md`.
 - `ClaimDensityBooster` (`claim_density_boost`): Inspired by claim-centric reranking in scholarly RAG (PaperQA/LlamaIndex); boosts hits whose chunk text has higher density of claim-like sentences (not a DOI connector). See `docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md`.
