@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ParaphraseCollapser` (`paraphrase_collapse`): Inspired by LlamaIndex SimilarityPostprocessor paraphrase-aware dedupe; hard-drops light paraphrases via character n-gram Jaccard (not a DOI connector). See `docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md`.
 - `AuthorityBooster` (`authority_boost`): Inspired by LlamaIndex/Haystack metadata boosts; soft-boosts via `source_authority` / `venue_rank` / `is_peer_reviewed` / `impact_factor` (neutral fallback; distinct from venue-tier and citation-count boosters; not a DOI connector). See `docs/guides/AUTHORITY_BOOST_GUIDE.md`.
 - `CoherenceBooster` (`coherence_boost`): Inspired by LlamaIndex/Haystack coherence-aware rerankers; blends relevance with adjacent-sentence token overlap and query-term continuity (not a DOI connector). See `docs/guides/COHERENCE_BOOST_GUIDE.md`.
 - `NoveltyDiversifier` (`novelty_diversify`): Inspired by LlamaIndex diversity postprocessors / MMR; greedily re-ranks with an alpha-blended novelty penalty against already-selected chunks (not a DOI connector). See `docs/guides/NOVELTY_DIVERSIFY_GUIDE.md`.
