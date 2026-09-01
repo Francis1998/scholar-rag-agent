@@ -105,6 +105,7 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 
 - Issue: top-k evidence still wastes context on near-duplicate passages after fusion.
   A deterministic novelty diversifier greedily re-ranks with an alpha-blended novelty penalty based on token Jaccard overlap against already-selected chunks.
+  A deterministic `ParaphraseCollapser` stage supports paraphrase collapse for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
 
 
 - Issue: synthesis stages may require provenance fields that some hits lack.
@@ -324,6 +325,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Authority boost guide](docs/guides/AUTHORITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with source_authority / venue_rank / peer-review / impact_factor signals. |
 | [Coherence boost guide](docs/guides/COHERENCE_BOOST_GUIDE.md) | Re-rank results by blending relevance with adjacent-sentence overlap and query-term continuity. |
 | [Novelty diversify guide](docs/guides/NOVELTY_DIVERSIFY_GUIDE.md) | Greedy novelty re-ranking that soft-demotes near-duplicate chunks via token Jaccard overlap. |
+| [Paraphrase collapse guide](docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md) | Hard-drop paraphrase near-duplicates via character n-gram Jaccard (distinct from word-term near-duplicate collapse). |
 
 ## Provider Keys
 
