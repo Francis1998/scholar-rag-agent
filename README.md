@@ -328,6 +328,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Paraphrase collapse guide](docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md) | Hard-drop paraphrase near-duplicates via character n-gram Jaccard (distinct from word-term near-duplicate collapse). |
 | [Score threshold gate guide](docs/guides/SCORE_THRESHOLD_GATE_GUIDE.md) | Hard-drop retrieval hits below a minimum relevance score (Haystack ScoreThreshold-style). |
 | [Keyword match gate guide](docs/guides/KEYWORD_MATCH_GATE_GUIDE.md) | Keep hits whose chunk covers a minimum fraction of query keywords. |
+| [Metadata equals gate guide](docs/guides/METADATA_EQUALS_GATE_GUIDE.md) | Keep hits whose chunk metadata equals required key/value filters. |
 | [Cross-encoder gate guide](docs/guides/CROSS_ENCODER_GATE_GUIDE.md) | Drop weak query-document pairs below a local lexical cross-encoder proxy score. |
 | [Term coverage boost guide](docs/guides/TERM_COVERAGE_BOOST_GUIDE.md) | Soft-boost hits by the fraction of query tokens present in the chunk text. |
 
