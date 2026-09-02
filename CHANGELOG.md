@@ -7,6 +7,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - `TermCoverageBooster` (`term_coverage_boost`): Inspired by Haystack/Elasticsearch minimum_should_match coverage boosts; blends relevance with query-term coverage (not a DOI connector). See `docs/guides/TERM_COVERAGE_BOOST_GUIDE.md`.
+- `KeywordMatchGate` (`keyword_match_gate`): Inspired by Elasticsearch/Haystack minimum_should_match keyword filters; keeps hits covering enough query tokens (not a DOI connector). See `docs/guides/KEYWORD_MATCH_GATE_GUIDE.md`.
 - `ScoreThresholdGate` (`score_threshold_gate`): Inspired by Haystack `ScoreThreshold` / LlamaIndex SimilarityPostprocessor; hard-drops hits below a relevance floor (not a DOI connector). See `docs/guides/SCORE_THRESHOLD_GATE_GUIDE.md`.
 - `CrossEncoderGate` (`cross_encoder_gate`): Inspired by LlamaIndex/Haystack cross-encoder rerankers; deterministic lexical proxy gate (not a DOI connector). See `docs/guides/CROSS_ENCODER_GATE_GUIDE.md`.
 - `ParaphraseCollapser` (`paraphrase_collapse`): Inspired by LlamaIndex SimilarityPostprocessor paraphrase-aware dedupe; hard-drops light paraphrases via character n-gram Jaccard (not a DOI connector). See `docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md`.
