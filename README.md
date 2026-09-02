@@ -326,6 +326,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Coherence boost guide](docs/guides/COHERENCE_BOOST_GUIDE.md) | Re-rank results by blending relevance with adjacent-sentence overlap and query-term continuity. |
 | [Novelty diversify guide](docs/guides/NOVELTY_DIVERSIFY_GUIDE.md) | Greedy novelty re-ranking that soft-demotes near-duplicate chunks via token Jaccard overlap. |
 | [Paraphrase collapse guide](docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md) | Hard-drop paraphrase near-duplicates via character n-gram Jaccard (distinct from word-term near-duplicate collapse). |
+| [Score threshold gate guide](docs/guides/SCORE_THRESHOLD_GATE_GUIDE.md) | Hard-drop retrieval hits below a minimum relevance score (Haystack ScoreThreshold-style). |
 | [Cross-encoder gate guide](docs/guides/CROSS_ENCODER_GATE_GUIDE.md) | Drop weak query-document pairs below a local lexical cross-encoder proxy score. |
 | [Term coverage boost guide](docs/guides/TERM_COVERAGE_BOOST_GUIDE.md) | Soft-boost hits by the fraction of query tokens present in the chunk text. |
 
