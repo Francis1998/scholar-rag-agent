@@ -6,9 +6,7 @@ from retrieval.min_unique_sources_gate import MinUniqueSourcesGate
 from retrieval.models import Chunk, SearchResult
 
 
-def _result(
-    chunk_id: str, doc_id: str = "doc-a", score: float = 1.0
-) -> SearchResult:
+def _result(chunk_id: str, doc_id: str = "doc-a", score: float = 1.0) -> SearchResult:
     return SearchResult(
         chunk=Chunk(
             chunk_id=chunk_id,
