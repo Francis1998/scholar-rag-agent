@@ -330,6 +330,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Keyword match gate guide](docs/guides/KEYWORD_MATCH_GATE_GUIDE.md) | Keep hits whose chunk covers a minimum fraction of query keywords. |
 | [Metadata equals gate guide](docs/guides/METADATA_EQUALS_GATE_GUIDE.md) | Keep hits whose chunk metadata equals required key/value filters. |
 | [Reciprocal rank fusion gate guide](docs/guides/RECIPROCAL_RANK_FUSION_GATE_GUIDE.md) | Fuse multiple ranked result lists via RRF scoring to merge retrieval sources. |
+| [Min unique sources gate guide](docs/guides/MIN_UNIQUE_SOURCES_GATE_GUIDE.md) | Reject result sets lacking enough unique source documents for diversity. |
 | [Cross-encoder gate guide](docs/guides/CROSS_ENCODER_GATE_GUIDE.md) | Drop weak query-document pairs below a local lexical cross-encoder proxy score. |
 | [Term coverage boost guide](docs/guides/TERM_COVERAGE_BOOST_GUIDE.md) | Soft-boost hits by the fraction of query tokens present in the chunk text. |
 
