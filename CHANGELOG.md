@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `MinAbstractLengthGate` (`min_abstract_length_gate`): Inspired by LlamaIndex/Haystack length filters that drop stub abstracts before generation; local postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/MIN_ABSTRACT_LENGTH_GATE_GUIDE.md`.
 - `TermCoverageBooster` (`term_coverage_boost`): Inspired by Haystack/Elasticsearch minimum_should_match coverage boosts; blends relevance with query-term coverage (not a DOI connector). See `docs/guides/TERM_COVERAGE_BOOST_GUIDE.md`.
 - `KeywordMatchGate` (`keyword_match_gate`): Inspired by Elasticsearch/Haystack minimum_should_match keyword filters; keeps hits covering enough query tokens (not a DOI connector). See `docs/guides/KEYWORD_MATCH_GATE_GUIDE.md`.
 - `MetadataEqualsGate` (`metadata_equals_gate`): Inspired by LlamaIndex MetadataFilters / Haystack MetadataRouter equality filters; keeps hits whose metadata matches required key=value pairs (not a DOI connector). See `docs/guides/METADATA_EQUALS_GATE_GUIDE.md`.
