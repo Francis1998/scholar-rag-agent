@@ -336,6 +336,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Term coverage boost guide](docs/guides/TERM_COVERAGE_BOOST_GUIDE.md) | Soft-boost hits by the fraction of query tokens present in the chunk text. |
 | [Source authority gate guide](docs/guides/SOURCE_AUTHORITY_GATE_GUIDE.md) | Boost or filter hits by source_authority / venue-tier high/medium/low metadata. |
 | [Abstract keyword boost guide](docs/guides/ABSTRACT_KEYWORD_BOOST_GUIDE.md) | Soft-boost hits when abstract or chunk text contains query keywords. |
+| [Time decay gate guide](docs/guides/TIME_DECAY_GATE_GUIDE.md) | Re-rank results by multiplying relevance with publication-age half-life decay. |
 
 ## Provider Keys
 
