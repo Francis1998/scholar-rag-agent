@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `SourceAuthorityGate` (`source_authority_gate`): Inspired by LlamaIndex/Haystack metadata boost/filter postprocessors; boosts and optionally filters by `source_authority` / venue-tier high/medium/low (not a DOI connector). See `docs/guides/SOURCE_AUTHORITY_GATE_GUIDE.md`.
 - `PeerReviewedGate` (`peer_reviewed_gate`): Inspired by scholarly RAG stacks that prefer peer-reviewed sources over preprints when summarizing evidence; local postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/PEER_REVIEWED_GATE_GUIDE.md`.
 - `YearRangeGate` (`year_range_gate`): Inspired by Haystack/LlamaIndex metadata year filters for temporal scoping of scholarly corpora; local postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/YEAR_RANGE_GATE_GUIDE.md`.
 - `MinAbstractLengthGate` (`min_abstract_length_gate`): Inspired by LlamaIndex/Haystack length filters that drop stub abstracts before generation; local postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/MIN_ABSTRACT_LENGTH_GATE_GUIDE.md`.
