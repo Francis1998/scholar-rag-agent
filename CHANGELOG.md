@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CitationGraphExpander` (`citation_graph`): Inspired by Semantic Scholar citation graphs and PaperQA-style related-paper gathering; expands seed hits along local cites/cited-by metadata edges with hop decay (not a live DOI connector). See `docs/guides/CITATION_GRAPH_GUIDE.md`.
 - `TimeDecayGate` (`time_decay_gate`): Inspired by Haystack/Elasticsearch temporal decay postprocessors; multiplies relevance by publication-age half-life decay from `published_at`/`year`/`date` metadata (default 365 days; not a DOI connector). See `docs/guides/TIME_DECAY_GATE_GUIDE.md`.
 - `AbstractKeywordBoost` (`abstract_keyword_boost`): Inspired by LlamaIndex/Haystack keyword boost postprocessors; soft-boosts hits whose abstract/text contains query keywords (not a DOI connector). See `docs/guides/ABSTRACT_KEYWORD_BOOST_GUIDE.md`.
 - `SourceAuthorityGate` (`source_authority_gate`): Inspired by LlamaIndex/Haystack metadata boost/filter postprocessors; boosts and optionally filters by `source_authority` / venue-tier high/medium/low (not a DOI connector). See `docs/guides/SOURCE_AUTHORITY_GATE_GUIDE.md`.
