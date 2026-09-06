@@ -16,7 +16,9 @@ from storage.paper_chat_memory import PaperChatMemory
 
 memory = PaperChatMemory("paper_chat.db")
 memory.append_turn("s1", "user", "What dataset is used?", document_ids=["paper-a"])
-memory.append_turn("s1", "assistant", "The authors use MIMIC-III.", document_ids=["paper-a"], chunk_ids=["c12"])
+memory.append_turn(
+    "s1", "assistant", "The authors use MIMIC-III.", document_ids=["paper-a"], chunk_ids=["c12"]
+)
 prompt_block = memory.format_context("s1", max_chars=2000)
 ```
 
