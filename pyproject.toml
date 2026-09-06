@@ -46,6 +46,7 @@ packages = [
   "src/llm",
   "src/retrieval",
   "src/storage",
+  "src/evaluation",
   "scripts",
 ]
 
