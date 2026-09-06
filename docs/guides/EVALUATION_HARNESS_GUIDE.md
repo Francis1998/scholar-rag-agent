@@ -13,14 +13,16 @@ Gemini 3.x / Kimi K2 scholarly RAG evaluation (not a DOI connector).
 ```python
 from evaluation.harness import EvalCase, EvaluationHarness
 
-harness = EvaluationHarness([
-    EvalCase(
-        case_id="q1",
-        query="What fuses dense and sparse evidence?",
-        relevant_chunk_ids=frozenset({"chunk-hybrid"}),
-        gold_answer="hybrid retrieval",
-    )
-])
+harness = EvaluationHarness(
+    [
+        EvalCase(
+            case_id="q1",
+            query="What fuses dense and sparse evidence?",
+            relevant_chunk_ids=frozenset({"chunk-hybrid"}),
+            gold_answer="hybrid retrieval",
+        )
+    ]
+)
 report = harness.evaluate(retriever.retrieve, k=5, answers={"q1": "hybrid retrieval"})
 print(report.mean_hit_at_k, report.mean_recall_at_k, report.mean_faithfulness)
 ```
