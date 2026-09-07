@@ -338,6 +338,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Abstract keyword boost guide](docs/guides/ABSTRACT_KEYWORD_BOOST_GUIDE.md) | Soft-boost hits when abstract or chunk text contains query keywords. |
 | [Time decay gate guide](docs/guides/TIME_DECAY_GATE_GUIDE.md) | Re-rank results by multiplying relevance with publication-age half-life decay. |
 | [Paper chat memory guide](docs/guides/PAPER_CHAT_MEMORY_GUIDE.md) | Persist multi-turn paper-scoped chat turns with document/chunk provenance. |
+| [Literature review outline guide](docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md) | Build deterministic lit-review outline sections from ranked retrieval results. |
 
 ## Provider Keys
 
