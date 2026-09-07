@@ -339,6 +339,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Time decay gate guide](docs/guides/TIME_DECAY_GATE_GUIDE.md) | Re-rank results by multiplying relevance with publication-age half-life decay. |
 | [Paper chat memory guide](docs/guides/PAPER_CHAT_MEMORY_GUIDE.md) | Persist multi-turn paper-scoped chat turns with document/chunk provenance. |
 | [Literature review outline guide](docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md) | Build deterministic lit-review outline sections from ranked retrieval results. |
+| [BibTeX export guide](docs/guides/BIBTEX_EXPORT_GUIDE.md) | Export Document/Chunk/SearchResult metadata to BibTeX bibliography entries. |
 
 ## Provider Keys
 
