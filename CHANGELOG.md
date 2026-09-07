@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `PdfOcrHook` (`pdf_ocr`): Optional OCR fallback when pypdf extracted text is below `min_chars`; `OcrBackend` protocol with `NullOcrBackend` default for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/PDF_OCR_HOOK_GUIDE.md`.
 - `BibTeXExporter` (`bibtex_export`): Inspired by Zotero / PaperQA citation export; pure local Document/Chunk/SearchResult → BibTeX transform for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/BIBTEX_EXPORT_GUIDE.md`.
 - `LiteratureReviewOutliner` (`literature_review_outline`): Deterministic literature-review outline sections from ranked SearchResult/Document lists; fills a PaperQA-style review synthesis gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md`.
 - `PaperChatMemory` (`paper_chat_memory`): Inspired by LocalGPT / PrivateGPT academic chat memory and PaperQA multi-turn paper Q&A; SQLite session memory with document/chunk provenance for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/PAPER_CHAT_MEMORY_GUIDE.md`.

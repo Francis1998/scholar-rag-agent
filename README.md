@@ -340,6 +340,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Paper chat memory guide](docs/guides/PAPER_CHAT_MEMORY_GUIDE.md) | Persist multi-turn paper-scoped chat turns with document/chunk provenance. |
 | [Literature review outline guide](docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md) | Build deterministic lit-review outline sections from ranked retrieval results. |
 | [BibTeX export guide](docs/guides/BIBTEX_EXPORT_GUIDE.md) | Export Document/Chunk/SearchResult metadata to BibTeX bibliography entries. |
+| [PDF OCR hook guide](docs/guides/PDF_OCR_HOOK_GUIDE.md) | Detect short pypdf text and optionally run an OcrBackend (Null by default). |
 
 ## Provider Keys
 
