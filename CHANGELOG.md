@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `LiteratureReviewOutliner` (`literature_review_outline`): Deterministic literature-review outline sections from ranked SearchResult/Document lists; fills a PaperQA-style review synthesis gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md`.
 - `PaperChatMemory` (`paper_chat_memory`): Inspired by LocalGPT / PrivateGPT academic chat memory and PaperQA multi-turn paper Q&A; SQLite session memory with document/chunk provenance for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/PAPER_CHAT_MEMORY_GUIDE.md`.
 - `TimeDecayGate` (`time_decay_gate`): Inspired by Haystack/Elasticsearch temporal decay postprocessors; multiplies relevance by publication-age half-life decay from `published_at`/`year`/`date` metadata (default 365 days; not a DOI connector). See `docs/guides/TIME_DECAY_GATE_GUIDE.md`.
 - `AbstractKeywordBoost` (`abstract_keyword_boost`): Inspired by LlamaIndex/Haystack keyword boost postprocessors; soft-boosts hits whose abstract/text contains query keywords (not a DOI connector). See `docs/guides/ABSTRACT_KEYWORD_BOOST_GUIDE.md`.
