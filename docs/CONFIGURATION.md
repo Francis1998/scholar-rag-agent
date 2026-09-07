@@ -20,6 +20,7 @@ Scholar RAG Agent is configured through environment variables loaded by
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per request. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Hard graph traversal bound. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Default model family for live adapter routing. |
+| `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
 
 ## Optional Provider Keys
 

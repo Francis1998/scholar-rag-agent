@@ -11,6 +11,7 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per query. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound, with default retrieval depth set to 3. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Default model family for live adapter routing. |
+| `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
 
