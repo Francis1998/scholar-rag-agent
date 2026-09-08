@@ -118,6 +118,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
   The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
 
+- Issue: related-work drafting tools generate prose but lack offline, reproducible section scaffolding from local metadata.
+  A deterministic `RelatedWorksComposer` clusters titles/abstracts/years into thematic Related Works sections via keyword overlap.
+  Outlines can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting (Elicit/PaperQA related-work gap).
+
 - Issue: draft answers can mix grounded sentences with unsupported claims.
   A deterministic claim-verification gate splits the answer into claim
   sentences, scores lexical support against retrieved chunks, and reports
@@ -341,6 +345,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Literature review outline guide](docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md) | Build deterministic lit-review outline sections from ranked retrieval results. |
 | [BibTeX export guide](docs/guides/BIBTEX_EXPORT_GUIDE.md) | Export Document/Chunk/SearchResult metadata to BibTeX bibliography entries. |
 | [PDF OCR hook guide](docs/guides/PDF_OCR_HOOK_GUIDE.md) | Detect short pypdf text and optionally run an OcrBackend (Null by default). |
+| [Related works guide](docs/guides/RELATED_WORKS_GUIDE.md) | Compose Related Works theme sections from title/abstract/year keyword overlap. |
 
 ## Provider Keys
 
