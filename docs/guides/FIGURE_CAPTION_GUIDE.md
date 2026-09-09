@@ -18,8 +18,7 @@ from ingestion.figure_caption_indexer import FigureCaptionIndexer
 
 indexer = FigureCaptionIndexer()
 captions = indexer.extract(
-    "Figure 1: Overview of the retrieval pipeline.\n"
-    "Table 2. Ablation results on the benchmark.\n"
+    "Figure 1: Overview of the retrieval pipeline.\nTable 2. Ablation results on the benchmark.\n"
 )
 for caption in captions:
     print(caption.kind, caption.number, caption.caption, caption.char_offset)
