@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `EvidenceConflictDetector` (`evidence_conflict`): Detect opposing polarity / negation clashes across evidence snippets with left/right indices and reasons; fills a Consensus/Elicit conflicting-evidence view gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `SelfRagReflectionGate`; not a DOI connector). See `docs/guides/EVIDENCE_CONFLICT_GUIDE.md`.
 - `SurveyGapFinder` (`survey_gap`): Audit papers against an expected theme checklist with coverage scores and missing flags; fills an Elicit/ResearchRabbit theme-coverage gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `RelatedWorksComposer`; not a DOI connector). See `docs/guides/SURVEY_GAP_GUIDE.md`.
 - `DuplicatePaperClusterer`: paper-level dedup by DOI/document_id or fuzzy title. See `docs/guides/DUPLICATE_PAPER_CLUSTER_GUIDE.md`.
 - `MultiHopClaimTracer`: deterministic claim→evidence path reports (not a retrieval gate). Gap vs PaperQA claim UIs. See `docs/guides/MULTIHOP_CLAIM_TRACER_GUIDE.md`.
