@@ -124,6 +124,7 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 
 - Issue: survey drafting needs a checklist of expected themes, not only discovered clusters.
   A deterministic `SurveyGapFinder` scores title/abstract coverage against caller-provided themes and flags missing or under-covered gaps (Elicit/ResearchRabbit theme-coverage gap).
+| [Figure caption indexer guide](docs/guides/FIGURE_CAPTION_GUIDE.md) | Extract PDF-like figure/table captions with offsets for RAG grounding. |
 | [Evidence conflict detector guide](docs/guides/EVIDENCE_CONFLICT_GUIDE.md) | Flag opposing polarity / negation clashes across evidence snippets. |
   Gap reports can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting.
 
