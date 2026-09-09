@@ -152,8 +152,7 @@ class EvidenceConflictDetector:
                             left_index=left,
                             right_index=right,
                             reason=(
-                                f"opposing {axis} polarity between snippets "
-                                f"{left} and {right}"
+                                f"opposing {axis} polarity between snippets {left} and {right}"
                             ),
                         )
                     )
