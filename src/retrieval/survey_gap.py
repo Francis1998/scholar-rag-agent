@@ -111,12 +111,10 @@ class SurveyGapFinder:
                 if score > best:
                     best = score
             matches.sort(key=lambda item: (-item[0], item[1].lower()))
-            covered = tuple(
-                title for score, title in matches if score >= self._coverage_threshold
+            covered = tuple(title for score, title in matches if score >= self._coverage_threshold)
+            matching_titles = (
+                covered[:5] if covered else tuple(title for score, title in matches)[:5]
             )
-            matching_titles = covered[:5] if covered else tuple(
-                title for score, title in matches
-            )[:5]
             gaps.append(
                 SurveyGap(
                     theme=theme,
