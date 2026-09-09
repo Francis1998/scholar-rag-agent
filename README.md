@@ -122,6 +122,10 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic `RelatedWorksComposer` clusters titles/abstracts/years into thematic Related Works sections via keyword overlap.
   Outlines can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting (Elicit/PaperQA related-work gap).
 
+- Issue: survey drafting needs a checklist of expected themes, not only discovered clusters.
+  A deterministic `SurveyGapFinder` scores title/abstract coverage against caller-provided themes and flags missing or under-covered gaps (Elicit/ResearchRabbit theme-coverage gap).
+  Gap reports can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting.
+
 - Issue: draft answers can mix grounded sentences with unsupported claims.
   A deterministic claim-verification gate splits the answer into claim
   sentences, scores lexical support against retrieved chunks, and reports
@@ -346,6 +350,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [BibTeX export guide](docs/guides/BIBTEX_EXPORT_GUIDE.md) | Export Document/Chunk/SearchResult metadata to BibTeX bibliography entries. |
 | [PDF OCR hook guide](docs/guides/PDF_OCR_HOOK_GUIDE.md) | Detect short pypdf text and optionally run an OcrBackend (Null by default). |
 | [Related works guide](docs/guides/RELATED_WORKS_GUIDE.md) | Compose Related Works theme sections from title/abstract/year keyword overlap. |
+| [Survey gap finder guide](docs/guides/SURVEY_GAP_GUIDE.md) | Audit expected survey themes for missing or under-covered coverage against local papers. |
 
 ## Provider Keys
 
