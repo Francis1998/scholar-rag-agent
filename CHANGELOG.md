@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `MethodExtractCard` (`method_extract_card`): Extract deterministic PICO/methods cards (population, intervention, comparison, outcome, study design, confidence) from abstracts; fills an Elicit/Consensus/SciSpace methods-extraction gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/METHOD_EXTRACT_CARD_GUIDE.md`.
 - `RetractionWatchFlagger` (`retraction_flagger`): Offline advisory retraction/withdrawal flags from a caller-supplied DOI/id flag set (no network; never drops rows); fills a Semantic Scholar/OpenAlex retraction-signal gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `RetractedFilter`; not a DOI connector). See `docs/guides/RETRACTION_FLAGGER_GUIDE.md`.
 - `FigureCaptionIndexer` (`figure_caption_indexer`): Extract PDF-like figure/table captions (`Figure 1:`, `Table 2.`) with kind/number/caption/char_offset; fills a PaperQA/Unstructured figure-extraction gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/FIGURE_CAPTION_GUIDE.md`.
 - `EvidenceConflictDetector` (`evidence_conflict`): Detect opposing polarity / negation clashes across evidence snippets with left/right indices and reasons; fills a Consensus/Elicit conflicting-evidence view gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `SelfRagReflectionGate`; not a DOI connector). See `docs/guides/EVIDENCE_CONFLICT_GUIDE.md`.
