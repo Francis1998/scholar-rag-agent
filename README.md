@@ -128,6 +128,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 | [Evidence conflict detector guide](docs/guides/EVIDENCE_CONFLICT_GUIDE.md) | Flag opposing polarity / negation clashes across evidence snippets. |
   Gap reports can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting.
 
+- Issue: Semantic Scholar / OpenAlex retraction signals need an offline advisory stub when network lookup is unavailable.
+  A deterministic `RetractionWatchFlagger` matches caller-supplied DOI/id flag sets and emits advisory statuses without dropping rows for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
+
 - Issue: draft answers can mix grounded sentences with unsupported claims.
   A deterministic claim-verification gate splits the answer into claim
   sentences, scores lexical support against retrieved chunks, and reports
@@ -353,6 +356,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [PDF OCR hook guide](docs/guides/PDF_OCR_HOOK_GUIDE.md) | Detect short pypdf text and optionally run an OcrBackend (Null by default). |
 | [Related works guide](docs/guides/RELATED_WORKS_GUIDE.md) | Compose Related Works theme sections from title/abstract/year keyword overlap. |
 | [Survey gap finder guide](docs/guides/SURVEY_GAP_GUIDE.md) | Audit expected survey themes for missing or under-covered coverage against local papers. |
+| [Retraction watch flagger guide](docs/guides/RETRACTION_FLAGGER_GUIDE.md) | Advisory retraction/withdrawal flags from an offline caller-supplied flag set. |
 
 ## Provider Keys
 

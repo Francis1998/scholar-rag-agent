@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `RetractionWatchFlagger` (`retraction_flagger`): Offline advisory retraction/withdrawal flags from a caller-supplied DOI/id flag set (no network; never drops rows); fills a Semantic Scholar/OpenAlex retraction-signal gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `RetractedFilter`; not a DOI connector). See `docs/guides/RETRACTION_FLAGGER_GUIDE.md`.
 - `FigureCaptionIndexer` (`figure_caption_indexer`): Extract PDF-like figure/table captions (`Figure 1:`, `Table 2.`) with kind/number/caption/char_offset; fills a PaperQA/Unstructured figure-extraction gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/FIGURE_CAPTION_GUIDE.md`.
 - `EvidenceConflictDetector` (`evidence_conflict`): Detect opposing polarity / negation clashes across evidence snippets with left/right indices and reasons; fills a Consensus/Elicit conflicting-evidence view gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `SelfRagReflectionGate`; not a DOI connector). See `docs/guides/EVIDENCE_CONFLICT_GUIDE.md`.
 - `SurveyGapFinder` (`survey_gap`): Audit papers against an expected theme checklist with coverage scores and missing flags; fills an Elicit/ResearchRabbit theme-coverage gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `RelatedWorksComposer`; not a DOI connector). See `docs/guides/SURVEY_GAP_GUIDE.md`.
