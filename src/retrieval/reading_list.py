@@ -181,9 +181,7 @@ class ReadingListPrioritizer:
                 key=lambda term: (doc_freq[term], term),
             )[:3]
             rare_fmt = ", ".join(rare)
-            reasons.append(
-                f"keyword novelty ({keyword_novelty:.2f}; rare terms: {rare_fmt})"
-            )
+            reasons.append(f"keyword novelty ({keyword_novelty:.2f}; rare terms: {rare_fmt})")
         else:
             reasons.append("no keyword novelty signal")
         if n_docs == 1:
