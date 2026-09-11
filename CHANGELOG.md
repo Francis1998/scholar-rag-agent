@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ClaimSupportScorer` (`claim_support`): Score claim↔evidence support strength with offline lexical overlap/coverage labels (`supported`/`partial`/`unsupported`); fills an Elicit/Semantic Scholar claim-table gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `ClaimVerificationGate` and `CitationGroundednessScorer`; not a DOI connector). See `docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md`.
 - `AuthorExpertiseRanker` (`author_expertise`): Rank papers by author expertise proxy from publication counts and topic overlap; fills a Semantic Scholar influential-citation / OpenAlex author-topics gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/AUTHOR_EXPERTISE_GUIDE.md`.
 - `MethodExtractCard` (`method_extract_card`): Extract deterministic PICO/methods cards (population, intervention, comparison, outcome, study design, confidence) from abstracts; fills an Elicit/Consensus/SciSpace methods-extraction gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/METHOD_EXTRACT_CARD_GUIDE.md`.
 - `RetractionWatchFlagger` (`retraction_flagger`): Offline advisory retraction/withdrawal flags from a caller-supplied DOI/id flag set (no network; never drops rows); fills a Semantic Scholar/OpenAlex retraction-signal gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `RetractedFilter`; not a DOI connector). See `docs/guides/RETRACTION_FLAGGER_GUIDE.md`.
