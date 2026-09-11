@@ -131,6 +131,12 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: Semantic Scholar / OpenAlex retraction signals need an offline advisory stub when network lookup is unavailable.
   A deterministic `RetractionWatchFlagger` matches caller-supplied DOI/id flag sets and emits advisory statuses without dropping rows for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
 
+- Issue: unread queues need novelty×authority triage, not only retrieval boosters.
+  A deterministic `ReadingListPrioritizer` ranks papers by citation authority,
+  year freshness, and keyword novelty with readable reasons (Zotero/ResearchRabbit
+  unread-triage gap; distinct from `FreshnessBooster`, `NoveltyDiversifier`, and
+  `AuthorityBooster`).
+
 - Issue: claim tables need per-passage support strength, not only answer-level groundedness.
   A deterministic `ClaimSupportScorer` ranks evidence by lexical overlap and
   claim-term coverage, labeling each passage `supported` / `partial` /
@@ -262,6 +268,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
+| [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
