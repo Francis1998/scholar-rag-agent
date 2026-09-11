@@ -137,6 +137,12 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   unread-triage gap; distinct from `FreshnessBooster`, `NoveltyDiversifier`, and
   `AuthorityBooster`).
 
+- Issue: claim tables need conflicting-evidence clusters, not only support scores.
+  A deterministic `ContradictionClusterFinder` partitions passages into
+  supporting vs contradicting sets via negation/antonym cues and claim overlap,
+  with a `tension_score` (Elicit conflicting-evidence table gap; distinct from
+  `ClaimSupportScorer`, `ClaimVerificationGate`, and `EvidenceConflictDetector`).
+
 - Issue: claim tables need per-passage support strength, not only answer-level groundedness.
   A deterministic `ClaimSupportScorer` ranks evidence by lexical overlap and
   claim-term coverage, labeling each passage `supported` / `partial` /
@@ -269,6 +275,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
+| [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
 | [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
