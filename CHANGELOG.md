@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CodeAvailabilityBooster`: see `docs/guides/CODE_AVAILABILITY_BOOSTER_GUIDE.md`. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
 - `DatasetMentionIndexer` (`dataset_mention`): Extract dataset mentions from title/abstract via curated lexicon (ImageNet/CIFAR/MIMIC/SQuAD/GLUE/PubMedQA/...) plus nearby `dataset` heuristics; fills a PapersWithCode dataset-surfacing gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (offline; not a DOI connector). See `docs/guides/DATASET_MENTION_INDEXER_GUIDE.md`.
 - `ContradictionClusterFinder` (`contradiction_cluster`): Cluster evidence into supporting vs contradicting sets via negation/antonym cues and claim overlap with a `tension_score`; fills an Elicit conflicting-evidence table gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `ClaimSupportScorer`, `ClaimVerificationGate`, and `EvidenceConflictDetector`; not a DOI connector). See `docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md`.
 - `ReadingListPrioritizer` (`reading_list`): Triage unread papers by novelty×authority (citation authority, year freshness, keyword novelty) with ranked reasons; fills a Zotero/ResearchRabbit unread-triage gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `FreshnessBooster`, `NoveltyDiversifier`, and `AuthorityBooster`; not a DOI connector). See `docs/guides/READING_LIST_PRIORITIZER_GUIDE.md`.

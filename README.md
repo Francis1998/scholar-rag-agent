@@ -413,3 +413,4 @@ uv run pytest tests/ -v --cov=src --cov-fail-under=70
 ## License
 
 Apache-2.0. See `LICENSE`.
+| Gap filled by `CodeAvailabilityBooster` | Missing offline HITL control vs popular stacks | `CodeAvailabilityBooster` — see `docs/guides/CODE_AVAILABILITY_BOOSTER_GUIDE.md` (GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 advisory) |
