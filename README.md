@@ -131,6 +131,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
 - Issue: Semantic Scholar / OpenAlex retraction signals need an offline advisory stub when network lookup is unavailable.
   A deterministic `RetractionWatchFlagger` matches caller-supplied DOI/id flag sets and emits advisory statuses without dropping rows for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
 
+- Issue: dataset benchmarks are hard to surface without PapersWithCode network lookup.
+  A deterministic `DatasetMentionIndexer` extracts curated lexicon hits (ImageNet, CIFAR, MIMIC, SQuAD, GLUE, PubMedQA, ...) plus nearby `dataset` cues from title/abstract (PapersWithCode-style offline dataset surfacing).
+
 - Issue: unread queues need novelty×authority triage, not only retrieval boosters.
   A deterministic `ReadingListPrioritizer` ranks papers by citation authority,
   year freshness, and keyword novelty with readable reasons (Zotero/ResearchRabbit
@@ -274,6 +277,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
 | [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
+| [Dataset mention indexer guide](docs/guides/DATASET_MENTION_INDEXER_GUIDE.md) | Extract curated dataset mentions from title/abstract with offline lexicon heuristics. |
 | [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
