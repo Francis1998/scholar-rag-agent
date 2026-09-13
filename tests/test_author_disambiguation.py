@@ -16,7 +16,10 @@ def test_groups_initial_with_full_given_name() -> None:
             "J. Smith",
         ]
     )
-    smith = next(g for g in groups if "Smith" in g.canonical or any("Smith" in m for m in g.members))
+    smith = next(
+        g for g in groups
+        if "Smith" in g.canonical or any("Smith" in m for m in g.members)
+    )
     members_folded = {m.casefold() for m in smith.members}
     assert "j smith" in members_folded or "j. smith" in members_folded
     assert "john smith" in members_folded
@@ -52,4 +55,9 @@ def test_docstring_mentions_frontier_models_and_gap() -> None:
     assert "Claude Sonnet 4.6" in doc
     assert "Gemini 3.x" in doc
     assert "Kimi K2" in doc
-    assert "VenueTierBooster" in doc or "venue_tier" in doc or "OpenAlex" in doc or "Semantic Scholar" in doc
+    assert (
+        "VenueTierBooster" in doc
+        or "venue_tier" in doc
+        or "OpenAlex" in doc
+        or "Semantic Scholar" in doc
+    )

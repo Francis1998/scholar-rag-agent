@@ -140,6 +140,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   unread-triage gap; distinct from `FreshnessBooster`, `NoveltyDiversifier`, and
   `AuthorityBooster`).
 
+- Issue: author metadata fragments the same person across near-duplicate strings.
+  A deterministic `AuthorNameDisambiguationHint` groups `J Smith` / `J. Smith`
+  with `John Smith` via surname and initial heuristics (OpenAlex/Semantic Scholar
+  author-merge gap; VenuePrestigeCalibrator skipped because `VenueTierBooster`
+  already maps venue prestige).
 - Issue: bibliometric browsing needs co-citation clusters, not only directed citation expansion.
   A deterministic `CoCitationClusterFinder` groups papers whose citation neighbor
   sets overlap above shared-count / Jaccard thresholds (ResearchRabbit/Semantic
@@ -289,6 +294,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Dataset mention indexer guide](docs/guides/DATASET_MENTION_INDEXER_GUIDE.md) | Extract curated dataset mentions from title/abstract with offline lexicon heuristics. |
 | [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
+| [Author name disambiguation hint guide](docs/guides/AUTHOR_NAME_DISAMBIGUATION_HINT_GUIDE.md) | Group near-duplicate author strings via offline surname and given-name initial heuristics. |
 | [Co-citation cluster finder guide](docs/guides/CO_CITATION_CLUSTER_FINDER_GUIDE.md) | Cluster papers that share citation neighbors above shared-count / Jaccard thresholds. |
 | [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
