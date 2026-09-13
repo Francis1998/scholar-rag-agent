@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `FundingDisclosureFlagger` (`funding_disclosure`): Offline heuristic scan of abstract/acknowledgements for funder cues (NIH/NSF/ERC, funded by, grant numbers) with flags/reasons; fills a Scite/Elicit/Consensus funding-disclosure gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from Crossref `crossref_funder`; not a DOI connector). See `docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md`.
 - `PreprintVersionDiffer`: see `docs/guides/PREPRINT_VERSION_DIFFER_GUIDE.md`.
 - `CodeAvailabilityBooster`: see `docs/guides/CODE_AVAILABILITY_BOOSTER_GUIDE.md`. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
 - `DatasetMentionIndexer` (`dataset_mention`): Extract dataset mentions from title/abstract via curated lexicon (ImageNet/CIFAR/MIMIC/SQuAD/GLUE/PubMedQA/...) plus nearby `dataset` heuristics; fills a PapersWithCode dataset-surfacing gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (offline; not a DOI connector). See `docs/guides/DATASET_MENTION_INDEXER_GUIDE.md`.
