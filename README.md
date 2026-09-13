@@ -140,6 +140,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   unread-triage gap; distinct from `FreshnessBooster`, `NoveltyDiversifier`, and
   `AuthorityBooster`).
 
+- Issue: funding disclosures are buried in acknowledgements without offline cue flags.
+  A deterministic `FundingDisclosureFlagger` scans abstract/acknowledgements for
+  NIH/NSF/ERC, funded-by phrases, and grant-number patterns (Scite/Elicit/Consensus
+  funding-cue gap; distinct from Crossref `crossref_funder`).
+
 - Issue: claim tables need conflicting-evidence clusters, not only support scores.
   A deterministic `ContradictionClusterFinder` partitions passages into
   supporting vs contradicting sets via negation/antonym cues and claim overlap,
@@ -279,6 +284,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
 | [Dataset mention indexer guide](docs/guides/DATASET_MENTION_INDEXER_GUIDE.md) | Extract curated dataset mentions from title/abstract with offline lexicon heuristics. |
 | [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
+| [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
