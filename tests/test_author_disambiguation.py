@@ -17,8 +17,7 @@ def test_groups_initial_with_full_given_name() -> None:
         ]
     )
     smith = next(
-        g for g in groups
-        if "Smith" in g.canonical or any("Smith" in m for m in g.members)
+        g for g in groups if "Smith" in g.canonical or any("Smith" in m for m in g.members)
     )
     members_folded = {m.casefold() for m in smith.members}
     assert "j smith" in members_folded or "j. smith" in members_folded

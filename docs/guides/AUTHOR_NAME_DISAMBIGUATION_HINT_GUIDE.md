@@ -17,9 +17,7 @@ narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
 ```python
 from retrieval.author_disambiguation import AuthorNameDisambiguationHint
 
-groups = AuthorNameDisambiguationHint().group(
-    ["J Smith", "John Smith", "Jane Doe", "J. Smith"]
-)
+groups = AuthorNameDisambiguationHint().group(["J Smith", "John Smith", "Jane Doe", "J. Smith"])
 for group in groups:
     print(group.canonical, group.members, group.reason)
 ```

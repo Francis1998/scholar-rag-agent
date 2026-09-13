@@ -94,8 +94,7 @@ class AuthorNameDisambiguationHint:
                 reason = "Singleton author string."
             else:
                 reason = (
-                    "Near-duplicate via shared surname and compatible "
-                    "given-name initial/full form."
+                    "Near-duplicate via shared surname and compatible given-name initial/full form."
                 )
             groups.append(
                 AuthorDisambiguationGroup(
@@ -122,9 +121,7 @@ class AuthorNameDisambiguationHint:
             )
         surname = parts[-1].casefold()
         given = tuple(parts[:-1])
-        initials = tuple(
-            token[0].casefold() for token in given if token and token[0].isalpha()
-        )
+        initials = tuple(token[0].casefold() for token in given if token and token[0].isalpha())
         return _ParsedName(
             original=name.strip(),
             surname=surname,
