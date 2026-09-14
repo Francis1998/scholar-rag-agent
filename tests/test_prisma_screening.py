@@ -30,7 +30,13 @@ def test_builds_pending_rows_never_auto_decides() -> None:
 
 def test_records_criteria_checklist_items() -> None:
     rows = PrismaScreeningChecklist().build(
-        [{"paper_id": "p1", "title": "Meta-analysis of vaccines", "abstract": "Systematic review."}],
+        [
+            {
+                "paper_id": "p1",
+                "title": "Meta-analysis of vaccines",
+                "abstract": "Systematic review.",
+            }
+        ],
         inclusion=["meta-analysis"],
         exclusion=["protocol only"],
     )
