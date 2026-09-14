@@ -72,4 +72,9 @@ def test_docstring_mentions_frontier_models_and_gap() -> None:
     assert "Claude Sonnet 4.6" in doc
     assert "Gemini 3.x" in doc
     assert "Kimi K2" in doc
-    assert "FundingDisclosure" in doc or "funding_disclosure" in doc or "Scite" in doc or "Elicit" in doc
+    assert (
+        "FundingDisclosure" in doc
+        or "funding_disclosure" in doc
+        or "Scite" in doc
+        or "Elicit" in doc
+    )
