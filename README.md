@@ -161,6 +161,11 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   disclosure, and advisory/consultant cues (Scite/Elicit/Consensus COI-cue gap;
   distinct from `FundingDisclosureFlagger`).
 
+- Issue: sample-size (N=) hints are buried in abstracts without offline extraction.
+  A deterministic `SampleSizeHintExtractor` pulls `N=` / `n=` / sample-size-of
+  integers from title/abstract text (Elicit/Consensus/SciSpace sample-size gap;
+  distinct from `MethodExtractCard`, which covers PICO/study-design without N).
+
 - Issue: claim tables need conflicting-evidence clusters, not only support scores.
   A deterministic `ContradictionClusterFinder` partitions passages into
   supporting vs contradicting sets via negation/antonym cues and claim overlap,
@@ -304,6 +309,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Co-citation cluster finder guide](docs/guides/CO_CITATION_CLUSTER_FINDER_GUIDE.md) | Cluster papers that share citation neighbors above shared-count / Jaccard thresholds. |
 | [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
 | [Conflict of interest flagger guide](docs/guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Flag COI / competing-interest / disclosure cues in abstract/acknowledgements offline. |
+| [Sample size hint extractor guide](docs/guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline N=/sample-size integers from title/abstract text. |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
