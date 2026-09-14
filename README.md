@@ -155,6 +155,12 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   NIH/NSF/ERC, funded-by phrases, and grant-number patterns (Scite/Elicit/Consensus
   funding-cue gap; distinct from Crossref `crossref_funder`).
 
+- Issue: conflict-of-interest disclosures are buried without offline COI cue flags.
+  A deterministic `ConflictOfInterestFlagger` scans abstract/acknowledgements/
+  disclosure fields for conflict-of-interest, competing-interest, financial-
+  disclosure, and advisory/consultant cues (Scite/Elicit/Consensus COI-cue gap;
+  distinct from `FundingDisclosureFlagger`).
+
 - Issue: claim tables need conflicting-evidence clusters, not only support scores.
   A deterministic `ContradictionClusterFinder` partitions passages into
   supporting vs contradicting sets via negation/antonym cues and claim overlap,
@@ -297,6 +303,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Author name disambiguation hint guide](docs/guides/AUTHOR_NAME_DISAMBIGUATION_HINT_GUIDE.md) | Group near-duplicate author strings via offline surname and given-name initial heuristics. |
 | [Co-citation cluster finder guide](docs/guides/CO_CITATION_CLUSTER_FINDER_GUIDE.md) | Cluster papers that share citation neighbors above shared-count / Jaccard thresholds. |
 | [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
+| [Conflict of interest flagger guide](docs/guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Flag COI / competing-interest / disclosure cues in abstract/acknowledgements offline. |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
 | [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
