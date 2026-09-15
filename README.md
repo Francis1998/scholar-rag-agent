@@ -171,6 +171,8 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   rows with advisory inclusion/exclusion cue hits (Covidence/Elicit/Rayyan PRISMA
   gap; never auto-includes or auto-excludes papers).
 
+- Issue: preregistration / registry IDs are buried without offline cue flags.
+  A deterministic `PreregistrationFlagDetector` scans abstract/methods/registration fields for clinicaltrials.gov, OSF, ISRCTN, and preregistration cues (Elicit/Consensus/SciSpace/PaperQA preregistration-cue gap; distinct from `FundingDisclosureFlagger` and `PrismaScreeningChecklist`).
 - Issue: effect-size metrics (Cohen's d, OR, HR, RR, AUC) are buried in abstracts without offline extraction.
   A deterministic `EffectSizeHintExtractor` pulls labeled numeric effect-size hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA effect-size gap; distinct from `SampleSizeHintExtractor`).
 - Issue: study limitations (sample size, generalizability, confounding, bias) are buried in abstracts without offline cue extraction.
@@ -320,6 +322,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
 | [Conflict of interest flagger guide](docs/guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Flag COI / competing-interest / disclosure cues in abstract/acknowledgements offline. |
 | [Sample size hint extractor guide](docs/guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline N=/sample-size integers from title/abstract text. |
+| [Preregistration flag detector guide](docs/guides/PREREGISTRATION_FLAG_DETECTOR_GUIDE.md) | Detect offline clinicaltrials.gov / OSF / ISRCTN / preregistration cues. |
 | [Effect size hint extractor guide](docs/guides/EFFECT_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline Cohen's d / OR / HR / RR / AUC numeric hints from abstracts. |
 | [Study limitation cue extractor guide](docs/guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Extract offline sample-size / generalizability / confounding / bias limitation cues. |
 | [PRISMA screening checklist guide](docs/guides/PRISMA_SCREENING_CHECKLIST_GUIDE.md) | Build HITL PRISMA title/abstract screening rows that stay pending (never auto-decide). |
