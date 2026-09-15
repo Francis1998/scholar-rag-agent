@@ -171,6 +171,9 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   rows with advisory inclusion/exclusion cue hits (Covidence/Elicit/Rayyan PRISMA
   gap; never auto-includes or auto-excludes papers).
 
+- Issue: study limitations (sample size, generalizability, confounding, bias) are buried in abstracts without offline cue extraction.
+  A deterministic `StudyLimitationCueExtractor` surfaces advisory limitation categories from abstract/discussion text (Elicit/Consensus/SciSpace/PaperQA limitation-cue gap; distinct from `SampleSizeHintExtractor`, `ConflictOfInterestFlagger`, and `MethodExtractCard`).
+
 - Issue: claim tables need conflicting-evidence clusters, not only support scores.
   A deterministic `ContradictionClusterFinder` partitions passages into
   supporting vs contradicting sets via negation/antonym cues and claim overlap,
@@ -315,6 +318,7 @@ Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner tra
 | [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
 | [Conflict of interest flagger guide](docs/guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Flag COI / competing-interest / disclosure cues in abstract/acknowledgements offline. |
 | [Sample size hint extractor guide](docs/guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline N=/sample-size integers from title/abstract text. |
+| [Study limitation cue extractor guide](docs/guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Extract offline sample-size / generalizability / confounding / bias limitation cues. |
 | [PRISMA screening checklist guide](docs/guides/PRISMA_SCREENING_CHECKLIST_GUIDE.md) | Build HITL PRISMA title/abstract screening rows that stay pending (never auto-decide). |
 | [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
 | [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
