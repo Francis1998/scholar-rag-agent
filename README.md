@@ -177,6 +177,8 @@ Most literature workflows break down when the corpus grows beyond a few papers:
   A deterministic `PValueHintExtractor` pulls `p < 0.05` / `p=0.01` / `P-value` numeric hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA p-value gap; distinct from `EffectSizeHintExtractor` and `SampleSizeHintExtractor`).
 - Issue: confidence-interval bounds are buried in abstracts without offline extraction.
   A deterministic `ConfidenceIntervalHintExtractor` pulls `95% CI` / confidence-interval numeric low/high hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA CI gap; distinct from `EffectSizeHintExtractor` and `PValueHintExtractor`).
+- Issue: open data / data-availability statements are buried without offline cue flags.
+  A deterministic `OpenDataAvailabilityFlagger` scans abstract/data-availability fields for data-available, Zenodo/OSF/Dryad/Figshare, github.com/..., and supplementary-data cues (Elicit/Consensus/SciSpace/PaperQA open-data gap; distinct from `CodeAvailabilityBooster`, `FundingDisclosureFlagger`, and `PreregistrationFlagDetector`).
 - Issue: effect-size metrics (Cohen's d, OR, HR, RR, AUC) are buried in abstracts without offline extraction.
   A deterministic `EffectSizeHintExtractor` pulls labeled numeric effect-size hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA effect-size gap; distinct from `SampleSizeHintExtractor`).
 - Issue: study limitations (sample size, generalizability, confounding, bias) are buried in abstracts without offline cue extraction.
