@@ -1,7 +1,10 @@
 """Top-level Observe-Decide-Act agent runner."""
 
+from dataclasses import replace
+from inspect import signature
 from uuid import uuid4
 
+from agent.evidence import EvidenceSnapshot, GenerationRecord, RunConfiguration
 from agent.executor import Executor
 from agent.models import AgentRunResult, AgentState, QueryObservation, QueryPlan, StateTransition
 from agent.observer import QueryAnalyzer
@@ -39,12 +42,41 @@ class AgentRunner:
         state = AgentState.IDLE
         observation: QueryObservation | None = None
         plan: QueryPlan | None = None
+        limits = replace(self._safety_limits)
+
+        def record_context(snapshot: EvidenceSnapshot) -> None:
+            self._event_log.append_event(
+                agent_id=self._agent_id,
+                run_id=run_id,
+                event_type="evidence_snapshot",
+                payload=snapshot.model_dump(mode="json"),
+            )
+
+        def record_generation(generation: GenerationRecord) -> None:
+            self._event_log.append_event(
+                agent_id=self._agent_id,
+                run_id=run_id,
+                event_type="generation_record",
+                payload=generation.model_dump(mode="json"),
+            )
+
         try:
             cancellation_token.raise_if_cancelled()
-            state = self._transition(run_id, state, AgentState.PLANNING, {"query": query})
+            configuration = RunConfiguration(
+                max_source_docs=limits.clamp_sources(limits.max_source_docs),
+                max_hops=limits.clamp_hops(limits.max_hops),
+                retrieval_timeout_seconds=limits.retrieval_timeout_seconds,
+                reasoning_timeout_seconds=limits.reasoning_timeout_seconds,
+            )
+            state = self._transition(
+                run_id,
+                state,
+                AgentState.PLANNING,
+                {"query": query, "configuration": configuration.model_dump(mode="json")},
+            )
             observation = self._analyzer.analyze(query)
             plan = self._planner.plan(run_id, observation)
-            plan = self._clamp_plan(plan)
+            plan = self._clamp_plan(plan, limits)
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
@@ -59,9 +91,9 @@ class AgentRunner:
             retrieved = await with_timeout(
                 self._executor.retrieve(
                     plan,
-                    self._safety_limits.clamp_sources(self._safety_limits.max_source_docs),
+                    configuration.max_source_docs,
                 ),
-                self._safety_limits.retrieval_timeout_seconds,
+                configuration.retrieval_timeout_seconds,
                 "retrieval",
             )
 
@@ -72,9 +104,27 @@ class AgentRunner:
                 AgentState.REASONING,
                 {"chunk_ids": [result.chunk.chunk_id for result in retrieved]},
             )
+            answer_method = self._executor.answer
+            # Bind before calling: retrying a generation TypeError could run the model twice.
+            try:
+                signature(answer_method).bind(
+                    plan,
+                    retrieved,
+                    on_context=record_context,
+                    on_generation=record_generation,
+                )
+            except TypeError:
+                answer_call = answer_method(plan, retrieved)
+            else:
+                answer_call = answer_method(
+                    plan,
+                    retrieved,
+                    on_context=record_context,
+                    on_generation=record_generation,
+                )
             answer = await with_timeout(
-                self._executor.answer(plan, retrieved),
-                self._safety_limits.reasoning_timeout_seconds,
+                answer_call,
+                configuration.reasoning_timeout_seconds,
                 "reasoning",
             )
 
@@ -122,10 +172,10 @@ class AgentRunner:
         self._event_log.append_transition(transition)
         return to_state
 
-    def _clamp_plan(self, plan: QueryPlan) -> QueryPlan:
+    def _clamp_plan(self, plan: QueryPlan, limits: SafetyLimits) -> QueryPlan:
         """Apply configured safety limits to planned retrieval tasks."""
         clamped_tasks = [
-            task.model_copy(update={"max_hops": self._safety_limits.clamp_hops(task.max_hops)})
+            task.model_copy(update={"max_hops": limits.clamp_hops(task.max_hops)})
             for task in plan.tasks
         ]
         return plan.model_copy(update={"tasks": clamped_tasks})
