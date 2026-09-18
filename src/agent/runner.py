@@ -1,5 +1,6 @@
 """Top-level Observe-Decide-Act agent runner."""
 
+import asyncio
 from dataclasses import replace
 from inspect import signature
 from uuid import uuid4
@@ -142,6 +143,13 @@ class AgentRunner:
                 plan=plan,
                 answer=answer,
             )
+        except asyncio.CancelledError as exc:
+            if state not in {AgentState.DONE, AgentState.ERROR}:
+                reason = "agent run was cancelled"
+                if str(exc):
+                    reason += f": {exc}"
+                self._transition(run_id, state, AgentState.ERROR, {"error": reason})
+            raise
         except Exception as exc:
             if state not in {AgentState.DONE, AgentState.ERROR}:
                 state = self._transition(run_id, state, AgentState.ERROR, {"error": str(exc)})

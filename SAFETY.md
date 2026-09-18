@@ -33,6 +33,20 @@ Token cancellation produces an `ERROR` run; it is not polled inside every
 retrieval loop and does not interrupt an in-flight provider call. The HTTP API
 does not expose a cancellation endpoint.
 
+Cancelling an already-started `asyncio.Task` running `AgentRunner.run` is different:
+once cancellation reaches the runner, it persists one terminal `ERROR` transition
+with `agent run was cancelled` and any supplied cancellation message, then
+re-raises the original `asyncio.CancelledError`. It does not return a run result,
+continue to later phases, or retry generation. Phase timeouts still return a
+labelled timeout `ERROR` result.
+
+Cancellation journaling uses synchronous SQLite writes. If that write fails, the
+storage exception propagates with the cancellation as its exception context;
+durable completion cannot be guaranteed when storage fails. Cancelling before
+the coroutine starts produces no run events. Task cancellation does not
+force-stop blocking work or guarantee cancellation of an already-sent remote
+provider request.
+
 ## Hallucination Guard
 
 `CitationGrounder` keeps a claim's mapped chunk ID when the ID exists in the

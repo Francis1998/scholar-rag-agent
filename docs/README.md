@@ -1,3 +1,6 @@
+- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
+- **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
+
 # Documentation catalog
 
 Start with a working local workflow, then choose extensions deliberately.
@@ -143,6 +146,7 @@ evidence. Keep a baseline and evaluate on labeled queries before adopting them.
 | [Effect-size hints](guides/EFFECT_SIZE_HINT_EXTRACTOR_GUIDE.md) | Labeled effect-size values |
 | [P-value hints](guides/P_VALUE_HINT_EXTRACTOR_GUIDE.md) | Significance-value patterns |
 | [Confidence-interval hints](guides/CONFIDENCE_INTERVAL_HINT_EXTRACTOR_GUIDE.md) | Interval bounds in text |
+| [Heterogeneity I2 hints](guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md) | Meta-analysis I2 / heterogeneity cues |
 | [Study limitations](guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Limitation-language cues |
 | [Funding disclosures](guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Funding and grant cues |
 | [Conflict-of-interest flags](guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Disclosure cues |
