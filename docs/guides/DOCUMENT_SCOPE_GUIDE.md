@@ -28,7 +28,8 @@ From the repository root, with Python 3.11+ and `uv`:
 uv sync --extra dev
 uv run python -m scripts.demo_document_scope --output-dir document-scope-demo
 uv run python -m scripts.create_document_scope_gif \
-  --transcript document-scope-demo/transcript.txt
+  --transcript document-scope-demo/transcript.txt \
+  --output document-scope-demo/document-scope.gif
 ```
 
 The demo drives the real API in process with `TestClient`; it never opens a
@@ -65,9 +66,12 @@ not learned embeddings or a learned reranker.
 | `transcript.txt` | Measured results consumed by the GIF generator |
 
 The generator uses the existing Pillow development dependency and shared
-evidence-demo renderer. It writes only `docs/assets/document-scope.gif`, with four
-1120 x 540 frames, 3500 ms each, looping. It rejects unrelated, incomplete or
-oversized transcripts instead of inventing or clipping results.
+evidence-demo renderer. This command writes `document-scope-demo/document-scope.gif`,
+leaving the committed illustration untouched. There are four 1120 x 540 frames,
+3500 ms each, looping. To deliberately refresh the checked-in illustration,
+pass `--output docs/assets/document-scope.gif`; no other assets are regenerated.
+The renderer rejects unrelated, incomplete or oversized transcripts instead of
+inventing or clipping results.
 
 ## Offline HTTP example
 
@@ -142,18 +146,12 @@ import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from api.dependencies import AppContainer
-from config import Settings
 from retrieval.models import Document
+from scripts.demo_evidence_export import offline_settings
 
 async def main():
     with TemporaryDirectory(prefix="scope-python-") as temporary:
-        container = AppContainer(Settings(
-            _env_file=None,
-            database_path=Path(temporary) / "corpus.sqlite3",
-            default_model="fake",
-            OPENAI_API_KEY="", ANTHROPIC_API_KEY="",
-            GEMINI_API_KEY="", MOONSHOT_API_KEY="",
-        ))
+        container = AppContainer(offline_settings(Path(temporary) / "corpus.sqlite3"))
         container.ingestion_pipeline.ingest_documents([
             Document(document_id="paper-\u03b2", title="Selected synthetic note",
                      text="GraphRAG connects selected synthetic evidence.", source="synthetic"),
@@ -176,6 +174,10 @@ async def main():
 asyncio.run(main())
 PY
 ```
+
+The shared `offline_settings` helper disables provider keys and excludes ambient
+environment, dotenv and secrets-file configuration, including invalid runtime
+settings. It does not modify those sources or initialize a default application.
 
 The runner signature remains `run(query, token=None, *, document_ids=None)`.
 Python `None` or omission means unscoped; HTTP **explicit `null` is rejected**.

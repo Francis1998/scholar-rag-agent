@@ -19,6 +19,7 @@ from agent.models import AgentAnswer, AgentRunResult, AgentState, QueryPlan
 from api.dependencies import AppContainer
 from api.main import app
 from api.schemas import IngestResponse
+from llm.schemas import LLMRequest, LLMResponse
 from retrieval.hyde import HyDEExpander
 from retrieval.models import Document, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
@@ -336,6 +337,66 @@ async def test_runner_snapshots_caller_scope_before_first_await(
     bundle = scope_api.export(result.run_id)
     assert bundle.plan.observation.document_ids == (a.document_id,)
     assert source_documents(bundle) == {a.document_id}
+
+
+@pytest.mark.parametrize("phase", ["retrieval", "generation"])
+async def test_cancelled_scoped_run_preserves_provenance_without_affecting_next_run(
+    scope_api: ScopeAPI, monkeypatch: pytest.MonkeyPatch, phase: str
+) -> None:
+    a = scope_api.ingest("Selected A", "GraphRAG retrieval evidence from A.")
+    b = scope_api.ingest("Selected B", "GraphRAG retrieval evidence from B.")
+    entered = asyncio.Event()
+    never_released = asyncio.Event()
+    hyde = scope_api.container.hybrid_retriever._hyde_expander
+    expand = hyde.expand
+    generate = scope_api.container.llm.generate
+
+    async def hold_expansion(query: str) -> str:
+        entered.set()
+        await never_released.wait()
+        return await expand(query)
+
+    async def hold_generation(request: LLMRequest) -> LLMResponse:
+        entered.set()
+        await never_released.wait()
+        return await generate(request)
+
+    with monkeypatch.context() as patch:
+        if phase == "retrieval":
+            patch.setattr(hyde, "expand", hold_expansion)
+        else:
+            patch.setattr(scope_api.container.llm, "generate", hold_generation)
+        task = asyncio.create_task(
+            scope_api.container.runner.run("retrieval", document_ids=[a.document_id])
+        )
+        try:
+            await asyncio.wait_for(entered.wait(), timeout=2)
+            assert task.cancel("scoped caller shutdown")
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.wait_for(task, timeout=2)
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    events = scope_api.container.event_log.list_events()
+    assert events[0]["payload"]["payload"]["document_ids"] == [a.document_id]
+    assert events[1]["payload"]["observation"]["document_ids"] == [a.document_id]
+    assert events[-1]["payload"]["to_state"] == "ERROR"
+    assert events[-1]["payload"]["payload"]["error"] == (
+        "agent run was cancelled: scoped caller shutdown"
+    )
+    snapshots = [e for e in events if e["event_type"] == "evidence_snapshot"]
+    assert len(snapshots) == (1 if phase == "generation" else 0)
+    if snapshots:
+        assert {s["chunk"]["document_id"] for s in snapshots[0]["payload"]["sources"]} == {
+            a.document_id
+        }
+    response = scope_api.client.get(f"/runs/{events[0]['run_id']}/export")
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "run_failed"
+    next_run = scope_api.query("retrieval", document_ids=[b.document_id])
+    assert next_run.state == AgentState.DONE, next_run.error
+    assert source_documents(scope_api.export(next_run.run_id)) == {b.document_id}
 
 
 @pytest.mark.parametrize("scope", [[], [""], ["d"] * 101, "doc-a", {"doc-a"}])

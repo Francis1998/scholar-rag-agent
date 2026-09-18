@@ -146,3 +146,39 @@ def test_scope_tools_do_not_initialize_an_ambient_database(tmp_path: Path, tool:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master")}
     assert tables == {"sentinel"}
     assert ambient.read_bytes() == before
+
+
+def test_python_guide_runs_with_invalid_ambient_settings(tmp_path: Path) -> None:
+    """Execute the published snippet, not a separate approximation of the example."""
+    guide = Path(__file__).resolve().parents[1] / "docs/guides/DOCUMENT_SCOPE_GUIDE.md"
+    snippet = guide.read_text(encoding="utf-8").split("uv run python - <<'PY'\n", 1)[1]
+    snippet = snippet.split("\nPY\n```", 1)[0]
+    ambient = tmp_path / "must-not-exist.sqlite3"
+    env = {
+        **os.environ,
+        "SCHOLAR_RAG_DATABASE_PATH": str(ambient),
+        "SCHOLAR_RAG_MAX_HOPS": "invalid-ambient-value",
+        **dict.fromkeys(
+            ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "MOONSHOT_API_KEY"), ""
+        ),
+    }
+    guard = (
+        "import httpx\n"
+        "def no_network(*args, **kwargs):\n"
+        "    raise AssertionError('The guide example must remain offline')\n"
+        "httpx.AsyncHTTPTransport.handle_async_request = no_network\n"
+    )
+    process = subprocess.run(
+        [sys.executable, "-"],
+        input=guard + snippet,
+        text=True,
+        cwd=tmp_path,
+        env=env,
+        check=False,
+        capture_output=True,
+        timeout=30,
+    )
+    assert process.returncode == 0, process.stderr
+    assert "State: DONE" in process.stdout
+    assert "Provider: fake" in process.stdout
+    assert not ambient.exists()
