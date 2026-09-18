@@ -41,6 +41,7 @@ database and empty provider keys. The interactive API documentation is at
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
 
@@ -51,6 +52,10 @@ database and empty provider keys. The interactive API documentation is at
 This generated animation illustrates the synthetic offline evidence-export demo,
 not a live research UI or a real model's scientific findings. Follow the
 [demo reproduction instructions](docs/DEMO.md) to inspect the actual output.
+
+Forgot the run ID? `GET /runs?limit=20` discovers persisted runs with bounded
+query previews and creation-ordered pagination. Its recorded state is not a
+liveness claim; see [run history and restart recovery](docs/guides/RUN_HISTORY_GUIDE.md).
 
 `GET /runs/{run_id}/export?format=json|markdown` reconstructs a completed run from
 stored evidence, without another retrieval or generation call. Keep the query,

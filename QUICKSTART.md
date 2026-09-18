@@ -73,6 +73,20 @@ return `"ERROR"` inside a successful HTTP response. Read `answer.claims`,
 `answer.citations`, `answer.ungrounded`, and `answer.warnings`; a grounding flag is
 only a lexical check, not proof of support.
 
+## 5. Recover run IDs after restart
+
+```bash
+curl --fail-with-body --silent --show-error \
+  'http://127.0.0.1:8000/runs?limit=20' | uv run python -m json.tool
+```
+
+Reuse the printed database path when restarting the server. The catalog returns
+saved query previews, last recorded states, and existing events/export links;
+follow `next_cursor` to older runs. A nonterminal record does not mean a process
+is still executing, and a legacy `DONE` record may not have exportable evidence.
+The [run-history guide](docs/guides/RUN_HISTORY_GUIDE.md) includes a complete
+offline restart demonstration, filtering, pagination, and Python contracts.
+
 ## Next steps
 
 Follow the [research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) for a clean

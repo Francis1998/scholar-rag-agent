@@ -20,6 +20,7 @@ temporary database is removed on exit and is separate from the API's database.
 | `GET /health` | `{"status":"ok"}`; service liveness, not a model-provider check |
 | `POST /ingest/text` | `document_id`, `chunk_ids`; index supplied text |
 | `POST /query` | `{"result": ...}`; plan, answer, citations, warnings, and run status |
+| `GET /runs?limit=20&state=DONE` | Bounded query previews and recorded states, with creation-order cursor pagination; `state` is optional |
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
@@ -63,6 +64,11 @@ planned tasks, claims, citation snippets, and grounding warnings. The absence of
 warnings is not factual verification.
 
 ## Read events and export evidence
+
+If you no longer have `query.json`, discover previous IDs with
+`GET /runs?limit=20`; follow its `events_url` and `export_url`. These are navigation
+links, not exportability promises. The [run-history guide](guides/RUN_HISTORY_GUIDE.md)
+shows restart recovery, keyset pagination, filtering, and legacy behavior.
 
 ```bash
 RUN_ID="$(uv run python - "$REVIEW_DIR/query.json" <<'PY'

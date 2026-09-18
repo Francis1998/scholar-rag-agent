@@ -30,5 +30,7 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults checked on 2026-09-17 and payload compatibility limits.
+source-linked defaults rechecked on **2026-09-18 America/Los_Angeles** and payload
+compatibility limits. This is documentation verification, not a live inference
+test or confirmation of account entitlement.
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.
