@@ -17,7 +17,7 @@ Scholar RAG Agent is configured through environment variables loaded by
 | `SCHOLAR_RAG_AGENT_ID` | `local-agent` | Agent ID persisted with event-log entries. |
 | `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Retrieval phase timeout. |
 | `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
-| `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per request. |
+| `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per request, not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Hard graph traversal bound. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
 | `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |

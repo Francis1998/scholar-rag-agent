@@ -8,8 +8,8 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_AGENT_ID` | `local-agent` | Agent identifier persisted in events. |
 | `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Retrieval phase timeout. |
 | `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
-| `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum source documents per query. |
-| `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound, with default retrieval depth set to 3. |
+| `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per query, despite the historical setting name; not a distinct-document quota. |
+| `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound; planner tasks request one to three hops depending on intent. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
 | `SCHOLAR_RAG_OPENAI_MODEL` | `gpt-6-astra` | OpenAI Chat Completions model ID. |
 | `SCHOLAR_RAG_ANTHROPIC_MODEL` | `claude-sonnet-5` | Anthropic Messages model ID. |

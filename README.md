@@ -1,466 +1,117 @@
 # Scholar RAG Agent
 
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-pytest--cov-blue)](tests)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scientific literature. It ingests papers from PDFs, arXiv, arXiv HTML abs abstracts, Semantic Scholar search and recommendations, OpenAlex, OpenAlex authors, OpenAlex author works, OpenAlex concepts, OpenAlex concepts ancestors, OpenAlex institutions, OpenAlex sources/venues, OpenAlex source hierarchies, OpenAlex sources host org, PubMed MeSH, OpenAlex topics hierarchy, Semantic Scholar bulk, OpenAlex publishers, OpenAlex funders, OpenAlex keywords, OpenAlex topics, PubMed, PubMed Central (PMC), PMC OA packages, Crossref, Crossref types filter, Crossref members, Crossref relations, Crossref Funder Registry, Crossref works-by-funder, Crossref works-by-license, Crossref works type+license, Crossref works ISSN+type, Crossref works-by-ISBN, Crossref Event Data, Crossref journals, Europe PMC, Europe PMC grants, DOAJ, DBLP, HAL, OpenAIRE, OpenAIRE projects, Zenodo, Figshare, CORE, bioRxiv/medRxiv, bioRxiv/medRxiv collections, NASA ADS, DataCite, DataCite related identifiers, DataCite reports, DataCite DOIs-by-prefix, DataCite Event Data, OpenCitations, OSF, ORCID, ORCID works filter, ORCID works summaries, ORCID education, Unpaywall, Dryad, Wikidata scholarly entities, SSRN preprints, OpenAlex retraction alerts, and ClinicalTrials.gov; builds hybrid dense, sparse, and entity-relationship retrieval indexes; and answers research questions with multi-hop reasoning and citation-backed evidence.
+Load a small paper corpus, ask comparison or hypothesis questions, and inspect
+the passages and run history behind the response. Scholar RAG Agent is a
+**local-first Python toolkit and FastAPI service** for building inspectable
+literature workflows, with SQLite persistence and optional model-provider adapters.
 
-Scholar RAG Agent supports reproducible scientific knowledge synthesis, helping researchers accelerate literature review, hypothesis validation, and grounded comparison across large corpora while preserving source provenance.
+The default setup works without model credentials. Its fake adapter demonstrates
+the workflow; it does **not** produce a scientific summary or validate a hypothesis.
 
-Completed queries can be saved as [portable evidence bundles](docs/guides/EVIDENCE_EXPORT_GUIDE.md):
-versioned JSON and readable Markdown with the exact generation-time source context,
-claim/citation associations, and durable trace. The guide includes a runnable offline demo and GIF.
+## Start offline
 
-## Why Researchers Need This
-
-Most literature workflows break down when the corpus grows beyond a few papers:
-
-- Issue: keyword search misses papers that use different terminology.
-- : Inspired by bibliometric priors in scholarly RAG (Haystack-style metadata boosts); softly prefers mid-sized author lists over single-author or extreme mega-author rows (not a DOI connector).
-  Scholar RAG Agent combines dense semantic retrieval, BM25 sparse search, HyDE expansion, and RRF fusion so a query can match both exact terms and related scientific phrasing.
-
-- Issue: one hypothetical answer can overfit retrieval to a single framing.
-  Multi-HyDE generates deterministic background, methods, findings, and
-  limitations abstracts, retrieves each expansion, and fuses shared hits with
-  RRF. Optional generation supports GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, and
-  Kimi K2.
-
-- Issue: compound questions bury multiple retrieval intents in one string.
-  A deterministic query decomposer splits on conjunctions and question marks,
-  deduplicates sub-queries, and keeps the original question first for fusion.
-
-- Issue: domain synonyms fragment lexical retrieval across different terms.
-  A deterministic query rewriter drops stopwords, expands a provided synonym
-  map, and emits bounded query variants for reciprocal-rank fusion.
-
-- Issue: fused results are dominated by near-duplicate passages that waste the context window.
-  An optional Maximal Marginal Relevance (MMR) re-ranker balances relevance against novelty, dropping redundant chunks so the model sees complementary evidence.
-
-- Issue: near-duplicate passages from overlapping sections still waste context after fusion.
-  A deterministic near-duplicate collapser drops textually similar chunks above a Jaccard threshold, keeping the highest-scoring representative of each cluster.
-
-- Issue: dense or fused rankings can under-weight chunks that share exact query terms.
-  A deterministic lexical-overlap booster blends prior relevance with Jaccard
-  query-chunk term overlap and re-sorts stably by the blended score.
-
-- Issue: fused rankings can under-weight papers whose titles match the query even when body overlap is weak.
-  A deterministic title-match booster blends prior relevance with Jaccard overlap against `chunk.title` only (distinct from title+text lexical overlap) and re-sorts stably by the blended score.
-
-- Issue: relevance-only rankings can bury recent findings in fast-moving fields.
-  A deterministic freshness booster blends normalized relevance with exponential
-  publication-date decay from chunk metadata.
-
-- Issue: fused rankings can under-weight recent papers when only a publication year is available.
-  A deterministic recency half-life booster blends prior relevance with ``0.5 ** ((ref_year - year) / half_life)`` decay from year metadata and re-sorts stably.
-
-- Issue: relevant chunks still contain sentences unrelated to the current query.
-  A deterministic contextual compressor extracts bounded lexical-overlap spans,
-  reducing token use without an LLM or network call.
-
-- Issue: fixed-size character windows split mid-sentence and separate headings from their content.
-  A deterministic agentic chunk-boundary splitter prefers markdown headings,
-  then paragraph breaks, then sentence and word boundaries, falling back to
-  raw characters only when a single token exceeds `max_chars`, then merges
-  any resulting chunk under `min_chars` into a neighbor when it still fits.
-
-- Issue: precise child chunks omit neighboring sentences that clarify methods or results.
-  A deterministic sentence-window expander widens each hit by ±N sentences from
-  `document_text` / `full_text` metadata without swapping in the entire parent.
-
-- Issue: small chunks retrieve precisely but can omit the surrounding evidence needed for synthesis.
-  A deterministic parent-document expander replaces child hits with deduplicated
-  full parent text from a provided in-memory store.
-
-- Issue: greetings and meta capability questions waste retrieval budget.
-  A deterministic adaptive retrieval gate chooses RETRIEVE or SKIP from
-  lexical chitchat versus knowledge-seeking cues before any corpus lookup.
-
-- Issue: retrieval can surface chunks that still cannot support a grounded answer.
-  A deterministic answerability gate scores lexical query coverage per chunk,
-  refuses the whole batch when mean coverage is too low, and otherwise drops
-  weak hits before synthesis.
-
-- Issue: relevance-only rankings can under-weight highly cited papers that anchor a field.
-  A deterministic citation-count booster blends prior relevance with batch-normalized `log1p(citation_count)` / `cited_by_count` from chunk metadata and re-sorts stably by the blended score.
-
-- Issue: fused rankings can over-promote preprint servers relative to peer-reviewed venues.
-  A deterministic preprint demoter soft-blends prior relevance with a demote score
-  (`0.2` for arXiv/bioRxiv/medRxiv/SSRN/preprint metadata, else `1.0`) and re-sorts stably.
-
-- Issue: multilingual corpora can bury preferred-language evidence under higher-scoring foreign-language hits.
-  A deterministic language preferencer boosts or soft-filters results whose `language`/`lang` metadata matches a preferred set (default `en`).
-
-- Issue: fused rankings treat introduction and results chunks equally even when the query needs methods or findings.
-  A deterministic section-type booster blends prior relevance with preferred `section`/`section_type` scores (default results/methods/conclusion/abstract) and re-sorts stably.
-
-- Issue: dense rankings can bury chunks that state explicit findings and conclusions.
-  A deterministic claim-density booster blends prior relevance with the fraction of claim-like sentences in chunk text (reporting verbs or ``we`` / ``our results`` heuristics) and re-sorts stably.
-
-- Issue: relevance-only rankings ignore soft authority cues such as peer review and impact.
-  A deterministic authority booster blends prior relevance with `source_authority` / `venue_rank` / `is_peer_reviewed` / `impact_factor` metadata (neutral when missing).
-
-
-- Issue: fused rankings can promote internally disjoint passages that jump topics mid-chunk.
-  A deterministic coherence booster blends prior relevance with adjacent-sentence token
-  overlap and query-term continuity across sentences, then re-sorts stably.
-
-
-- Issue: top-k evidence still wastes context on near-duplicate passages after fusion.
-  A deterministic novelty diversifier greedily re-ranks with an alpha-blended novelty penalty based on token Jaccard overlap against already-selected chunks.
-  A deterministic `ParaphraseCollapser` stage supports paraphrase collapse for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
-
-
-- Issue: synthesis stages may require provenance fields that some hits lack.
-  A deterministic required-metadata gate drops chunks missing any configured non-empty metadata keys (empty key list is a pass-through).
-
-- Issue: retrieval can return evidence too weak to support grounded synthesis.
-  A deterministic corrective-RAG gate grades lexical query coverage, filters
-  weak hits, and signals when a retry with rewritten terminology is needed.
-
-- Issue: single-hop RAG retrieves isolated snippets but misses evidence chains.
-  The GraphRAG layer extracts entities and relationships, then follows bounded multi-hop paths to connect methods, datasets, findings, and limitations across papers.
-
-- Issue: related-work drafting tools generate prose but lack offline, reproducible section scaffolding from local metadata.
-  A deterministic `RelatedWorksComposer` clusters titles/abstracts/years into thematic Related Works sections via keyword overlap.
-  Outlines can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting (Elicit/PaperQA related-work gap).
-
-- Issue: survey drafting needs a checklist of expected themes, not only discovered clusters.
-  A deterministic `SurveyGapFinder` scores title/abstract coverage against caller-provided themes and flags missing or under-covered gaps (Elicit/ResearchRabbit theme-coverage gap).
-| [Figure caption indexer guide](docs/guides/FIGURE_CAPTION_GUIDE.md) | Extract PDF-like figure/table captions with offsets for RAG grounding. |
-| [Evidence conflict detector guide](docs/guides/EVIDENCE_CONFLICT_GUIDE.md) | Flag opposing polarity / negation clashes across evidence snippets. |
-  Gap reports can seed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 drafting.
-
-- Issue: Semantic Scholar / OpenAlex retraction signals need an offline advisory stub when network lookup is unavailable.
-  A deterministic `RetractionWatchFlagger` matches caller-supplied DOI/id flag sets and emits advisory statuses without dropping rows for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
-
-- Issue: dataset benchmarks are hard to surface without PapersWithCode network lookup.
-  A deterministic `DatasetMentionIndexer` extracts curated lexicon hits (ImageNet, CIFAR, MIMIC, SQuAD, GLUE, PubMedQA, ...) plus nearby `dataset` cues from title/abstract (PapersWithCode-style offline dataset surfacing).
-
-- Issue: unread queues need novelty×authority triage, not only retrieval boosters.
-  A deterministic `ReadingListPrioritizer` ranks papers by citation authority,
-  year freshness, and keyword novelty with readable reasons (Zotero/ResearchRabbit
-  unread-triage gap; distinct from `FreshnessBooster`, `NoveltyDiversifier`, and
-  `AuthorityBooster`).
-
-- Issue: author metadata fragments the same person across near-duplicate strings.
-  A deterministic `AuthorNameDisambiguationHint` groups `J Smith` / `J. Smith`
-  with `John Smith` via surname and initial heuristics (OpenAlex/Semantic Scholar
-  author-merge gap; VenuePrestigeCalibrator skipped because `VenueTierBooster`
-  already maps venue prestige).
-- Issue: bibliometric browsing needs co-citation clusters, not only directed citation expansion.
-  A deterministic `CoCitationClusterFinder` groups papers whose citation neighbor
-  sets overlap above shared-count / Jaccard thresholds (ResearchRabbit/Semantic
-  Scholar co-citation gap; distinct from `CitationGraphIndex` and
-  `ContradictionClusterFinder`).
-- Issue: funding disclosures are buried in acknowledgements without offline cue flags.
-  A deterministic `FundingDisclosureFlagger` scans abstract/acknowledgements for
-  NIH/NSF/ERC, funded-by phrases, and grant-number patterns (Scite/Elicit/Consensus
-  funding-cue gap; distinct from Crossref `crossref_funder`).
-
-- Issue: conflict-of-interest disclosures are buried without offline COI cue flags.
-  A deterministic `ConflictOfInterestFlagger` scans abstract/acknowledgements/
-  disclosure fields for conflict-of-interest, competing-interest, financial-
-  disclosure, and advisory/consultant cues (Scite/Elicit/Consensus COI-cue gap;
-  distinct from `FundingDisclosureFlagger`).
-
-- Issue: sample-size (N=) hints are buried in abstracts without offline extraction.
-  A deterministic `SampleSizeHintExtractor` pulls `N=` / `n=` / sample-size-of
-  integers from title/abstract text (Elicit/Consensus/SciSpace sample-size gap;
-  distinct from `MethodExtractCard`, which covers PICO/study-design without N).
-
-- Issue: systematic reviews need HITL PRISMA screening checklists, not auto include/exclude.
-  A deterministic `PrismaScreeningChecklist` builds pending title/abstract screening
-  rows with advisory inclusion/exclusion cue hits (Covidence/Elicit/Rayyan PRISMA
-  gap; never auto-includes or auto-excludes papers).
-
-- Issue: preregistration / registry IDs are buried without offline cue flags.
-  A deterministic `PreregistrationFlagDetector` scans abstract/methods/registration fields for clinicaltrials.gov, OSF, ISRCTN, and preregistration cues (Elicit/Consensus/SciSpace/PaperQA preregistration-cue gap; distinct from `FundingDisclosureFlagger` and `PrismaScreeningChecklist`).
-- Issue: p-value / significance cues are buried in abstracts without offline extraction.
-  A deterministic `PValueHintExtractor` pulls `p < 0.05` / `p=0.01` / `P-value` numeric hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA p-value gap; distinct from `EffectSizeHintExtractor` and `SampleSizeHintExtractor`).
-- Issue: confidence-interval bounds are buried in abstracts without offline extraction.
-  A deterministic `ConfidenceIntervalHintExtractor` pulls `95% CI` / confidence-interval numeric low/high hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA CI gap; distinct from `EffectSizeHintExtractor` and `PValueHintExtractor`).
-- Issue: open data / data-availability statements are buried without offline cue flags.
-  A deterministic `OpenDataAvailabilityFlagger` scans abstract/data-availability fields for data-available, Zenodo/OSF/Dryad/Figshare, github.com/..., and supplementary-data cues (Elicit/Consensus/SciSpace/PaperQA open-data gap; distinct from `CodeAvailabilityBooster`, `FundingDisclosureFlagger`, and `PreregistrationFlagDetector`).
-- Issue: effect-size metrics (Cohen's d, OR, HR, RR, AUC) are buried in abstracts without offline extraction.
-  A deterministic `EffectSizeHintExtractor` pulls labeled numeric effect-size hints from title/abstract/results (Elicit/Consensus/SciSpace/PaperQA effect-size gap; distinct from `SampleSizeHintExtractor`).
-- Issue: study limitations (sample size, generalizability, confounding, bias) are buried in abstracts without offline cue extraction.
-  A deterministic `StudyLimitationCueExtractor` surfaces advisory limitation categories from abstract/discussion text (Elicit/Consensus/SciSpace/PaperQA limitation-cue gap; distinct from `SampleSizeHintExtractor`, `ConflictOfInterestFlagger`, and `MethodExtractCard`).
-
-- Issue: claim tables need conflicting-evidence clusters, not only support scores.
-  A deterministic `ContradictionClusterFinder` partitions passages into
-  supporting vs contradicting sets via negation/antonym cues and claim overlap,
-  with a `tension_score` (Elicit conflicting-evidence table gap; distinct from
-  `ClaimSupportScorer`, `ClaimVerificationGate`, and `EvidenceConflictDetector`).
-
-- Issue: claim tables need per-passage support strength, not only answer-level groundedness.
-  A deterministic `ClaimSupportScorer` ranks evidence by lexical overlap and
-  claim-term coverage, labeling each passage `supported` / `partial` /
-  `unsupported` (Elicit/Semantic Scholar claim-table gap; distinct from
-  `ClaimVerificationGate` and `CitationGroundednessScorer`).
-
-- Issue: draft answers can mix grounded sentences with unsupported claims.
-  A deterministic claim-verification gate splits the answer into claim
-  sentences, scores lexical support against retrieved chunks, and reports
-  per-claim groundedness before synthesis is trusted.
-
-- Issue: generated summaries sound plausible but are hard to audit.
-  Every answer is mapped back to retrieved chunk IDs, and unsupported claims are flagged with `[UNGROUNDED]` instead of being silently trusted.
-
-- Issue: an answer can cite a source that does not actually support the sentence next to it.
-  A deterministic citation-groundedness scorer resolves `[n]` and
-  `(Author, Year)` markers to specific retrieved chunks and measures whether
-  each cited sentence lexically overlaps the source it names.
-
-- Issue: citation interfaces need exact source offsets, not approximate excerpts.
-  A deterministic evidence-span aligner maps query terms to Unicode-aware
-  half-open character spans in retrieved chunk text for reliable highlighting.
-
-- Issue: rankings ignore whether a query needs background, methods, results, or comparisons.
-  A deterministic citation-intent classifier labels the query and attaches that
-  intent to result metadata for downstream citation-aware ranking.
-
-- Issue: research questions often need a plan, not just one search call.
-  The Observe -> Decide -> Act runtime classifies intent, decomposes the query into retrieval sub-tasks, and persists a JSON rationale trace for every decision.
-
-- Issue: teams need reproducible evidence trails for reviews, grants, and publications.
-  The SQLite event log records state transitions, timestamps, agent IDs, run IDs, plans, retrieval payloads, and final answer provenance.
-
-## Example Use Cases
-
-- Systematic literature review: ingest a folder of PDFs plus arXiv IDs, ask for the strongest themes, and receive cited claims grouped by supporting chunks.
-
-- Research and grant evidence synthesis: collect papers around a research question or contribution, assess novelty claims, and export citation-backed reasoning traces showing the evidence for each claim.
-
-- Hypothesis validation: ask whether the literature supports or refutes a hypothesis, then inspect supporting and counter-evidence retrieval tasks separately.
-
-- Method comparison: compare approaches such as GraphRAG, dense retrieval, and BM25 across papers while preserving the source chunks behind each contrast.
-
-- Research onboarding: give a new lab member a paper corpus and let them ask grounded factual, synthesis, comparison, and hypothesis questions without manually reading every PDF first.
-
-- Prior-art triage: search Semantic Scholar and arXiv records, expand a trusted seed through Semantic Scholar recommendations, ingest abstracts, then identify overlapping methods, datasets, and claims before deeper manual review.
-
-- Citation QA for drafts: paste draft claims as questions and flag statements that are not supported by the ingested source chunks.
-
-- Multi-provider LLM evaluation: route reasoning, speed, cost, and default tasks to different adapters while keeping output validation and citation grounding consistent.
-
-## Demo Gallery
-
-![End-to-end local demo](docs/assets/demo.gif)
-
-![Use case walkthrough](docs/assets/use_cases.gif)
-
-![Planning trace demo](docs/assets/planning_trace.gif)
-
-![Grounded answer demo](docs/assets/grounded_answer.gif)
-
-```text
-                 +---------------------------+
-                 | Observe: Query Analyzer   |
-                 +-------------+-------------+
-                               |
-                               v
-+---------+      +-------------+-------------+      +-------------------+
-| Papers  +----->| Decide: Planner           +----->| Act: Executor     |
-+---------+      +-------------+-------------+      +---------+---------+
- PDF/arXiv/S2                  |                              |
-                               v                              v
-                   +-----------+-----------+       +----------+----------+
-                   | SQLite Durable Events |       | Hybrid Retrieval    |
-                   +-----------------------+       | Dense + BM25 + RRF  |
-                                                   +----------+----------+
-                                                              |
-                                                              v
-                                                   +----------+----------+
-                                                   | GraphRAG Multi-hop  |
-                                                   +----------+----------+
-                                                              |
-                                                              v
-                                                   +----------+----------+
-                                                   | LLM Router + Guard  |
-                                                   +----------+----------+
-                                                              |
-                                                              v
-                                                   Citation-backed answer
-```
-
-## Install In 3 Commands
+With Python 3.11+ and [uv](https://docs.astral.sh/uv/) installed:
 
 ```bash
 git clone https://github.com/Francis1998/scholar-rag-agent.git
-cd scholar-rag-agent && uv sync --extra dev
-uv run pytest tests/ -v
-```
-
-## Local Demo
-
-```bash
+cd scholar-rag-agent
+uv sync --extra dev
 uv run python scripts/demo_local.py
-uv run uvicorn api.main:app --reload
 ```
 
-The deterministic demo ingests a small fixture paper, executes an Observe -> Decide -> Act run, prints the planner trace, and returns a cited answer. A generated demo asset is available at `docs/assets/demo.gif`.
+The demo explicitly uses the fake model, ingests a synthetic fixture into a
+temporary database, and prints a run ID, `DONE` state, planner trace, and cited
+placeholder answer. Its temporary database is removed on exit.
 
-Additional GIFs in `docs/assets/` show the problem-to-solution flow, planner trace, and citation grounding guard.
+Next, use the [Quickstart](QUICKSTART.md) to start the API with an isolated
+database and empty provider keys. The interactive API documentation is at
+`http://127.0.0.1:8000/docs`; this is not a paper-chat or PDF-upload UI.
+
+## Choose a workflow
+
+| What you can do | Integrated path | Next guide |
+| --- | --- | --- |
+| Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
+| Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
+| Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
+| Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Inspect a recorded run
+
+![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
+
+This generated animation illustrates the synthetic offline evidence-export demo,
+not a live research UI or a real model's scientific findings. Follow the
+[demo reproduction instructions](docs/DEMO.md) to inspect the actual output.
+
+`GET /runs/{run_id}/export?format=json|markdown` reconstructs a completed run from
+stored evidence, without another retrieval or generation call. Keep the query,
+plan, answer, claims, exact source chunks, trace, and nonsecret model provenance
+together for review. The saved context survives corpus changes and restart; this
+is not a guarantee of identical output from a new LLM run or a signed audit record.
+
+## What actually runs
+
+The API uses a hand-written **Observe -> Decide -> Act** state machine, not
+LangGraph. Pydantic validates settings and schemas; HTTPX connects optional live
+providers; SQLite stores documents, graph data, and durable run events.
+
+| Stage | Default behavior |
+| --- | --- |
+| Ingest | `/ingest/text` normalizes text into fixed-size overlapping chunks and indexes entity co-mentions |
+| Plan | Keyword-based intent analysis creates bounded retrieval tasks and a rationale trace |
+| Retrieve | Deterministic HyDE template expansion, hash-vector cosine retrieval, BM25, and reciprocal rank fusion |
+| Expand | Bounded traversal of an entity co-mention graph; paths are retrieval aids, not reasoning proofs |
+| Rerank | Lexical overlap via `AdaptiveReranker`, not a learned cross-encoder |
+| Generate and check | A routed provider or the fake adapter; claim/source-ID mapping with token-overlap checks |
+| Record | SQLite events and frozen evidence for completed-run exports |
+
+`DenseRetriever` uses `HashEmbeddingModel`: deterministic lexical hash vectors,
+**not learned semantic embeddings**. Installing optional ML dependencies does not
+switch the API to semantic embeddings or cross-encoder reranking. MMR, multi-HyDE,
+query rewriting, screening checklists, metadata boosts, paper chat memory, and
+most other cataloged helpers require explicit library integration.
+
+For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
+For current model IDs, per-provider overrides, routing, and dated official
+sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
+`/query` requests the reasoning route; the default-provider setting is not a
+universal override. Provider availability depends on your account and credentials.
+
+## Boundaries to understand
+
+- **A citation is not verification.** `CitationGrounder` checks token overlap and
+  source IDs, not factual correctness or entailment. Review original passages,
+  opposing evidence, and warnings even when `grounded` is true.
+- **This is not a complete review platform.** Supporting/counter-evidence tasks
+  do not constitute a systematic review, novelty proof, or medical decision.
+  The offline demo is a plumbing demonstration, not a quality evaluation.
+- **Local-first is not production-hardened.** There is no built-in authentication,
+  tenant isolation, or PDF-upload endpoint/UI. Keep the API on loopback.
+- **Evidence exports contain source text.** Queries, documents, answers, and
+  local metadata may be sensitive. Live providers receive retrieved context;
+  review permissions and content before transmitting or sharing anything.
+
+Read [Safety](SAFETY.md) before using non-synthetic material.
 
 ## Documentation
 
-| Document | Description |
+| Guide | Purpose |
 | --- | --- |
-| [Quickstart](QUICKSTART.md) | Install, demo, and API in three steps. |
-| [Architecture](ARCHITECTURE.md) | Agent state machine, retrieval pipeline, and data flow. |
-| [Configuration](CONFIGURATION.md) | Environment variables and provider keys. |
-| [Configuration (extended)](docs/CONFIGURATION.md) | Full configuration reference with examples. |
-| [Safety](SAFETY.md) | Timeout policy, scope bounds, cancellation, and hallucination guard design. |
-| [Demo](docs/DEMO.md) | Demo GIFs and reproducible local demo commands. |
-| [Multi-HyDE fusion guide](docs/guides/MULTI_HYDE_FUSION_GUIDE.md) | Retrieve deterministic hypothetical abstracts and fuse their rankings with RRF. |
-| [Near duplicate collapse guide](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) | Collapse near-duplicate chunks by text Jaccard similarity, keeping top scorers. |
-| [Citation count boost guide](docs/guides/CITATION_COUNT_BOOST_GUIDE.md) | Re-rank results by blending relevance with normalized log1p citation counts. |
-| [Required metadata gate guide](docs/guides/REQUIRED_METADATA_GATE_GUIDE.md) | Drop results missing any required non-empty chunk metadata keys. |
-| [Title match boost guide](docs/guides/TITLE_MATCH_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-title term overlap. |
-| [Lexical overlap boost guide](docs/guides/LEXICAL_OVERLAP_BOOST_GUIDE.md) | Re-rank results by blending relevance with Jaccard query-chunk term overlap. |
-| [Freshness boost guide](docs/guides/FRESHNESS_BOOST_GUIDE.md) | Re-rank results with configurable exponential publication-date decay. |
-| [Recency half life boost guide](docs/guides/RECENCY_HALF_LIFE_GUIDE.md) | Re-rank results by blending relevance with publication-year half-life decay. |
-| [Contextual compression guide](docs/guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract bounded query-relevant sentence spans from retrieved chunks. |
-| [Sentence window expand guide](docs/guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand retrieved chunks with ±N neighboring sentences from full document text. |
-| [Parent document guide](docs/guides/PARENT_DOCUMENT_GUIDE.md) | Expand child chunk hits to deduplicated full parent documents. |
-| [Dataset mention indexer guide](docs/guides/DATASET_MENTION_INDEXER_GUIDE.md) | Extract curated dataset mentions from title/abstract with offline lexicon heuristics. |
-| [Reading list prioritizer guide](docs/guides/READING_LIST_PRIORITIZER_GUIDE.md) | Triage unread papers by novelty×authority with citation, freshness, and keyword heuristics. |
-| [Author name disambiguation hint guide](docs/guides/AUTHOR_NAME_DISAMBIGUATION_HINT_GUIDE.md) | Group near-duplicate author strings via offline surname and given-name initial heuristics. |
-| [Co-citation cluster finder guide](docs/guides/CO_CITATION_CLUSTER_FINDER_GUIDE.md) | Cluster papers that share citation neighbors above shared-count / Jaccard thresholds. |
-| [Funding disclosure flagger guide](docs/guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Flag NIH/NSF/ERC, funded-by, and grant-number cues in abstract/acknowledgements offline. |
-| [Conflict of interest flagger guide](docs/guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Flag COI / competing-interest / disclosure cues in abstract/acknowledgements offline. |
-| [Sample size hint extractor guide](docs/guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline N=/sample-size integers from title/abstract text. |
-| [Preregistration flag detector guide](docs/guides/PREREGISTRATION_FLAG_DETECTOR_GUIDE.md) | Detect offline clinicaltrials.gov / OSF / ISRCTN / preregistration cues. |
-| [Effect size hint extractor guide](docs/guides/EFFECT_SIZE_HINT_EXTRACTOR_GUIDE.md) | Extract offline Cohen's d / OR / HR / RR / AUC numeric hints from abstracts. |
-| [Study limitation cue extractor guide](docs/guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Extract offline sample-size / generalizability / confounding / bias limitation cues. |
-| [PRISMA screening checklist guide](docs/guides/PRISMA_SCREENING_CHECKLIST_GUIDE.md) | Build HITL PRISMA title/abstract screening rows that stay pending (never auto-decide). |
-| [Contradiction cluster finder guide](docs/guides/CONTRADICTION_CLUSTER_FINDER_GUIDE.md) | Cluster claim evidence into supporting vs contradicting sets with negation cues and a tension score. |
-| [Claim support scorer guide](docs/guides/CLAIM_SUPPORT_SCORER_GUIDE.md) | Rank evidence passages by claim↔evidence support strength with supported/partial/unsupported labels. |
-| [Claim verification gate guide](docs/guides/CLAIM_VERIFICATION_GATE_GUIDE.md) | Split draft answers into claims and score lexical groundedness against retrieved chunks. |
-| [Citation groundedness score guide](docs/guides/CITATION_GROUNDEDNESS_SCORE_GUIDE.md) | Resolve `[n]` / `(Author, Year)` citation markers and score lexical alignment to the cited source. |
-| [Answerability gate guide](docs/guides/ANSWERABILITY_GATE_GUIDE.md) | Score lexical query coverage and refuse batches that cannot support an answer. |
-| [Temporal freshness cutoff guide](docs/guides/TEMPORAL_FRESHNESS_CUTOFF_GUIDE.md) | Drop chunks older than a configured maximum age before synthesis. |
-| [Agentic chunk boundary guide](docs/guides/AGENTIC_CHUNK_BOUNDARY_GUIDE.md) | Split long text on headings, paragraphs, and sentences before falling back to fixed-size cuts. |
-| [Adaptive retrieval gate guide](docs/guides/ADAPTIVE_RETRIEVAL_GATE_GUIDE.md) | Decide RETRIEVE vs SKIP before lookup using chitchat and knowledge-seeking cues. |
-| [Corrective RAG gate guide](docs/guides/CORRECTIVE_RAG_GUIDE.md) | Grade lexical relevance and signal keep, filter, or retry with query rewriting. |
-| [Query decomposition guide](docs/guides/QUERY_DECOMPOSITION_GUIDE.md) | Split compound questions into distinct retrieval sub-queries for multi-query fusion. |
-| [Query rewrite guide](docs/guides/QUERY_REWRITE_GUIDE.md) | Expand provided synonyms and generate deterministic multi-query retrieval variants. |
-| [Citation intent guide](docs/guides/CITATION_INTENT_GUIDE.md) | Label background, method, result, comparison, or unknown evidence needs. |
-| [arXiv HTML abstract source guide](docs/guides/ARXIV_HTML_ABSTRACT_SOURCE_GUIDE.md) | arXiv abs HTML abstract enrichment connector. |
-| [Examples](docs/EXAMPLES.md) | Usage examples for ingestion, querying, and retrieval evaluation. |
-| [Performance](docs/PERFORMANCE.md) | Performance tuning notes. |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common setup and runtime fixes. |
-| [Contributing](CONTRIBUTING.md) | Development and PR workflow. |
-| [Security](SECURITY.md) | Vulnerability reporting policy. |
-| [Changelog](CHANGELOG.md) | Version history. |
-| [bioRxiv / medRxiv source guide](docs/guides/BIORXIV_SOURCE_GUIDE.md) | bioRxiv and medRxiv preprint connector. |
-| [bioRxiv / medRxiv collections guide](docs/guides/BIORXIV_COLLECTIONS_SOURCE_GUIDE.md) | bioRxiv and medRxiv subject-category collection connector. |
-| [NASA ADS source guide](docs/guides/ADS_SOURCE_GUIDE.md) | NASA ADS astronomy/physics connector. |
-| [PMC source guide](docs/guides/PMC_SOURCE_GUIDE.md) | PubMed Central full-text connector. |
-| [PMC OA package guide](docs/guides/PMC_OA_PACKAGE_GUIDE.md) | NCBI PMC Open Access package/PDF link discovery connector. |
-| [DataCite source guide](docs/guides/DATACITE_SOURCE_GUIDE.md) | DataCite DOI registry connector. |
-| [DataCite related identifiers source guide](docs/guides/DATACITE_RELATED_SOURCE_GUIDE.md) | DataCite related-identifier enrichment connector. |
-| [DataCite Event Data source guide](docs/guides/DATACITE_EVENTS_SOURCE_GUIDE.md) | DataCite DOI citation, usage, and relationship events connector. |
-| [OpenCitations source guide](docs/guides/OPENCITATIONS_SOURCE_GUIDE.md) | OpenCitations DOI metadata and citation-count connector. |
-| [Semantic Scholar recommendations guide](docs/guides/SEMANTIC_SCHOLAR_RECOMMENDATIONS_GUIDE.md) | Related-paper expansion from a seed Semantic Scholar id or DOI. |
-| [OSF source guide](docs/guides/OSF_SOURCE_GUIDE.md) | Open Science Framework preprint and registration connector. |
-| [OpenAIRE projects source guide](docs/guides/OPENAIRE_PROJECTS_SOURCE_GUIDE.md) | OpenAIRE funded-projects registry connector. |
-| [ORCID works filter source guide](docs/guides/ORCID_WORKS_FILTER_SOURCE_GUIDE.md) | ORCID works year/type deep-filter connector. |
-| [ORCID works summaries source guide](docs/guides/ORCID_WORKS_SUMMARIES_SOURCE_GUIDE.md) | ORCID iD public work-summaries connector. |
-| [ORCID source guide](docs/guides/ORCID_SOURCE_GUIDE.md) | ORCID public record works connector. |
-| [Unpaywall source guide](docs/guides/UNPAYWALL_SOURCE_GUIDE.md) | Unpaywall DOI open-access landing/PDF lookup connector. |
-| [OpenAlex topics source guide](docs/guides/OPENALEX_TOPICS_SOURCE_GUIDE.md) | OpenAlex research-topic taxonomy connector. |
-| [OpenAlex concepts source guide](docs/guides/OPENALEX_CONCEPTS_SOURCE_GUIDE.md) | OpenAlex legacy concepts taxonomy connector. |
-| [OpenAlex concepts ancestors source guide](docs/guides/OPENALEX_CONCEPTS_ANCESTORS_SOURCE_GUIDE.md) | OpenAlex concepts with ancestors hierarchy connector. |
-| [OpenAlex institutions source guide](docs/guides/OPENALEX_INSTITUTIONS_SOURCE_GUIDE.md) | OpenAlex research-institution connector. |
-| [OpenAlex sources source guide](docs/guides/OPENALEX_SOURCES_SOURCE_GUIDE.md) | OpenAlex journal/venue sources connector. |
-| [OpenAlex sources hierarchy source guide](docs/guides/OPENALEX_SOURCES_HIERARCHY_SOURCE_GUIDE.md) | OpenAlex venues with host, type, and ISSN ancestry paths. |
-| [OpenAlex sources host org source guide](docs/guides/OPENALEX_SOURCES_HOST_ORG_SOURCE_GUIDE.md) | OpenAlex venues filtered by host organization. |
-| [PubMed MeSH source guide](docs/guides/PUBMED_MESH_SOURCE_GUIDE.md) | NCBI MeSH vocabulary descriptor connector. |
-| [OpenAlex topics hierarchy source guide](docs/guides/OPENALEX_TOPICS_HIERARCHY_SOURCE_GUIDE.md) | OpenAlex topics with domain/field/subfield ancestry. |
-| [Semantic Scholar bulk source guide](docs/guides/SEMANTIC_SCHOLAR_BULK_SOURCE_GUIDE.md) | Semantic Scholar paper/batch bulk connector. |
-| [OpenAlex publishers source guide](docs/guides/OPENALEX_PUBLISHERS_SOURCE_GUIDE.md) | OpenAlex publisher-organization connector. |
-| [OpenAlex funders source guide](docs/guides/OPENALEX_FUNDERS_SOURCE_GUIDE.md) | OpenAlex funding-organization connector. |
-| [OpenAlex keywords source guide](docs/guides/OPENALEX_KEYWORDS_SOURCE_GUIDE.md) | OpenAlex research-keyword taxonomy connector. |
-| [Europe PMC grants source guide](docs/guides/EUROPEPMC_GRANTS_SOURCE_GUIDE.md) | Europe PMC GRIST grants connector. |
-| [Crossref relations source guide](docs/guides/CROSSREF_RELATIONS_SOURCE_GUIDE.md) | Crossref works relation-types connector. |
-| [OpenAlex authors source guide](docs/guides/OPENALEX_AUTHORS_SOURCE_GUIDE.md) | OpenAlex researcher-profile connector. |
-| [Retraction check guide](docs/guides/RETRACTION_CHECK_GUIDE.md) | OpenAlex retracted-works alert connector. |
-| [Crossref Event Data source guide](docs/guides/CROSSREF_EVENTS_SOURCE_GUIDE.md) | Crossref Event Data altmetrics/events connector. |
-| [Crossref journals source guide](docs/guides/CROSSREF_JOURNALS_SOURCE_GUIDE.md) | Crossref journal metadata / ISSN connector. |
-| [Crossref members source guide](docs/guides/CROSSREF_MEMBERS_SOURCE_GUIDE.md) | Crossref publisher/registrant member connector. |
-| [Crossref Funder Registry source guide](docs/guides/CROSSREF_FUNDER_SOURCE_GUIDE.md) | Crossref Open Funder Registry connector. |
-| [CORE source guide](docs/guides/CORE_SOURCE_GUIDE.md) | CORE open-access works connector. |
-| [Figshare source guide](docs/guides/FIGSHARE_SOURCE_GUIDE.md) | Figshare research-output connector. |
-| [Dryad source guide](docs/guides/DRYAD_SOURCE_GUIDE.md) | Dryad research-data repository connector. |
-| [ClinicalTrials.gov source guide](docs/guides/CLINICALTRIALS_SOURCE_GUIDE.md) | ClinicalTrials.gov clinical-study registry connector. |
-| [Wikidata scholarly source guide](docs/guides/WIKIDATA_SCHOLARLY_SOURCE_GUIDE.md) | Wikidata scholarly-entity search connector. |
-| [SSRN source guide](docs/guides/SSRN_SOURCE_GUIDE.md) | SSRN preprint DOI bridge via Crossref connector. |
-| [ORCID employments source guide](docs/guides/ORCID_EMPLOYMENTS_SOURCE_GUIDE.md) | ORCID public employment affiliations connector. |
-| [ORCID education source guide](docs/guides/ORCID_EDUCATION_SOURCE_GUIDE.md) | ORCID public education affiliations connector. |
-| [OpenAlex works n-grams source guide](docs/guides/OPENALEX_WORKS_NGRAMS_SOURCE_GUIDE.md) | OpenAlex salient phrase and frequency connector for individual works. |
-| [DataCite client and prefix source guide](docs/guides/DATACITE_CLIENT_PREFIX_SOURCE_GUIDE.md) | DataCite client-id scoped DOI listing with prefix compatibility. |
-| [Crossref works-by-funder source guide](docs/guides/CROSSREF_WORKS_FUNDER_SOURCE_GUIDE.md) | Crossref funded-works / funder-filter connector. |
-| [Crossref works-by-license source guide](docs/guides/CROSSREF_WORKS_LICENSE_SOURCE_GUIDE.md) | Crossref licensed-works / license-URL filter connector. |
-| [Crossref works type+license source guide](docs/guides/CROSSREF_WORKS_TYPE_LICENSE_SOURCE_GUIDE.md) | Crossref type+license filter connector. |
-| [Crossref works ISSN+type source guide](docs/guides/CROSSREF_WORKS_ISSN_TYPE_SOURCE_GUIDE.md) | Crossref ISSN+type filter connector. |
-| [Crossref works ISBN source guide](docs/guides/CROSSREF_WORKS_ISBN_SOURCE_GUIDE.md) | Crossref ISBN filter connector for books and other ISBN-bearing works. |
-| [OpenAlex author works source guide](docs/guides/OPENALEX_AUTHOR_WORKS_SOURCE_GUIDE.md) | OpenAlex author→works citations blend connector. |
-| [DataCite reports source guide](docs/guides/DATACITE_REPORTS_SOURCE_GUIDE.md) | DataCite research-report DOI connector. |
-| [DataCite DOIs-by-prefix source guide](docs/guides/DATACITE_DOIS_PREFIX_SOURCE_GUIDE.md) | DataCite DOI prefix filter connector. |
-| [Europe PMC preprints source guide](docs/guides/EUROPEPMC_PREPRINTS_SOURCE_GUIDE.md) | Europe PMC PPR-filtered preprint connector. |
-| [Open access prefer guide](docs/guides/OPEN_ACCESS_PREFER_GUIDE.md) | Prefer open-access hits via score boost or soft filter when any OA exists. |
-| [Venue tier boost guide](docs/guides/VENUE_TIER_BOOST_GUIDE.md) | Re-rank results by blending relevance with venue prestige tier scores. |
-| [Preprint demote guide](docs/guides/PREPRINT_DEMOTE_GUIDE.md) | Soft-demote preprint venues via blended demote scores from publication_type/type/venue metadata. |
-| [Language prefer guide](docs/guides/LANGUAGE_PREFER_GUIDE.md) | Prefer preferred-language hits via score boost or soft filter when any match exists. |
-| [Section type boost guide](docs/guides/SECTION_TYPE_BOOST_GUIDE.md) | Re-rank results by blending relevance with preferred section/section_type scores. |
-| [Claim density boost guide](docs/guides/CLAIM_DENSITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with claim-like sentence density in chunk text. |
-| [Authority boost guide](docs/guides/AUTHORITY_BOOST_GUIDE.md) | Re-rank results by blending relevance with source_authority / venue_rank / peer-review / impact_factor signals. |
-| [Coherence boost guide](docs/guides/COHERENCE_BOOST_GUIDE.md) | Re-rank results by blending relevance with adjacent-sentence overlap and query-term continuity. |
-| [Novelty diversify guide](docs/guides/NOVELTY_DIVERSIFY_GUIDE.md) | Greedy novelty re-ranking that soft-demotes near-duplicate chunks via token Jaccard overlap. |
-| [Paraphrase collapse guide](docs/guides/PARAPHRASE_COLLAPSE_GUIDE.md) | Hard-drop paraphrase near-duplicates via character n-gram Jaccard (distinct from word-term near-duplicate collapse). |
-| [Score threshold gate guide](docs/guides/SCORE_THRESHOLD_GATE_GUIDE.md) | Hard-drop retrieval hits below a minimum relevance score (Haystack ScoreThreshold-style). |
-| [Keyword match gate guide](docs/guides/KEYWORD_MATCH_GATE_GUIDE.md) | Keep hits whose chunk covers a minimum fraction of query keywords. |
-| [Metadata equals gate guide](docs/guides/METADATA_EQUALS_GATE_GUIDE.md) | Keep hits whose chunk metadata equals required key/value filters. |
-| [Reciprocal rank fusion gate guide](docs/guides/RECIPROCAL_RANK_FUSION_GATE_GUIDE.md) | Fuse multiple ranked result lists via RRF scoring to merge retrieval sources. |
-| [Min unique sources gate guide](docs/guides/MIN_UNIQUE_SOURCES_GATE_GUIDE.md) | Reject result sets lacking enough unique source documents for diversity. |
-| [Diversity cap gate guide](docs/guides/DIVERSITY_CAP_GATE_GUIDE.md) | Cap max results from any single source to promote diversity. |
-| [Cross-encoder gate guide](docs/guides/CROSS_ENCODER_GATE_GUIDE.md) | Drop weak query-document pairs below a local lexical cross-encoder proxy score. |
-| [Term coverage boost guide](docs/guides/TERM_COVERAGE_BOOST_GUIDE.md) | Soft-boost hits by the fraction of query tokens present in the chunk text. |
-| [Source authority gate guide](docs/guides/SOURCE_AUTHORITY_GATE_GUIDE.md) | Boost or filter hits by source_authority / venue-tier high/medium/low metadata. |
-| [Abstract keyword boost guide](docs/guides/ABSTRACT_KEYWORD_BOOST_GUIDE.md) | Soft-boost hits when abstract or chunk text contains query keywords. |
-| [Time decay gate guide](docs/guides/TIME_DECAY_GATE_GUIDE.md) | Re-rank results by multiplying relevance with publication-age half-life decay. |
-| [Paper chat memory guide](docs/guides/PAPER_CHAT_MEMORY_GUIDE.md) | Persist multi-turn paper-scoped chat turns with document/chunk provenance. |
-| [Literature review outline guide](docs/guides/LITERATURE_REVIEW_OUTLINE_GUIDE.md) | Build deterministic lit-review outline sections from ranked retrieval results. |
-| [BibTeX export guide](docs/guides/BIBTEX_EXPORT_GUIDE.md) | Export Document/Chunk/SearchResult metadata to BibTeX bibliography entries. |
-| [PDF OCR hook guide](docs/guides/PDF_OCR_HOOK_GUIDE.md) | Detect short pypdf text and optionally run an OcrBackend (Null by default). |
-| [Related works guide](docs/guides/RELATED_WORKS_GUIDE.md) | Compose Related Works theme sections from title/abstract/year keyword overlap. |
-| [Survey gap finder guide](docs/guides/SURVEY_GAP_GUIDE.md) | Audit expected survey themes for missing or under-covered coverage against local papers. |
-| [Retraction watch flagger guide](docs/guides/RETRACTION_FLAGGER_GUIDE.md) | Advisory retraction/withdrawal flags from an offline caller-supplied flag set. |
+| [Quickstart](QUICKSTART.md) | Working offline setup and first API request |
+| [Research workflow and portfolio](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) | Corpus, questions, evidence review, export, and acceptance checklist |
+| [API and library examples](docs/EXAMPLES.md) | Copyable requests and clearly separated network adapters |
+| [Configuration](CONFIGURATION.md) | Runtime settings and provider setup |
+| [Architecture](ARCHITECTURE.md) | Integrated pipeline and persistence |
+| [Documentation catalog](docs/README.md) | All existing extension/source guides, operations, and historical records |
+| [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md) | Contribution workflow and vulnerability reporting |
 
-## Provider Keys
-
-All live providers are optional. Without keys the system uses deterministic fakes for tests and demos. Configure keys in `.env` or your shell:
-
-```bash
-export OPENAI_API_KEY=...
-export ANTHROPIC_API_KEY=...
-export GEMINI_API_KEY=...
-export MOONSHOT_API_KEY=...
-export UNPAYWALL_EMAIL=dev@example.org
-```
-
-Live adapter defaults are `gpt-6-astra`, `claude-sonnet-5`, `gemini-3.8-flash`,
-and `kimi-k3`, with per-provider model-ID overrides. API synthesis uses REASONING
-routing and prefers configured Anthropic; `SCHOLAR_RAG_DEFAULT_MODEL` is a
-provider family used for DEFAULT tasks and missing-provider fallbacks, not an
-API model ID. See [configuration](docs/CONFIGURATION.md) and the
-[provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for routing,
-compatibility, and source-linked model guidance checked on 2026-09-17.
-
-## Quality Gates
+## Quality gates
 
 ```bash
 uv run ruff check . && uv run ruff format --check .
@@ -468,8 +119,11 @@ uv run mypy src/
 uv run pytest tests/ -v --cov=src --cov-fail-under=70
 ```
 
+[CI](.github/workflows/ci.yml) runs on Python 3.11 and 3.12.
+[Security Scan](.github/workflows/security.yml) also audits dependencies and runs
+Bandit. Passing these checks is not a scientific-accuracy benchmark.
+
 ## License
 
-Apache-2.0. See `LICENSE`.
-| Gap filled by `CodeAvailabilityBooster` | Missing offline HITL control vs popular stacks | `CodeAvailabilityBooster` — see `docs/guides/CODE_AVAILABILITY_BOOSTER_GUIDE.md` (GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 advisory) |
-| Gap filled by `PreprintVersionDiffer` | Missing offline preprint/published differ | `PreprintVersionDiffer` — see `docs/guides/PREPRINT_VERSION_DIFFER_GUIDE.md` |
+[Apache-2.0](LICENSE). Source papers and third-party service content retain their
+own licenses and access terms.

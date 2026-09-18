@@ -5,9 +5,9 @@ small-corpus ergonomics over distributed throughput.
 
 ## Retrieval
 
-- Keep `SCHOLAR_RAG_MAX_SOURCE_DOCS` at or below the default `50` for interactive use.
+- Keep `SCHOLAR_RAG_MAX_SOURCE_DOCS` at or below the default `50` for interactive use; the current executor counts chunk results, not distinct papers.
 - Keep multi-hop retrieval at depth `3` for research questions; higher values increase graph fan-out.
-- Use the lexical reranker for fast local demos and enable cross-encoder reranking only when the model dependency is installed and latency is acceptable.
+- The API uses lexical reranking. A cross-encoder requires explicit Python wiring with `AdaptiveReranker(use_cross_encoder=True)`, its optional dependency, and access to model weights; installing extras alone does not enable it.
 
 ## Ingestion
 
@@ -17,8 +17,8 @@ small-corpus ergonomics over distributed throughput.
 
 ## LLM Providers
 
-- Route fast drafting tasks to Gemini or the fake adapter.
-- Route deeper reasoning tasks to Claude/OpenAI when API keys are configured.
+- API generation uses the reasoning route; speed/cost preferences apply only to callers that request those task types. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md).
+- The fake adapter demonstrates the workflow, not drafting quality. Measure provider latency and output quality on your own permitted workload rather than treating routing labels as benchmarks.
 - Keep provider rate limits conservative for batch corpus analysis.
 
 ## Storage

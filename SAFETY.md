@@ -1,24 +1,56 @@
 # Safety Controls
 
+These are local execution and evidence-inspection controls, not production
+deployment hardening or scientific validation. Use the API on loopback and
+review source permissions before ingesting non-synthetic material.
+
 ## Timeout Policy
 
-Retrieval defaults to 30 seconds and reasoning defaults to 60 seconds. Both are configurable through environment variables and enforced around async execution.
+Retrieval defaults to 30 seconds and reasoning defaults to 60 seconds. Both are
+configurable and wrap their asynchronous phase calls with `asyncio.wait_for`.
+They are cooperative timeouts, not process-level limits that preempt blocking
+CPU work. Runtime failures return an `ERROR` run with an `error` field; `/query`
+callers must inspect the body even when the HTTP response succeeds.
 
 ## Scope Bounds
 
-The default source cap is 50 documents per query. Multi-hop graph traversal defaults to depth 3 and is globally bounded by `SCHOLAR_RAG_MAX_HOPS`, never exceeding 5.
+`SCHOLAR_RAG_MAX_SOURCE_DOCS` defaults to 50. Despite its name, the current
+executor applies it as a maximum number of retrieved **chunk results**, not a
+distinct-document quota. Multiple chunks may come from one paper; this is not a
+guarantee of source diversity or comprehensive coverage.
+
+Planner tasks request one to three graph hops, depending on intent.
+`SCHOLAR_RAG_MAX_HOPS` defaults to 5 and clamps those tasks; API settings allow
+no more than 5. Co-mention traversal is bounded retrieval, not proof of a
+multi-step scientific argument. Effective bounds and phase timeouts are copied
+at run start and retained in evidence exports.
 
 ## Cancellation
 
-`CancellationToken` is checked at every state transition and inside retrieval loops. Cancelled runs transition to `ERROR` with a structured payload.
+Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked
+before planning, retrieval, reasoning, and the final answer transitions.
+Token cancellation produces an `ERROR` run; it is not polled inside every
+retrieval loop and does not interrupt an in-flight provider call. The HTTP API
+does not expose a cancellation endpoint.
 
 ## Hallucination Guard
 
-Generated answers must include claims mapped to source chunk IDs. Claims without supporting retrieved chunks are marked `[UNGROUNDED]`, and the response includes a warning.
+`CitationGrounder` keeps a claim's mapped chunk ID when the ID exists in the
+retrieved set and claim/chunk text share at least one meaningful term. If any
+claim fails that check, the answer is prefixed with `[UNGROUNDED]` and includes
+a warning. An empty retrieved corpus therefore produces an ungrounded fake
+answer rather than evidence.
 
 This grounding check is **non-stopword token overlap**, not semantic entailment
 or scientific proof. Evidence exports preserve this flag and the warnings;
 resolving a citation to a saved passage does not validate a conclusion.
+
+`grounded: true` and an empty warnings list can still accompany a false or
+misleading answer. Read full source passages, original papers, and conflicting
+evidence. The offline fake echoes the question rather than generating research
+findings. Optional "verification" and screening helpers are advisory and are not
+automatically applied by the API; none constitutes a systematic review, novelty
+proof, or medical-decision process.
 
 ## Evidence Persistence and Privacy
 
@@ -40,6 +72,12 @@ hidden model thinking. Unknown event payloads are explicitly omitted. Sensitive
 data supplied *as source/query content* is intentionally retained, not redacted:
 review every artifact before sharing.
 
+Enabling a live model transmits the query and retrieved context to that provider.
+Empty all four model-provider keys for the offline API path in the
+[Quickstart](QUICKSTART.md); setting only the default provider to `fake` does not
+override a configured preferred provider for every task. Treat paper text and
+model answers as untrusted input, not instructions to execute commands.
+
 Downloads use hashed filenames, no-store/nosniff headers, and literal fenced
 Markdown for untrusted content. Digests detect inconsistent text, not malicious
 rewrites by a database owner. Frozen evidence is neither a signed tamper-proof
@@ -48,11 +86,13 @@ record nor a promise of identical future model output. See the
 
 ## Provider Backoff
 
-LLM calls pass through per-provider rate limiters with exponential backoff for transient `429`, `500`, `502`, `503`, and `504` failures.
+Live adapters use an in-process rate limiter before generation and exponential
+backoff for transport failures and HTTP `429`, `500`, `502`, `503`, and `504`.
+The default is at most three retries after the initial attempt; permanent client
+errors are surfaced without those retries.
 
-Each `AsyncRateLimiter` enforces a sliding one-minute window of at most
-`requests_per_minute` calls. When the window is saturated, `acquire` waits until
-the oldest slot ages out, then re-anchors the window to the current clock and
-drops expired timestamps before admitting the new request. This keeps the
-effective admission rate equal to the configured cap rather than throttling
-below it because of stale entries left over from a wait.
+The limiter waits on a sliding one-minute history and prunes expired timestamps
+after waiting. It is per adapter instance, not a distributed quota or strict
+count of HTTP requests: retries occur within the already-admitted generation
+call. Provider failures do not automatically switch to another provider or the
+fake adapter. See the [routing guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
