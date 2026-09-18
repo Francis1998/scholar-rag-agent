@@ -11,6 +11,7 @@ htmlcov/
 *.sqlite3
 *.db
 evidence-demo/
+document-scope-demo/
 run-history-demo/
 .env
 .DS_Store

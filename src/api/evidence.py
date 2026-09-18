@@ -46,6 +46,13 @@ def render_markdown(bundle: EvidenceBundle) -> str:
         _literal(bundle.query),
         "## Plan and operational rationale\n",
         _json_block(bundle.plan),
+        "## Document scope\n",
+        _literal(
+            "All documents (unscoped). Older records may omit document_ids."
+            if bundle.plan.observation.document_ids is None
+            else "Selected document IDs (unknown IDs may match no chunks):\n"
+            + "\n".join(bundle.plan.observation.document_ids)
+        ),
         "## Effective runtime configuration\n",
         _json_block(bundle.configuration),
         "## Answer\n",

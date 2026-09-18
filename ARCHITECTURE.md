@@ -68,6 +68,15 @@ MMR, multi-HyDE, synonym rewriting, contextual compression, screening gates,
 and most other retrieval helpers are opt-in library components. Their names or
 presence in the [guide catalog](docs/README.md) do not imply execution in `/query`.
 
+Optional `/query` `document_ids` selects eligible ingested papers for **all**
+planned tasks. A shared validator snapshots bounded, deduplicated IDs as an
+immutable tuple before awaits. Dense and BM25 filter before scoring/top-k/RRF;
+BM25 statistics remain global. Graph SQL filters chunks and both directions of
+edge ownership before `LIMIT`, so excluded documents cannot bridge selected
+ones. No shared index stores per-request scope. Unscoped calls preserve old
+signatures; unsupported scoped components fail rather than retrying globally.
+See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
+
 ## Data Flow
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
@@ -131,6 +140,12 @@ in the initial `PLANNING` payload, and uses the copy throughout execution.
 Legacy executor overrides that cannot accept capture callbacks still run once
 without them; their completed answers remain non-exportable rather than being
 given a guessed snapshot.
+
+Document selection is frozen separately in `plan.observation.document_ids` and
+the initial event, leaving the four-field version-one configuration unchanged.
+Exports cross-check saved scope and source/citation ownership. Old evidence
+records without scope remain readable as unscoped; no corpus lookup or migration
+is needed.
 
 `EvidenceExporter` depends only on the event log. It validates a completed run,
 resolves references against the saved snapshot, preserves the original answer

@@ -5,6 +5,14 @@ import sqlite3
 from pathlib import Path
 
 from retrieval.models import Chunk, Entity, EntityEdge
+from retrieval.scope import DocumentIdsInput, normalize_document_ids
+
+
+def _document_filter(document_ids: tuple[str, ...] | None) -> str:
+    """SQL structure only: IDs are bound separately, including quotes and Unicode."""
+    if document_ids is None:
+        return ""
+    return f" AND c.document_id IN ({','.join('?' for _ in document_ids)})"
 
 
 class SQLiteGraphStore:
@@ -70,8 +78,16 @@ class SQLiteGraphStore:
             )
             connection.commit()
 
-    def chunks_for_entities(self, entities: list[str], limit: int = 10) -> list[Chunk]:
+    def chunks_for_entities(
+        self,
+        entities: list[str],
+        limit: int = 10,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+    ) -> list[Chunk]:
         """Return chunks mentioning any provided entities."""
+        scope = normalize_document_ids(document_ids)
+        scope_parameters = () if scope is None else scope
         if not entities:
             return []
         entity_keys = [entity.lower() for entity in entities]
@@ -82,11 +98,11 @@ class SQLiteGraphStore:
             SELECT DISTINCT c.chunk_id, c.document_id, c.title, c.text, c.source, c.metadata
             FROM graph_chunks c
             JOIN entity_mentions m ON c.chunk_id = m.chunk_id
-            WHERE m.entity_key IN ({placeholders})
+            WHERE m.entity_key IN ({placeholders}) {_document_filter(scope)}
             LIMIT ?
         """  # nosec B608
         with sqlite3.connect(self._database_path) as connection:
-            rows = connection.execute(query, (*entity_keys, limit)).fetchall()
+            rows = connection.execute(query, (*entity_keys, *scope_parameters, limit)).fetchall()
         return [
             Chunk(
                 chunk_id=row[0],
@@ -99,22 +115,35 @@ class SQLiteGraphStore:
             for row in rows
         ]
 
-    def neighbours(self, entities: list[str], limit: int = 20) -> list[str]:
-        """Return neighbouring entity names for traversal."""
+    def neighbours(
+        self,
+        entities: list[str],
+        limit: int = 20,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+    ) -> list[str]:
+        """Return neighbours using only edges owned by selected documents, before LIMIT."""
+        scope = normalize_document_ids(document_ids)
+        scope_parameters = () if scope is None else scope
         if not entities:
             return []
         entity_keys = [entity.lower() for entity in entities]
         placeholders = ",".join("?" for _ in entity_keys)
+        join = "" if scope is None else "JOIN graph_chunks c ON c.chunk_id = e.chunk_id"
         # Only the number of bound "?" placeholders is interpolated; every value
         # is passed as a query parameter, so this cannot be an injection vector.
         query = f"""
-            SELECT target_name FROM entity_edges WHERE source_key IN ({placeholders})
+            SELECT e.target_name FROM entity_edges e {join}
+            WHERE e.source_key IN ({placeholders}) {_document_filter(scope)}
             UNION
-            SELECT source_name FROM entity_edges WHERE target_key IN ({placeholders})
+            SELECT e.source_name FROM entity_edges e {join}
+            WHERE e.target_key IN ({placeholders}) {_document_filter(scope)}
             LIMIT ?
         """  # nosec B608
         with sqlite3.connect(self._database_path) as connection:
-            rows = connection.execute(query, (*entity_keys, *entity_keys, limit)).fetchall()
+            rows = connection.execute(
+                query, (*entity_keys, *scope_parameters, *entity_keys, *scope_parameters, limit)
+            ).fetchall()
         return [str(row[0]) for row in rows]
 
     def _initialize(self) -> None:

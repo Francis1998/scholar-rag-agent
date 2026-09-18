@@ -245,6 +245,15 @@ ungrounded warnings. Deleting or updating corpus rows does not change saved
 events. Reopening the same database preserves exportability without any LLM,
 retrieval, or external network call during export.
 
+Optional [document-scoped queries](DOCUMENT_SCOPE_GUIDE.md) record eligible IDs in
+`plan.observation.document_ids` and the initial planning event. Markdown includes
+a Document scope section. Export compares those records and checks captured
+source/citation documents against the saved selection, without retrieving them
+again. Older version-one records without scope remain readable as unscoped;
+`RunConfiguration` and the bundle version are unchanged. Selection is not
+authorization, and a bundle captures final-context passages, not the whole
+selected corpus.
+
 ## Explicit error policy
 
 | HTTP status | `detail.code` | Meaning |

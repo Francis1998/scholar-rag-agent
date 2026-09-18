@@ -4,6 +4,7 @@ import math
 from collections import Counter
 
 from retrieval.models import Chunk, SearchResult
+from retrieval.scope import DocumentIdsInput, normalize_document_ids
 
 STOPWORDS = frozenset(
     {
@@ -75,14 +76,19 @@ class BM25Retriever:
         total_length = sum(self._document_lengths.values())
         self._average_length = total_length / max(len(self._document_lengths), 1)
 
-    async def retrieve(self, query: str, limit: int = 10) -> list[SearchResult]:
-        """Retrieve chunks ranked by BM25 score."""
+    async def retrieve(
+        self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
+    ) -> list[SearchResult]:
+        """Rank selected candidates using the unchanged global BM25 statistics."""
+        scope = normalize_document_ids(document_ids)
+        allowed = None if scope is None else frozenset(scope)
         query_terms = tokenize(query)
         scored_results = [
             SearchResult(
                 chunk=chunk, score=self._score(chunk.chunk_id, query_terms), retriever="bm25"
             )
             for chunk in self._chunks
+            if allowed is None or chunk.document_id in allowed
         ]
         return sorted(scored_results, key=lambda result: result.score, reverse=True)[:limit]
 

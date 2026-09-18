@@ -4,6 +4,7 @@ import re
 from itertools import combinations
 
 from retrieval.models import Chunk, Entity, EntityEdge, SearchResult
+from retrieval.scope import DocumentIdsInput, normalize_document_ids, scope_arguments
 from storage.graph_store import SQLiteGraphStore
 
 _TERM_PATTERN = re.compile(
@@ -69,10 +70,19 @@ class GraphRetriever:
         """Create a graph retriever."""
         self._graph_store = graph_store
 
-    async def retrieve(self, seed_entities: list[str], limit: int = 10) -> list[SearchResult]:
+    async def retrieve(
+        self,
+        seed_entities: list[str],
+        limit: int = 10,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+    ) -> list[SearchResult]:
         """Return chunks directly mentioning seed entities."""
+        scope = normalize_document_ids(document_ids)
         results: list[SearchResult] = []
-        for chunk in self._graph_store.chunks_for_entities(seed_entities, limit=limit):
+        for chunk in self._graph_store.chunks_for_entities(
+            seed_entities, limit=limit, **scope_arguments(scope)
+        ):
             results.append(
                 SearchResult(chunk=chunk, score=1.0, retriever="graph", path=seed_entities)
             )

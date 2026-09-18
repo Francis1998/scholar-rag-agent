@@ -25,6 +25,22 @@ no more than 5. Co-mention traversal is bounded retrieval, not proof of a
 multi-step scientific argument. Effective bounds and phase timeouts are copied
 at run start and retained in evidence exports.
 
+## Document Selection
+
+Optional `document_ids` restricts all query retrieval paths to selected ingested
+papers. Scope is copied before awaits, bounded to 100 supplied IDs of 1-128
+normalized characters, and retained in the plan and evidence export. HTTP
+`null`, empty/blank or invalid scope is rejected with `422`; unknown IDs match
+no chunks and never trigger a whole-corpus fallback. Graph edges from excluded
+papers cannot bridge into results. BM25 statistics still use the whole corpus.
+
+This is **corpus selection, not authentication or tenant isolation**. It neither
+authorizes document access nor protects run/event/export endpoints. Keep the
+service local/trusted. Source/hop/capture bounds and human evidence review still
+apply; even an empty context may be sent to a configured generation provider.
+See the [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for behavior,
+legacy component handling, and the offline demonstration.
+
 ## Cancellation
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked
