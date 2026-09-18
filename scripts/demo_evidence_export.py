@@ -4,12 +4,12 @@ import argparse
 import sqlite3
 from pathlib import Path
 
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 from agent.evidence import EvidenceBundle
+from api.application import create_app
 from api.dependencies import AppContainer
-from api.main import app
 from config import Settings
 
 DEMO_TEXT = (
@@ -24,9 +24,22 @@ DEMO_TEXT = (
 DEMO_QUERY = "How does GraphRAG connect synthetic research evidence?"
 
 
+class _OfflineSettings(Settings):
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings,)
+
+
 def offline_settings(database_path: Path) -> Settings:
-    """Disable all live model credentials, including environment and dotenv values."""
-    return Settings(
+    """Validate explicit demo settings and defaults without consulting ambient sources."""
+    return _OfflineSettings(
         _env_file=None,
         database_path=database_path,
         default_model="fake",
@@ -47,10 +60,7 @@ def run_demo(output_dir: Path) -> str:
                 f"Refusing to overwrite {output_dir / name}; choose a new directory."
             )
     database_path = output_dir / "demo.sqlite3"
-    application = FastAPI()
-    application.include_router(app.router)
-    container = AppContainer(offline_settings(database_path))
-    application.state.container = container
+    application = create_app(offline_settings(database_path))
     with TestClient(application) as client:
         ingested = client.post(
             "/ingest/text",

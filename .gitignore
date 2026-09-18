@@ -12,6 +12,7 @@ htmlcov/
 *.db
 evidence-demo/
 document-scope-demo/
+run-history-demo/
 .env
 .DS_Store
 dist/

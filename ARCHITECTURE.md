@@ -6,6 +6,12 @@ Observe -> Decide -> Act orchestration is a hand-written state machine, not a
 LangGraph integration. The default wiring lives in
 [`AppContainer`](src/api/dependencies.py).
 
+[`api.application.create_app(settings)`](src/api/application.py) constructs an
+isolated app on demand; importing the factory or routers does not initialize a
+database. `api.main:app` remains the environment-configured deployment entrypoint.
+Offline demos use explicit validated defaults and ignore ambient environment,
+dotenv, and secret-file settings rather than initializing that deployment app.
+
 ## Agent State Machine
 
 ```mermaid
@@ -97,10 +103,26 @@ See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract
    must inspect that state and `error`, not just the HTTP status. Read the saved
    event stream or export a completed run to inspect its exact evidence.
 
-The API also exposes `/health`, `/runs/{run_id}/events`, and the export route
+The API also exposes `/health`, `/runs`, `/runs/{run_id}/events`, and the export route
 below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
+
+## Persistent Run Discovery
+
+`SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,
+without a duplicate run table, event backfill, or evidence deserialization.
+Pages contain at most 100 summaries (20 by default), ordered by immutable first
+event ID. An exclusive integer keyset cursor and latest-recorded-state filter
+are applied before the one-row pagination lookahead.
+
+One SELECT reads a consistent page; separate pages do not freeze changing states.
+Query prefixes and identifiers are bounded, but grouping and transition checks
+still scale with stored events. Legacy event-only runs have a null recorded state,
+and missing planning queries stay null. Nonterminal states do not claim liveness
+or resumability. Export links are navigation, not proof of export availability.
+See [Run history](docs/guides/RUN_HISTORY_GUIDE.md) for errors, privacy, restart
+behavior, and the reproducible synthetic demo.
 
 ## Persistent Evidence Exports
 

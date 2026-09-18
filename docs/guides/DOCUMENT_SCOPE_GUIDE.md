@@ -251,6 +251,10 @@ document IDs against that scope using only stored events. It does not consult
 today's index or re-run retrieval. Inconsistent records are
 `409 invalid_run_record`. See the [evidence export error contract](EVIDENCE_EXPORT_GUIDE.md#explicit-error-policy).
 
+After a restart, use the [run catalog](RUN_HISTORY_GUIDE.md) to recover a run ID
+and follow its export link. The catalog remains database-wide, not filtered by
+the last query's document selection; each export retains that run's own scope.
+
 Old version-1 bundles/events without the field remain readable as unscoped.
 `RunConfiguration` keeps its existing four fields and the bundle version stays
 `1.0`; no database migration or backfill is required. Scope records the eligible

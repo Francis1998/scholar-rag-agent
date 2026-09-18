@@ -5,13 +5,12 @@ import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from agent.evidence import EvidenceBundle
 from agent.models import AgentRunResult, AgentState
+from api.application import create_app
 from api.dependencies import AppContainer
-from api.main import app
 from api.schemas import IngestResponse
 from retrieval.hyde import HyDEExpander
 from retrieval.multihop import MultiHopRetriever
@@ -72,10 +71,8 @@ def run_demo(output_dir: Path) -> str:
         settings = offline_settings(Path(temporary) / "scope.sqlite3").model_copy(
             update={"max_source_docs": 2}
         )
-        application = FastAPI()
-        application.include_router(app.router)
-        container = AppContainer(settings)
-        application.state.container = container
+        application = create_app(settings)
+        container: AppContainer = application.state.container
         with TestClient(application) as client:
             expanded = asyncio.run(HyDEExpander().expand(QUERY))
             distractors = [
@@ -150,7 +147,11 @@ def run_demo(output_dir: Path) -> str:
                 if after.content != original:
                     raise RuntimeError(f"{fmt} export changed after reopening SQLite.")
             initial = bundle.events[0].payload
-            if initial is None or initial["payload"]["document_ids"] != selected:
+            initial_payload = None if initial is None else initial.get("payload")
+            if (
+                not isinstance(initial_payload, dict)
+                or initial_payload.get("document_ids") != selected
+            ):
                 raise RuntimeError("The initial event must record the effective scope.")
 
     (output_dir / "scoped.json").write_bytes(scoped_json)

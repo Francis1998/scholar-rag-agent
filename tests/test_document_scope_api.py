@@ -13,17 +13,19 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from scripts.demo_evidence_export import offline_settings
 
 from agent.evidence import EvidenceBundle, RunConfiguration
 from agent.models import AgentAnswer, AgentRunResult, AgentState, QueryPlan
+from api.application import create_app
 from api.dependencies import AppContainer
-from api.main import app
 from api.schemas import IngestResponse
 from llm.schemas import LLMRequest, LLMResponse
 from retrieval.hyde import HyDEExpander
 from retrieval.models import Document, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
-from tests.test_evidence_export import no_live_call, offline_settings
+from storage.run_history import RunHistoryPage
+from tests.test_evidence_export import no_live_call
 
 
 @dataclass
@@ -55,10 +57,8 @@ class ScopeAPI:
 def scope_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[ScopeAPI]:
     database_path = tmp_path / "scope.sqlite3"
     settings = offline_settings(database_path).model_copy(update={"max_source_docs": 2})
-    container = AppContainer(settings)
-    application = FastAPI()
-    application.include_router(app.router)
-    application.state.container = container
+    application = create_app(settings)
+    container: AppContainer = application.state.container
     monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", no_live_call)
     with TestClient(application) as client:
         yield ScopeAPI(application, container, client, database_path)
@@ -531,6 +531,70 @@ def test_scope_reloads_with_corpus_and_frozen_exports_survive_later_changes(
         after = scope_api.client.get(export_path, params={"format": fmt})
         assert after.status_code == 200
         assert after.content == before[fmt]
+
+
+def test_factory_restart_catalog_links_export_the_correct_scope_and_keep_apps_isolated(
+    scope_api: ScopeAPI,
+) -> None:
+    a = scope_api.ingest("A note", "GraphRAG selected evidence from A.")
+    b = scope_api.ingest("B note", "GraphRAG selected evidence from B.")
+    runs = [
+        scope_api.query("GraphRAG evidence", document_ids=[paper.document_id]) for paper in (a, b)
+    ]
+    expected = {
+        run.run_id: (
+            paper.document_id,
+            scope_api.client.get(f"/runs/{run.run_id}/export").content,
+        )
+        for run, paper in zip(runs, (a, b), strict=True)
+    }
+    restarted = create_app(offline_settings(scope_api.database_path))
+    with TestClient(restarted) as client:
+        first = client.get("/runs", params={"limit": 1, "state": "DONE"})
+        first.raise_for_status()
+        page = RunHistoryPage.model_validate_json(first.content)
+        assert [summary.run_id for summary in page.runs] == [runs[1].run_id]
+        assert page.next_cursor is not None
+        next_response = client.get(
+            "/runs", params={"limit": 1, "state": "DONE", "cursor": page.next_cursor}
+        )
+        next_response.raise_for_status()
+        older = RunHistoryPage.model_validate_json(next_response.content)
+        assert [summary.run_id for summary in older.runs] == [runs[0].run_id]
+        assert older.next_cursor is None
+        for summary in [*page.runs, *older.runs]:
+            selected, original = expected[summary.run_id]
+            assert summary.recorded_state == AgentState.DONE
+            assert summary.export_url is not None
+            response = client.get(summary.export_url)
+            response.raise_for_status()
+            assert response.content == original
+            bundle = EvidenceBundle.model_validate_json(response.content)
+            assert source_documents(bundle) == {selected}
+            assert bundle.plan.observation.document_ids == (selected,)
+            assert summary.events_url is not None
+            assert client.get(summary.events_url).json()[0]["payload"]["payload"][
+                "document_ids"
+            ] == [selected]
+
+    separate = create_app(offline_settings(scope_api.database_path.with_name("separate.sqlite3")))
+    with TestClient(separate) as client:
+        assert client.get("/runs").json()["runs"] == []
+        response = client.post(
+            "/query", json={"query": "GraphRAG evidence", "document_ids": [a.document_id]}
+        )
+        response.raise_for_status()
+        result = AgentRunResult.model_validate(response.json()["result"])
+        assert result.state == AgentState.DONE, result.error
+        exported = client.get(f"/runs/{result.run_id}/export")
+        exported.raise_for_status()
+        bundle = EvidenceBundle.model_validate_json(exported.content)
+        assert bundle.plan.observation.document_ids == (a.document_id,)
+        assert bundle.snapshot.sources == []
+        assert bundle.answer.ungrounded
+    assert {summary["run_id"] for summary in scope_api.client.get("/runs").json()["runs"]} == set(
+        expected
+    )
 
 
 def test_old_unscoped_evidence_events_remain_exportable(scope_api: ScopeAPI) -> None:

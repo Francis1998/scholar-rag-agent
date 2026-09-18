@@ -5,6 +5,10 @@ A completed query can now be downloaded as a **versioned JSON bundle** or a
 retrieval plan and operational rationale, answer, claims, citations, exact
 final-context passages, provider/model identity when available, and ordered events.
 
+Forgot the run ID? [Run history](RUN_HISTORY_GUIDE.md) adds `GET /runs` discovery
+from persisted events, including after restart. Its export URLs are navigation
+links; all evidence-export validation and legacy/failed-run errors remain intact.
+
 This closes a practical gap between an answer and an auditable research artifact.
 The old citation snippet contains at most 240 characters; it cannot recover the
 full context once an index changes. The new snapshot is recorded **after reranking
@@ -34,6 +38,11 @@ The script drives the real ingestion, query, and export routes through FastAPI's
 including credentials configured in your environment or `.env`. It does not
 start a server. Choose a **fresh output directory**: it refuses to overwrite
 existing demo files.
+
+The public `offline_settings(path)` helper uses validated defaults without
+ambient environment/dotenv/secret-file sources. Both offline evidence/history
+demos construct `api.application.create_app(settings)` explicitly, never import
+the initialized deployment app, and do not open the ambient database.
 
 The output directory contains:
 
