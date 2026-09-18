@@ -1,7 +1,8 @@
 # Provider Models and Compatibility
 
-Catalog and migration documentation checked **2026-09-17 America/Los_Angeles**
-(2026-09-18 UTC). This is documentation verification plus offline HTTPX contract
+Model catalogs rechecked **2026-09-18 America/Los_Angeles** (2026-09-18 UTC);
+migration guidance was checked on 2026-09-17 America/Los_Angeles. This is
+documentation verification plus offline HTTPX contract
 testing, **not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.

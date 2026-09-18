@@ -5,6 +5,10 @@ A completed query can now be downloaded as a **versioned JSON bundle** or a
 retrieval plan and operational rationale, answer, claims, citations, exact
 final-context passages, provider/model identity when available, and ordered events.
 
+Forgot the run ID? [Run history](RUN_HISTORY_GUIDE.md) adds `GET /runs` discovery
+from persisted events, including after restart. Its export URLs are navigation
+links; all evidence-export validation and legacy/failed-run errors remain intact.
+
 This closes a practical gap between an answer and an auditable research artifact.
 The old citation snippet contains at most 240 characters; it cannot recover the
 full context once an index changes. The new snapshot is recorded **after reranking

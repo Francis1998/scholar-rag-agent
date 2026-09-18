@@ -11,6 +11,7 @@ accumulated feature list in the project README.
 | Install and run without model credentials | [Quickstart](../QUICKSTART.md) |
 | Work through a small corpus and prepare an honest portfolio demonstration | [Research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |
 | Reproduce the showcased animation | [Demo](DEMO.md) |
 | Understand what the API actually runs | [Architecture](../ARCHITECTURE.md) |

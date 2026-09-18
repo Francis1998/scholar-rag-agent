@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 
 from api.dependencies import AppContainer, create_container
 from api.evidence import router as evidence_router
+from api.runs import router as runs_router
 from api.schemas import (
     HealthResponse,
     IngestResponse,
@@ -17,6 +18,7 @@ from retrieval.models import Document
 app = FastAPI(title="Scholar RAG Agent", version="0.1.0")
 app.state.container = create_container()
 app.include_router(evidence_router)
+app.include_router(runs_router)
 
 
 @app.get("/health", response_model=HealthResponse)

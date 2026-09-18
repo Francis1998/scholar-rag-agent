@@ -35,6 +35,29 @@ error behavior, and animation reproduction instructions. Use the
 [research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) to run your own API-based
 comparison, hypothesis, evidence-review, and portfolio walkthrough.
 
+## Run-history discovery after restart
+
+![Synthetic offline run-history discovery](assets/run-history.gif)
+
+This generated illustration uses actual offline demo output, not a UI recording
+or real-model science. It shows completed and failed API queries, a labeled
+partial-trace fixture, container recreation, paginated discovery, and export
+through a recovered ID.
+
+```bash
+HISTORY_DIR="$(mktemp -d)/run-history-demo"
+uv run python -m scripts.demo_run_history --output-dir "$HISTORY_DIR"
+uv run python -m scripts.create_run_history_gif \
+  --transcript "$HISTORY_DIR/transcript.txt" \
+  --output "$HISTORY_DIR/run-history.gif"
+```
+
+Inspect `page-1.json`, `page-2.json`, `done.json`, `events.json`, `bundle.json`,
+`bundle.md`, `history.sqlite3`, and `transcript.txt` in that directory. Neither
+script overwrites an existing named artifact. The
+[run-history guide](guides/RUN_HISTORY_GUIDE.md) explains the API/Python contracts
+and why a recorded state is not a claim of active or resumable work.
+
 ## Small local smoke demo
 
 ```bash
