@@ -1,5 +1,11 @@
 # Architecture
 
+Scholar RAG Agent is a local-first FastAPI service and Python toolkit built with
+Pydantic schemas/settings, HTTPX provider adapters, and SQLite stores. Its
+Observe -> Decide -> Act orchestration is a hand-written state machine, not a
+LangGraph integration. The default wiring lives in
+[`AppContainer`](src/api/dependencies.py).
+
 ## Agent State Machine
 
 ```mermaid
@@ -17,31 +23,75 @@ stateDiagram-v2
   ANSWERING --> ERROR
 ```
 
-Each transition is persisted to SQLite before the next side effect. The event log stores `timestamp`, `agent_id`, `run_id`, source state, target state, and JSON payload.
+Each transition is persisted to SQLite before the next phase. The event log
+stores `timestamp`, `agent_id`, `run_id`, event type, and a JSON payload; state
+transition payloads contain the source and target states. The plan includes
+operational rationale, not a model's hidden reasoning.
 
 ## Retrieval Pipeline
 
+This is the integrated `/query` path. Hybrid and graph retrieval are separate
+lookups for each planned task, not a graph stage that consumes fused hits:
+
 ```mermaid
 flowchart LR
-  query[Research Query] --> hyde[HyDE Expansion]
-  hyde --> dense[Dense Cosine]
+  query[Research query] --> plan[Keyword intent and task plan]
+  plan --> hyde[Deterministic HyDE template]
+  plan --> graph[Entity co-mention traversal]
+  hyde --> dense[Lexical hash-vector cosine]
   hyde --> sparse[BM25 Sparse]
   dense --> rrf[RRF Fusion]
   sparse --> rrf
-  rrf --> mmr[MMR Diversify optional]
-  mmr --> graph[Entity Graph Expansion]
-  graph --> multihop[MultiHop Depth 3]
-  multihop --> rerank[CrossEncoder Rerank]
-  rerank --> chunks[Grounding Chunks]
+  rrf --> merge[Merge by chunk ID and bound results]
+  graph --> merge
+  merge --> rerank[Lexical overlap reranking]
+  rerank --> snapshot[Persist exact context snapshot]
+  snapshot --> model[Routed provider or fake adapter]
+  model --> ground[Token-overlap citation mapping]
+  ground --> done[Persist answer and completed run]
 ```
+
+`DenseRetriever` defaults to deterministic `HashEmbeddingModel` vectors, not
+learned semantic embeddings. `HyDEExpander` has no LLM in the API wiring: it adds
+a fixed hypothetical-abstract template. `AdaptiveReranker()` uses lexical
+overlap by default. Enabling its optional cross-encoder requires explicit Python
+wiring and suitable model dependencies; installing the `all` extra alone does
+not enable it.
+
+MMR, multi-HyDE, synonym rewriting, contextual compression, screening gates,
+and most other retrieval helpers are opt-in library components. Their names or
+presence in the [guide catalog](docs/README.md) do not imply execution in `/query`.
 
 ## Data Flow
 
-1. Ingestion normalizes PDF, arXiv, and Semantic Scholar records into documents and chunks.
-2. Dense and sparse indexes are built from chunks.
-3. spaCy NER is used when available; a deterministic scientific-term fallback keeps tests and demos offline.
-4. The planner decomposes a query into retrieval tasks and logs rationale as JSON.
-5. The executor retrieves, re-ranks, generates, validates, grounds, and returns an answer with chunk citations.
+1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
+   whitespace and produces overlapping character windows (800 characters with
+   120 overlap by default). PDF and scholarly-service connectors are separate
+   Python ingestion paths, not upload endpoints or automatic web searches.
+2. SQLite persists normalized documents and chunks. Hash-vector and BM25 indexes
+   are in memory and are rebuilt from stored chunks when `AppContainer` starts.
+   The graph store persists entity mentions and within-chunk co-mention edges.
+3. Graph construction uses spaCy when its package and requested model can load;
+   otherwise it uses a deterministic term extractor. Query entities come from
+   the analyzer's capitalized-term heuristic. Graph paths connect co-mentions,
+   not proven scientific relationships.
+4. The keyword analyzer selects factual, synthesis, comparison, or hypothesis
+   intent. The planner creates fixed task templates and logs their rationale.
+   Supporting/counter-evidence task results are merged before generation; there
+   is no automatic evidence adjudication.
+5. The executor retrieves and reranks chunks, saves its bounded context, calls a
+   model, and maps claims to chunks. If no parsed claims are provided, the whole
+   response becomes one claim. Current live adapters return the context's chunk
+   IDs; the default path does not parse prose citation markers or verify that a
+   source entails a claim. The fake adapter echoes the query with IDs.
+6. `/query` returns `{"result": ...}` with a `DONE` or `ERROR` run state; callers
+   must inspect that state and `error`, not just the HTTP status. Read the saved
+   event stream or export a completed run to inspect its exact evidence.
+
+The API also exposes `/health`, `/runs/{run_id}/events`, and the export route
+below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
+controls, PDF-upload UI, or public multi-turn chat endpoint. See
+[API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
 
 ## Persistent Evidence Exports
 
@@ -80,11 +130,15 @@ for schema, bounds, privacy, and error contracts.
 
 `ModelRouter` selects an adapter (`openai`, `anthropic`, `gemini`, `kimi`, or
 the offline `fake`) per `TaskType`. Each adapter normalizes a provider-specific
-JSON payload into the shared `LLMResponse`.
+JSON payload into the shared `LLMResponse`. `/query` requests `REASONING`, which
+prefers configured Anthropic before the configured default family, OpenAI, and
+fake fallbacks. This is selection before a call, not failover after an HTTP error.
 
-Provider response content is a *list* (OpenAI `choices`, Anthropic/Gemini
-`content` parts), so an adapter must reconstruct the full text rather than
-reading only the first element: it concatenates every text segment in order and
-skips non-text parts (for example a Gemini `functionCall` part). Reading a
-single element silently truncates multi-part answers and can drop cited
-evidence before grounding.
+Adapters preserve ordered answer-text parts and skip non-answer blocks. OpenAI
+and Kimi use the first choice's content, Gemini the first candidate's answer
+parts, and Anthropic its text blocks; they do not concatenate separate alternate
+answers. Provenance records the requested model ID when known, not an immutable
+resolved backend version.
+
+Current defaults, overrides, payload constraints, and dated official sources
+live in the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
