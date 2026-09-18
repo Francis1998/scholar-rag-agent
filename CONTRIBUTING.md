@@ -17,6 +17,20 @@ pre-commit install
 uv run pytest tests/ -v --tb=short
 ```
 
+### Wheel Packaging
+
+```bash
+uv run pytest tests/test_packaging.py -v
+```
+
+These tests build a real wheel using Hatchling from the dev extras, without
+downloading build tools. Runtime imports run in a temporary directory with
+`python -I -S`, using only the wheel and explicit dependency paths; repository
+imports, `PYTHONPATH`, and editable-install `.pth` hooks cannot hide missing
+wheel modules. The tests check `config`, its API/router consumers, and all three
+console entry points. Ingest and evaluation run locally; the API server is mocked
+so the check neither calls a provider nor starts a long-running server.
+
 ## Coding Standards
 
 - Python 3.11+
