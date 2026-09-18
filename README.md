@@ -1,3 +1,6 @@
+- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
+- **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
+
 # Scholar RAG Agent
 
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
@@ -99,6 +102,16 @@ universal override. Provider availability depends on your account and credential
   review permissions and content before transmitting or sharing anything.
 
 Read [Safety](SAFETY.md) before using non-synthetic material.
+
+## Offline evidence extractors
+
+![Heterogeneity I2 hint extractor demo](docs/assets/heterogeneity-i2-hint-extractor.gif)
+
+Library helpers can surface meta-analysis and statistics cues from local paper
+text without a network call. `HeterogeneityI2HintExtractor` pulls I2 / I^2 /
+heterogeneity phrases from abstracts (Elicit/Consensus gap; distinct from
+`EffectSizeHintExtractor` and `PValueHintExtractor`). See the
+[heterogeneity I2 guide](docs/guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md).
 
 ## Documentation
 
