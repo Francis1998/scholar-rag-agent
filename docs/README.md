@@ -1,3 +1,5 @@
+- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
+
 # Documentation catalog
 
 Start with a working local workflow, then choose extensions deliberately.
