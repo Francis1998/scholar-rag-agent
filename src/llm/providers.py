@@ -5,6 +5,12 @@ from collections.abc import Mapping
 import httpx
 
 from llm.base import BaseLLMAdapter
+from llm.defaults import (
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_GEMINI_MODEL,
+    DEFAULT_KIMI_MODEL,
+    DEFAULT_OPENAI_MODEL,
+)
 from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, LLMResponse
 
@@ -81,7 +87,7 @@ class OpenAIAdapter(HTTPProviderAdapter):
 
     provider_name = "openai"
 
-    def __init__(self, api_key: str, model: str = "gpt-5.5") -> None:
+    def __init__(self, api_key: str, model: str = DEFAULT_OPENAI_MODEL) -> None:
         """Create an OpenAI adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -106,7 +112,6 @@ class OpenAIAdapter(HTTPProviderAdapter):
                     "content": f"Context:\n{request.context}\n\nQuestion:\n{request.prompt}",
                 },
             ],
-            "temperature": 0.1,
         }
 
     def parse_response(self, data: Mapping[str, object], request: LLMRequest) -> LLMResponse:
@@ -128,6 +133,7 @@ class OpenAIAdapter(HTTPProviderAdapter):
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,
             raw_provider=self.provider_name,
+            model_name=self._model,
         )
 
     @staticmethod
@@ -148,7 +154,9 @@ class OpenAIAdapter(HTTPProviderAdapter):
             return "".join(
                 str(part["text"])
                 for part in content
-                if isinstance(part, dict) and isinstance(part.get("text"), str)
+                if isinstance(part, dict)
+                and part.get("type", "text") == "text"
+                and isinstance(part.get("text"), str)
             )
         return ""
 
@@ -158,7 +166,7 @@ class AnthropicAdapter(HTTPProviderAdapter):
 
     provider_name = "anthropic"
 
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-6") -> None:
+    def __init__(self, api_key: str, model: str = DEFAULT_ANTHROPIC_MODEL) -> None:
         """Create an Anthropic adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -178,10 +186,9 @@ class AnthropicAdapter(HTTPProviderAdapter):
 
     def payload(self, request: LLMRequest) -> dict[str, object]:
         """Return Anthropic messages payload."""
-        return {
+        payload: dict[str, object] = {
             "model": self._model,
             "max_tokens": 1024,
-            "temperature": 0.1,
             "messages": [
                 {
                     "role": "user",
@@ -189,6 +196,10 @@ class AnthropicAdapter(HTTPProviderAdapter):
                 }
             ],
         }
+        # Preserve Sonnet 5's bounded answer budget; older/custom IDs may reject this field.
+        if self._model == DEFAULT_ANTHROPIC_MODEL:
+            payload["thinking"] = {"type": "disabled"}
+        return payload
 
     def parse_response(self, data: Mapping[str, object], request: LLMRequest) -> LLMResponse:
         """Parse Anthropic response JSON.
@@ -204,12 +215,15 @@ class AnthropicAdapter(HTTPProviderAdapter):
             text = "".join(
                 str(block["text"])
                 for block in content
-                if isinstance(block, dict) and isinstance(block.get("text"), str)
+                if isinstance(block, dict)
+                and block.get("type") == "text"
+                and isinstance(block.get("text"), str)
             )
         return LLMResponse(
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,
             raw_provider=self.provider_name,
+            model_name=self._model,
         )
 
 
@@ -218,7 +232,7 @@ class GeminiAdapter(HTTPProviderAdapter):
 
     provider_name = "gemini"
 
-    def __init__(self, api_key: str, model: str = "gemini-3.1-pro-preview") -> None:
+    def __init__(self, api_key: str, model: str = DEFAULT_GEMINI_MODEL) -> None:
         """Create a Gemini adapter."""
         super().__init__(api_key=api_key, model=model)
 
@@ -251,12 +265,15 @@ class GeminiAdapter(HTTPProviderAdapter):
                 text = "".join(
                     str(part["text"])
                     for part in parts
-                    if isinstance(part, dict) and isinstance(part.get("text"), str)
+                    if isinstance(part, dict)
+                    and not part.get("thought", False)
+                    and isinstance(part.get("text"), str)
                 )
         return LLMResponse(
             text=text,
             citation_chunk_ids=request.citation_chunk_ids,
             raw_provider=self.provider_name,
+            model_name=self._model,
         )
 
 
@@ -265,7 +282,7 @@ class KimiAdapter(OpenAIAdapter):
 
     provider_name = "kimi"
 
-    def __init__(self, api_key: str, model: str = "kimi-k2") -> None:
+    def __init__(self, api_key: str, model: str = DEFAULT_KIMI_MODEL) -> None:
         """Create a Kimi adapter."""
         super().__init__(api_key=api_key, model=model)
 

@@ -54,15 +54,21 @@ class RoutingLLMAdapter(BaseLLMAdapter):
 
 
 def build_model_router(settings: Settings) -> ModelRouter:
-    """Build a model router from configured provider credentials."""
+    """Build a model router from configured provider credentials and model IDs."""
 
     adapters: dict[str, BaseLLMAdapter] = {"fake": FakeLLMAdapter()}
     if settings.openai_api_key:
-        adapters["openai"] = OpenAIAdapter(api_key=settings.openai_api_key)
+        adapters["openai"] = OpenAIAdapter(
+            api_key=settings.openai_api_key, model=settings.openai_model
+        )
     if settings.anthropic_api_key:
-        adapters["anthropic"] = AnthropicAdapter(api_key=settings.anthropic_api_key)
+        adapters["anthropic"] = AnthropicAdapter(
+            api_key=settings.anthropic_api_key, model=settings.anthropic_model
+        )
     if settings.gemini_api_key:
-        adapters["gemini"] = GeminiAdapter(api_key=settings.gemini_api_key)
+        adapters["gemini"] = GeminiAdapter(
+            api_key=settings.gemini_api_key, model=settings.gemini_model
+        )
     if settings.moonshot_api_key:
-        adapters["kimi"] = KimiAdapter(api_key=settings.moonshot_api_key)
+        adapters["kimi"] = KimiAdapter(api_key=settings.moonshot_api_key, model=settings.kimi_model)
     return ModelRouter(adapters=adapters, default_provider=settings.default_model)

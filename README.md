@@ -448,12 +448,13 @@ export MOONSHOT_API_KEY=...
 export UNPAYWALL_EMAIL=dev@example.org
 ```
 
-When enabled, downstream synthesis can route through GPT-5.5, Claude Sonnet 4.6,
-Gemini 3.x, and Kimi K2 while deterministic connectors such as Unpaywall keep
-source lookup reproducible.
-For downstream synthesis and evaluation, the preferred frontier model families are GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, and Kimi K2.
-Gemini 3.x, and Kimi K2 while deterministic connectors such as Unpaywall and
-retraction checks keep source lookup reproducible.
+Live adapter defaults are `gpt-6-astra`, `claude-sonnet-5`, `gemini-3.8-flash`,
+and `kimi-k3`, with per-provider model-ID overrides. API synthesis uses REASONING
+routing and prefers configured Anthropic; `SCHOLAR_RAG_DEFAULT_MODEL` is a
+provider family used for DEFAULT tasks and missing-provider fallbacks, not an
+API model ID. See [configuration](docs/CONFIGURATION.md) and the
+[provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for routing,
+compatibility, and source-linked model guidance checked on 2026-09-17.
 
 ## Quality Gates
 
