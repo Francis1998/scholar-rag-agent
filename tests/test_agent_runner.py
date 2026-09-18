@@ -73,6 +73,7 @@ class RecordingExecutor(Executor):
     def __init__(self) -> None:
         """Create an executor double with no recorded limit."""
         self.max_results_seen: int | None = None
+        self.answer_calls = 0
 
     async def retrieve(self, plan: QueryPlan, max_results: int = 8) -> list[SearchResult]:
         """Record the max retrieval results requested by the runner."""
@@ -83,6 +84,7 @@ class RecordingExecutor(Executor):
     async def answer(self, plan: QueryPlan, retrieved: list[SearchResult]) -> AgentAnswer:
         """Return a deterministic answer for runner integration tests."""
         del plan, retrieved
+        self.answer_calls += 1
         return AgentAnswer(answer="No documents retrieved.", citations=[], claims=[])
 
 
@@ -115,6 +117,8 @@ async def test_agent_runner_persists_decision_log_and_transition_sequence(
         "decision_log",
         "state_transition",
         "state_transition",
+        "evidence_snapshot",
+        "generation_record",
         "state_transition",
         "state_transition",
     ]
@@ -172,3 +176,4 @@ async def test_agent_runner_uses_configured_source_document_limit(tmp_path: Path
 
     assert result.state == AgentState.DONE
     assert executor.max_results_seen == 20
+    assert executor.answer_calls == 1

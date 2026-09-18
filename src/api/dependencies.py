@@ -20,6 +20,7 @@ from retrieval.rerank import AdaptiveReranker
 from retrieval.sparse import BM25Retriever
 from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
+from storage.evidence_export import EvidenceExporter
 from storage.graph_store import SQLiteGraphStore
 
 
@@ -30,6 +31,7 @@ class AppContainer:
         """Create local-first runtime dependencies."""
         database_path = Path(settings.database_path)
         self.event_log = SQLiteEventLog(database_path)
+        self.evidence_exporter = EvidenceExporter(self.event_log)
         self.document_store = SQLiteDocumentStore(database_path)
         self.graph_store = SQLiteGraphStore(database_path)
         self.llm = RoutingLLMAdapter(build_model_router(settings))

@@ -10,6 +10,7 @@ htmlcov/
 *.sqlite
 *.sqlite3
 *.db
+evidence-demo/
 .env
 .DS_Store
 dist/

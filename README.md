@@ -9,6 +9,10 @@ Scholar RAG Agent is a production-grade, local-first Agentic RAG system for scie
 
 Scholar RAG Agent supports reproducible scientific knowledge synthesis, helping researchers accelerate literature review, hypothesis validation, and grounded comparison across large corpora while preserving source provenance.
 
+Completed queries can be saved as [portable evidence bundles](docs/guides/EVIDENCE_EXPORT_GUIDE.md):
+versioned JSON and readable Markdown with the exact generation-time source context,
+claim/citation associations, and durable trace. The guide includes a runnable offline demo and GIF.
+
 ## Why Researchers Need This
 
 Most literature workflows break down when the corpus grows beyond a few papers:
