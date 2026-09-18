@@ -1,7 +1,15 @@
 """Tests for LLM routing and fake generation."""
 
+import pytest
+
 from llm.fake import FakeLLMAdapter
-from llm.providers import AnthropicAdapter, GeminiAdapter, KimiAdapter, OpenAIAdapter
+from llm.providers import (
+    AnthropicAdapter,
+    GeminiAdapter,
+    HTTPProviderAdapter,
+    KimiAdapter,
+    OpenAIAdapter,
+)
 from llm.router import ModelRouter
 from llm.schemas import LLMRequest, TaskType
 
@@ -25,8 +33,20 @@ def test_router_defaults_to_fake_without_provider_keys() -> None:
     assert adapter.provider_name == "fake"
 
 
-def test_live_provider_defaults_use_current_model_stack() -> None:
-    """Live provider defaults should stay aligned with the current agentic AI stack."""
+@pytest.mark.parametrize(
+    ("adapter", "model"),
+    [
+        (OpenAIAdapter(api_key="test-key"), "gpt-6-astra"),
+        (AnthropicAdapter(api_key="test-key"), "claude-sonnet-5"),
+        (GeminiAdapter(api_key="test-key"), "gemini-3.8-flash"),
+        (KimiAdapter(api_key="test-key"), "kimi-k3"),
+    ],
+    ids=["openai", "anthropic", "gemini", "kimi"],
+)
+def test_live_provider_defaults_use_current_model_stack(
+    adapter: HTTPProviderAdapter, model: str
+) -> None:
+    """Default model IDs match the provider catalogs checked on 2026-09-17."""
     request = LLMRequest(
         task_type=TaskType.REASONING,
         prompt="What is GraphRAG?",
@@ -34,10 +54,10 @@ def test_live_provider_defaults_use_current_model_stack() -> None:
         citation_chunk_ids=["c1"],
     )
 
-    assert OpenAIAdapter(api_key="test-key").payload(request)["model"] == "gpt-5.5"
-    assert AnthropicAdapter(api_key="test-key").payload(request)["model"] == "claude-sonnet-4-6"
-    assert "gemini-3.1-pro-preview" in GeminiAdapter(api_key="test-key").endpoint
-    assert KimiAdapter(api_key="test-key").payload(request)["model"] == "kimi-k2"
+    if isinstance(adapter, GeminiAdapter):
+        assert f"/models/{model}:generateContent?" in adapter.endpoint
+    else:
+        assert adapter.payload(request)["model"] == model
 
 
 def test_gemini_parse_response_concatenates_all_text_parts() -> None:
@@ -60,6 +80,7 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
             {
                 "content": {
                     "parts": [
+                        {"thought": True, "text": "Internal reasoning is not an answer."},
                         {"text": "The study "},
                         {"functionCall": {"name": "noop"}},
                         {"text": "supports the hypothesis [c1]."},
@@ -98,7 +119,14 @@ def test_gemini_parse_response_tolerates_non_dict_candidate() -> None:
     assert response.citation_chunk_ids == ["c1"]
 
 
-def test_openai_parse_response_joins_structured_content_parts() -> None:
+@pytest.mark.parametrize(
+    "adapter",
+    [OpenAIAdapter(api_key="test-key"), KimiAdapter(api_key="test-key")],
+    ids=["openai", "kimi"],
+)
+def test_openai_parse_response_joins_structured_content_parts(
+    adapter: HTTPProviderAdapter,
+) -> None:
     """OpenAI parsing must join a structured content-part list into plain text.
 
     The base Chat Completions contract returns ``message.content`` as a string,
@@ -108,7 +136,6 @@ def test_openai_parse_response_joins_structured_content_parts() -> None:
     answer instead of the text. Each part's ``text`` must be extracted and
     joined. The KimiAdapter subclass shares this parser and behavior.
     """
-    adapter = OpenAIAdapter(api_key="test-key")
     request = LLMRequest(
         task_type=TaskType.REASONING,
         prompt="Summarize the findings.",
@@ -119,10 +146,12 @@ def test_openai_parse_response_joins_structured_content_parts() -> None:
         "choices": [
             {
                 "message": {
+                    "reasoning_content": "Internal reasoning is not an answer.",
                     "content": [
+                        {"type": "reasoning", "text": "Non-answer content."},
                         {"type": "text", "text": "The study "},
                         {"type": "text", "text": "supports the hypothesis [c1]."},
-                    ]
+                    ],
                 }
             }
         ]
@@ -168,7 +197,9 @@ def test_anthropic_parse_response_joins_all_text_blocks() -> None:
     data = {
         "content": [
             {"type": "thinking", "thinking": "internal reasoning"},
+            {"type": "thinking", "text": "Non-answer text must also be ignored."},
             {"type": "text", "text": "The study "},
+            {"type": "tool_use", "text": "Not an answer."},
             {"type": "text", "text": "supports the hypothesis [c1]."},
         ]
     }
