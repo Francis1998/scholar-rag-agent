@@ -1,3 +1,5 @@
+- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
+
 # Scholar RAG Agent
 
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
