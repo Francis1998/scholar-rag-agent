@@ -2,6 +2,7 @@
 
 from retrieval.embeddings import HashEmbeddingModel, cosine_similarity
 from retrieval.models import Chunk, SearchResult
+from retrieval.scope import DocumentIdsInput, normalize_document_ids
 
 
 class DenseRetriever:
@@ -19,8 +20,12 @@ class DenseRetriever:
             self._chunks.append(chunk)
             self._vectors[chunk.chunk_id] = self._embedder.embed(chunk.text)
 
-    async def retrieve(self, query: str, limit: int = 10) -> list[SearchResult]:
+    async def retrieve(
+        self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
+    ) -> list[SearchResult]:
         """Retrieve the most similar chunks for a query."""
+        scope = normalize_document_ids(document_ids)
+        allowed = None if scope is None else frozenset(scope)
         query_vector = self._embedder.embed(query)
         results = [
             SearchResult(
@@ -29,5 +34,6 @@ class DenseRetriever:
                 retriever="dense",
             )
             for chunk in self._chunks
+            if allowed is None or chunk.document_id in allowed
         ]
         return sorted(results, key=lambda result: result.score, reverse=True)[:limit]

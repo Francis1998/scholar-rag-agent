@@ -73,6 +73,12 @@ return `"ERROR"` inside a successful HTTP response. Read `answer.claims`,
 `answer.citations`, `answer.ungrounded`, and `answer.warnings`; a grounding flag is
 only a lexical check, not proof of support.
 
+To search only selected papers, pass their returned IDs in `document_ids` on
+`/query`. Omit the field for the whole corpus; an empty list or explicit `null`
+is rejected rather than widened. The [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md)
+has complete offline API/Python examples, validation rules, and a reproducible
+selected-versus-unscoped demonstration.
+
 ## Next steps
 
 Follow the [research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) for a clean

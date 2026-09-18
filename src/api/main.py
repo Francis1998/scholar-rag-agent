@@ -13,6 +13,7 @@ from api.schemas import (
 )
 from ingestion.chunking import stable_id
 from retrieval.models import Document
+from retrieval.scope import scope_arguments
 
 app = FastAPI(title="Scholar RAG Agent", version="0.1.0")
 app.state.container = create_container()
@@ -46,7 +47,7 @@ async def ingest_text(request: Request, payload: IngestTextRequest) -> IngestRes
 async def query(request: Request, payload: QueryRequest) -> QueryResponse:
     """Execute an Observe-Decide-Act RAG query."""
     container: AppContainer = request.app.state.container
-    result = await container.runner.run(payload.query)
+    result = await container.runner.run(payload.query, **scope_arguments(payload.document_ids))
     return QueryResponse(result=result)
 
 

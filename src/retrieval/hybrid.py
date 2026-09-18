@@ -5,6 +5,12 @@ from retrieval.hyde import HyDEExpander
 from retrieval.mmr import MMRDiversifier
 from retrieval.models import Chunk, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
+from retrieval.scope import (
+    DocumentIdsInput,
+    ensure_document_scope,
+    normalize_document_ids,
+    scope_arguments,
+)
 from retrieval.sparse import BM25Retriever
 
 
@@ -38,11 +44,22 @@ class HybridRetriever:
         self._dense_retriever.add_chunks(chunks)
         self._sparse_retriever.add_chunks(chunks)
 
-    async def retrieve(self, query: str, limit: int = 10) -> list[SearchResult]:
+    async def retrieve(
+        self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
+    ) -> list[SearchResult]:
         """Retrieve fused dense and sparse results for a query."""
+        scope = normalize_document_ids(document_ids)
+        scope_kwargs = scope_arguments(scope)
         expanded_query = await self._hyde_expander.expand(query)
-        dense_results = await self._dense_retriever.retrieve(expanded_query, limit=limit)
-        sparse_results = await self._sparse_retriever.retrieve(expanded_query, limit=limit)
+        dense_results = await self._dense_retriever.retrieve(
+            expanded_query, limit=limit, **scope_kwargs
+        )
+        sparse_results = await self._sparse_retriever.retrieve(
+            expanded_query, limit=limit, **scope_kwargs
+        )
+        ensure_document_scope(
+            scope, (result.chunk.document_id for result in [*dense_results, *sparse_results])
+        )
         fused_results = reciprocal_rank_fusion([dense_results, sparse_results], limit=limit)
         if self._diversifier is not None:
             return self._diversifier.diversify(fused_results, top_k=limit)

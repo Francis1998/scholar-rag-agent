@@ -7,11 +7,30 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
+def _draw_text(
+    draw: ImageDraw.ImageDraw,
+    position: tuple[int, int],
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    color: str,
+) -> None:
+    if draw.textbbox(position, text, font=font)[2] > 1068:
+        raise ValueError("Transcript text exceeds the illustration width; shorten or resize it.")
+    draw.text(position, text, font=font, fill=color)
+
+
 def create_gif(transcript_path: Path, output_path: Path) -> None:
     """Render this demo only, without regenerating unrelated repository assets."""
     panels = transcript_path.read_text(encoding="utf-8").strip().split("\n\n")
     if len(panels) != 4:
         raise ValueError("Expected the four panels produced by demo_evidence_export.")
+    render_panels(panels, output_path, banner="SCHOLAR RAG / PORTABLE EVIDENCE")
+
+
+def render_panels(panels: list[str], output_path: Path, *, banner: str) -> None:
+    """Render four measured transcript panels with explicit illustration provenance."""
+    if len(panels) != 4:
+        raise ValueError("Expected four transcript panels.")
     title_font = ImageFont.load_default(size=28)
     body_font = ImageFont.load_default(size=21)
     small_font = ImageFont.load_default(size=16)
@@ -21,23 +40,24 @@ def create_gif(transcript_path: Path, output_path: Path) -> None:
         frame = Image.new("RGB", (1120, 540), "#0f172a")
         draw = ImageDraw.Draw(frame)
         draw.rounded_rectangle((24, 24, 1096, 516), radius=18, fill="#1e293b")
-        draw.text((50, 44), "SCHOLAR RAG / PORTABLE EVIDENCE", font=small_font, fill="#38bdf8")
-        draw.text((50, 90), title, font=title_font, fill="#e2e8f0")
+        _draw_text(draw, (50, 44), banner, small_font, "#38bdf8")
+        _draw_text(draw, (50, 90), title, title_font, "#e2e8f0")
         y = 154
         for line in lines:
             for wrapped in textwrap.wrap(line, width=90, break_long_words=True):
-                draw.text((50, y), wrapped, font=body_font, fill="#cbd5e1")
+                _draw_text(draw, (50, y), wrapped, body_font, "#cbd5e1")
                 y += 31
         if y > 451:
             raise ValueError("Transcript does not fit the illustration; shorten or resize it.")
         draw.line((50, 456, 1068, 456), fill="#475569", width=1)
-        draw.text(
+        _draw_text(
+            draw,
             (50, 476),
             "Generated illustration from real synthetic-demo output; not a screen recording.",
-            font=small_font,
-            fill="#94a3b8",
+            small_font,
+            "#94a3b8",
         )
-        draw.text((1020, 476), f"{index}/4", font=small_font, fill="#34d399")
+        _draw_text(draw, (1020, 476), f"{index}/4", small_font, "#34d399")
         frames.append(frame)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(

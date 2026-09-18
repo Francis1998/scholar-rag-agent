@@ -5,6 +5,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from retrieval.scope import DocumentIds
+
 
 class AgentState(StrEnum):
     """Explicit persisted states for an agent run."""
@@ -44,6 +46,7 @@ class QueryObservation(BaseModel):
     intent: QueryIntent
     entities: list[str] = Field(default_factory=list)
     constraints: dict[str, Any] = Field(default_factory=dict)
+    document_ids: DocumentIds | None = Field(default=None, frozen=True)
 
 
 class QueryPlan(BaseModel):

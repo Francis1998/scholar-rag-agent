@@ -14,6 +14,7 @@ from agent.evidence import (
     RunConfiguration,
 )
 from agent.models import AgentAnswer, AgentState, QueryPlan
+from retrieval.scope import DocumentIds, documents_within_scope
 from storage.event_log import SQLiteEventLog
 
 EXPECTED_EVENTS = [
@@ -60,6 +61,7 @@ class _Transition(BaseModel):
 class _Started(BaseModel):
     query: str
     configuration: RunConfiguration
+    document_ids: DocumentIds | None = None
 
 
 class _Retrieved(BaseModel):
@@ -138,11 +140,20 @@ class EvidenceExporter:
         if (
             plan != retrieval_plan
             or plan.run_id != run_id
+            or started.document_ids != plan.observation.document_ids
             or started.query.strip() != plan.observation.original_query
             or snapshot.request.prompt != plan.observation.original_query
             or generation.task_type != snapshot.request.task_type
             or len(generation.claim_chunk_ids) != len(answer.claims)
             or completed.ungrounded != answer.ungrounded
+        ):
+            raise _invalid_record()
+        if not documents_within_scope(
+            started.document_ids,
+            [
+                *(source.chunk.document_id for source in snapshot.sources),
+                *(citation.document_id for citation in answer.citations),
+            ],
         ):
             raise _invalid_record()
 

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageFont
 from scripts.create_evidence_gif import create_gif
 from scripts.demo_evidence_export import DEMO_TEXT, run_demo
 
@@ -61,5 +61,22 @@ def test_gif_rejects_unrelated_transcripts(tmp_path: Path) -> None:
     transcript = tmp_path / "unrelated.txt"
     transcript.write_text("Not the evidence demo.", encoding="utf-8")
     with pytest.raises(ValueError, match="four panels"):
+        create_gif(transcript, tmp_path / "not-created.gif")
+    assert not (tmp_path / "not-created.gif").exists()
+
+
+@pytest.mark.parametrize("overflow", ["body", "title"])
+def test_shared_gif_renderer_rejects_pixel_width_overflow(tmp_path: Path, overflow: str) -> None:
+    """Character-count wrapping must not clip wide glyphs or long panel titles."""
+    wide = "W" * 90
+    font = ImageFont.load_default(size=21 if overflow == "body" else 28)
+    assert font.getbbox(wide)[2] > 1018
+    first = f"1. Measured offline output\n{wide}" if overflow == "body" else f"{wide}\nMeasured."
+    transcript = tmp_path / "wide.txt"
+    transcript.write_text(
+        "\n\n".join([first, "2. Measured\nTwo", "3. Measured\nThree", "4. Measured\nFour"]),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="width"):
         create_gif(transcript, tmp_path / "not-created.gif")
     assert not (tmp_path / "not-created.gif").exists()

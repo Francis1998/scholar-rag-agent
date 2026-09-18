@@ -24,7 +24,8 @@ DEMO_TEXT = (
 DEMO_QUERY = "How does GraphRAG connect synthetic research evidence?"
 
 
-def _settings(database_path: Path) -> Settings:
+def offline_settings(database_path: Path) -> Settings:
+    """Disable all live model credentials, including environment and dotenv values."""
     return Settings(
         _env_file=None,
         database_path=database_path,
@@ -48,7 +49,7 @@ def run_demo(output_dir: Path) -> str:
     database_path = output_dir / "demo.sqlite3"
     application = FastAPI()
     application.include_router(app.router)
-    container = AppContainer(_settings(database_path))
+    container = AppContainer(offline_settings(database_path))
     application.state.container = container
     with TestClient(application) as client:
         ingested = client.post(
@@ -85,7 +86,7 @@ def run_demo(output_dir: Path) -> str:
             connection.execute("DELETE FROM graph_chunks")
             connection.execute("DELETE FROM chunks")
             connection.execute("DELETE FROM documents")
-        restarted = AppContainer(_settings(database_path))
+        restarted = AppContainer(offline_settings(database_path))
         application.state.container = restarted
         for fmt, before in (("json", json_response), ("markdown", markdown_response)):
             after = client.get(export_path, params={"format": fmt})

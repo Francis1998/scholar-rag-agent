@@ -11,6 +11,12 @@ from agent.observer import QueryAnalyzer
 from agent.planner import Planner
 from agent.safety import CancellationToken, SafetyLimits, with_timeout
 from agent.state_machine import AgentStateMachine
+from retrieval.scope import (
+    DocumentIdsInput,
+    ensure_document_scope,
+    normalize_document_ids,
+    scope_arguments,
+)
 from storage.event_log import SQLiteEventLog
 
 
@@ -35,8 +41,15 @@ class AgentRunner:
         self._safety_limits = safety_limits
         self._state_machine = AgentStateMachine()
 
-    async def run(self, query: str, token: CancellationToken | None = None) -> AgentRunResult:
+    async def run(
+        self,
+        query: str,
+        token: CancellationToken | None = None,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+    ) -> AgentRunResult:
         """Execute an Observe-Decide-Act query and return the final result."""
+        scope = normalize_document_ids(document_ids)
         run_id = str(uuid4())
         cancellation_token = token or CancellationToken()
         state = AgentState.IDLE
@@ -72,11 +85,19 @@ class AgentRunner:
                 run_id,
                 state,
                 AgentState.PLANNING,
-                {"query": query, "configuration": configuration.model_dump(mode="json")},
+                {
+                    "query": query,
+                    "configuration": configuration.model_dump(mode="json"),
+                    "document_ids": scope,
+                },
             )
-            observation = self._analyzer.analyze(query)
+            observation = self._analyzer.analyze(query).model_copy(
+                deep=True, update={"document_ids": scope}
+            )
             plan = self._planner.plan(run_id, observation)
             plan = self._clamp_plan(plan, limits)
+            if plan.observation.document_ids != scope:
+                raise ValueError("Planned document_ids do not match the requested scope.")
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
@@ -92,10 +113,12 @@ class AgentRunner:
                 self._executor.retrieve(
                     plan,
                     configuration.max_source_docs,
+                    **scope_arguments(scope),
                 ),
                 configuration.retrieval_timeout_seconds,
                 "retrieval",
             )
+            ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
 
             cancellation_token.raise_if_cancelled()
             state = self._transition(
@@ -127,6 +150,7 @@ class AgentRunner:
                 configuration.reasoning_timeout_seconds,
                 "reasoning",
             )
+            ensure_document_scope(scope, (citation.document_id for citation in answer.citations))
 
             cancellation_token.raise_if_cancelled()
             state = self._transition(
