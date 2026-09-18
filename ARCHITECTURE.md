@@ -6,6 +6,12 @@ Observe -> Decide -> Act orchestration is a hand-written state machine, not a
 LangGraph integration. The default wiring lives in
 [`AppContainer`](src/api/dependencies.py).
 
+[`api.application.create_app(settings)`](src/api/application.py) constructs an
+isolated app on demand; importing the factory or routers does not initialize a
+database. `api.main:app` remains the environment-configured deployment entrypoint.
+Offline demos use explicit validated defaults and ignore ambient environment,
+dotenv, and secret-file settings rather than initializing that deployment app.
+
 ## Agent State Machine
 
 ```mermaid

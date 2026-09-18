@@ -4,14 +4,13 @@ import argparse
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from agent.evidence import EvidenceBundle
 from agent.models import AgentRunResult, AgentState, StateTransition
+from api.application import create_app
 from api.dependencies import AppContainer
-from api.main import app
-from scripts.demo_evidence_export import DEMO_QUERY, DEMO_TEXT, _settings
+from scripts.demo_evidence_export import DEMO_QUERY, DEMO_TEXT, offline_settings
 from storage.run_history import RunHistoryPage
 
 
@@ -34,10 +33,8 @@ def run_demo(output_dir: Path) -> str:
             )
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "history.sqlite3"
-    application = FastAPI()
-    application.include_router(app.router)
-    container = AppContainer(_settings(path))
-    application.state.container = container
+    application = create_app(offline_settings(path))
+    container: AppContainer = application.state.container
     with TestClient(application) as client:
         ingested = client.post(
             "/ingest/text",
@@ -87,7 +84,7 @@ def run_demo(output_dir: Path) -> str:
                 )
             )
 
-        application.state.container = AppContainer(_settings(path))
+        application.state.container = AppContainer(offline_settings(path))
         first_response = client.get("/runs", params={"limit": 2})
         first_response.raise_for_status()
         first = RunHistoryPage.model_validate_json(first_response.content)

@@ -39,6 +39,11 @@ including credentials configured in your environment or `.env`. It does not
 start a server. Choose a **fresh output directory**: it refuses to overwrite
 existing demo files.
 
+The public `offline_settings(path)` helper uses validated defaults without
+ambient environment/dotenv/secret-file sources. Both offline evidence/history
+demos construct `api.application.create_app(settings)` explicitly, never import
+the initialized deployment app, and do not open the ambient database.
+
 The output directory contains:
 
 | File | Inspectable result |

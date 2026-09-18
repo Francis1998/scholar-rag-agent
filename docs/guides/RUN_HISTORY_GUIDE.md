@@ -35,7 +35,12 @@ uv run python -m json.tool "$DEMO_DIR/bundle.json"
 
 The script drives the real FastAPI routes with `TestClient`, without a server or
 external calls. It explicitly clears model credentials, including inherited
-environment and `.env` values, and uses the fake adapter. It ingests a synthetic
+environment and `.env` values, and uses the fake adapter. Its shared
+`scripts.demo_evidence_export.offline_settings(path)` helper uses validated
+defaults without environment/dotenv/secret-file sources, including ambient
+runtime and model-ID overrides. `api.application.create_app(settings)` initializes
+only the requested demo database; importing the demo never constructs the
+ambient deployment app or opens its database. It ingests a synthetic
 note, completes a query, injects a synthetic generation failure into another
 real query, and appends a clearly labeled partial-trace fixture.
 
@@ -68,8 +73,9 @@ uv run python -m scripts.create_run_history_gif \
   --output "$DEMO_DIR/run-history.gif"
 ```
 
-The renderer checks the four expected panels and rejects text that would be
-clipped. It does not regenerate other project animations. With the same
+The renderer checks the four expected panels and rejects vertical overflow or
+body text wider than the available pixels, rather than relying on character
+counts to prevent clipping. It does not regenerate other project animations. With the same
 transcript and locked Pillow version, repeated renders are byte-identical.
 Actual run IDs and timestamps in the saved JSON vary between demo executions.
 

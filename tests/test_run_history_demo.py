@@ -2,6 +2,11 @@
 
 import importlib
 import json
+import os
+import sqlite3
+import subprocess
+import sys
+from contextlib import closing
 from pathlib import Path
 
 import httpx
@@ -108,3 +113,90 @@ def test_gif_rejects_overflow_instead_of_clipping_actual_output(tmp_path: Path) 
     with pytest.raises(ValueError, match="fit"):
         renderer.create_gif(source, gif)
     assert not gif.exists()
+
+
+@pytest.mark.parametrize("module", ["scripts.demo_run_history", "scripts.demo_evidence_export"])
+@pytest.mark.parametrize("ambient", ["valid", "invalid-environment", "invalid-dotenv"])
+def test_offline_cli_never_initializes_or_uses_ambient_settings(
+    tmp_path: Path, module: str, ambient: str
+) -> None:
+    sentinel = tmp_path / "unrelated.sqlite3"
+    with closing(sqlite3.connect(sentinel)) as connection:
+        connection.execute("CREATE TABLE unrelated_marker (value TEXT NOT NULL)")
+        connection.execute("INSERT INTO unrelated_marker VALUES ('synthetic sentinel')")
+        connection.commit()
+    before = sentinel.read_bytes()
+    env = {
+        **os.environ,
+        "SCHOLAR_RAG_DATABASE_PATH": str(sentinel),
+        "SCHOLAR_RAG_AGENT_ID": "ambient-agent-must-not-be-used",
+        "SCHOLAR_RAG_DEFAULT_MODEL": "anthropic",
+        "OPENAI_API_KEY": "synthetic-unused-credential",
+        "ANTHROPIC_API_KEY": "synthetic-unused-credential",
+        "GEMINI_API_KEY": "synthetic-unused-credential",
+        "MOONSHOT_API_KEY": "synthetic-unused-credential",
+    }
+    invalid = {
+        "SCHOLAR_RAG_OPENAI_MODEL": "",
+        "SCHOLAR_RAG_ANTHROPIC_MODEL": "",
+        "SCHOLAR_RAG_GEMINI_MODEL": "",
+        "SCHOLAR_RAG_KIMI_MODEL": "",
+        "SCHOLAR_RAG_MAX_SOURCE_DOCS": "0",
+        "SCHOLAR_RAG_MAX_HOPS": "99",
+        "SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS": "invalid",
+        "SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS": "invalid",
+    }
+    if ambient == "invalid-environment":
+        env.update(invalid)
+    elif ambient == "invalid-dotenv":
+        for key in invalid:
+            env.pop(key, None)
+        (tmp_path / ".env").write_text(
+            "\n".join(f"{key}={value}" for key, value in invalid.items()), encoding="utf-8"
+        )
+    output = tmp_path / "offline-output"
+    command = """
+import runpy
+import sys
+import httpx
+
+def no_network(*args, **kwargs):
+    raise AssertionError("Offline demo attempted an external request")
+
+httpx.HTTPTransport.handle_request = no_network
+httpx.AsyncHTTPTransport.handle_async_request = no_network
+module, destination = sys.argv[1:]
+sys.argv = [module, "--output-dir", destination]
+runpy.run_module(module, run_name="__main__")
+"""
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", command, module, str(output)],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert sentinel.read_bytes() == before, "Demo changed an unrelated ambient database"
+    assert not (tmp_path / ".scholar-rag-agent.sqlite3").exists()
+    bundle = json.loads((output / "bundle.json").read_text(encoding="utf-8"))
+    assert bundle["agent_id"] == "local-agent"
+    assert bundle["generation"]["provider"] == "fake"
+    assert bundle["configuration"]["max_source_docs"] == 50
+    assert bundle["configuration"]["max_hops"] == 5
+    assert "synthetic-unused" not in json.dumps(bundle)
+
+
+def test_gif_rejects_horizontal_pixel_overflow(tmp_path: Path) -> None:
+    renderer = importlib.import_module("scripts.create_run_history_gif")
+    source = tmp_path / "wide-glyphs.txt"
+    source.write_text(
+        "\n\n".join(f"{title}\n{'W' * 90}" for title in renderer._TITLES),
+        encoding="utf-8",
+    )
+    output = tmp_path / "not-created.gif"
+    with pytest.raises(ValueError, match="fit"):
+        renderer.create_gif(source, output)
+    assert not output.exists()

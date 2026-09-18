@@ -39,6 +39,8 @@ def create_gif(transcript_path: Path, output_path: Path) -> None:
         y = 154
         for line in lines:
             for wrapped in textwrap.wrap(line, width=90, break_long_words=True):
+                if draw.textlength(wrapped, font=body_font) > 1018:
+                    raise ValueError("Transcript does not fit horizontally; shorten or rewrap it.")
                 draw.text((50, y), wrapped, font=body_font, fill="#cbd5e1")
                 y += 31
         if y > 500:
