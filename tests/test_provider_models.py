@@ -87,9 +87,9 @@ def test_settings_expose_current_model_defaults(provider_case: ProviderCase) -> 
     assert settings.default_model == "openai"
 
 
-@pytest.mark.parametrize("value", ["", " \t\n", None, 123])
+@pytest.mark.parametrize("value", ["", " \t\n", None, 123, b"byte-model"])
 def test_model_settings_reject_invalid_identifiers(
-    provider_case: ProviderCase, value: str | int | None
+    provider_case: ProviderCase, value: str | bytes | int | None
 ) -> None:
     """An explicit blank, null, or non-string ID must not silently use a default."""
     field = f"{provider_case.name}_model"

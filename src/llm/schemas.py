@@ -30,3 +30,7 @@ class LLMResponse(BaseModel):
     citation_chunk_ids: list[str] = Field(default_factory=list)
     parsed_claims: list[str] = Field(default_factory=list)
     raw_provider: str = "unknown"
+    model_name: str | None = Field(
+        default=None,
+        description="Configured/requested provider model ID, not a resolved model snapshot.",
+    )
