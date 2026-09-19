@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AbsoluteRiskReductionHintExtractor` (`arr_hint`): Extract offline ARR / absolute risk reduction / risk difference numeric hints from title/abstract/results; fills an Elicit/Consensus/SciSpace/PaperQA ARR gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `NumberNeededToTreatHintExtractor`, `EffectSizeHintExtractor`, and `PValueHintExtractor`; not a DOI connector). See `docs/guides/ARR_HINT_EXTRACTOR_GUIDE.md`.
 - `PublicationBiasCueExtractor` (`publication_bias_cues`): Extract offline funnel-plot / Egger / small-study / trim-and-fill publication-bias cues from title/abstract/results; fills an Elicit/Consensus/SciSpace/PaperQA publication-bias gap for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (distinct from `HeterogeneityI2HintExtractor`, `RiskOfBiasCueExtractor`, and `EffectSizeHintExtractor`; not a DOI connector). See `docs/guides/PUBLICATION_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `RiskOfBiasCueExtractor` (`src/retrieval/risk_of_bias_cues.py`): offline Cochrane-style RoB cues. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `NumberNeededToTreatHintExtractor` (`src/retrieval/nnt_hint.py`): offline NNT/NNH/ARR cues (Elicit/Consensus gap). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`.
