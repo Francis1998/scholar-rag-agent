@@ -58,6 +58,25 @@ script overwrites an existing named artifact. The
 [run-history guide](guides/RUN_HISTORY_GUIDE.md) explains the API/Python contracts
 and why a recorded state is not a claim of active or resumable work.
 
+## Document discovery after restart
+
+![Measured synthetic document discovery](assets/document-catalog.gif)
+
+This generated illustration uses actual offline responses: ingest three notes,
+page through saved IDs without generation, restart, filter the corpus, and query
+one selected paper with the fake provider. It is not a UI recording.
+
+```bash
+CATALOG_DIR="$(mktemp -d)/catalog-demo"
+uv run python -m scripts.demo_document_catalog --output-dir "$CATALOG_DIR"
+uv run python -m scripts.create_document_catalog_gif \
+  --transcript "$CATALOG_DIR/transcript.txt" \
+  --output "$CATALOG_DIR/document-catalog.gif"
+```
+
+The [document catalog guide](guides/DOCUMENT_CATALOG_GUIDE.md) describes every
+saved artifact, the executable Python/API workflows, and pagination/privacy limits.
+
 ## Small local smoke demo
 
 ```bash
