@@ -41,6 +41,16 @@ apply; even an empty context may be sent to a configured generation provider.
 See the [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for behavior,
 legacy component handling, and the offline demonstration.
 
+## Corpus Discovery
+
+`GET /documents` exposes selectable IDs, bounded titles/source labels, and stored
+chunk counts, not document bodies or arbitrary metadata. It does not retrieve
+evidence, generate answers, or create run events. Titles and source labels may
+still contain sensitive data: `no-store`/`nosniff` response headers are not access
+control. Keep this read-only endpoint local/trusted like the rest of the API.
+Invalid stored IDs fail explicitly rather than returning a truncated selection.
+See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
+
 ## Cancellation
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked
