@@ -19,14 +19,16 @@ temporary database is removed on exit and is separate from the API's database.
 | --- | --- |
 | `GET /health` | `{"status":"ok"}`; service liveness, not a model-provider check |
 | `POST /ingest/text` | `document_id`, `chunk_ids`; index supplied text |
+| `GET /documents?limit=20` | Bounded titles/sources, stored chunk counts and selectable IDs; optional exact `source`, literal `title` and exclusive ID `cursor` filters |
 | `POST /query` | `{"result": ...}`; plan, answer, citations, warnings, and run status |
 | `GET /runs?limit=20&state=DONE` | Bounded query previews and recorded states, with creation-order cursor pagination; `state` is optional |
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
 
-There are no public PDF-upload, corpus-management, authentication, or multi-turn
-chat endpoints. FastAPI also exposes its schema and interactive docs at `/docs`.
+There are no public PDF-upload, corpus-update/delete, authentication, or multi-turn
+chat endpoints. The read-only [document catalog](guides/DOCUMENT_CATALOG_GUIDE.md)
+helps select existing papers. FastAPI also exposes its schema and interactive docs at `/docs`.
 
 ## Ingest text through the API
 
