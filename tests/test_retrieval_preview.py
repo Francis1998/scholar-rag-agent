@@ -497,3 +497,44 @@ def test_query_legacy_executor_overrides_still_run_once(
         for event in preview_api.container.event_log.list_events()
     )
     assert calls == ["retrieve", "answer"]
+
+
+def test_catalog_selected_ids_feed_preview_without_creating_runs(preview_api: PreviewAPI) -> None:
+    preview_api.add("selected", "GraphRAG selected evidence.")
+    preview_api.add("excluded", "GraphRAG EXCLUDED_MARKER.")
+    catalog = preview_api.client.get("/documents", params={"title": "selected", "limit": 1})
+    assert catalog.status_code == 200
+    document_id = catalog.json()["documents"][0]["document_id"]
+    result = preview_api.preview(document_ids=[document_id])
+    assert {source["chunk"]["document_id"] for source in result["sources"]} == {"selected"}
+    assert "EXCLUDED_MARKER" not in result["context"]
+    assert preview_api.client.get("/runs").json()["runs"] == []
+
+
+@pytest.mark.parametrize("phase", ["retrieval", "context"])
+async def test_cancelled_preview_propagates_without_generation_or_journal(
+    preview_api: PreviewAPI, monkeypatch: pytest.MonkeyPatch, phase: str
+) -> None:
+    started = asyncio.Event()
+
+    async def block(*args: object, **kwargs: object) -> NoReturn:
+        started.set()
+        await asyncio.Event().wait()
+        raise AssertionError("Cancelled preview continued")
+
+    runner = preview_api.container.runner
+    target = runner._executor if phase == "retrieval" else runner._executor._reranker
+    monkeypatch.setattr(target, "retrieve" if phase == "retrieval" else "rerank", block)
+    monkeypatch.setattr(preview_api.container.llm, "generate", denied)
+    monkeypatch.setattr(preview_api.container.event_log, "append_event", denied)
+    monkeypatch.setattr(preview_api.container.event_log, "append_transition", denied)
+    pending = asyncio.create_task(runner.preview("GraphRAG"))
+    try:
+        await asyncio.wait_for(started.wait(), timeout=2)
+        pending.cancel("inspection cancelled")
+        with pytest.raises(asyncio.CancelledError, match="inspection cancelled"):
+            await pending
+    finally:
+        pending.cancel()
+        await asyncio.gather(pending, return_exceptions=True)
+    assert preview_api.container.event_log.list_events() == []

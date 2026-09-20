@@ -91,6 +91,9 @@ Only `query` and optional `document_ids` are accepted; unsupported fields such a
 `top_k`, `page`, or model options are 422 errors rather than ignored controls.
 Query must be a nonblank string; the analyzer trims its outer whitespace.
 Use the existing ingestion IDs, including imported non-ASCII IDs, not titles.
+If you no longer have an ingestion response, discover selectable IDs with
+`GET /documents?limit=20`; the [document catalog guide](DOCUMENT_CATALOG_GUIDE.md)
+describes its filters and pagination. Catalog browsing does not run retrieval.
 Scope accepts 1-100 supplied IDs, each a strict string of 1-128 characters after
 outer trimming. Duplicates retain first-seen order and count toward the supplied
 100-ID bound before deduplication. HTTP null, empty arrays, blank IDs, invalid

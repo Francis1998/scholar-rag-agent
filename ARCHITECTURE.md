@@ -132,6 +132,22 @@ below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
 
+## Persistent Corpus Discovery
+
+`SQLiteDocumentCatalog` projects `GET /documents` directly from existing
+`documents` and `chunks`, opening the database read-only. Source equality and
+literal title-substring filters precede an exclusive ascending document-ID
+cursor and a maximum 100-row page plus one-row lookahead. Bounded byte prefixes
+preserve Unicode and embedded NUL characters without hydrating bodies or metadata.
+IDs are never truncated; malformed/unselectable records fail explicitly.
+
+An index on `chunks(document_id)` supports per-document stored chunk counts.
+Browsing does not rebuild indexes, invoke models, or append agent events, though
+normal application startup still reconstructs its retrieval indexes. Each page
+is consistent within its SELECT; independent pages do not freeze corpus edits.
+Recovered IDs can be passed to document-scoped `/query`. See the
+[document catalog guide](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,
