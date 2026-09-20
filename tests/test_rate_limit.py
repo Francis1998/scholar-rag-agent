@@ -9,7 +9,7 @@ import pytest
 
 from llm.providers import OpenAIAdapter
 from llm.rate_limit import AsyncRateLimiter, with_backoff
-from llm.schemas import LLMRequest, TaskType
+from llm.schemas import LLMRequest, LLMResponse, TaskType
 
 
 class ManualClock:
@@ -135,7 +135,10 @@ async def test_rate_limiter_bounds_concurrent_admissions(
 
 
 @pytest.mark.asyncio
-async def test_rate_limiter_rechecks_after_early_wake(clock: ManualClock) -> None:
+@pytest.mark.parametrize("early_wake", [0.0, 20.0, 59.5])
+async def test_rate_limiter_rechecks_after_early_wake(
+    clock: ManualClock, early_wake: float
+) -> None:
     limiter = AsyncRateLimiter(requests_per_minute=1)
     await limiter.acquire()
     waiting = asyncio.create_task(limiter.acquire())
@@ -143,18 +146,18 @@ async def test_rate_limiter_rechecks_after_early_wake(clock: ManualClock) -> Non
         await checkpoint()
         assert clock.delays == [60.0]
 
-        clock.wake_at(20.0)
+        clock.wake_at(early_wake)
         await checkpoint()
         assert not waiting.done()
         assert limiter._timestamps == [0.0]
-        assert clock.delays == [60.0, 40.0]
+        assert clock.delays == [60.0, 60.0 - early_wake]
 
         clock.wake_at(60.0)
         await checkpoint()
         assert waiting.done()
         await waiting
         assert limiter._timestamps == [60.0]
-        assert clock.delays == [60.0, 40.0]
+        assert clock.delays == [60.0, 60.0 - early_wake]
     finally:
         waiting.cancel()
         await asyncio.gather(waiting, return_exceptions=True)
@@ -170,6 +173,7 @@ async def test_rate_limiter_cancellation_preserves_capacity(
     tasks = [asyncio.create_task(limiter.acquire()) for _ in range(2)]
     try:
         await checkpoint()
+        assert clock.delays == [60.0]
         tasks[cancelled_index].cancel()
         with pytest.raises(asyncio.CancelledError):
             await tasks[cancelled_index]
@@ -291,6 +295,43 @@ async def test_provider_does_not_retry_permanent_http_errors() -> None:
         await adapter.generate(request)
 
     assert mock_client.post.await_count == 1
+    assert len(adapter._limiter._timestamps) == 1
+
+
+@pytest.mark.asyncio
+async def test_provider_io_does_not_hold_admission_or_refund_cancellation(
+    clock: ManualClock,
+) -> None:
+    adapter = OpenAIAdapter(api_key="test-key")
+    request = LLMRequest(task_type=TaskType.DEFAULT, prompt="hi", context="ctx")
+    release = asyncio.Event()
+
+    async def generate_once(request: LLMRequest) -> LLMResponse:
+        await release.wait()
+        return LLMResponse(text="hello", raw_provider="openai")
+
+    with patch.object(adapter, "_generate_once", side_effect=generate_once) as generate_mock:
+        tasks = [asyncio.create_task(adapter.generate(request)) for _ in range(2)]
+        try:
+            await checkpoint()
+            assert generate_mock.await_count == 2
+            assert adapter._limiter._timestamps == [0.0, 0.0]
+            assert not clock.delays
+
+            tasks[0].cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await tasks[0]
+            assert adapter._limiter._timestamps == [0.0, 0.0]
+            assert generate_mock.await_count == 2
+
+            release.set()
+            await checkpoint()
+            assert tasks[1].done()
+            assert (await tasks[1]).text == "hello"
+        finally:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @pytest.mark.asyncio

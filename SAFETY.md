@@ -121,8 +121,25 @@ backoff for transport failures and HTTP `429`, `500`, `502`, `503`, and `504`.
 The default is at most three retries after the initial attempt; permanent client
 errors are surfaced without those retries.
 
-The limiter waits on a sliding one-minute history and prunes expired timestamps
-after waiting. It is per adapter instance, not a distributed quota or strict
-count of HTTP requests: retries occur within the already-admitted generation
-call. Provider failures do not automatically switch to another provider or the
-fake adapter. See the [routing guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
+Each adapter instance admits at most `requests_per_minute` generation calls
+(default 60) in a sliding 60-second window measured by a monotonic clock; the
+capacity must be positive. A timestamp expires at exactly 60 seconds of age.
+Admission is serialized across concurrent callers on the same event loop. Only
+the caller holding the admission lock sleeps; it rechecks the clock and capacity
+after every wake, including early wakes, before recording an admission. Other
+callers wait for that lock. This allows a burst up to the configured capacity,
+not evenly spaced calls or a bound on concurrent in-flight generations.
+
+Task cancellation while queued for the lock or sleeping propagates without
+consuming a slot or blocking later callers. Once admitted, a generation keeps
+its timestamp even if it fails or is cancelled; admission is not refunded.
+The lock is released before provider I/O and retries. Retries occur within that
+already-admitted call, so the limit is **not a strict count of HTTP requests**,
+a token/spend budget, or an account-wide provider quota.
+
+Limiter state is in memory and separate for every adapter instance; it resets
+when the adapter is recreated. Use each instance on a single event loop; it is
+not thread-safe and does not coordinate separate workers or processes. It is
+not a distributed quota. Provider failures do not
+automatically switch to another provider or the fake adapter. See the
+[routing guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
