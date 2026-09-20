@@ -1,5 +1,7 @@
 """Tests for provider rate limiting and backoff helpers."""
 
+import asyncio
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -8,6 +10,51 @@ import pytest
 from llm.providers import OpenAIAdapter
 from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, TaskType
+
+
+class ManualClock:
+    """Wake sleepers explicitly without advancing real time."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.delays: list[float] = []
+        self.sleepers: list[asyncio.Future[None]] = []
+
+    def monotonic(self) -> float:
+        return self.now
+
+    async def sleep(self, delay: float) -> None:
+        assert delay > 0.0, "the limiter must not busy-spin with zero-duration sleeps"
+        self.delays.append(delay)
+        sleeper: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        self.sleepers.append(sleeper)
+        try:
+            await sleeper
+        finally:
+            self.sleepers.remove(sleeper)
+
+    def wake_at(self, now: float) -> None:
+        self.now = now
+        for sleeper in self.sleepers:
+            if not sleeper.done():
+                sleeper.set_result(None)
+
+
+@pytest.fixture
+def clock() -> Iterator[ManualClock]:
+    manual_clock = ManualClock()
+    with (
+        patch("llm.rate_limit.monotonic", manual_clock.monotonic),
+        patch("llm.rate_limit.asyncio.sleep", manual_clock.sleep),
+    ):
+        yield manual_clock
+
+
+async def checkpoint() -> None:
+    """Let already-ready tasks reach their next await, without a timer."""
+    ready: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+    asyncio.get_running_loop().call_soon(ready.set_result, None)
+    await ready
 
 
 @pytest.mark.asyncio
@@ -26,11 +73,141 @@ async def test_rate_limiter_waits_when_window_is_saturated() -> None:
     limiter._timestamps = [0.0]
     sleep_mock = AsyncMock()
     with (
-        patch("llm.rate_limit.monotonic", return_value=0.0),
+        patch("llm.rate_limit.monotonic", side_effect=[0.0, 60.0]),
         patch("llm.rate_limit.asyncio.sleep", sleep_mock),
     ):
         await limiter.acquire()
-    sleep_mock.assert_awaited_once()
+    sleep_mock.assert_awaited_once_with(60.0)
+    assert limiter._timestamps == [60.0]
+
+
+@pytest.mark.parametrize("requests_per_minute", [0, -1])
+def test_rate_limiter_rejects_nonpositive_capacity(requests_per_minute: int) -> None:
+    with pytest.raises(ValueError, match="requests_per_minute must be positive"):
+        AsyncRateLimiter(requests_per_minute=requests_per_minute)
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_expires_exact_window_boundary() -> None:
+    limiter = AsyncRateLimiter(requests_per_minute=2)
+    limiter._timestamps = [0.0, 30.0]
+    sleep_mock = AsyncMock()
+    with (
+        patch("llm.rate_limit.monotonic", return_value=60.0),
+        patch("llm.rate_limit.asyncio.sleep", sleep_mock),
+    ):
+        await limiter.acquire()
+
+    sleep_mock.assert_not_awaited()
+    assert limiter._timestamps == [30.0, 60.0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requests_per_minute", [1, 2, 3])
+async def test_rate_limiter_bounds_concurrent_admissions(
+    clock: ManualClock, requests_per_minute: int
+) -> None:
+    limiter = AsyncRateLimiter(requests_per_minute=requests_per_minute)
+    admissions: list[float] = []
+
+    async def acquire() -> None:
+        await limiter.acquire()
+        admissions.append(clock.now)
+
+    tasks = [asyncio.create_task(acquire()) for _ in range(requests_per_minute * 3)]
+    try:
+        await checkpoint()
+        assert admissions == [0.0] * requests_per_minute
+
+        for batch, now in enumerate((60.0, 120.0), start=1):
+            clock.wake_at(now)
+            await asyncio.gather(
+                *tasks[batch * requests_per_minute : (batch + 1) * requests_per_minute]
+            )
+            assert admissions == [
+                time for time in (0.0, 60.0, 120.0)[: batch + 1] for _ in range(requests_per_minute)
+            ]
+            assert limiter._timestamps == [now] * requests_per_minute
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_rechecks_after_early_wake(clock: ManualClock) -> None:
+    limiter = AsyncRateLimiter(requests_per_minute=1)
+    await limiter.acquire()
+    waiting = asyncio.create_task(limiter.acquire())
+    try:
+        await checkpoint()
+        assert clock.delays == [60.0]
+
+        clock.wake_at(20.0)
+        await checkpoint()
+        assert not waiting.done()
+        assert limiter._timestamps == [0.0]
+        assert clock.delays == [60.0, 40.0]
+
+        clock.wake_at(60.0)
+        await checkpoint()
+        assert waiting.done()
+        await waiting
+        assert limiter._timestamps == [60.0]
+        assert clock.delays == [60.0, 40.0]
+    finally:
+        waiting.cancel()
+        await asyncio.gather(waiting, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("cancelled_index", [0, 1], ids=["sleeping", "queued"])
+async def test_rate_limiter_cancellation_preserves_capacity(
+    clock: ManualClock, cancelled_index: int
+) -> None:
+    limiter = AsyncRateLimiter(requests_per_minute=1)
+    await limiter.acquire()
+    tasks = [asyncio.create_task(limiter.acquire()) for _ in range(2)]
+    try:
+        await checkpoint()
+        tasks[cancelled_index].cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await tasks[cancelled_index]
+        await checkpoint()
+        assert limiter._timestamps == [0.0]
+
+        survivor = tasks[1 - cancelled_index]
+        assert not survivor.done()
+        clock.wake_at(60.0)
+        await checkpoint()
+        assert survivor.done(), "cancellation must not leave admission locked"
+        await survivor
+        assert limiter._timestamps == [60.0]
+        assert not clock.sleepers
+
+        clock.wake_at(120.0)
+        await limiter.acquire()
+        assert limiter._timestamps == [120.0]
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_instances_do_not_share_capacity(clock: ManualClock) -> None:
+    first = AsyncRateLimiter(requests_per_minute=1)
+    second = AsyncRateLimiter(requests_per_minute=1)
+    await first.acquire()
+    waiting = asyncio.create_task(first.acquire())
+    try:
+        await checkpoint()
+        await second.acquire()
+        assert second._timestamps == [0.0]
+        assert not waiting.done()
+    finally:
+        waiting.cancel()
+        await asyncio.gather(waiting, return_exceptions=True)
 
 
 @pytest.mark.asyncio
@@ -140,8 +317,11 @@ async def test_provider_retries_transient_http_errors() -> None:
     with (
         patch("llm.providers.httpx.AsyncClient", return_value=mock_client),
         patch("llm.rate_limit.asyncio.sleep", AsyncMock()),
+        patch.object(adapter, "_limiter") as limiter,
     ):
+        limiter.acquire = AsyncMock()
         result = await adapter.generate(request)
 
     assert result.text == "hello"
     assert mock_client.post.await_count == 2
+    limiter.acquire.assert_awaited_once()
