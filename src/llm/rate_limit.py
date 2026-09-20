@@ -11,27 +11,30 @@ T = TypeVar("T")
 
 @dataclass(slots=True)
 class AsyncRateLimiter:
-    """Simple per-provider async rate limiter."""
+    """Per-instance sliding-window admission for callers on one event loop."""
 
     requests_per_minute: int
     _timestamps: list[float] = field(default_factory=list)
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Reject capacities that can never admit a request."""
+        if self.requests_per_minute <= 0:
+            raise ValueError("requests_per_minute must be positive")
 
     async def acquire(self) -> None:
-        """Wait until a request slot is available."""
-        now = monotonic()
-        self._timestamps = [timestamp for timestamp in self._timestamps if timestamp >= now - 60.0]
-        if len(self._timestamps) >= self.requests_per_minute:
-            sleep_seconds = 60.0 - (now - self._timestamps[0])
-            await asyncio.sleep(max(sleep_seconds, 0.0))
-            # Re-anchor to the post-sleep clock and drop the timestamps that
-            # aged out while waiting. Without this second prune, expired entries
-            # keep counting against the limit and throttle throughput below the
-            # configured requests-per-minute.
-            now = monotonic()
-            self._timestamps = [
-                timestamp for timestamp in self._timestamps if timestamp >= now - 60.0
-            ]
-        self._timestamps.append(now)
+        """Wait for capacity; cancellation before admission consumes no slot."""
+        # One sleeper owns admission; cancellation releases the lock to the next caller.
+        async with self._lock:
+            while True:
+                now = monotonic()
+                self._timestamps = [
+                    timestamp for timestamp in self._timestamps if now - timestamp < 60.0
+                ]
+                if len(self._timestamps) < self.requests_per_minute:
+                    self._timestamps.append(now)
+                    return
+                await asyncio.sleep(60.0 - (now - self._timestamps[0]))
 
 
 async def with_backoff(
