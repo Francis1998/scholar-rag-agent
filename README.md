@@ -1,3 +1,4 @@
+- **BlindingStatusCueExtractor**: offline evidence cue extractor — see `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`
 - **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
 - **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
 
