@@ -39,6 +39,11 @@ class HybridRetriever:
         self._hyde_expander = hyde_expander
         self._diversifier = diversifier
 
+    @property
+    def uses_llm(self) -> bool:
+        """Report generation-backed query expansion without running it."""
+        return self._hyde_expander.uses_llm
+
     def add_chunks(self, chunks: list[Chunk]) -> None:
         """Index chunks into both dense and sparse retrievers."""
         self._dense_retriever.add_chunks(chunks)

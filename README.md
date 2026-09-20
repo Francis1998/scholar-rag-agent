@@ -40,6 +40,7 @@ database and empty provider keys. The interactive API documentation is at
 | --- | --- | --- |
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
+| Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
@@ -47,6 +48,12 @@ database and empty provider keys. The interactive API documentation is at
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
 
 ## Inspect a recorded run
+
+To inspect retrieval **without creating a run**, use `POST /retrieve` or
+`await container.runner.preview(...)`. The [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md)
+includes a reproducible offline GIF, Python/API examples, exact chunk/rank/path
+and context-digest contracts, scope, and errors. This is the shared `/query`
+context preparation, not semantic entailment or a promise about a changed corpus.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
 

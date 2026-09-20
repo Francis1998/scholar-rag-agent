@@ -77,6 +77,30 @@ ones. No shared index stores per-request scope. Unscoped calls preserve old
 signatures; unsupported scoped components fail rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+## Generation-Free Retrieval Preview
+
+`POST /retrieve`, in the separate `api.retrieval` router, calls
+`AgentRunner.preview`. It uses the same analyzer, planner, task clamping,
+bounded executor retrieval, and `Executor.prepare_context` as `/query`.
+The latter method performs reranking, scope enforcement, and detached
+`EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
+only for real queries.
+
+Preview returns an inspection-only plan (without a run ID), full ordered sources,
+scores, ranks, paths, exact context/digest, and copied scope/limits. It does not
+enter the state machine, call any live/fake generator, ground claims, or append
+agent events. Its context-preparation budget uses the existing reasoning timeout
+without running a reasoning model. LLM-backed HyDE is rejected rather than
+silently replaced by a different retrieval algorithm.
+
+Unknown document IDs produce empty evidence, not a widened search. Invalid HTTP
+scope is 422; generative retrieval is 409; operational failures are sanitized
+500 responses and timeouts are 504. No failed stage returns partial success.
+Existing `/query` response/event contracts and legacy executor override binding
+are unchanged. A preview does not freeze concurrent or subsequent corpus changes
+and is not a saved evidence export. See the
+[retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
+
 ## Data Flow
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
@@ -103,7 +127,7 @@ See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract
    must inspect that state and `error`, not just the HTTP status. Read the saved
    event stream or export a completed run to inspect its exact evidence.
 
-The API also exposes `/health`, `/runs`, `/runs/{run_id}/events`, and the export route
+The API also exposes `/retrieve`, `/health`, `/runs`, `/runs/{run_id}/events`, and the export route
 below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
@@ -126,7 +150,8 @@ behavior, and the reproducible synthetic demo.
 
 ## Persistent Evidence Exports
 
-After reranking, `Executor.answer` makes a detached, bounded `EvidenceSnapshot`.
+`Executor.answer` calls the shared `Executor.prepare_context` to rerank and make
+a detached, bounded `EvidenceSnapshot`.
 Its ordered passages construct the exact `LLMRequest.context`; full chunk text,
 source metadata, rank, final score, retrieval path, and UTF-8 digests are retained.
 A run-local callback appends `evidence_snapshot` to the existing `SQLiteEventLog`
