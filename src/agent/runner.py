@@ -10,6 +10,7 @@ from agent.executor import Executor
 from agent.models import AgentRunResult, AgentState, QueryObservation, QueryPlan, StateTransition
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
+from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from agent.safety import CancellationToken, SafetyLimits, with_timeout
 from agent.state_machine import AgentStateMachine
 from retrieval.scope import (
@@ -41,6 +42,65 @@ class AgentRunner:
         self._executor = executor
         self._safety_limits = safety_limits
         self._state_machine = AgentStateMachine()
+
+    async def preview(
+        self, query: str, *, document_ids: DocumentIdsInput | None = None
+    ) -> RetrievalPreview:
+        """Inspect the query's prepared context without generation, grounding, or event writes.
+
+        Invalid input raises ValueError. Operational failures raise RetrievalPreviewError
+        with a diagnostic cause; external task cancellation propagates without journaling.
+        """
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must be a nonempty string.")
+        scope = normalize_document_ids(document_ids)
+        limits = replace(self._safety_limits)
+        phase = "planning"
+        try:
+            configuration = self._configuration(limits)
+            if self._executor.retrieval_uses_llm:
+                raise RetrievalPreviewError(
+                    "generative_retrieval",
+                    "Preview requires non-generative retrieval; LLM-backed HyDE is configured.",
+                    409,
+                )
+            observation = self._observe(query, scope)
+            plan = self._planner.plan(str(uuid4()), observation)
+            plan = self._clamp_plan(plan, limits)
+            if plan.observation.document_ids != scope:
+                raise ValueError("Planned document_ids do not match the requested scope.")
+
+            phase = "retrieval"
+            retrieved = await with_timeout(
+                self._executor.retrieve(
+                    plan, configuration.max_source_docs, **scope_arguments(scope)
+                ),
+                configuration.retrieval_timeout_seconds,
+                "retrieval",
+            )
+            ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
+            if len(retrieved) > configuration.max_source_docs:
+                raise ValueError("Retrieved evidence exceeds the effective source limit.")
+
+            phase = "context_preparation"
+            snapshot = await with_timeout(
+                self._executor.prepare_context(plan, retrieved),
+                configuration.reasoning_timeout_seconds,
+                "context preparation",
+            )
+            ensure_document_scope(scope, (source.chunk.document_id for source in snapshot.sources))
+            return RetrievalPreview.from_preparation(plan, configuration, snapshot)
+        except RetrievalPreviewError:
+            raise
+        except TimeoutError as exc:
+            raise RetrievalPreviewError(
+                f"{phase}_timeout", f"Retrieval preview timed out during {phase}.", 504
+            ) from exc
+        except Exception as exc:
+            raise RetrievalPreviewError(
+                f"{phase}_failed",
+                f"Retrieval preview failed during {phase}; no partial evidence was returned.",
+            ) from exc
 
     async def run(
         self,
@@ -76,12 +136,7 @@ class AgentRunner:
 
         try:
             cancellation_token.raise_if_cancelled()
-            configuration = RunConfiguration(
-                max_source_docs=limits.clamp_sources(limits.max_source_docs),
-                max_hops=limits.clamp_hops(limits.max_hops),
-                retrieval_timeout_seconds=limits.retrieval_timeout_seconds,
-                reasoning_timeout_seconds=limits.reasoning_timeout_seconds,
-            )
+            configuration = self._configuration(limits)
             state = self._transition(
                 run_id,
                 state,
@@ -92,9 +147,7 @@ class AgentRunner:
                     "document_ids": scope,
                 },
             )
-            observation = self._analyzer.analyze(query).model_copy(
-                deep=True, update={"document_ids": scope}
-            )
+            observation = self._observe(query, scope)
             plan = self._planner.plan(run_id, observation)
             plan = self._clamp_plan(plan, limits)
             if plan.observation.document_ids != scope:
@@ -184,6 +237,20 @@ class AgentRunner:
                 plan=plan,
                 error=str(exc),
             )
+
+    def _observe(self, query: str, scope: tuple[str, ...] | None) -> QueryObservation:
+        """Detach the analyzed query and the request's immutable document selection."""
+        return self._analyzer.analyze(query).model_copy(deep=True, update={"document_ids": scope})
+
+    @staticmethod
+    def _configuration(limits: SafetyLimits) -> RunConfiguration:
+        """Use the same effective source, hop, and phase limits in both entrypoints."""
+        return RunConfiguration(
+            max_source_docs=limits.clamp_sources(limits.max_source_docs),
+            max_hops=limits.clamp_hops(limits.max_hops),
+            retrieval_timeout_seconds=limits.retrieval_timeout_seconds,
+            reasoning_timeout_seconds=limits.reasoning_timeout_seconds,
+        )
 
     def _transition(
         self,

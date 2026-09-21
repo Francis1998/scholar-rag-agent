@@ -1,5 +1,28 @@
 # Demo
 
+## Generation-free retrieval preview
+
+![Measured synthetic offline retrieval preview](assets/retrieval-preview.gif)
+
+This original illustration is rendered from executed API/Python output, not a
+screen recording or a model's scientific findings. It demonstrates shared context
+preparation, scoped hybrid/graph evidence, unknown versus invalid IDs, zero
+live/fake generation calls and agent events, and unchanged-corpus restart parity.
+
+```bash
+PREVIEW_DIR="$(mktemp -d)/retrieval-preview"
+uv run python -m scripts.demo_retrieval_preview --output-dir "$PREVIEW_DIR"
+uv run python -m scripts.create_retrieval_preview_gif \
+  --transcript "$PREVIEW_DIR/transcript.txt" \
+  --output "$PREVIEW_DIR/retrieval-preview.gif"
+```
+
+The temporary database is removed; the measured JSON previews and transcript
+remain in the chosen directory. Explicit validated settings ignore ambient
+provider keys and `.env`, and tests deny HTTP with all four dummy model keys
+present. See the [complete guide](guides/RETRIEVAL_PREVIEW_GUIDE.md) for API,
+Python, privacy, limits, and portfolio use.
+
 ## Evidence-export walkthrough
 
 ![Synthetic offline evidence-export walkthrough](assets/evidence-export.gif)

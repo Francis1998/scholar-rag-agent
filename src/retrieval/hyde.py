@@ -11,6 +11,11 @@ class HyDEExpander:
         """Create a HyDE expander with an optional LLM adapter."""
         self._llm = llm
 
+    @property
+    def uses_llm(self) -> bool:
+        """Report whether expansion would invoke a live or fake generator."""
+        return self._llm is not None
+
     async def expand(self, query: str) -> str:
         """Return query plus hypothetical scientific answer text."""
         if self._llm is None:

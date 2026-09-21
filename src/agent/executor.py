@@ -36,6 +36,11 @@ class Executor:
         self._llm = llm
         self._grounder = grounder
 
+    @property
+    def retrieval_uses_llm(self) -> bool:
+        """Allow inspection to reject generative retrieval rather than change its algorithm."""
+        return self._retriever.uses_llm
+
     async def retrieve(
         self,
         plan: QueryPlan,
@@ -73,6 +78,16 @@ class Executor:
             :max_results
         ]
 
+    async def prepare_context(
+        self, plan: QueryPlan, retrieved: list[SearchResult]
+    ) -> EvidenceSnapshot:
+        """Rerank and capture exactly the context shared by queries and retrieval previews."""
+        scope = plan.observation.document_ids
+        ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
+        reranked = await self._reranker.rerank(plan.observation.original_query, retrieved)
+        ensure_document_scope(scope, (result.chunk.document_id for result in reranked))
+        return EvidenceSnapshot.capture(plan.observation.original_query, reranked)
+
     async def answer(
         self,
         plan: QueryPlan,
@@ -83,10 +98,7 @@ class Executor:
     ) -> AgentAnswer:
         """Generate and ground an answer using retrieved chunks."""
         scope = plan.observation.document_ids
-        ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
-        reranked = await self._reranker.rerank(plan.observation.original_query, retrieved)
-        ensure_document_scope(scope, (result.chunk.document_id for result in reranked))
-        snapshot = EvidenceSnapshot.capture(plan.observation.original_query, reranked)
+        snapshot = await self.prepare_context(plan, retrieved)
         if on_context is not None:
             on_context(snapshot)
         response = await self._llm.generate(snapshot.request.model_copy(deep=True))
