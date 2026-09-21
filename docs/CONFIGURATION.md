@@ -53,7 +53,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-19 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-09-21 America/Los_Angeles** catalog check and model-specific limitations.
 
 ## Optional Provider Keys
 

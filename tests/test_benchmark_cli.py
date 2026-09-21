@@ -205,9 +205,7 @@ def test_invalid_arguments_fail_instead_of_running_smoke(
         ("unexpected", "not accepted"),
     ],
 )
-def test_invalid_dataset_fields_are_rejected(
-    tmp_path: Path, field: str, value: object
-) -> None:
+def test_invalid_dataset_fields_are_rejected(tmp_path: Path, field: str, value: object) -> None:
     data = _dataset()
     data[field] = value
     dataset = _write_dataset(tmp_path, data)

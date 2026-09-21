@@ -77,6 +77,25 @@ uv run python -m scripts.create_document_catalog_gif \
 The [document catalog guide](guides/DOCUMENT_CATALOG_GUIDE.md) describes every
 saved artifact, the executable Python/API workflows, and pagination/privacy limits.
 
+## Retrieval benchmark quality gates
+
+![Measured synthetic retrieval comparison](assets/retrieval-benchmark.gif)
+
+This generated illustration shows measured BM25/hybrid scores and both a failing
+and passing gate on the same synthetic corpus, not a quality claim or live UI.
+
+```bash
+BENCHMARK_DIR="$(mktemp -d)/retrieval-benchmark"
+uv run python -m scripts.demo_retrieval_benchmark --output-dir "$BENCHMARK_DIR"
+uv run python -m scripts.create_retrieval_benchmark_gif \
+  --transcript "$BENCHMARK_DIR/transcript.txt" \
+  --output "$BENCHMARK_DIR/retrieval-benchmark.gif"
+```
+
+Read the [benchmark guide](guides/RETRIEVAL_BENCHMARK_GUIDE.md) for the dataset
+schema, installed CLI, strict validation, per-case JSON reports, threshold exit
+codes, Python API, and honest portfolio workflow.
+
 ## Small local smoke demo
 
 ```bash

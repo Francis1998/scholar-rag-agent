@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "name": "Synthetic research retrieval tutorial (not a quality benchmark)",
+  "chunks": [
+    {
+      "chunk_id": "hybrid",
+      "document_id": "retrieval-note",
+      "title": "Synthetic hybrid retrieval note",
+      "text": "Hybrid retrieval combines lexical BM25 and vector rankings through reciprocal rank fusion. Retrieved passages are candidates for human evidence review.",
+      "source": "synthetic:retrieval-tutorial"
+    },
+    {
+      "chunk_id": "graph",
+      "document_id": "graph-note",
+      "title": "Synthetic graph retrieval note",
+      "text": "Graph retrieval traverses entity co-mention edges between passages. Entity connections retrieve related context but do not prove that a scientific claim is true.",
+      "source": "synthetic:retrieval-tutorial"
+    },
+    {
+      "chunk_id": "batteries",
+      "document_id": "battery-note",
+      "title": "Synthetic battery terminology note",
+      "text": "Lithium ion batteries use electrochemical cells. This synthetic note supplies battery vocabulary for a retrieval demonstration, not experimental findings.",
+      "source": "synthetic:retrieval-tutorial"
+    },
+    {
+      "chunk_id": "images",
+      "document_id": "image-note",
+      "title": "Synthetic image segmentation note",
+      "text": "Convolution image segmentation labels pixels. This synthetic passage distinguishes image processing vocabulary from lexical retrieval and electrochemistry.",
+      "source": "synthetic:retrieval-tutorial"
+    },
+    {
+      "chunk_id": "sparse",
+      "document_id": "retrieval-note",
+      "title": "Synthetic BM25 note",
+      "text": "BM25 sparse lexical retrieval scores repeated query terms against corpus document frequencies. It does not use learned semantic embeddings.",
+      "source": "synthetic:retrieval-tutorial"
+    },
+    {
+      "chunk_id": "review",
+      "document_id": "review-note",
+      "title": "Synthetic evidence review note",
+      "text": "A human reviewer checks original passages, limitations, and conflicting findings. A citation or lexical overlap score is not proof of factual correctness.",
+      "source": "synthetic:retrieval-tutorial"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "fusion",
+      "query": "hybrid reciprocal rank fusion",
+      "relevant_chunk_ids": ["hybrid", "sparse"]
+    },
+    {
+      "case_id": "graph",
+      "query": "graph entity co-mention edges",
+      "relevant_chunk_ids": ["graph"]
+    },
+    {
+      "case_id": "batteries",
+      "query": "lithium ion batteries",
+      "relevant_chunk_ids": ["batteries"]
+    },
+    {
+      "case_id": "images",
+      "query": "convolution image segmentation",
+      "relevant_chunk_ids": ["images"]
+    }
+  ]
+}
