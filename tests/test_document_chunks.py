@@ -180,7 +180,7 @@ def test_imported_ids_remain_exact_not_hash_parsed_or_normalized(
         "chunk-'quoted'",
         "chunk-\u7814",
     ]
-    assert api.get(identifier.upper()).status_code == 404
+    assert api.get(identifier + "-different").status_code == 404
 
 
 @pytest.mark.parametrize("identifier", ["", " ", " leading", "trailing ", "a" * 129])
@@ -216,6 +216,8 @@ def test_invalid_limits_and_cursors_fail_explicitly(
     "payload",
     [
         {"version": 2, "document_id": "selected", "chunk_id": "a"},
+        {"version": True, "document_id": "selected", "chunk_id": "a"},
+        {"version": 1.0, "document_id": "selected", "chunk_id": "a"},
         {"version": 1, "document_id": "selected", "chunk_id": ""},
         {"version": 1, "document_id": "selected", "chunk_id": 42},
         {"version": 1, "document_id": "selected", "chunk_id": "a", "extra": True},
@@ -226,7 +228,8 @@ def test_structurally_invalid_cursor_is_not_a_silent_empty_page(
     api: ChunkAPI, payload: dict[str, object]
 ) -> None:
     api.seed()
-    cursor = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    raw = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode()
+    cursor = base64.urlsafe_b64encode(raw).decode().rstrip("=")
     response = api.get(cursor=cursor)
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "invalid_chunk_cursor"
@@ -279,6 +282,8 @@ def test_absent_chunk_index_is_none_not_a_fabricated_ordinal(api: ChunkAPI, meta
         '{"chunk_index": true}',
         '{"chunk_index": 1.5}',
         '{"chunk_index": "-1"}',
+        '{"chunk_index": "01"}',
+        '{"chunk_index": "1\\u0000invalid"}',
         '{"chunk_index": "not-an-index"}',
         '{"chunk_index": "9223372036854775808"}',
     ],
@@ -355,7 +360,7 @@ def test_reads_survive_restart_and_do_not_change_existing_query_evidence(api: Ch
 
 
 def test_python_reader_is_strict_read_only_and_index_backed(api: ChunkAPI, tmp_path: Path) -> None:
-    from storage.document_chunks import SQLiteDocumentChunks
+    from storage.document_chunks import _NEXT_PAGE_SQL, SQLiteDocumentChunks
 
     api.seed()
     reader = SQLiteDocumentChunks(api.path)
@@ -374,18 +379,25 @@ def test_python_reader_is_strict_read_only_and_index_backed(api: ChunkAPI, tmp_p
     assert not missing.exists()
     with closing(sqlite3.connect(api.path)) as connection:
         plan = connection.execute(
-            "EXPLAIN QUERY PLAN SELECT chunk_id FROM chunks "
-            "WHERE document_id = ? AND chunk_id > ? ORDER BY chunk_id LIMIT ?",
-            ("selected", "a", 21),
+            "EXPLAIN QUERY PLAN " + _NEXT_PAGE_SQL,
+            {
+                "document_id": "selected",
+                "cursor": "a",
+                "fetch_limit": 21,
+                "identity_bytes": 1028,
+                "title_bytes": 1204,
+                "source_bytes": 2052,
+                "text_bytes": 16004,
+            },
         ).fetchall()
     assert any("idx_chunks_document_chunk" in row[3] for row in plan)
+    assert any("document_id=? AND chunk_id>?" in row[3] for row in plan)
     assert all("TEMP B-TREE" not in row[3] for row in plan)
 
 
 @pytest.mark.parametrize("encoding", ["UTF-16le", "UTF-16be"])
 def test_standalone_reader_handles_utf16_without_mutation(tmp_path: Path, encoding: str) -> None:
     from storage.document_chunks import SQLiteDocumentChunks
-
     from storage.document_store import SQLiteDocumentStore
 
     path = tmp_path / "utf16.sqlite3"
@@ -411,3 +423,69 @@ def test_standalone_reader_handles_utf16_without_mutation(tmp_path: Path, encodi
     assert chunk.text == text[:4000] and chunk.text_truncated
     assert chunk.chunk_index is None
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("index", [0, 7, 9223372036854775807, "0", "7", "9223372036854775807"])
+def test_imported_ordinals_are_preserved_without_defining_order(
+    api: ChunkAPI, index: int | str
+) -> None:
+    api.seed()
+    with sqlite3.connect(api.path) as connection:
+        connection.execute("UPDATE chunks SET metadata = ?", (json.dumps({"chunk_index": index}),))
+    first = api.page(limit=2)
+    second = api.page(limit=2, cursor=first["next_cursor"])
+    chunks = first["chunks"] + second["chunks"]
+    assert [chunk["chunk_id"] for chunk in chunks] == ["a", "b", "c"]
+    assert [chunk["chunk_index"] for chunk in chunks] == [int(index)] * 3
+
+
+def test_cursor_survives_removed_boundary_and_exhausts_without_repeats(api: ChunkAPI) -> None:
+    api.seed()
+    first = api.page(limit=2)
+    with sqlite3.connect(api.path) as connection:
+        connection.execute("DELETE FROM chunks WHERE chunk_id IN ('b', 'c')")
+    assert api.page(cursor=first["next_cursor"]) == {
+        "document_id": "selected",
+        "chunks": [],
+        "next_cursor": None,
+    }
+
+
+def test_maximum_unicode_id_cursor_round_trips_without_truncation(api: ChunkAPI) -> None:
+    document_id = "\U0001f52c" * 128
+    identifiers = ("\u7814" * 255 + "a", "\u7814" * 255 + "b")
+    api.seed(document_id, identifiers)
+    first = api.page(document_id, limit=1)
+    assert len(first["next_cursor"]) <= 4096
+    second = api.page(document_id, cursor=first["next_cursor"])
+    assert [chunk["chunk_id"] for chunk in first["chunks"] + second["chunks"]] == list(identifiers)
+    assert second["next_cursor"] is None
+
+
+def test_invalid_long_chunk_identity_fails_instead_of_being_truncated(api: ChunkAPI) -> None:
+    api.seed(chunk_ids=("c" * 257,))
+    assert api.get().status_code == 409
+
+
+def test_storage_failures_are_not_disguised_as_empty_evidence(api: ChunkAPI) -> None:
+    api.seed()
+    with sqlite3.connect(api.path) as connection:
+        connection.execute("DROP TABLE chunks")
+    with TestClient(api.app, raise_server_exceptions=False) as client:
+        response = client.get("/documents/selected/chunks")
+    assert response.status_code == 500
+
+
+def test_openapi_describes_exact_response_bounds_and_errors(api: ChunkAPI) -> None:
+    schema = api.client.get("/openapi.json").json()
+    operation = schema["paths"]["/documents/{document_id}/chunks"]["get"]
+    assert {"200", "404", "409", "422"} <= set(operation["responses"])
+    parameters = {parameter["name"]: parameter["schema"] for parameter in operation["parameters"]}
+    assert parameters["document_id"]["maxLength"] == 128
+    assert parameters["limit"]["type"] == "integer"
+    assert parameters["limit"]["minimum"] == 1
+    assert parameters["limit"]["maximum"] == 100
+    assert parameters["limit"]["default"] == 20
+    models = schema["components"]["schemas"]
+    assert models["DocumentChunksPage"]["properties"]["chunks"]["maxItems"] == 100
+    assert models["StoredChunk"]["properties"]["text"]["maxLength"] == 4000

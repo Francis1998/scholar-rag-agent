@@ -1,4 +1,4 @@
-"""Discover selectable papers without reading their bodies or running an agent."""
+"""Discover selectable papers and inspect stored evidence without running an agent."""
 
 from typing import Annotated
 
@@ -13,6 +13,13 @@ from storage.document_catalog import (
     Identity,
     SourceFilter,
     TitleFilter,
+)
+from storage.document_chunks import (
+    ChunkCursor,
+    ChunkCursorError,
+    DocumentChunksError,
+    DocumentChunksPage,
+    DocumentNotFoundError,
 )
 
 router = APIRouter()
@@ -42,6 +49,39 @@ def list_documents(
     except DocumentCatalogError as exc:
         raise HTTPException(
             status_code=409,
+            detail={"code": exc.code, "message": str(exc)},
+            headers=headers,
+        ) from exc
+
+
+@router.get(
+    "/documents/{document_id:path}/chunks",
+    response_model=DocumentChunksPage,
+    responses={
+        404: {"description": "Document is not in the stored corpus"},
+        409: {"description": "Invalid or unsupported saved chunk evidence"},
+        422: {"description": "Invalid document ID, limit, or document-scoped cursor"},
+    },
+)
+def list_document_chunks(
+    request: Request,
+    response: Response,
+    document_id: Identity,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    cursor: Annotated[ChunkCursor | None, Query()] = None,
+) -> DocumentChunksPage:
+    """Inspect bounded stored chunk text in exact document scope and ascending ID order."""
+    container: AppContainer = request.app.state.container
+    headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
+    response.headers.update(headers)
+    try:
+        return container.document_chunks.list_chunks(document_id, limit=limit, cursor=cursor)
+    except (DocumentNotFoundError, ChunkCursorError, DocumentChunksError) as exc:
+        status = 404 if isinstance(exc, DocumentNotFoundError) else 422
+        if isinstance(exc, DocumentChunksError):
+            status = 409
+        raise HTTPException(
+            status_code=status,
             detail={"code": exc.code, "message": str(exc)},
             headers=headers,
         ) from exc
