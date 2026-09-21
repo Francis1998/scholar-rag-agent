@@ -93,6 +93,21 @@ Pass their `document_id` values to `/query` `document_ids`. Reuse the same
 database on restart; the [document catalog guide](docs/guides/DOCUMENT_CATALOG_GUIDE.md)
 includes a complete offline example, privacy limits, and a measured animation.
 
+### Preview before generating
+
+```bash
+curl --fail-with-body --silent --show-error http://127.0.0.1:8000/retrieve \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"What does GraphRAG connect?"}' | uv run python -m json.tool
+```
+
+Add `document_ids` from the catalog to inspect only selected papers. Preview
+returns the actual planned, post-rerank chunks and context digest with no live
+or fake LLM call, answer, or agent-event writes. Unlike `/query`, runtime
+failures are HTTP errors rather than `ERROR` run bodies. See the complete
+[retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) for scope,
+limits, Python usage, privacy, and a measured offline demo.
+
 ## 6. Recover run IDs after restart
 
 ```bash
