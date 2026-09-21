@@ -19,14 +19,17 @@ temporary database is removed on exit and is separate from the API's database.
 | --- | --- |
 | `GET /health` | `{"status":"ok"}`; service liveness, not a model-provider check |
 | `POST /ingest/text` | `document_id`, `chunk_ids`; index supplied text |
+| `POST /retrieve` | Plan, scoped post-rerank chunks, scores/ranks/paths, context/digest, and effective bounds; no generation or agent events |
+| `GET /documents?limit=20` | Bounded titles/sources, stored chunk counts and selectable IDs; optional exact `source`, literal `title` and exclusive ID `cursor` filters |
 | `POST /query` | `{"result": ...}`; plan, answer, citations, warnings, and run status |
 | `GET /runs?limit=20&state=DONE` | Bounded query previews and recorded states, with creation-order cursor pagination; `state` is optional |
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
 
-There are no public PDF-upload, corpus-management, authentication, or multi-turn
-chat endpoints. FastAPI also exposes its schema and interactive docs at `/docs`.
+There are no public PDF-upload, corpus-update/delete, authentication, or multi-turn
+chat endpoints. The read-only [document catalog](guides/DOCUMENT_CATALOG_GUIDE.md)
+helps select existing papers. FastAPI also exposes its schema and interactive docs at `/docs`.
 
 ## Ingest text through the API
 
@@ -47,6 +50,23 @@ uv run python -m json.tool "$REVIEW_DIR/ingest.json"
 
 `title`, `text`, and `source` are the supported request fields; `source` defaults
 to `"api"`. The API assigns `source_type="api"` metadata internally.
+
+## Inspect retrieval before generating
+
+```bash
+curl --fail-with-body --silent --show-error "$BASE_URL/retrieve" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"What does GraphRAG connect?"}' > "$REVIEW_DIR/preview.json"
+uv run python -m json.tool "$REVIEW_DIR/preview.json"
+```
+
+Pass optional `document_ids` to select ingested papers; omit it for the full corpus.
+Explicit null/empty/invalid scope returns 422, while unknown IDs honestly return
+empty evidence without widening. The response is a preview directly, not a
+`result` run wrapper. It has no run ID, answer, DONE state, or claim provenance.
+Runtime failures are explicit 409/500/504 responses, never empty-success fallbacks.
+See the [complete retrieval-preview guide](guides/RETRIEVAL_PREVIEW_GUIDE.md) for
+Python usage, capture bounds, privacy, error codes, and the measured offline GIF.
 
 ## Query the agent
 

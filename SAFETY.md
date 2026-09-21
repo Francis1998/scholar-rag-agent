@@ -41,6 +41,27 @@ apply; even an empty context may be sent to a configured generation provider.
 See the [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for behavior,
 legacy component handling, and the offline demonstration.
 
+## Corpus Discovery
+
+`GET /documents` exposes selectable IDs, bounded titles/source labels, and stored
+chunk counts, not document bodies or arbitrary metadata. It does not retrieve
+evidence, generate answers, or create run events. Titles and source labels may
+still contain sensitive data: `no-store`/`nosniff` response headers are not access
+control. Keep this read-only endpoint local/trusted like the rest of the API.
+Invalid stored IDs fail explicitly rather than returning a truncated selection.
+See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
+
+## Retrieval Preview
+
+Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the
+same copied retrieval, source, hop, and capture bounds. Its reasoning timeout
+bounds context preparation only. Preview never invokes a live or fake generator,
+grounds claims, or writes agent events; configured LLM-backed HyDE is rejected.
+Unlike `/query`, preview reports operational failures as sanitized HTTP 500/504
+errors (409 for generative retrieval), not `ERROR` run bodies or empty successes.
+Task cancellation propagates without journaling. See the
+[retrieval preview contract](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
+
 ## Cancellation
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked
@@ -83,6 +104,14 @@ automatically applied by the API; none constitutes a systematic review, novelty
 proof, or medical-decision process.
 
 ## Evidence Persistence and Privacy
+
+Preview responses contain full source text, query, paths/metadata, and exact
+context even though no agent events are persisted. They are not anonymized or
+access-controlled. Keep caller-saved previews private, treat content as untrusted,
+and protect existing corpus storage and external logs independently. Successful
+and operational-error preview responses use no-store/nosniff headers; validation
+errors use FastAPI's default handling. Preview digests are not signatures, claim
+verification, or guarantees that a later query on a changed corpus will match.
 
 New queries persist full final-context source passages in the existing event
 database before generation. Capture is bounded to 50 passages, 262,144 UTF-8

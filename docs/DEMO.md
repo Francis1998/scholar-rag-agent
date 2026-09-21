@@ -1,5 +1,28 @@
 # Demo
 
+## Generation-free retrieval preview
+
+![Measured synthetic offline retrieval preview](assets/retrieval-preview.gif)
+
+This original illustration is rendered from executed API/Python output, not a
+screen recording or a model's scientific findings. It demonstrates shared context
+preparation, scoped hybrid/graph evidence, unknown versus invalid IDs, zero
+live/fake generation calls and agent events, and unchanged-corpus restart parity.
+
+```bash
+PREVIEW_DIR="$(mktemp -d)/retrieval-preview"
+uv run python -m scripts.demo_retrieval_preview --output-dir "$PREVIEW_DIR"
+uv run python -m scripts.create_retrieval_preview_gif \
+  --transcript "$PREVIEW_DIR/transcript.txt" \
+  --output "$PREVIEW_DIR/retrieval-preview.gif"
+```
+
+The temporary database is removed; the measured JSON previews and transcript
+remain in the chosen directory. Explicit validated settings ignore ambient
+provider keys and `.env`, and tests deny HTTP with all four dummy model keys
+present. See the [complete guide](guides/RETRIEVAL_PREVIEW_GUIDE.md) for API,
+Python, privacy, limits, and portfolio use.
+
 ## Evidence-export walkthrough
 
 ![Synthetic offline evidence-export walkthrough](assets/evidence-export.gif)
@@ -57,6 +80,25 @@ Inspect `page-1.json`, `page-2.json`, `done.json`, `events.json`, `bundle.json`,
 script overwrites an existing named artifact. The
 [run-history guide](guides/RUN_HISTORY_GUIDE.md) explains the API/Python contracts
 and why a recorded state is not a claim of active or resumable work.
+
+## Document discovery after restart
+
+![Measured synthetic document discovery](assets/document-catalog.gif)
+
+This generated illustration uses actual offline responses: ingest three notes,
+page through saved IDs without generation, restart, filter the corpus, and query
+one selected paper with the fake provider. It is not a UI recording.
+
+```bash
+CATALOG_DIR="$(mktemp -d)/catalog-demo"
+uv run python -m scripts.demo_document_catalog --output-dir "$CATALOG_DIR"
+uv run python -m scripts.create_document_catalog_gif \
+  --transcript "$CATALOG_DIR/transcript.txt" \
+  --output "$CATALOG_DIR/document-catalog.gif"
+```
+
+The [document catalog guide](guides/DOCUMENT_CATALOG_GUIDE.md) describes every
+saved artifact, the executable Python/API workflows, and pagination/privacy limits.
 
 ## Small local smoke demo
 
