@@ -130,9 +130,19 @@ def test_built_wheel_console_entry_points(built_wheel: Path, tmp_path: Path) -> 
             entry_points["scholar-rag-ingest"].load()()
         assert json.loads(output.getvalue())["text"] == fixture.read_text(encoding="utf-8")
 
+        sys.argv = ["scholar-rag-eval"]
         with contextlib.redirect_stdout(io.StringIO()) as output:
             entry_points["scholar-rag-eval"].load()()
         assert "\\trrf" in output.getvalue()
+
+        sys.argv = ["scholar-rag-eval", "--demo", "--retriever", "bm25", "--k", "1"]
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            entry_points["scholar-rag-eval"].load()()
+        report = json.loads(output.getvalue())
+        assert report["schema_version"] == 1
+        assert report["chunk_count"] == 6
+        assert report["case_count"] == 4
+        assert report["retrievers"][0]["name"] == "bm25"
         """,
     )
 
