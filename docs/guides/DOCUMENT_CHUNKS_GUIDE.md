@@ -201,14 +201,15 @@ from storage.document_chunks import SQLiteDocumentChunks
 with TemporaryDirectory(prefix="scholar-chunks-python-") as directory:
     path = Path(directory) / "corpus.sqlite3"
     with TestClient(create_app(offline_settings(path))) as client:
-        client.post("/ingest/text", json={
-            "title": "Synthetic evidence",
-            "source": "synthetic:python",
-            "text": "GraphRAG connects synthetic methods and limitations. " * 30,
-        }).raise_for_status()
-    document = SQLiteDocumentCatalog(path).list_documents(
-        source="synthetic:python"
-    ).documents[0]
+        client.post(
+            "/ingest/text",
+            json={
+                "title": "Synthetic evidence",
+                "source": "synthetic:python",
+                "text": "GraphRAG connects synthetic methods and limitations. " * 30,
+            },
+        ).raise_for_status()
+    document = SQLiteDocumentCatalog(path).list_documents(source="synthetic:python").documents[0]
     reader = SQLiteDocumentChunks(path)
     cursor = None
     while True:
@@ -220,10 +221,14 @@ with TemporaryDirectory(prefix="scholar-chunks-python-") as directory:
         cursor = page.next_cursor
         if cursor is None:
             break
-    print(json.dumps({
-        "query": "Compare the synthetic methods and limitations",
-        "document_ids": [document.document_id],
-    }))
+    print(
+        json.dumps(
+            {
+                "query": "Compare the synthetic methods and limitations",
+                "document_ids": [document.document_id],
+            }
+        )
+    )
 ```
 <!-- offline-reader-example:end -->
 
