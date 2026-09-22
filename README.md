@@ -1,3 +1,4 @@
+- **AdverseEventCueExtractor**: offline evidence cue extractor — see `docs/guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md`
 - **SubgroupAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
 - **AttritionRateCueExtractor**: offline evidence cue extractor — see `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`
 - **BlindingStatusCueExtractor**: offline evidence cue extractor — see `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`
@@ -65,6 +66,7 @@ context preparation, not semantic entailment or a promise about a changed corpus
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
 ![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
 ![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
+![AdverseEventCueExtractor](docs/assets/adverse-event-cue-extractor.gif)
 
 This generated animation illustrates the synthetic offline evidence-export demo,
 not a live research UI or a real model's scientific findings. Follow the
