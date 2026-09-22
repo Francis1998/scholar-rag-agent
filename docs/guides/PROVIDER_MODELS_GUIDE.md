@@ -72,6 +72,24 @@ removes sampling overrides; this adapter already omits generation configuration.
 The provider's default thinking level is `medium`. Answer parsing concatenates
 all answer-text parts and excludes parts marked `thought: true`.
 
+Credential transport checked **2026-09-21 America/Los_Angeles**: the
+[official API-key guide](https://ai.google.dev/gemini-api/docs/api-key) and
+[latest-model REST example](https://ai.google.dev/gemini-api/docs/latest-model)
+use `x-goog-api-key`. The adapter sends `GEMINI_API_KEY` in that header, never
+in the URL. This retains the existing endpoint version, model selection,
+payload, parsing, and retry policy while preventing URL-based credential
+disclosure through HTTPX errors and newly saved run errors. Headers remain
+sensitive and must not be logged.
+
+The API-key guide states that standard keys are rejected in **September 2026**
+and requires [migration to auth keys](https://ai.google.dev/gemini-api/docs/api-key#migrate-to-auth-key).
+Changing transport does not migrate a key or verify account/model entitlement;
+operators must provision an appropriate auth key and update `GEMINI_API_KEY`.
+All regression calls use mocked HTTPX transport and dummy credentials, not live
+authentication. Historical error records are not rewritten or deleted:
+rotate/revoke affected keys and restrict access to saved artifacts as described
+in [provider credential safety](../../SAFETY.md#provider-credentials).
+
 ### Moonshot Kimi
 
 The adapter uses the [Moonshot API](https://platform.kimi.ai/docs/overview) at
