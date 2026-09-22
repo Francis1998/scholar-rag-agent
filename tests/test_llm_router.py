@@ -55,7 +55,9 @@ def test_live_provider_defaults_use_current_model_stack(
     )
 
     if isinstance(adapter, GeminiAdapter):
-        assert f"/models/{model}:generateContent?" in adapter.endpoint
+        assert adapter.endpoint == (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        )
     else:
         assert adapter.payload(request)["model"] == model
 
