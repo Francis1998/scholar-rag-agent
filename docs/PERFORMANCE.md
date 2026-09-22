@@ -5,6 +5,13 @@ small-corpus ergonomics over distributed throughput.
 
 ## Retrieval
 
+Use the [offline retrieval benchmark CLI](guides/RETRIEVAL_BENCHMARK_GUIDE.md)
+to compare BM25 and the default hybrid retriever on your own labeled passages
+before changing retrieval settings. It records ranked IDs, hit/recall metrics,
+and explicit quality gates, not latency or end-to-end scientific accuracy.
+`uv run scholar-rag-eval --demo --k 1` uses a packaged synthetic tutorial;
+use `--dataset` and independently reviewed labels for a meaningful baseline.
+
 - Keep `SCHOLAR_RAG_MAX_SOURCE_DOCS` at or below the default `50` for interactive use; the current executor counts chunk results, not distinct papers.
 - Keep multi-hop retrieval at depth `3` for research questions; higher values increase graph fan-out.
 - The API uses lexical reranking. A cross-encoder requires explicit Python wiring with `AdaptiveReranker(use_cross_encoder=True)`, its optional dependency, and access to model weights; installing extras alone does not enable it.

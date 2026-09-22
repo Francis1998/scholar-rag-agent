@@ -22,6 +22,7 @@ accumulated feature list in the project README.
 | Reproduce the showcased animation | [Demo](DEMO.md) |
 | Understand what the API actually runs | [Architecture](../ARCHITECTURE.md) |
 | Choose provider models and understand routing | [Provider models](guides/PROVIDER_MODELS_GUIDE.md) |
+| Compare labeled retrieval runs and enforce local CI quality gates | [Offline retrieval benchmarks](guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 
 ## Configuration, operation, and contribution
 
