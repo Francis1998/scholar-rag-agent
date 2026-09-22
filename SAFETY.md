@@ -143,6 +143,23 @@ rewrites by a database owner. Frozen evidence is neither a signed tamper-proof
 record nor a promise of identical future model output. See the
 [complete evidence export guide](docs/guides/EVIDENCE_EXPORT_GUIDE.md).
 
+## Provider Credentials
+
+Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,
+not a `?key=` URL parameter. This removes the URL-based credential leak into
+HTTPX errors, runner and `/query` error responses, and new durable `ERROR`
+events exposed by `/runs/{run_id}/events`. HTTP failures still include their
+status and endpoint; retry behavior is unchanged. This is not general-purpose
+error redaction, and **request headers still contain the secret**: do not log
+them or assume arbitrary exception/debug dumps are safe to share.
+
+Earlier versions may already have saved URL credentials in SQLite events, logs,
+backups, or downloaded artifacts. Rotate/revoke affected Gemini keys and restrict
+access to those historical artifacts. This change does not rewrite, backfill,
+or automatically delete existing records. See the
+[Gemini provider guidance](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini)
+for the dated authentication source and auth-key migration requirements.
+
 ## Provider Backoff
 
 Live adapters use an in-process rate limiter before generation and exponential
