@@ -102,4 +102,8 @@ class SQLiteDocumentStore:
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id)"
             )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chunks_document_chunk "
+                "ON chunks(document_id, chunk_id)"
+            )
             connection.commit()

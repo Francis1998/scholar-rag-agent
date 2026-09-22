@@ -5,6 +5,10 @@ corpus, including after a service restart. Browse bounded titles, sources, and
 stored chunk counts; filter the list; then pass the selected IDs to `/query`.
 You no longer have to preserve every `/ingest/text` response to select papers.
 
+Before selecting a query scope, use the
+[stored chunk evidence reader](DOCUMENT_CHUNKS_GUIDE.md) to inspect bounded
+passages from one discovered document without running retrieval or generation.
+
 To reuse that selection instead of resending IDs, save a
 [named paper collection](PAPER_COLLECTIONS_GUIDE.md). Its persistent `collection_id`
 can scope both `/query` and `/retrieve`; catalog browsing itself stays read-only.

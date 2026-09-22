@@ -19,6 +19,7 @@ from retrieval.multihop import MultiHopRetriever
 from retrieval.rerank import AdaptiveReranker
 from retrieval.sparse import BM25Retriever
 from storage.document_catalog import SQLiteDocumentCatalog
+from storage.document_chunks import SQLiteDocumentChunks
 from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
 from storage.evidence_export import EvidenceExporter
@@ -38,6 +39,7 @@ class AppContainer:
         self.run_history = SQLiteRunHistory(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
+        self.document_chunks = SQLiteDocumentChunks(database_path)
         self.paper_collections = SQLitePaperCollections(database_path)
         self.graph_store = SQLiteGraphStore(database_path)
         self.llm = RoutingLLMAdapter(build_model_router(settings))

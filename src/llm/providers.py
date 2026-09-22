@@ -239,12 +239,14 @@ class GeminiAdapter(HTTPProviderAdapter):
     @property
     def endpoint(self) -> str:
         """Return Gemini endpoint URL."""
-        return f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent?key={self._api_key}"
+        return (
+            f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent"
+        )
 
     @property
     def headers(self) -> Mapping[str, str]:
         """Return Gemini request headers."""
-        return {"Content-Type": "application/json"}
+        return {"Content-Type": "application/json", "x-goog-api-key": self._api_key}
 
     def payload(self, request: LLMRequest) -> dict[str, object]:
         """Return Gemini generateContent payload."""

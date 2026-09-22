@@ -168,6 +168,10 @@ async def test_current_model_http_contract(
         if rejected_parameters.intersection(payload):
             return httpx.Response(400, json={"error": "Unsupported sampling parameter"})
         if provider_case.name == "gemini":
+            assert not request.url.query
+            assert "test-provider-key" not in str(request.url)
+            assert request.headers["x-goog-api-key"] == "test-provider-key"
+            assert request.headers["content-type"] == "application/json"
             assert payload == {
                 "contents": [
                     {
