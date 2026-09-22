@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AdverseEventCueExtractor` (`src/retrieval/adverse_event_cues.py`): offline adverse-event reporting cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md`.
 - `SubgroupAnalysisCueExtractor` (`src/retrieval/subgroup_analysis_cues.py`): offline subgroup analysis cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`.
 - `AttritionRateCueExtractor` (`src/retrieval/attrition_rate_cues.py`): offline AttritionRateCueExtractor cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`.
 - `BlindingStatusCueExtractor` (`blinding_status_cues`): Extract offline single/double/triple-blind and open-label cues; fills an Elicit/Consensus/Cochrane/PaperQA blinding-status gap (distinct from RiskOfBiasCueExtractor) for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`.
