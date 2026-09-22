@@ -1,3 +1,4 @@
+- **AttritionRateCueExtractor**: offline evidence cue extractor — see `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`
 - **BlindingStatusCueExtractor**: offline evidence cue extractor — see `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`
 - **PrimaryEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
 - **IntentionToTreatCueExtractor**: offline evidence cue extractor — see `docs/guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md`
@@ -61,6 +62,7 @@ and context-digest contracts, scope, and errors. This is the shared `/query`
 context preparation, not semantic entailment or a promise about a changed corpus.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
+![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
 
 This generated animation illustrates the synthetic offline evidence-export demo,
 not a live research UI or a real model's scientific findings. Follow the

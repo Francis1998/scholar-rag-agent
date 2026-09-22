@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AttritionRateCueExtractor` (`src/retrieval/attrition_rate_cues.py`): offline AttritionRateCueExtractor cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`.
 - `BlindingStatusCueExtractor` (`blinding_status_cues`): Extract offline single/double/triple-blind and open-label cues; fills an Elicit/Consensus/Cochrane/PaperQA blinding-status gap (distinct from RiskOfBiasCueExtractor) for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`.
 - `PrimaryEndpointCueExtractor` (`primary_endpoint_cues`): Extract offline primary/co-primary/secondary endpoint cues; fills an Elicit/Consensus/ClinicalTrials.gov/PaperQA primary-endpoint gap (distinct from EffectSizeHintExtractor) for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`.
 - `IntentionToTreatCueExtractor` (`intention_to_treat_cues`): Extract offline ITT/mITT/per-protocol analysis cues; fills an Elicit/Consensus/Cochrane/PaperQA ITT-analysis gap (distinct from BlindingStatusCueExtractor / RiskOfBiasCueExtractor) for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (not a DOI connector). See `docs/guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md`.
