@@ -5,6 +5,10 @@ corpus, including after a service restart. Browse bounded titles, sources, and
 stored chunk counts; filter the list; then pass the selected IDs to `/query`.
 You no longer have to preserve every `/ingest/text` response to select papers.
 
+To reuse that selection instead of resending IDs, save a
+[named paper collection](PAPER_COLLECTIONS_GUIDE.md). Its persistent `collection_id`
+can scope both `/query` and `/retrieve`; catalog browsing itself stays read-only.
+
 ![Measured synthetic corpus discovery](../assets/document-catalog.gif)
 
 This generated illustration uses the offline demo's actual API responses. It is

@@ -1,7 +1,8 @@
 """Core API routes, independent of application and container initialization."""
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
+from api.collections import COLLECTION_HEADERS, resolve_document_scope
 from api.dependencies import AppContainer
 from api.schemas import (
     HealthResponse,
@@ -40,11 +41,22 @@ async def ingest_text(request: Request, payload: IngestTextRequest) -> IngestRes
     )
 
 
-@router.post("/query", response_model=QueryResponse)
-async def query(request: Request, payload: QueryRequest) -> QueryResponse:
+@router.post(
+    "/query",
+    response_model=QueryResponse,
+    responses={
+        404: {"description": "Unknown collection"},
+        409: {"description": "Invalid collection or missing member documents"},
+        503: {"description": "Collection storage unavailable"},
+    },
+)
+async def query(request: Request, payload: QueryRequest, response: Response) -> QueryResponse:
     """Execute an Observe-Decide-Act RAG query."""
     container: AppContainer = request.app.state.container
-    result = await container.runner.run(payload.query, **scope_arguments(payload.document_ids))
+    document_ids = resolve_document_scope(container, payload)
+    if payload.collection_id is not None:
+        response.headers.update(COLLECTION_HEADERS)
+    result = await container.runner.run(payload.query, **scope_arguments(document_ids))
     return QueryResponse(result=result)
 
 
