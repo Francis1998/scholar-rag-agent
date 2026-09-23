@@ -54,9 +54,9 @@ class AgentRunner:
         if not isinstance(query, str) or not query.strip():
             raise ValueError("query must be a nonempty string.")
         scope = normalize_document_ids(document_ids)
-        limits = replace(self._safety_limits)
         phase = "planning"
         try:
+            limits = replace(self._safety_limits)
             configuration = self._configuration(limits)
             if self._executor.retrieval_uses_llm:
                 raise RetrievalPreviewError(
@@ -116,7 +116,6 @@ class AgentRunner:
         state = AgentState.IDLE
         observation: QueryObservation | None = None
         plan: QueryPlan | None = None
-        limits = replace(self._safety_limits)
 
         def record_context(snapshot: EvidenceSnapshot) -> None:
             self._event_log.append_event(
@@ -136,6 +135,7 @@ class AgentRunner:
 
         try:
             cancellation_token.raise_if_cancelled()
+            limits = replace(self._safety_limits)
             configuration = self._configuration(limits)
             state = self._transition(
                 run_id,

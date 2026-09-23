@@ -23,8 +23,8 @@ class Settings(BaseSettings):
 
     database_path: Path = Field(default=Path(".scholar-rag-agent.sqlite3"))
     agent_id: str = Field(default="local-agent")
-    retrieval_timeout_seconds: float = Field(default=30.0, ge=1.0)
-    reasoning_timeout_seconds: float = Field(default=60.0, ge=1.0)
+    retrieval_timeout_seconds: float = Field(default=30.0, ge=1.0, allow_inf_nan=False)
+    reasoning_timeout_seconds: float = Field(default=60.0, ge=1.0, allow_inf_nan=False)
     max_source_docs: int = Field(default=50, ge=1, le=50)
     max_hops: int = Field(default=5, ge=1, le=5)
     default_model: str = Field(default="openai")

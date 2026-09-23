@@ -12,6 +12,21 @@ They are cooperative timeouts, not process-level limits that preempt blocking
 CPU work. Runtime failures return an `ERROR` run with an `error` field; `/query`
 callers must inspect the body even when the HTTP response succeeds.
 
+Both timeouts must be finite: `NaN`, positive/negative infinity, and overflow
+such as `1e999` are invalid. `Settings` and environment/`.env` values must be at
+least one second and are validated at startup, before storage/provider setup.
+Python `SafetyLimits` and effective `RunConfiguration` allow any finite positive
+value, including `0.1` seconds; no additional maximum is imposed. Float coercion
+is preserved: numeric strings and integers are accepted, `True` becomes `1.0`,
+and `False` is rejected as zero. Invalid values are never defaulted or clamped.
+
+`SafetyLimits` validates on construction and copying. Mutations made before a
+run or preview are revalidated before planning, retrieval, or generation:
+`run` returns a durable `ERROR`, while preview raises `RetrievalPreviewError`
+(`planning_failed`, sanitized HTTP 500). Limits already copied for an in-flight
+request remain unchanged by later mutations, and finite effective values remain
+round-trippable in evidence exports.
+
 ## Scope Bounds
 
 `SCHOLAR_RAG_MAX_SOURCE_DOCS` defaults to 50. Despite its name, the current
