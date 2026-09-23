@@ -32,9 +32,11 @@ Preview retrieves without any live or fake generator or event writes.
 
 For optional live generation, consult the dated, official-source-linked
 [provider guide](PROVIDER_MODELS_GUIDE.md): GPT-6 Astra, Claude Sonnet 5 (selected
-default; Fable 5.1 is newer and Opus 5 is generally recommended), Gemini 3.8 Flash
-GA, and Kimi K3. Collections make no model-default changes, availability promises,
-or inference-quality claims.
+default), Gemini 3.8 Flash GA, and Kimi K3. The
+[official Claude catalog](https://platform.claude.com/docs/en/models/overview),
+rechecked **2026-09-22**, recommends Opus 5.5 for most workloads and Fable 5.1
+for demanding reasoning and long-horizon agentic work. Collections make no
+model-default changes, availability promises, or inference-quality claims.
 
 ## Fresh offline setup
 
