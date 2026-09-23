@@ -25,6 +25,7 @@ from storage.event_log import SQLiteEventLog
 from storage.evidence_export import EvidenceExporter
 from storage.graph_store import SQLiteGraphStore
 from storage.paper_collections import SQLitePaperCollections
+from storage.run_comparison import SavedRunComparator
 from storage.run_history import SQLiteRunHistory
 
 
@@ -36,6 +37,7 @@ class AppContainer:
         database_path = Path(settings.database_path)
         self.event_log = SQLiteEventLog(database_path)
         self.evidence_exporter = EvidenceExporter(self.event_log)
+        self.run_comparator = SavedRunComparator(self.evidence_exporter)
         self.run_history = SQLiteRunHistory(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)

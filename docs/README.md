@@ -19,6 +19,7 @@ accumulated feature list in the project README.
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
+| Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |
 | Reproduce the showcased animation | [Demo](DEMO.md) |
 | Understand what the API actually runs | [Architecture](../ARCHITECTURE.md) |
