@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `SurrogateEndpointCueExtractor` (`src/retrieval/surrogate_endpoint_cues.py`): offline surrogate vs clinical endpoint cues (Elicit/Consensus/FDA surrogate gap; distinct from PrimaryEndpointCueExtractor / EffectSizeHintExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`.
 - `FollowUpDurationCueExtractor` (`src/retrieval/follow_up_duration_cues.py`): offline follow-up duration cues from title/abstract/methods (Elicit/Consensus/CONSORT gap; distinct from AttritionRateCueExtractor / SampleSizeHintExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md`.
 - `AdverseEventCueExtractor` (`src/retrieval/adverse_event_cues.py`): offline adverse-event reporting cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md`.
 - `SubgroupAnalysisCueExtractor` (`src/retrieval/subgroup_analysis_cues.py`): offline subgroup analysis cues. Gap vs Elicit/Consensus/Cochrane. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`.
