@@ -166,6 +166,15 @@ behavior, and the reproducible synthetic demo.
 
 ## Persistent Evidence Exports
 
+Completed exports also feed a pure, typed saved-run comparison through
+`GET /runs/{baseline_run_id}/compare/{candidate_run_id}`. The dedicated
+`SavedRunComparator` depends only on `EvidenceExporter`; either side's export
+failure rejects the operation. Owner-aware chunk identities, exact field changes,
+bounded previews, and digests expose differences without copying full passages
+or arbitrary diagnostics. There is no new retrieval, generation, event write,
+corpus hydration, migration, or quality scoring. See the
+[comparison contract and synthetic demo](docs/guides/RUN_COMPARISON_GUIDE.md).
+
 `Executor.answer` calls the shared `Executor.prepare_context` to rerank and make
 a detached, bounded `EvidenceSnapshot`.
 Its ordered passages construct the exact `LLMRequest.context`; full chunk text,

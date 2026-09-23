@@ -158,6 +158,14 @@ rewrites by a database owner. Frozen evidence is neither a signed tamper-proof
 record nor a promise of identical future model output. See the
 [complete evidence export guide](docs/guides/EVIDENCE_EXPORT_GUIDE.md).
 
+Saved-run comparisons expose bounded previews and exact saved identities/digests,
+not anonymized data. They reuse the exporter's validation, fail as a whole on an
+invalid side, and use no-store/nosniff headers without adding authentication.
+Identity overlap and recorded grounding flags do not measure scientific support
+or model quality; differing queries/scopes are explicitly not a fair model A/B
+test. Comparison does not retrieve, generate, read current corpus data, or write
+events. See [comparison limits and privacy](docs/guides/RUN_COMPARISON_GUIDE.md).
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,
