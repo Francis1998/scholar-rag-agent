@@ -1,7 +1,8 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-21 America/Los_Angeles** (2026-09-21 UTC);
-migration guidance was checked on 2026-09-17 America/Los_Angeles. This is
+Model catalogs rechecked **2026-09-23 America/Los_Angeles** (2026-09-23 UTC);
+default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
+and Opus 5.5 migration notes on 2026-09-22. This is
 documentation verification plus offline HTTPX contract
 testing, **not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
@@ -12,7 +13,7 @@ account and workload.
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
-| Anthropic | `claude-sonnet-5` | Current Sonnet, a like-for-like successor to the previous Sonnet default. The [catalog](https://platform.claude.com/docs/en/models/overview) recommends Opus 5 generally and lists Fable 5.1 for the most demanding work; Sonnet 5 is not the absolute newest Claude model. |
+| Anthropic | `claude-sonnet-5` | Current Sonnet, a like-for-like successor to the previous Sonnet default. The [catalog](https://platform.claude.com/docs/en/models/overview) recommends Opus 5.5 (`claude-opus-5-5`) generally and lists Fable 5.1 for the most demanding work; Sonnet 5 is not the absolute newest Claude model. |
 | Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
 | Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.ai/docs/models), replacing the discontinued K2 default. |
 
@@ -34,6 +35,30 @@ These are stateless, single-turn text adapters built on HTTPX. They do not
 implement provider tool loops, streaming, multimodal inputs, or multi-turn
 reasoning-state replay. The local application uses FastAPI, SQLite, Pydantic, and
 a custom agent state machine; it is not a LangGraph integration.
+
+### Unusable HTTP-success responses
+
+All four live adapters require a JSON object and nonblank final answer text.
+Missing/malformed answer envelopes, empty or whitespace-only text, and
+thinking-only or tool-only output raise `llm.providers.ProviderResponseError`
+instead of returning an empty `LLMResponse`. Invalid JSON and non-object roots
+raise the same explicit error type. Valid text keeps its original whitespace,
+multipart concatenation, citation IDs, and configured-model provenance.
+
+These response errors are not retried and do not trigger another provider or
+the fake adapter. Their messages identify the provider and failure category,
+not raw response bodies, hidden thinking, credentials, or request headers.
+Transport/HTTP retries remain unchanged. This does not validate factual
+correctness, interpret every provider stop reason, or reject a nonblank partial
+answer merely because it reached an output limit.
+
+The existing `/query` contract still uses HTTP 200 with `result.state: "ERROR"`
+for a failed run. Inspect `state` and `error`, not just the HTTP status. The
+runner journals the failure without recording a generation or `DONE` event;
+the captured input evidence can remain, but the failed run cannot be exported
+as a completed answer. Correct the provider/model/output-budget configuration
+before explicitly starting another run; do not treat empty output as evidence.
+The offline fake and the public response schema for custom adapters are unchanged.
 
 ### OpenAI
 
@@ -62,6 +87,14 @@ default or mandatory thinking can spend that budget before producing an answer,
 so an ID override alone is not a universal migration to arbitrary Claude models.
 No sampling overrides are sent for either default or custom models. Only blocks
 whose `type` is `text` contribute to the final answer.
+
+The catalog's current general recommendation, [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview),
+has always-on adaptive thinking. Its [migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide)
+does not permit disabling thinking. The adapter sends no Sonnet-specific override
+for `claude-opus-5-5`, but still limits total output to 1024 tokens. Evaluate that
+budget and endpoint compatibility before switching; thinking-only output now
+fails explicitly instead of becoming a successful empty answer. The selected
+Sonnet default is intentionally unchanged.
 
 ### Google Gemini
 
