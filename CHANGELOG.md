@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `FundingConflictCueExtractor` (`src/retrieval/funding_conflict_cues.py`): offline industry-funding / COI cues (Elicit/Consensus/Scite transparency gap; distinct from OpenDataAvailabilityFlagger / RetractionFlagger). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`.
 - `MultiplicityAdjustmentCueExtractor` (`src/retrieval/multiplicity_adjustment_cues.py`): offline multiplicity / multiple-testing adjustment cues (Elicit/Consensus/CONSORT gap; distinct from PValueHintExtractor / SubgroupAnalysisCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md`.
 - `SurrogateEndpointCueExtractor` (`src/retrieval/surrogate_endpoint_cues.py`): offline surrogate vs clinical endpoint cues (Elicit/Consensus/FDA surrogate gap; distinct from PrimaryEndpointCueExtractor / EffectSizeHintExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`.
 - `FollowUpDurationCueExtractor` (`src/retrieval/follow_up_duration_cues.py`): offline follow-up duration cues from title/abstract/methods (Elicit/Consensus/CONSORT gap; distinct from AttritionRateCueExtractor / SampleSizeHintExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md`.
