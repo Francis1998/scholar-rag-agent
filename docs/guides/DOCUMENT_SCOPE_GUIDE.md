@@ -5,6 +5,11 @@ the whole corpus. `POST /query` accepts optional `document_ids`; Python callers
 use `AgentRunner.run(query, document_ids=[...])`. Omission preserves the existing
 unscoped behavior. This is integrated retrieval, not an unused post-ranking helper.
 
+For a persistent named selection, use
+[paper collections](PAPER_COLLECTIONS_GUIDE.md). Both `/query` and `/retrieve`
+accept `collection_id` instead of `document_ids` and freeze the resolved IDs
+before asynchronous work. Direct document-ID scope remains available unchanged.
+
 A researcher can keep pilot studies separate from a selected methods comparison,
 or ask the same hypothesis question against two explicitly chosen reading lists.
 Save the scope with each [evidence bundle](EVIDENCE_EXPORT_GUIDE.md) so a reviewer

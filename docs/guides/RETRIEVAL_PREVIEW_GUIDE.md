@@ -6,6 +6,10 @@ return the actual bounded, post-rerank passages, scores, ranks, paths, plan,
 scope, and context digest. Neither entrypoint calls a live **or fake** LLM,
 grounds claims, nor writes agent events.
 
+To reuse a selection across restarts, send a saved
+[`collection_id`](PAPER_COLLECTIONS_GUIDE.md) instead of `document_ids`.
+The API resolves it before awaits; the Python preview signature remains unchanged.
+
 ![Measured synthetic offline retrieval-preview walkthrough](../assets/retrieval-preview.gif)
 
 This original four-panel GIF illustrates output from the executed synthetic demo
