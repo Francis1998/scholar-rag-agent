@@ -66,6 +66,28 @@ control. Keep this read-only endpoint local/trusted like the rest of the API.
 Invalid stored IDs fail explicitly rather than returning a truncated selection.
 See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
 
+## Saved Paper Collections
+
+`/collections` manages metadata only. Named selections are local/trusted, not
+access-control boundaries. Creation/replacement validates 1-100 normalized
+document IDs transactionally; revision preconditions prevent lost edits and
+stale deletion. Names and IDs may contain sensitive information even though
+the collection endpoints do not return document bodies.
+
+`collection_id` and `document_ids` are mutually exclusive on `/query` and
+`/retrieve`. Resolution checks current membership and corpus existence before
+awaits, forwarding an immutable scope. Unknown collections, corruption, missing
+members, and SQLite failures are explicit errors, never whole-corpus fallbacks.
+The existing maximum 50 evidence chunks and other safety bounds still apply.
+
+Metadata edits/deletion do not modify corpus text, graph data, or saved evidence.
+They cannot revoke a running request's already resolved selection, and are not
+privacy erasure. Membership snapshots do not freeze source contents or add
+multi-worker index synchronization. Successful metadata/collection-query
+responses and operational errors carry no-store/nosniff headers; default
+validation handling is unchanged. See the complete
+[collection contracts](docs/guides/PAPER_COLLECTIONS_GUIDE.md).
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the
