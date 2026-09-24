@@ -9,6 +9,10 @@ Before selecting a query scope, use the
 [stored chunk evidence reader](DOCUMENT_CHUNKS_GUIDE.md) to inspect bounded
 passages from one discovered document without running retrieval or generation.
 
+To reuse that selection instead of resending IDs, save a
+[named paper collection](PAPER_COLLECTIONS_GUIDE.md). Its persistent `collection_id`
+can scope both `/query` and `/retrieve`; catalog browsing itself stays read-only.
+
 ![Measured synthetic corpus discovery](../assets/document-catalog.gif)
 
 This generated illustration uses the offline demo's actual API responses. It is

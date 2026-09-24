@@ -1,10 +1,13 @@
 """FastAPI request and response schemas."""
 
-from pydantic import BaseModel, Field, field_validator
+from typing import Self
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from agent.models import AgentRunResult
 from retrieval.scope import DocumentIds
+from storage.paper_collections import CollectionId
 
 
 class HealthResponse(BaseModel):
@@ -42,13 +45,29 @@ class QueryRequest(BaseModel):
         ),
     )
 
-    @field_validator("document_ids", mode="before")
+    collection_id: CollectionId | SkipJsonSchema[None] = Field(
+        default=None,
+        frozen=True,
+        description=(
+            "Saved paper collection ID. Resolved to document_ids before query/preview work. "
+            "Mutually exclusive with document_ids; omit both for the full corpus. "
+            "Null, malformed, unknown, or broken collections never widen scope."
+        ),
+    )
+
+    @field_validator("document_ids", "collection_id", mode="before")
     @classmethod
     def reject_explicit_null(cls, value: object) -> object:
         """Omission alone selects the full corpus in the HTTP API."""
         if value is None:
-            raise ValueError("document_ids cannot be null; omit it to search the full corpus.")
+            raise ValueError("Scope cannot be null; omit it to search the full corpus.")
         return value
+
+    @model_validator(mode="after")
+    def exclusive_scope(self) -> Self:
+        if self.document_ids is not None and self.collection_id is not None:
+            raise ValueError("Supply either collection_id or document_ids, not both.")
+        return self
 
 
 class QueryResponse(BaseModel):
