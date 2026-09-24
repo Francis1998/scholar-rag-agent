@@ -1,5 +1,6 @@
 - **FundingConflictCueExtractor**: offline evidence cue extractor — see `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`
 - **AllocationConcealmentCueExtractor**: offline evidence cue extractor — see `docs/guides/ALLOCATION_CONCEALMENT_CUE_EXTRACTOR_GUIDE.md`
+- **ProtocolDeviationCueExtractor**: offline evidence cue extractor — see `docs/guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md`
 - **MultiplicityAdjustmentCueExtractor**: offline evidence cue extractor — see `docs/guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md`
 - **SurrogateEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
 - **FollowUpDurationCueExtractor**: offline evidence cue extractor — see `docs/guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md`
@@ -75,6 +76,7 @@ context preparation, not semantic entailment or a promise about a changed corpus
 ![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
 ![FundingConflictCueExtractor](docs/assets/funding-conflict-cue-extractor.gif)
 ![AllocationConcealmentCueExtractor](docs/assets/allocation-concealment-cue-extractor.gif)
+![ProtocolDeviationCueExtractor](docs/assets/protocol-deviation-cue-extractor.gif)
 ![MultiplicityAdjustmentCueExtractor](docs/assets/multiplicity-adjustment-cue-extractor.gif)
 ![SurrogateEndpointCueExtractor](docs/assets/surrogate-endpoint-cue-extractor.gif)
 ![FollowUpDurationCueExtractor](docs/assets/follow-up-duration-cue-extractor.gif)
