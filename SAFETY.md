@@ -192,6 +192,16 @@ for the dated authentication source and auth-key migration requirements.
 
 ## Provider Backoff
 
+An HTTP-success response is not automatically a successful answer. Live adapters
+raise `ProviderResponseError` for invalid/non-object JSON or absent/blank final
+answer text after excluding non-answer blocks. This includes thinking-only and
+tool-only responses. The diagnostic contains a provider name and fixed failure
+category, not raw provider output. These errors are not retried or failed over;
+the runner records `ERROR` rather than persisting an empty completed answer.
+Existing captured input evidence remains subject to the privacy rules above.
+This check does not establish factual correctness or completeness of nonblank
+answers. See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
+
 Live adapters use an in-process rate limiter before generation and exponential
 backoff for transport failures and HTTP `429`, `500`, `502`, `503`, and `504`.
 The default is at most three retries after the initial attempt; permanent client
