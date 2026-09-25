@@ -148,6 +148,29 @@ is consistent within its SELECT; independent pages do not freeze corpus edits.
 Recovered IDs can be passed to document-scoped `/query`. See the
 [document catalog guide](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
 
+## Persistent Paper Collections
+
+`SQLitePaperCollections` stores only a stable collection ID, unique trimmed
+name, revision, and normalized JSON document IDs in one additive SQLite table.
+`/collections` supplies bounded discovery and metadata CRUD; full replacement
+and deletion require the expected revision. Document existence, name uniqueness,
+revision checks, and writes share a `BEGIN IMMEDIATE` transaction. No corpus,
+graph, or run data is copied, deleted, or backfilled.
+
+Both `/query` and `/retrieve` accept either `collection_id` or `document_ids`,
+never both. The API resolves collection membership and checks document existence
+in one read transaction **before awaiting the runner**, then passes an immutable
+ID tuple through the existing scope pipeline. Invalid, unknown, corrupt, or
+broken selections fail explicitly; no failure means unscoped. Python callers
+use `store.resolve(...)` and the existing runner `document_ids` argument.
+
+Concurrent edits affect new requests, not an already resolved scope. This
+freezes IDs, not source contents or multi-process indexes. Evidence exports
+continue to use their saved actual IDs and chunks, independent of subsequent
+collection replacement/deletion. No evidence schema or runner signature changes
+are needed. See [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) for
+schema, paging, conditional writes, errors, privacy, and the offline demo.
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,
@@ -165,6 +188,15 @@ See [Run history](docs/guides/RUN_HISTORY_GUIDE.md) for errors, privacy, restart
 behavior, and the reproducible synthetic demo.
 
 ## Persistent Evidence Exports
+
+Completed exports also feed a pure, typed saved-run comparison through
+`GET /runs/{baseline_run_id}/compare/{candidate_run_id}`. The dedicated
+`SavedRunComparator` depends only on `EvidenceExporter`; either side's export
+failure rejects the operation. Owner-aware chunk identities, exact field changes,
+bounded previews, and digests expose differences without copying full passages
+or arbitrary diagnostics. There is no new retrieval, generation, event write,
+corpus hydration, migration, or quality scoring. See the
+[comparison contract and synthetic demo](docs/guides/RUN_COMPARISON_GUIDE.md).
 
 `Executor.answer` calls the shared `Executor.prepare_context` to rerank and make
 a detached, bounded `EvidenceSnapshot`.

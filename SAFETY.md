@@ -51,6 +51,28 @@ control. Keep this read-only endpoint local/trusted like the rest of the API.
 Invalid stored IDs fail explicitly rather than returning a truncated selection.
 See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
 
+## Saved Paper Collections
+
+`/collections` manages metadata only. Named selections are local/trusted, not
+access-control boundaries. Creation/replacement validates 1-100 normalized
+document IDs transactionally; revision preconditions prevent lost edits and
+stale deletion. Names and IDs may contain sensitive information even though
+the collection endpoints do not return document bodies.
+
+`collection_id` and `document_ids` are mutually exclusive on `/query` and
+`/retrieve`. Resolution checks current membership and corpus existence before
+awaits, forwarding an immutable scope. Unknown collections, corruption, missing
+members, and SQLite failures are explicit errors, never whole-corpus fallbacks.
+The existing maximum 50 evidence chunks and other safety bounds still apply.
+
+Metadata edits/deletion do not modify corpus text, graph data, or saved evidence.
+They cannot revoke a running request's already resolved selection, and are not
+privacy erasure. Membership snapshots do not freeze source contents or add
+multi-worker index synchronization. Successful metadata/collection-query
+responses and operational errors carry no-store/nosniff headers; default
+validation handling is unchanged. See the complete
+[collection contracts](docs/guides/PAPER_COLLECTIONS_GUIDE.md).
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the
@@ -143,6 +165,14 @@ rewrites by a database owner. Frozen evidence is neither a signed tamper-proof
 record nor a promise of identical future model output. See the
 [complete evidence export guide](docs/guides/EVIDENCE_EXPORT_GUIDE.md).
 
+Saved-run comparisons expose bounded previews and exact saved identities/digests,
+not anonymized data. They reuse the exporter's validation, fail as a whole on an
+invalid side, and use no-store/nosniff headers without adding authentication.
+Identity overlap and recorded grounding flags do not measure scientific support
+or model quality; differing queries/scopes are explicitly not a fair model A/B
+test. Comparison does not retrieve, generate, read current corpus data, or write
+events. See [comparison limits and privacy](docs/guides/RUN_COMPARISON_GUIDE.md).
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,
@@ -161,6 +191,16 @@ or automatically delete existing records. See the
 for the dated authentication source and auth-key migration requirements.
 
 ## Provider Backoff
+
+An HTTP-success response is not automatically a successful answer. Live adapters
+raise `ProviderResponseError` for invalid/non-object JSON or absent/blank final
+answer text after excluding non-answer blocks. This includes thinking-only and
+tool-only responses. The diagnostic contains a provider name and fixed failure
+category, not raw provider output. These errors are not retried or failed over;
+the runner records `ERROR` rather than persisting an empty completed answer.
+Existing captured input evidence remains subject to the privacy rules above.
+This check does not establish factual correctness or completeness of nonblank
+answers. See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
 
 Live adapters use an in-process rate limiter before generation and exponential
 backoff for transport failures and HTTP `429`, `500`, `502`, `503`, and `504`.

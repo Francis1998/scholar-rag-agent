@@ -1,6 +1,7 @@
 """HTTP-based adapters for OpenAI, Anthropic, Gemini, and Moonshot Kimi."""
 
 from collections.abc import Mapping
+from json import JSONDecodeError
 
 import httpx
 
@@ -15,6 +16,10 @@ from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, LLMResponse
 
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+class ProviderResponseError(ValueError):
+    """A successful HTTP response did not contain a usable final answer."""
 
 
 def _is_transient_http_error(exc: Exception) -> bool:
@@ -61,7 +66,29 @@ class HTTPProviderAdapter(BaseLLMAdapter):
                 json=self.payload(request),
             )
             response.raise_for_status()
-            return self.parse_response(response.json(), request)
+            try:
+                data: object = response.json()
+            except (JSONDecodeError, UnicodeDecodeError):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: invalid JSON."
+                ) from None
+            if not isinstance(data, dict):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: expected a JSON object."
+                )
+            return self.parse_response(data, request)
+
+    def _text_response(self, text: str, request: LLMRequest) -> LLMResponse:
+        if not text.strip():
+            raise ProviderResponseError(
+                f"{self.provider_name} returned an invalid response: no nonblank final answer text."
+            )
+        return LLMResponse(
+            text=text,
+            citation_chunk_ids=request.citation_chunk_ids,
+            raw_provider=self.provider_name,
+            model_name=self._model,
+        )
 
     @property
     def endpoint(self) -> str:
@@ -129,12 +156,7 @@ class OpenAIAdapter(HTTPProviderAdapter):
             message = choices[0].get("message")
             if isinstance(message, dict):
                 text = self._message_text(message.get("content"))
-        return LLMResponse(
-            text=text,
-            citation_chunk_ids=request.citation_chunk_ids,
-            raw_provider=self.provider_name,
-            model_name=self._model,
-        )
+        return self._text_response(text, request)
 
     @staticmethod
     def _message_text(content: object) -> str:
@@ -219,12 +241,7 @@ class AnthropicAdapter(HTTPProviderAdapter):
                 and block.get("type") == "text"
                 and isinstance(block.get("text"), str)
             )
-        return LLMResponse(
-            text=text,
-            citation_chunk_ids=request.citation_chunk_ids,
-            raw_provider=self.provider_name,
-            model_name=self._model,
-        )
+        return self._text_response(text, request)
 
 
 class GeminiAdapter(HTTPProviderAdapter):
@@ -271,12 +288,7 @@ class GeminiAdapter(HTTPProviderAdapter):
                     and not part.get("thought", False)
                     and isinstance(part.get("text"), str)
                 )
-        return LLMResponse(
-            text=text,
-            citation_chunk_ids=request.citation_chunk_ids,
-            raw_provider=self.provider_name,
-            model_name=self._model,
-        )
+        return self._text_response(text, request)
 
 
 class KimiAdapter(OpenAIAdapter):
