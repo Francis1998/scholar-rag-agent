@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from agent.answer_reviews import AnswerReviewService
 from agent.executor import Executor
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
@@ -18,6 +19,7 @@ from retrieval.hyde import HyDEExpander
 from retrieval.multihop import MultiHopRetriever
 from retrieval.rerank import AdaptiveReranker
 from retrieval.sparse import BM25Retriever
+from storage.answer_reviews import SQLiteAnswerReviews
 from storage.document_catalog import SQLiteDocumentCatalog
 from storage.document_chunks import SQLiteDocumentChunks
 from storage.document_store import SQLiteDocumentStore
@@ -39,6 +41,9 @@ class AppContainer:
         self.evidence_exporter = EvidenceExporter(self.event_log)
         self.run_comparator = SavedRunComparator(self.evidence_exporter)
         self.run_history = SQLiteRunHistory(database_path)
+        self.answer_reviews = AnswerReviewService(
+            self.evidence_exporter, SQLiteAnswerReviews(database_path)
+        )
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)

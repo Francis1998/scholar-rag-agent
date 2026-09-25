@@ -58,6 +58,29 @@ error behavior, and animation reproduction instructions. Use the
 [research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) to run your own API-based
 comparison, hypothesis, evidence-review, and portfolio walkthrough.
 
+## Persistent saved-answer reviews
+
+![Actual synthetic offline review output](assets/answer-reviews.gif)
+
+This generated illustration uses executed API output, not a UI recording or
+fabricated results. It shows a real fake-adapter saved answer, human comments,
+UUID retries and conflicts, frozen chunk validation after corpus deletion, and
+ordered history after restart. A human judgment is not factual verification.
+
+```bash
+REVIEWS_DIR="$(mktemp -d)/answer-reviews"
+uv run python -m scripts.demo_answer_reviews --output-dir "$REVIEWS_DIR"
+uv run python -m scripts.create_answer_reviews_gif \
+  --transcript "$REVIEWS_DIR/transcript.txt" \
+  --output "$REVIEWS_DIR/answer-reviews.gif"
+```
+
+The temporary database is cleaned on success and failure. Real response JSON,
+evidence Markdown, and the transcript remain in the output directory; existing
+named artifacts are not overwritten. See the
+[complete review guide](guides/ANSWER_REVIEWS_GUIDE.md) for contracts, errors,
+privacy boundaries, artifact descriptions, and source-linked motivation.
+
 ## Run-history discovery after restart
 
 ![Synthetic offline run-history discovery](assets/run-history.gif)
