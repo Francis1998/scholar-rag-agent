@@ -66,7 +66,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-21 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-09-23 America/Los_Angeles** catalog check and model-specific limitations.
 
 ## Optional Provider Keys
 
@@ -105,6 +105,13 @@ force all tasks offline when preferred live providers have keys.
 This fallback policy selects providers before a call. HTTP failures are surfaced
 after the existing transient-error retries; they do not trigger cross-provider
 or fake failover.
+
+HTTP-success bodies must be JSON objects with nonblank final answer text.
+`ProviderResponseError` reports unusable output without raw body or credential
+content; it is not retried or replaced with an empty/fake answer. `/query`
+preserves its existing HTTP-200 `ERROR` result contract, so check `result.state`.
+See [response validation](guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses)
+for reasoning-only output, output-budget caveats, and persistence behavior.
 
 ## Response Provenance
 
