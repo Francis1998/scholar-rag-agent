@@ -1,3 +1,4 @@
+- **InterimAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
 - **FundingConflictCueExtractor**: offline evidence cue extractor — see `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`
 - **AllocationConcealmentCueExtractor**: offline evidence cue extractor — see `docs/guides/ALLOCATION_CONCEALMENT_CUE_EXTRACTOR_GUIDE.md`
 - **ProtocolDeviationCueExtractor**: offline evidence cue extractor — see `docs/guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md`
@@ -74,6 +75,7 @@ context preparation, not semantic entailment or a promise about a changed corpus
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
 ![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
 ![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
+![InterimAnalysisCueExtractor](docs/assets/interim-analysis-cue-extractor.gif)
 ![FundingConflictCueExtractor](docs/assets/funding-conflict-cue-extractor.gif)
 ![AllocationConcealmentCueExtractor](docs/assets/allocation-concealment-cue-extractor.gif)
 ![ProtocolDeviationCueExtractor](docs/assets/protocol-deviation-cue-extractor.gif)
