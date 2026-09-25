@@ -6,8 +6,8 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | --- | --- | --- |
 | `SCHOLAR_RAG_DATABASE_PATH` | `.scholar-rag-agent.sqlite3` | SQLite event/document/graph store path. |
 | `SCHOLAR_RAG_AGENT_ID` | `local-agent` | Agent identifier persisted in events. |
-| `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Retrieval phase timeout. |
-| `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
+| `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Finite retrieval phase timeout in seconds, at least `1`. |
+| `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Finite reasoning/generation timeout in seconds, at least `1`. |
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per query, despite the historical setting name; not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound; planner tasks request one to three hops depending on intent. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
@@ -18,6 +18,12 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
+
+Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
+settings validation at startup; they are not clamped or replaced with defaults.
+Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
+subsecond values such as `0.1`; no additional maximum is imposed. See the
+[timeout policy](SAFETY.md#timeout-policy) for coercion and runtime error behavior.
 
 Model IDs are stripped of surrounding whitespace and must be non-empty strings.
 Unset values use the defaults; explicit blank values fail settings validation,
