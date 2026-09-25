@@ -15,12 +15,25 @@ Scholar RAG Agent is configured through environment variables loaded by
 | --- | --- | --- |
 | `SCHOLAR_RAG_DATABASE_PATH` | `.scholar-rag-agent.sqlite3` | SQLite event, document, and graph store. |
 | `SCHOLAR_RAG_AGENT_ID` | `local-agent` | Agent ID persisted with event-log entries. |
-| `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Retrieval phase timeout. |
-| `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Reasoning/generation timeout. |
+| `SCHOLAR_RAG_RETRIEVAL_TIMEOUT_SECONDS` | `30` | Finite retrieval phase timeout in seconds, at least `1`. |
+| `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Finite reasoning/generation timeout in seconds, at least `1`. |
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per request, not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Hard graph traversal bound. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
 | `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
+
+Both timeout settings require finite values of at least one second, including
+values from process environment and `.env`. `NaN`, infinities, and floating-point
+overflow such as `1e999` fail at startup, before storage/provider setup. Invalid
+values are never silently clamped or replaced with defaults.
+
+Python `SafetyLimits` and effective `RunConfiguration` instead accept any finite
+positive timeout, including `0.1` seconds; there is no additional maximum. They
+retain Pydantic float coercion: numeric strings and integers are accepted,
+`True` becomes `1.0`, and `False` is rejected as zero. Mutable `SafetyLimits`
+are revalidated when copied at run/preview entry, before asynchronous work.
+See the [timeout policy](../SAFETY.md#timeout-policy) for error behavior and
+cooperative-timeout limitations.
 
 ## Provider Model IDs
 

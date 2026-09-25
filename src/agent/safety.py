@@ -3,9 +3,14 @@
 import asyncio
 from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Annotated, TypeVar
+
+from pydantic import Field, TypeAdapter, ValidationError
 
 T = TypeVar("T")
+_TIMEOUT_SECONDS: TypeAdapter[float] = TypeAdapter(
+    Annotated[float, Field(gt=0, allow_inf_nan=False)]
+)
 
 
 class CancelledRunError(RuntimeError):
@@ -20,6 +25,15 @@ class SafetyLimits:
     reasoning_timeout_seconds: float = 60.0
     max_source_docs: int = 50
     max_hops: int = 5
+
+    def __post_init__(self) -> None:
+        """Validate phase timeouts on construction and dataclass replacement."""
+        for field in ("retrieval_timeout_seconds", "reasoning_timeout_seconds"):
+            try:
+                seconds = _TIMEOUT_SECONDS.validate_python(getattr(self, field))
+            except ValidationError as exc:
+                raise ValueError(f"{field} must be a finite, positive number of seconds.") from exc
+            setattr(self, field, seconds)
 
     def clamp_hops(self, requested_hops: int) -> int:
         """Clamp requested graph hops to the configured safe range."""
