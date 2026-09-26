@@ -9,6 +9,7 @@ from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from api.collections import resolve_document_scope
 from api.dependencies import AppContainer
 from api.schemas import QueryRequest
+from retrieval.evidence_policy import evidence_limit_arguments
 from retrieval.scope import scope_arguments
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ _PRIVATE_HEADERS = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosn
 
 
 class RetrievalRequest(QueryRequest):
-    """The query and optional document selection; no generation or paging options."""
+    """The query, optional scope and document quota; no generation or paging options."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -35,7 +36,7 @@ class RetrievalRequest(QueryRequest):
     responses={
         404: {"description": "Unknown collection"},
         409: {"description": "Generative retrieval or invalid/broken collection"},
-        422: {"description": "Invalid query, scope, or unsupported request fields"},
+        422: {"description": "Invalid query, scope, document quota, or unsupported request fields"},
         500: {"description": "Planning, retrieval, scope, or context-capture failure"},
         503: {"description": "Collection storage unavailable"},
         504: {"description": "Retrieval or context-preparation timeout"},
@@ -48,7 +49,11 @@ async def retrieve(
     container: AppContainer = request.app.state.container
     document_ids = resolve_document_scope(container, payload)
     try:
-        preview = await container.runner.preview(payload.query, **scope_arguments(document_ids))
+        preview = await container.runner.preview(
+            payload.query,
+            **scope_arguments(document_ids),
+            **evidence_limit_arguments(payload.max_chunks_per_document),
+        )
     except RetrievalPreviewError as exc:
         logger.warning("Retrieval preview failed: %s", exc.code)
         raise HTTPException(

@@ -51,7 +51,8 @@ flowchart LR
   rrf --> merge[Merge by chunk ID and bound results]
   graph --> merge
   merge --> rerank[Lexical overlap reranking]
-  rerank --> snapshot[Persist exact context snapshot]
+  rerank --> quota[Optional per-document passage quota]
+  quota --> snapshot[Persist exact context snapshot]
   snapshot --> model[Routed provider or fake adapter]
   model --> ground[Token-overlap citation mapping]
   ground --> done[Persist answer and completed run]
@@ -77,12 +78,24 @@ ones. No shared index stores per-request scope. Unscoped calls preserve old
 signatures; unsupported scoped components fail rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+Optional `max_chunks_per_document` on `/query` and `/retrieve` freezes a strict
+1-50 integer in `QueryObservation.evidence_policy` before awaits.
+`Executor.prepare_context` applies the existing `DiversityCapGate` after normal
+reranking, before capture, within the already bounded candidate pool. It preserves
+scores, order, and chunk ownership while appending the prior reranker to gate
+provenance. There is no extra retrieval, oversampling, or shared index mutation;
+fewer passages may remain. The policy is recorded in the initial event and plan,
+validated in previews/exports, and compared even when saved contexts match.
+`RunConfiguration` keeps its four version-one fields; old records default to no
+policy. Unsupported opt-in executor overrides fail rather than discard the quota.
+See [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 ## Generation-Free Retrieval Preview
 
 `POST /retrieve`, in the separate `api.retrieval` router, calls
 `AgentRunner.preview`. It uses the same analyzer, planner, task clamping,
 bounded executor retrieval, and `Executor.prepare_context` as `/query`.
-The latter method performs reranking, scope enforcement, and detached
+The latter method performs reranking, scope/quota enforcement, and detached
 `EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
 only for real queries.
 

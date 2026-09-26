@@ -19,6 +19,14 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
 
+`max_chunks_per_document` is an optional **request field**, not an environment
+setting. `/query`, `/retrieve`, and their runner methods accept strict integers
+1-50; HTTP null is invalid and omission leaves the existing behavior unchanged.
+It limits passages per document after reranking without increasing
+`SCHOLAR_RAG_MAX_SOURCE_DOCS`. Policy is saved separately from the unchanged
+four-field run configuration. See
+[Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive

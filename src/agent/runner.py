@@ -13,6 +13,12 @@ from agent.planner import Planner
 from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from agent.safety import CancellationToken, SafetyLimits, with_timeout
 from agent.state_machine import AgentStateMachine
+from retrieval.evidence_policy import (
+    EvidencePolicy,
+    ensure_evidence_policy,
+    normalize_evidence_policy,
+    policy_arguments,
+)
 from retrieval.scope import (
     DocumentIdsInput,
     ensure_document_scope,
@@ -44,7 +50,11 @@ class AgentRunner:
         self._state_machine = AgentStateMachine()
 
     async def preview(
-        self, query: str, *, document_ids: DocumentIdsInput | None = None
+        self,
+        query: str,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+        max_chunks_per_document: int | None = None,
     ) -> RetrievalPreview:
         """Inspect the query's prepared context without generation, grounding, or event writes.
 
@@ -54,6 +64,7 @@ class AgentRunner:
         if not isinstance(query, str) or not query.strip():
             raise ValueError("query must be a nonempty string.")
         scope = normalize_document_ids(document_ids)
+        policy = normalize_evidence_policy(max_chunks_per_document)
         phase = "planning"
         try:
             limits = replace(self._safety_limits)
@@ -64,11 +75,10 @@ class AgentRunner:
                     "Preview requires non-generative retrieval; LLM-backed HyDE is configured.",
                     409,
                 )
-            observation = self._observe(query, scope)
+            observation = self._observe(query, scope, policy)
             plan = self._planner.plan(str(uuid4()), observation)
             plan = self._clamp_plan(plan, limits)
-            if plan.observation.document_ids != scope:
-                raise ValueError("Planned document_ids do not match the requested scope.")
+            self._validate_plan_request(plan, scope, policy)
 
             phase = "retrieval"
             retrieved = await with_timeout(
@@ -84,11 +94,13 @@ class AgentRunner:
 
             phase = "context_preparation"
             snapshot = await with_timeout(
-                self._executor.prepare_context(plan, retrieved),
+                self._executor.prepare_context(plan, retrieved, **policy_arguments(policy)),
                 configuration.reasoning_timeout_seconds,
                 "context preparation",
             )
+            self._validate_plan_request(plan, scope, policy)
             ensure_document_scope(scope, (source.chunk.document_id for source in snapshot.sources))
+            ensure_evidence_policy(policy, snapshot.sources)
             return RetrievalPreview.from_preparation(plan, configuration, snapshot)
         except RetrievalPreviewError:
             raise
@@ -108,22 +120,35 @@ class AgentRunner:
         token: CancellationToken | None = None,
         *,
         document_ids: DocumentIdsInput | None = None,
+        max_chunks_per_document: int | None = None,
     ) -> AgentRunResult:
         """Execute an Observe-Decide-Act query and return the final result."""
         scope = normalize_document_ids(document_ids)
+        policy = normalize_evidence_policy(max_chunks_per_document)
         run_id = str(uuid4())
         cancellation_token = token or CancellationToken()
         state = AgentState.IDLE
         observation: QueryObservation | None = None
         plan: QueryPlan | None = None
+        context_captured = False
 
         def record_context(snapshot: EvidenceSnapshot) -> None:
+            nonlocal context_captured
+            if policy is not None:
+                if plan is None:
+                    raise ValueError("Evidence capture requires the requested plan.")
+                self._validate_plan_request(plan, scope, policy)
+                ensure_document_scope(
+                    scope, (source.chunk.document_id for source in snapshot.sources)
+                )
+                ensure_evidence_policy(policy, snapshot.sources)
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
                 event_type="evidence_snapshot",
                 payload=snapshot.model_dump(mode="json"),
             )
+            context_captured = True
 
         def record_generation(generation: GenerationRecord) -> None:
             self._event_log.append_event(
@@ -145,13 +170,13 @@ class AgentRunner:
                     "query": query,
                     "configuration": configuration.model_dump(mode="json"),
                     "document_ids": scope,
+                    "evidence_policy": policy.model_dump(mode="json") if policy else None,
                 },
             )
-            observation = self._observe(query, scope)
+            observation = self._observe(query, scope, policy)
             plan = self._planner.plan(run_id, observation)
             plan = self._clamp_plan(plan, limits)
-            if plan.observation.document_ids != scope:
-                raise ValueError("Planned document_ids do not match the requested scope.")
+            self._validate_plan_request(plan, scope, policy)
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
@@ -173,6 +198,9 @@ class AgentRunner:
                 "retrieval",
             )
             ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
+            self._validate_plan_request(plan, scope, policy)
+            if policy is not None and len(retrieved) > configuration.max_source_docs:
+                raise ValueError("Retrieved evidence exceeds the effective source limit.")
 
             cancellation_token.raise_if_cancelled()
             state = self._transition(
@@ -189,8 +217,14 @@ class AgentRunner:
                     retrieved,
                     on_context=record_context,
                     on_generation=record_generation,
+                    **policy_arguments(policy),
                 )
-            except TypeError:
+            except TypeError as exc:
+                if policy is not None:
+                    raise TypeError(
+                        "Executor.answer does not support max_chunks_per_document "
+                        "with evidence_policy and evidence capture callbacks."
+                    ) from exc
                 answer_call = answer_method(plan, retrieved)
             else:
                 answer_call = answer_method(
@@ -198,12 +232,17 @@ class AgentRunner:
                     retrieved,
                     on_context=record_context,
                     on_generation=record_generation,
+                    **policy_arguments(policy),
                 )
             answer = await with_timeout(
                 answer_call,
                 configuration.reasoning_timeout_seconds,
                 "reasoning",
             )
+            if policy is not None and not context_captured:
+                raise ValueError(
+                    "Executor.answer did not capture evidence for max_chunks_per_document."
+                )
             ensure_document_scope(scope, (citation.document_id for citation in answer.citations))
 
             cancellation_token.raise_if_cancelled()
@@ -238,9 +277,22 @@ class AgentRunner:
                 error=str(exc),
             )
 
-    def _observe(self, query: str, scope: tuple[str, ...] | None) -> QueryObservation:
-        """Detach the analyzed query and the request's immutable document selection."""
-        return self._analyzer.analyze(query).model_copy(deep=True, update={"document_ids": scope})
+    def _observe(
+        self, query: str, scope: tuple[str, ...] | None, policy: EvidencePolicy | None
+    ) -> QueryObservation:
+        """Detach the analyzed query and the request's immutable scope and evidence policy."""
+        return self._analyzer.analyze(query).model_copy(
+            deep=True, update={"document_ids": scope, "evidence_policy": policy}
+        )
+
+    @staticmethod
+    def _validate_plan_request(
+        plan: QueryPlan, scope: tuple[str, ...] | None, policy: EvidencePolicy | None
+    ) -> None:
+        if plan.observation.document_ids != scope:
+            raise ValueError("Planned document_ids do not match the requested scope.")
+        if plan.observation.evidence_policy != policy:
+            raise ValueError("Planned evidence_policy does not match the requested quota.")
 
     @staticmethod
     def _configuration(limits: SafetyLimits) -> RunConfiguration:

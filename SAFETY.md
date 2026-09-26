@@ -34,6 +34,16 @@ executor applies it as a maximum number of retrieved **chunk results**, not a
 distinct-document quota. Multiple chunks may come from one paper; this is not a
 guarantee of source diversity or comprehensive coverage.
 
+Requests may opt into `max_chunks_per_document`, a strict integer from 1 to 50.
+The frozen per-request policy caps actual document IDs after reranking of the
+existing bounded pool; it does not widen scope, fetch replacements, guarantee
+distinct papers, or establish study quality, recall, or source independence.
+HTTP null, strings, booleans, floats, and out-of-range values are rejected before
+work. Unsupported custom executors fail explicitly rather than ignore a quota.
+Previews remain generation/event-write free, and old saved runs without a policy
+remain readable. See the complete
+[per-paper evidence limits guide](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 Planner tasks request one to three graph hops, depending on intent.
 `SCHOLAR_RAG_MAX_HOPS` defaults to 5 and clamps those tasks; API settings allow
 no more than 5. Co-mention traversal is bounded retrieval, not proof of a

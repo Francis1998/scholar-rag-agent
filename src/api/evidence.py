@@ -45,6 +45,15 @@ def render_markdown(bundle: EvidenceBundle) -> str:
             else "Selected document IDs (unknown IDs may match no chunks):\n"
             + "\n".join(bundle.plan.observation.document_ids)
         ),
+        "## Per-paper evidence policy\n",
+        _literal(
+            "No per-document quota requested. Older records may omit evidence_policy."
+            if bundle.plan.observation.evidence_policy is None
+            else "max_chunks_per_document="
+            f"{bundle.plan.observation.evidence_policy.max_chunks_per_document}\n"
+            "Applied after reranking within the bounded candidate pool; no extra retrieval.\n"
+            "Fewer passages may remain; distinct-paper coverage is not guaranteed."
+        ),
         "## Effective runtime configuration\n",
         _json_block(bundle.configuration),
         "## Answer\n",
