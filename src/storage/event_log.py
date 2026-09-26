@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -40,7 +41,7 @@ class SQLiteEventLog:
         payload: dict[str, Any],
     ) -> int:
         """Persist a generic JSON event and return its id."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             cursor = connection.execute(
                 """
                 INSERT INTO agent_events (timestamp, agent_id, run_id, event_type, payload)
@@ -62,7 +63,7 @@ class SQLiteEventLog:
             query += " WHERE run_id = ?"
             parameters = (run_id,)
         query += " ORDER BY id ASC"
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             rows = connection.execute(query, parameters).fetchall()
         return [
             {
@@ -78,7 +79,7 @@ class SQLiteEventLog:
 
     def _initialize(self) -> None:
         """Create the event-log schema when missing."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_events (
