@@ -35,7 +35,10 @@ class IngestResponse(BaseModel):
 class QueryRequest(BaseModel):
     """Request body for agent query execution."""
 
-    query: str = Field(min_length=1)
+    query: str = Field(
+        min_length=1,
+        description="Research question with non-whitespace text; validation does not trim it.",
+    )
     document_ids: DocumentIds | SkipJsonSchema[None] = Field(
         default=None,
         frozen=True,
@@ -71,6 +74,13 @@ class QueryRequest(BaseModel):
     def reject_null_evidence_limit(cls, value: object) -> object:
         if value is None:
             raise ValueError("max_chunks_per_document cannot be null; omit it for no quota.")
+        return value
+
+    @field_validator("query")
+    @classmethod
+    def reject_blank_query(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("query must not be blank.")
         return value
 
     @field_validator("document_ids", "collection_id", mode="before")

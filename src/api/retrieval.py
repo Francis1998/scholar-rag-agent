@@ -3,7 +3,7 @@
 import logging
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict
 
 from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from api.collections import resolve_document_scope
@@ -21,13 +21,6 @@ class RetrievalRequest(QueryRequest):
     """The query, optional scope and document quota; no generation or paging options."""
 
     model_config = ConfigDict(extra="forbid")
-
-    @field_validator("query")
-    @classmethod
-    def reject_blank_query(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("query must not be blank.")
-        return value
 
 
 @router.post(

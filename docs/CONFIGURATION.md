@@ -92,6 +92,14 @@ Without LLM provider keys, generation uses deterministic local fakes. Setting a
 model ID alone does not enable HTTP calls. `SEMANTIC_SCHOLAR_API_KEY` is for paper
 metadata, not LLM routing.
 
+For `GEMINI_API_KEY`, Google's current guidance permits auth keys and appropriately
+restricted standard keys; **unrestricted standard keys are rejected**. Header
+transport does not change key type or restrictions. This adapter still sends
+`contents`/`parts` to `generateContent`, while Google's latest REST quickstart
+uses `model`/`input` at `/v1beta/interactions`. See the source-linked
+[Gemini compatibility notes](guides/PROVIDER_MODELS_GUIDE.md#google-gemini);
+the quickstart and our offline tests do not establish live endpoint/model access.
+
 ## Routing and Fallbacks
 
 | Request task type | Preferred provider |

@@ -47,6 +47,12 @@ See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults rechecked on **2026-09-26 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
+
+Gemini still uses `generateContent`, not the current Interactions quickstart.
+Google rejects unrestricted standard keys; auth keys and appropriately restricted
+standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
+Setting an API key header does not migrate the endpoint or the key's permissions.
+
 Live adapters reject invalid JSON or absent/blank final answer text with an
 explicit, nonretryable provider-response error; `/query` records an `ERROR` run
 rather than a completed empty answer.

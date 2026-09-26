@@ -61,8 +61,7 @@ class AgentRunner:
         Invalid input raises ValueError. Operational failures raise RetrievalPreviewError
         with a diagnostic cause; external task cancellation propagates without journaling.
         """
-        if not isinstance(query, str) or not query.strip():
-            raise ValueError("query must be a nonempty string.")
+        self._validate_query(query)
         scope = normalize_document_ids(document_ids)
         policy = normalize_evidence_policy(max_chunks_per_document)
         phase = "planning"
@@ -122,7 +121,8 @@ class AgentRunner:
         document_ids: DocumentIdsInput | None = None,
         max_chunks_per_document: int | None = None,
     ) -> AgentRunResult:
-        """Execute an Observe-Decide-Act query and return the final result."""
+        """Execute a query; invalid input raises ValueError before run IDs or event writes."""
+        self._validate_query(query)
         scope = normalize_document_ids(document_ids)
         policy = normalize_evidence_policy(max_chunks_per_document)
         run_id = str(uuid4())
@@ -276,6 +276,11 @@ class AgentRunner:
                 plan=plan,
                 error=str(exc),
             )
+
+    @staticmethod
+    def _validate_query(query: object) -> None:
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must be a nonempty string.")
 
     def _observe(
         self, query: str, scope: tuple[str, ...] | None, policy: EvidencePolicy | None
