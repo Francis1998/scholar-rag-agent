@@ -1,6 +1,3 @@
-- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
-- **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
-
 # Documentation catalog
 
 Start with a working local workflow, then choose extensions deliberately.
@@ -14,6 +11,7 @@ accumulated feature list in the project README.
 | Install and run without model credentials | [Quickstart](../QUICKSTART.md) |
 | Work through a small corpus and prepare an honest portfolio demonstration | [Research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
+| Read bounded passages from a stored paper before choosing query scope | [Stored chunk reader and offline demo](guides/DOCUMENT_CHUNKS_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
@@ -60,6 +58,12 @@ Older guides and their generated animations retain historical model names and
 illustrative examples. Use the dated, source-linked
 [provider model guide](guides/PROVIDER_MODELS_GUIDE.md) for current defaults and
 routing; an old provider name in a helper guide is not a compatibility promise.
+
+Choose [planning and context](#query-planning-and-context),
+[ranking and diversity](#ranking-and-diversity), [gates and filters](#gates-and-filters),
+[evidence and corpus organization](#evidence-inspection-and-corpus-organization),
+[clinical and statistical cues](#clinical-and-statistical-evidence-cues), or
+[source adapters](#source-adapters-papers-repositories-and-registries).
 
 ### Query planning and context
 
@@ -148,17 +152,6 @@ evidence. Keep a baseline and evaluate on labeled queries before adopting them.
 | [Author-name disambiguation](guides/AUTHOR_NAME_DISAMBIGUATION_HINT_GUIDE.md) | Surname and initial grouping hints |
 | [Author expertise](guides/AUTHOR_EXPERTISE_GUIDE.md) | Metadata-based expertise proxies |
 | [Dataset mentions](guides/DATASET_MENTION_INDEXER_GUIDE.md) | Curated dataset-name cues |
-| [Method extraction cards](guides/METHOD_EXTRACT_CARD_GUIDE.md) | Study-design and methods cues |
-| [Sample-size hints](guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Sample-size integers in text |
-| [Effect-size hints](guides/EFFECT_SIZE_HINT_EXTRACTOR_GUIDE.md) | Labeled effect-size values |
-| [P-value hints](guides/P_VALUE_HINT_EXTRACTOR_GUIDE.md) | Significance-value patterns |
-| [Confidence-interval hints](guides/CONFIDENCE_INTERVAL_HINT_EXTRACTOR_GUIDE.md) | Interval bounds in text |
-| [Heterogeneity I2 hints](guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md) | Meta-analysis I2 / heterogeneity cues |
-| [Study limitations](guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Limitation-language cues |
-| [Funding disclosures](guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Funding and grant cues |
-| [Conflict-of-interest flags](guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Disclosure cues |
-| [Preregistration flags](guides/PREREGISTRATION_FLAG_DETECTOR_GUIDE.md) | Registry and preregistration cues |
-| [Open-data availability](guides/OPEN_DATA_AVAILABILITY_FLAGGER_GUIDE.md) | Data-availability cues |
 | [Retraction watch flagger](guides/RETRACTION_FLAGGER_GUIDE.md) | Advisory flags from caller-supplied offline sets |
 | [PRISMA screening checklist](guides/PRISMA_SCREENING_CHECKLIST_GUIDE.md) | Pending human-review rows, never automatic include/exclude |
 | [Reading-list prioritization](guides/READING_LIST_PRIORITIZER_GUIDE.md) | Explainable unread-queue triage |
@@ -168,6 +161,63 @@ evidence. Keep a baseline and evaluate on labeled queries before adopting them.
 | [Survey gaps](guides/SURVEY_GAP_GUIDE.md) | Coverage of caller-provided themes, not proof of novelty |
 | [BibTeX export](guides/BIBTEX_EXPORT_GUIDE.md) | Bibliography entries from supplied metadata |
 | [Evaluation harness](guides/EVALUATION_HARNESS_GUIDE.md) | Labeled retrieval cases and lexical answer metrics |
+
+### Clinical and statistical evidence cues
+
+These offline helpers locate reported wording or numbers in caller-supplied
+paper text. They do not calculate missing statistics, assess treatment benefit,
+or replace human study-quality review. A missing cue is not evidence that a
+study has no bias. They require explicit Python integration; `/query` does not
+run them automatically. Usage examples and individual GIFs remain in each guide.
+
+#### Study design, conduct, and outcomes
+
+| Guide | Reported cues |
+| --- | --- |
+| [Method extraction cards](guides/METHOD_EXTRACT_CARD_GUIDE.md) | Study-design and methods cues |
+| [Allocation concealment](guides/ALLOCATION_CONCEALMENT_CUE_EXTRACTOR_GUIDE.md) | Allocation-concealment wording |
+| [Blinding status](guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md) | Blinding and masking descriptions |
+| [Cluster randomization](guides/CLUSTER_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md) | Cluster-randomized, stepped-wedge, and ICC wording |
+| [Crossover design](guides/CROSSOVER_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Crossover and treatment-sequence descriptions |
+| [Washout periods](guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md) | Washout, run-in, and wash-in periods |
+| [Baseline imbalance](guides/BASELINE_IMBALANCE_CUE_EXTRACTOR_GUIDE.md) | Baseline, covariate, and Table-1 imbalance wording |
+| [Intention to treat](guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md) | Analysis-population descriptions |
+| [Protocol deviations](guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md) | Protocol-deviation wording |
+| [Interim analysis](guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Interim analysis, monitoring, and early stopping |
+| [Noninferiority margins](guides/NONINFERIORITY_MARGIN_CUE_EXTRACTOR_GUIDE.md) | Noninferiority and equivalence-margin wording |
+| [Multiplicity adjustment](guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md) | Multiple-testing and adjustment descriptions |
+| [Primary endpoints](guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md) | Primary-outcome and endpoint wording |
+| [Surrogate endpoints](guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md) | Surrogate-outcome descriptions |
+| [Follow-up duration](guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md) | Follow-up and observation periods |
+| [Attrition rates](guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md) | Dropout and loss-to-follow-up reporting |
+| [Subgroup analysis](guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Subgroup and interaction-analysis wording |
+| [Adverse events](guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md) | Adverse-event and safety-reporting wording |
+
+#### Statistical reporting hints
+
+| Guide | Reported cues |
+| --- | --- |
+| [Sample-size hints](guides/SAMPLE_SIZE_HINT_EXTRACTOR_GUIDE.md) | Sample-size integers in text |
+| [Effect-size hints](guides/EFFECT_SIZE_HINT_EXTRACTOR_GUIDE.md) | Labeled effect-size values |
+| [P-value hints](guides/P_VALUE_HINT_EXTRACTOR_GUIDE.md) | Significance-value patterns |
+| [Confidence-interval hints](guides/CONFIDENCE_INTERVAL_HINT_EXTRACTOR_GUIDE.md) | Interval bounds in text |
+| [Heterogeneity I2 hints](guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md) | Meta-analysis I2 / heterogeneity cues |
+| [Statistical power](guides/STATISTICAL_POWER_HINT_EXTRACTOR_GUIDE.md) | Power percentages and power-calculation wording |
+| [Absolute risk reduction](guides/ARR_HINT_EXTRACTOR_GUIDE.md) | ARR and risk-difference numeric hints |
+| [Number needed to treat](guides/NNT_HINT_EXTRACTOR_GUIDE.md) | NNT, NNH, and ARR metric/value hints |
+
+#### Limitations, bias, and disclosures
+
+| Guide | Reported cues |
+| --- | --- |
+| [Study limitations](guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Limitation-language cues |
+| [Risk of bias](guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md) | Advisory risk-of-bias domain wording, not a completed assessment |
+| [Publication bias](guides/PUBLICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Funnel plots, Egger's test, and small-study effects |
+| [Funding disclosures](guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Funding and grant cues |
+| [Funding conflicts](guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md) | Funding and conflict-of-interest wording |
+| [Conflict-of-interest flags](guides/CONFLICT_OF_INTEREST_FLAGGER_GUIDE.md) | Disclosure cues |
+| [Preregistration flags](guides/PREREGISTRATION_FLAG_DETECTOR_GUIDE.md) | Registry and preregistration cues |
+| [Open-data availability](guides/OPEN_DATA_AVAILABILITY_FLAGGER_GUIDE.md) | Data-availability cues |
 
 ### Source adapters: papers, repositories, and registries
 

@@ -1,24 +1,3 @@
-- **ClusterRandomizationCueExtractor**: offline evidence cue extractor — see `docs/guides/CLUSTER_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md`
-- **WashoutPeriodCueExtractor**: offline washout/run-in cue extractor — see `docs/guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md`
-- **BaselineImbalanceCueExtractor**: offline baseline-imbalance cue extractor — see `docs/guides/BASELINE_IMBALANCE_CUE_EXTRACTOR_GUIDE.md`
-- **CrossoverDesignCueExtractor**: offline crossover-design cue extractor — see `docs/guides/CROSSOVER_DESIGN_CUE_EXTRACTOR_GUIDE.md`
-- **NonInferiorityMarginCueExtractor**: offline evidence cue extractor — see `docs/guides/NONINFERIORITY_MARGIN_CUE_EXTRACTOR_GUIDE.md`
-- **InterimAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
-- **FundingConflictCueExtractor**: offline evidence cue extractor — see `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`
-- **AllocationConcealmentCueExtractor**: offline evidence cue extractor — see `docs/guides/ALLOCATION_CONCEALMENT_CUE_EXTRACTOR_GUIDE.md`
-- **ProtocolDeviationCueExtractor**: offline evidence cue extractor — see `docs/guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md`
-- **MultiplicityAdjustmentCueExtractor**: offline evidence cue extractor — see `docs/guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md`
-- **SurrogateEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
-- **FollowUpDurationCueExtractor**: offline evidence cue extractor — see `docs/guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md`
-- **AdverseEventCueExtractor**: offline evidence cue extractor — see `docs/guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md`
-- **SubgroupAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
-- **AttritionRateCueExtractor**: offline evidence cue extractor — see `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`
-- **BlindingStatusCueExtractor**: offline evidence cue extractor — see `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`
-- **PrimaryEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
-- **IntentionToTreatCueExtractor**: offline evidence cue extractor — see `docs/guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md`
-- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
-- **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
-
 # Scholar RAG Agent
 
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
@@ -89,21 +68,6 @@ and context-digest contracts, scope, and errors. This is the shared `/query`
 context preparation, not semantic entailment or a promise about a changed corpus.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
-![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
-![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
-![ClusterRandomizationCueExtractor](docs/assets/cluster-randomization-cue-extractor.gif)
-![WashoutPeriodCueExtractor](docs/assets/washout-period-cue-extractor.gif)
-![BaselineImbalanceCueExtractor](docs/assets/baseline-imbalance-cue-extractor.gif)
-![CrossoverDesignCueExtractor](docs/assets/crossover-design-cue-extractor.gif)
-![NonInferiorityMarginCueExtractor](docs/assets/noninferiority-margin-cue-extractor.gif)
-![InterimAnalysisCueExtractor](docs/assets/interim-analysis-cue-extractor.gif)
-![FundingConflictCueExtractor](docs/assets/funding-conflict-cue-extractor.gif)
-![AllocationConcealmentCueExtractor](docs/assets/allocation-concealment-cue-extractor.gif)
-![ProtocolDeviationCueExtractor](docs/assets/protocol-deviation-cue-extractor.gif)
-![MultiplicityAdjustmentCueExtractor](docs/assets/multiplicity-adjustment-cue-extractor.gif)
-![SurrogateEndpointCueExtractor](docs/assets/surrogate-endpoint-cue-extractor.gif)
-![FollowUpDurationCueExtractor](docs/assets/follow-up-duration-cue-extractor.gif)
-![AdverseEventCueExtractor](docs/assets/adverse-event-cue-extractor.gif)
 
 This generated animation illustrates the synthetic offline evidence-export demo,
 not a live research UI or a real model's scientific findings. Follow the
@@ -165,13 +129,11 @@ Read [Safety](SAFETY.md) before using non-synthetic material.
 
 ## Offline evidence extractors
 
-![Heterogeneity I2 hint extractor demo](docs/assets/heterogeneity-i2-hint-extractor.gif)
-
-Library helpers can surface meta-analysis and statistics cues from local paper
-text without a network call. `HeterogeneityI2HintExtractor` pulls I2 / I^2 /
-heterogeneity phrases from abstracts (Elicit/Consensus gap; distinct from
-`EffectSizeHintExtractor` and `PValueHintExtractor`). See the
-[heterogeneity I2 guide](docs/guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md).
+Clinical and statistical cue extractors are **opt-in Python helpers**, not
+additional `/query` stages or clinical assessments. Browse the
+[categorized cue guides](docs/README.md#clinical-and-statistical-evidence-cues)
+for study-design, outcome, statistical, and reporting cues. Each guide retains
+its usage examples and illustration; these heuristics do not validate findings.
 
 ## Documentation
 

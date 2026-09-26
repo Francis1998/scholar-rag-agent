@@ -21,7 +21,9 @@ The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
 available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro
 preview rather than the current GA Flash choice. Moonshot explicitly lists the
 `kimi-k2` series as discontinued on **2026-05-25**; the old local default was
-`kimi-k2`, not a preview-suffixed ID.
+`kimi-k2`, not a preview-suffixed ID. The same Kimi model list also records
+`kimi-k2.5` and the `moonshot-v1` series as discontinued on **2026-08-31**;
+those are not supported fallback recommendations.
 
 Use `SCHOLAR_RAG_OPENAI_MODEL`, `SCHOLAR_RAG_ANTHROPIC_MODEL`,
 `SCHOLAR_RAG_GEMINI_MODEL`, and `SCHOLAR_RAG_KIMI_MODEL` to select alternatives
@@ -111,23 +113,32 @@ removes sampling overrides; this adapter already omits generation configuration.
 The provider's default thinking level is `medium`. Answer parsing concatenates
 all answer-text parts and excludes parts marked `thought: true`.
 
-The current latest-model guide leads with the Interactions API and Google GenAI
-SDK examples. This repository has not migrated to that API/SDK: its adapter
-remains the stateless HTTPX `generateContent` integration described above.
+The current latest-model REST example sends `model`/`input` to
+`POST /v1beta/interactions`, not `generateContent`. This repository has not
+migrated to that API/SDK: it still sends `contents`/`parts` and reads
+`candidates` from `generateContent`. The Interactions example is not proof of
+this endpoint/model combination's compatibility. The guide's migration checklist
+still mentions `generateContent` callers, but the offline tests here only verify
+our wire contract, not service availability for the selected model and account.
 
-Credential transport checked **2026-09-21 America/Los_Angeles**: the
+Credential guidance rechecked **2026-09-26 America/Los_Angeles**: the
 [official API-key guide](https://ai.google.dev/gemini-api/docs/api-key) and
 [latest-model REST example](https://ai.google.dev/gemini-api/docs/latest-model)
-use `x-goog-api-key`. The adapter sends `GEMINI_API_KEY` in that header, never
+use `x-goog-api-key`; this verifies the header convention, not an unchanged
+`generateContent` example. The adapter sends `GEMINI_API_KEY` in that header, never
 in the URL. This retains the existing endpoint version, model selection,
 payload, parsing, and retry policy while preventing URL-based credential
 disclosure through HTTPX errors and newly saved run errors. Headers remain
 sensitive and must not be logged.
 
-The API-key guide states that standard keys are rejected in **September 2026**
-and requires [migration to auth keys](https://ai.google.dev/gemini-api/docs/api-key#migrate-to-auth-key).
-Changing transport does not migrate a key or verify account/model entitlement;
-operators must provision an appropriate auth key and update `GEMINI_API_KEY`.
+The current API-key guide rejects **unrestricted standard keys**, while explicitly
+restricted standard keys continue to work. New AI Studio keys have defaulted to
+service-account-bound auth keys since **2026-05-28**. Use an auth key or a standard
+key appropriately restricted for the Gemini API; the guide explains
+[migration to auth keys](https://ai.google.dev/gemini-api/docs/api-key#migrate-to-auth-key).
+Changing header transport neither migrates a key nor applies its restrictions,
+and does not verify account/model entitlement. Configure `GEMINI_API_KEY` with a
+key appropriate for your project and review its permissions.
 All regression calls use mocked HTTPX transport and dummy credentials, not live
 authentication. Historical error records are not rewritten or deleted:
 rotate/revoke affected keys and restrict access to saved artifacts as described
