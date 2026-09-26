@@ -1,6 +1,6 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-23 America/Los_Angeles** (2026-09-23 UTC);
+Model catalogs rechecked **2026-09-26 America/Los_Angeles** (2026-09-26 UTC);
 default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
 and Opus 5.5 migration notes on 2026-09-22. This is
 documentation verification plus offline HTTPX contract
@@ -110,6 +110,10 @@ The adapter keeps the `v1beta/models/{model}:generateContent` endpoint and a
 removes sampling overrides; this adapter already omits generation configuration.
 The provider's default thinking level is `medium`. Answer parsing concatenates
 all answer-text parts and excludes parts marked `thought: true`.
+
+The current latest-model guide leads with the Interactions API and Google GenAI
+SDK examples. This repository has not migrated to that API/SDK: its adapter
+remains the stateless HTTPX `generateContent` integration described above.
 
 Credential transport checked **2026-09-21 America/Los_Angeles**: the
 [official API-key guide](https://ai.google.dev/gemini-api/docs/api-key) and

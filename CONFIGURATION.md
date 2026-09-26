@@ -36,7 +36,7 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-23 America/Los_Angeles** and payload
+source-linked defaults rechecked on **2026-09-26 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
 Live adapters reject invalid JSON or absent/blank final answer text with an

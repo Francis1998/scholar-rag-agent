@@ -101,6 +101,27 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Model-Free Research Worksheets
+
+`ResearchWorksheetService`, wired through `AppContainer.worksheets` and
+`POST /research/worksheet`, composes `AgentRunner.preview` for each question
+and selected paper. The existing collection store validates explicit IDs or
+resolves a saved collection once before asynchronous work. Each cell receives
+an immutable one-paper scope; no shared runner configuration is changed.
+
+Requests are capped at five questions, ten papers, fifty cells, and three
+returned passages per cell. The service validates preview ownership, ordering,
+context and full-text digests, then exposes bounded excerpts with explicit
+truncation flags. Both JSON and literal Markdown must fit 256 KiB. A cooperative
+30-second overall deadline complements the existing preview phase timeouts.
+Any failed cell rejects the whole worksheet; cancellation propagates.
+
+Construction does not invoke generation or append agent events, and introduces
+no schema or new retrieval algorithm. Membership is frozen, not corpus contents;
+inspection links read current chunks. Existence is rechecked before completion.
+See the [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) for schemas,
+errors, privacy, limitations, and the measured offline demonstration.
+
 ## Data Flow
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
