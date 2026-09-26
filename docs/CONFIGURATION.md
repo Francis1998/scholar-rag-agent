@@ -106,6 +106,13 @@ This fallback policy selects providers before a call. HTTP failures are surfaced
 after the existing transient-error retries; they do not trigger cross-provider
 or fake failover.
 
+Each live adapter instance admits 60 HTTP attempts per sliding minute by default,
+counting the initial request, retries, and failed requests separately. Retries
+wait for capacity after backoff; waiting does not consume retry attempts. The
+three-retry cap and generation timeout remain unchanged. Admission state is
+in memory, not shared across instances or workers. See
+[provider backoff and rate limits](../SAFETY.md#provider-backoff).
+
 HTTP-success bodies must be JSON objects with nonblank final answer text.
 `ProviderResponseError` reports unusable output without raw body or credential
 content; it is not retried or replaced with an empty/fake answer. `/query`

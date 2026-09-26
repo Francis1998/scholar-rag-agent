@@ -1,15 +1,30 @@
 """Tests for provider rate limiting and backoff helpers."""
 
 import asyncio
+import json
 from collections.abc import Iterator
 from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 
-from llm.providers import OpenAIAdapter
+from llm.providers import (
+    AnthropicAdapter,
+    GeminiAdapter,
+    HTTPProviderAdapter,
+    KimiAdapter,
+    OpenAIAdapter,
+    ProviderResponseError,
+)
 from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, LLMResponse, TaskType
+
+REQUEST = LLMRequest(
+    task_type=TaskType.DEFAULT,
+    prompt="Summarize the evidence.",
+    context="[c1] Synthetic evidence.",
+    citation_chunk_ids=["c1"],
+)
 
 
 class ManualClock:
@@ -55,6 +70,73 @@ async def checkpoint() -> None:
     ready: asyncio.Future[None] = asyncio.get_running_loop().create_future()
     asyncio.get_running_loop().call_soon(ready.set_result, None)
     await ready
+
+
+@pytest.fixture(
+    params=[OpenAIAdapter, AnthropicAdapter, GeminiAdapter, KimiAdapter],
+    ids=lambda provider: provider.provider_name,
+)
+def adapter(request: pytest.FixtureRequest) -> HTTPProviderAdapter:
+    provider: type[HTTPProviderAdapter] = request.param
+    instance = provider(api_key="test-key", model="configured-model")
+    instance._limiter = AsyncRateLimiter(requests_per_minute=1)
+    return instance
+
+
+@pytest.fixture(
+    params=[429, 500, 502, 503, 504, httpx.ConnectError, httpx.ReadTimeout],
+    ids=["429", "500", "502", "503", "504", "connect-error", "read-timeout"],
+)
+def transient_failures(
+    request: pytest.FixtureRequest,
+) -> list[httpx.Response | httpx.TransportError]:
+    failure: int | type[httpx.TransportError] = request.param
+    if isinstance(failure, int):
+        return [httpx.Response(failure, json={"error": f"failure {i}"}) for i in range(4)]
+    return [failure(f"synthetic transport failure {i}") for i in range(4)]
+
+
+def successful_response() -> httpx.Response:
+    text = "  Synthetic answer [c1].\n"
+    return httpx.Response(
+        200,
+        json={
+            "choices": [{"message": {"content": text}}],
+            "content": [{"type": "text", "text": text}],
+            "candidates": [{"content": {"parts": [{"text": text}]}}],
+        },
+    )
+
+
+def mock_provider_http(
+    monkeypatch: pytest.MonkeyPatch,
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    outcomes: list[httpx.Response | httpx.TransportError],
+) -> list[float]:
+    original_client = httpx.AsyncClient
+    request_times: list[float] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        request_times.append(clock.now)
+        assert request.method == "POST"
+        assert request.url == adapter.endpoint
+        assert json.loads(request.content) == adapter.payload(REQUEST)
+        for name, value in adapter.headers.items():
+            assert request.headers[name] == value
+        assert len(request_times) <= len(outcomes), "unexpected extra HTTP attempt"
+        outcome = outcomes[len(request_times) - 1]
+        if isinstance(outcome, httpx.TransportError):
+            raise outcome
+        return outcome
+
+    def create_client(*, timeout: float) -> httpx.AsyncClient:
+        return original_client(
+            timeout=timeout, transport=httpx.MockTransport(respond), trust_env=False
+        )
+
+    monkeypatch.setattr("llm.providers.httpx.AsyncClient", create_client)
+    return request_times
 
 
 @pytest.mark.asyncio
@@ -365,4 +447,232 @@ async def test_provider_retries_transient_http_errors() -> None:
 
     assert result.text == "hello"
     assert mock_client.post.await_count == 2
-    limiter.acquire.assert_awaited_once()
+    assert limiter.acquire.await_count == 2
+
+
+async def test_provider_retries_wait_for_each_http_admission(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    transient_failures: list[httpx.Response | httpx.TransportError],
+) -> None:
+    request_times = mock_provider_http(
+        monkeypatch, adapter, clock, [*transient_failures[:3], successful_response()]
+    )
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        for attempt, delay in enumerate((0.25, 0.5, 1.0), start=1):
+            previous_time = (attempt - 1) * 60.0
+            expected_times = [i * 60.0 for i in range(attempt)]
+            assert request_times == expected_times
+            assert adapter._limiter._timestamps == [previous_time]
+            assert clock.delays[-1] == delay
+
+            clock.wake_at(previous_time + delay)
+            await checkpoint()
+            assert request_times == expected_times
+            assert not task.done()
+            assert clock.delays[-1] == 60.0 - delay
+
+            clock.wake_at(previous_time + 30.0)
+            await checkpoint()
+            assert request_times == expected_times
+            assert adapter._limiter._timestamps == [previous_time]
+            assert clock.delays[-1] == 30.0
+
+            clock.wake_at(attempt * 60.0)
+            await checkpoint()
+
+        assert task.done()
+        result = await task
+        assert request_times == [0.0, 60.0, 120.0, 180.0]
+        assert adapter._limiter._timestamps == [180.0]
+        assert result.text == "  Synthetic answer [c1].\n"
+        assert result.citation_chunk_ids == REQUEST.citation_chunk_ids
+        assert result.raw_provider == adapter.provider_name
+        assert result.model_name == "configured-model"
+        assert not clock.sleepers
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_provider_exhaustion_counts_all_attempts_and_preserves_last_error(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    transient_failures: list[httpx.Response | httpx.TransportError],
+) -> None:
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+    request_times = mock_provider_http(monkeypatch, adapter, clock, transient_failures)
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        assert request_times == [0.0]
+        for now in (0.25, 0.75, 1.75):
+            clock.wake_at(now)
+            await checkpoint()
+        assert task.done()
+        last_failure = transient_failures[-1]
+        if isinstance(last_failure, httpx.TransportError):
+            with pytest.raises(type(last_failure)) as caught_transport:
+                await task
+            assert caught_transport.value is last_failure
+        else:
+            with pytest.raises(httpx.HTTPStatusError) as caught_status:
+                await task
+            assert caught_status.value.response is last_failure
+            assert caught_status.value.request is last_failure.request
+        assert request_times == [0.0, 0.25, 0.75, 1.75]
+        assert adapter._limiter._timestamps == request_times
+        assert clock.delays == [0.25, 0.5, 1.0]
+        assert not clock.sleepers
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize("status_code", [400, 401, 200], ids=["400", "401", "invalid-success"])
+async def test_nonretryable_provider_errors_consume_one_http_admission(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+) -> None:
+    response = httpx.Response(status_code, json={})
+    request_times = mock_provider_http(monkeypatch, adapter, clock, [response])
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        assert task.done()
+        if status_code == 200:
+            with pytest.raises(ProviderResponseError, match="no nonblank final answer text"):
+                await task
+        else:
+            with pytest.raises(httpx.HTTPStatusError) as caught:
+                await task
+            assert caught.value.response is response
+        assert request_times == [0.0]
+        assert adapter._limiter._timestamps == [0.0]
+        assert not clock.delays
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize("phase", ["initial-admission", "retry-admission", "backoff"])
+async def test_provider_cancellation_sends_no_extra_request_or_claims_future_capacity(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    phase: str,
+) -> None:
+    first_response = successful_response() if phase == "initial-admission" else httpx.Response(503)
+    request_times = mock_provider_http(
+        monkeypatch, adapter, clock, [first_response, successful_response()]
+    )
+    if phase == "initial-admission":
+        await adapter.generate(REQUEST)
+    tasks = [asyncio.create_task(adapter.generate(REQUEST))]
+    try:
+        await checkpoint()
+        if phase == "retry-admission":
+            clock.wake_at(0.25)
+            await checkpoint()
+        assert request_times == [0.0]
+        assert not tasks[0].done()
+        assert adapter._limiter._timestamps == [0.0]
+
+        assert tasks[0].cancel("cancel waiting generation")
+        with pytest.raises(asyncio.CancelledError) as caught:
+            await tasks[0]
+        assert caught.value.args == ("cancel waiting generation",)
+        assert adapter._limiter._timestamps == [0.0]
+        assert request_times == [0.0]
+        assert not clock.sleepers
+
+        tasks.append(asyncio.create_task(adapter.generate(REQUEST)))
+        await checkpoint()
+        assert request_times == [0.0]
+        assert not tasks[1].done()
+        clock.wake_at(60.0)
+        await checkpoint()
+        assert tasks[1].done()
+        assert (await tasks[1]).text == "  Synthetic answer [c1].\n"
+        assert request_times == [0.0, 60.0]
+        assert adapter._limiter._timestamps == [60.0]
+        assert not clock.sleepers
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+async def test_concurrent_generation_and_retry_share_http_capacity(
+    adapter: HTTPProviderAdapter, clock: ManualClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        clock,
+        [httpx.Response(503), successful_response(), successful_response()],
+    )
+    tasks = [asyncio.create_task(adapter.generate(REQUEST)) for _ in range(2)]
+    try:
+        await checkpoint()
+        assert request_times == [0.0]
+        clock.wake_at(0.25)
+        await checkpoint()
+        assert request_times == [0.0]
+
+        clock.wake_at(60.0)
+        await checkpoint()
+        assert request_times == [0.0, 60.0]
+        assert tasks[1].done()
+        assert not tasks[0].done()
+        assert adapter._limiter._timestamps == [60.0]
+
+        clock.wake_at(120.0)
+        await checkpoint()
+        assert all(task.done() for task in tasks)
+        results = await asyncio.gather(*tasks)
+        assert all(result.raw_provider == adapter.provider_name for result in results)
+        assert request_times == [0.0, 60.0, 120.0]
+        assert adapter._limiter._timestamps == [120.0]
+        assert not clock.sleepers
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+async def test_generate_once_override_is_admitted_before_each_attempt(clock: ManualClock) -> None:
+    attempt_times: list[float] = []
+
+    class CustomAdapter(OpenAIAdapter):
+        async def _generate_once(self, request: LLMRequest) -> LLMResponse:
+            attempt_times.append(clock.now)
+            if len(attempt_times) == 1:
+                raise httpx.ConnectError("synthetic custom transport failure")
+            return self._text_response("custom answer", request)
+
+    adapter = CustomAdapter(api_key="test-key")
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=1)
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        assert attempt_times == [0.0]
+        clock.wake_at(0.25)
+        await checkpoint()
+        assert attempt_times == [0.0]
+        assert not task.done()
+        clock.wake_at(60.0)
+        await checkpoint()
+        assert task.done()
+        assert (await task).text == "custom answer"
+        assert attempt_times == [0.0, 60.0]
+        assert adapter._limiter._timestamps == [60.0]
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
