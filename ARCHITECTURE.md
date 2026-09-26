@@ -132,6 +132,15 @@ below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
 
+### SQLite connection lifecycle
+
+The core event, document, and graph stores open a connection per operation.
+Their existing transaction context exits before the connection is explicitly
+closed, including after SQL, serialization, or commit failures. Reads materialize
+their rows before closing; connections do not depend on garbage collection for
+release. This does not add connection pooling, make multi-store ingestion atomic,
+or synchronize in-memory retrieval indexes across workers.
+
 ## Persistent Corpus Discovery
 
 `SQLiteDocumentCatalog` projects `GET /documents` directly from existing
