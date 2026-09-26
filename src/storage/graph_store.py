@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from retrieval.models import Chunk, Entity, EntityEdge
@@ -25,7 +26,7 @@ class SQLiteGraphStore:
 
     def add_mentions(self, chunk: Chunk, entities: list[Entity]) -> None:
         """Persist entity mentions for one chunk."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
                 INSERT OR REPLACE INTO graph_chunks (
@@ -56,7 +57,7 @@ class SQLiteGraphStore:
 
     def add_edges(self, edges: list[EntityEdge]) -> None:
         """Persist entity co-mention edges."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.executemany(
                 """
                 INSERT INTO entity_edges (
@@ -101,7 +102,7 @@ class SQLiteGraphStore:
             WHERE m.entity_key IN ({placeholders}) {_document_filter(scope)}
             LIMIT ?
         """  # nosec B608
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             rows = connection.execute(query, (*entity_keys, *scope_parameters, limit)).fetchall()
         return [
             Chunk(
@@ -140,7 +141,7 @@ class SQLiteGraphStore:
             WHERE e.target_key IN ({placeholders}) {_document_filter(scope)}
             LIMIT ?
         """  # nosec B608
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             rows = connection.execute(
                 query, (*entity_keys, *scope_parameters, *entity_keys, *scope_parameters, limit)
             ).fetchall()
@@ -148,7 +149,7 @@ class SQLiteGraphStore:
 
     def _initialize(self) -> None:
         """Create graph tables when missing."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS graph_chunks (
