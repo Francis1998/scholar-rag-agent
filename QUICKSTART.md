@@ -73,6 +73,12 @@ return `"ERROR"` inside a successful HTTP response. Read `answer.claims`,
 `answer.citations`, `answer.ungrounded`, and `answer.warnings`; a grounding flag is
 only a lexical check, not proof of support.
 
+Both `/query` and `/retrieve` require a nonblank string. Empty or whitespace-only
+questions, including Unicode whitespace, return HTTP 422 before planning,
+retrieval, model calls, or agent-event writes. Validation preserves nonblank input;
+the existing analyzer still trims outer whitespace in observations, plans, and
+generation prompts.
+
 To search only selected papers, pass their returned IDs in `document_ids` on
 `/query`. Omit the field for the whole corpus; an empty list or explicit `null`
 is rejected rather than widened. The [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md)
