@@ -1,4 +1,5 @@
 - **ClusterRandomizationCueExtractor**: offline evidence cue extractor — see `docs/guides/CLUSTER_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md`
+- **WashoutPeriodCueExtractor**: offline washout/run-in cue extractor — see `docs/guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md`
 - **NonInferiorityMarginCueExtractor**: offline evidence cue extractor — see `docs/guides/NONINFERIORITY_MARGIN_CUE_EXTRACTOR_GUIDE.md`
 - **InterimAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
 - **FundingConflictCueExtractor**: offline evidence cue extractor — see `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`
@@ -78,6 +79,7 @@ context preparation, not semantic entailment or a promise about a changed corpus
 ![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
 ![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
 ![ClusterRandomizationCueExtractor](docs/assets/cluster-randomization-cue-extractor.gif)
+![WashoutPeriodCueExtractor](docs/assets/washout-period-cue-extractor.gif)
 ![NonInferiorityMarginCueExtractor](docs/assets/noninferiority-margin-cue-extractor.gif)
 ![InterimAnalysisCueExtractor](docs/assets/interim-analysis-cue-extractor.gif)
 ![FundingConflictCueExtractor](docs/assets/funding-conflict-cue-extractor.gif)
