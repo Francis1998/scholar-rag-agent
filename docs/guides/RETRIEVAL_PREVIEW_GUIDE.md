@@ -91,8 +91,13 @@ curl --fail-with-body --silent --show-error "$BASE_URL/retrieve" \
   -d '{"query":"Compare GraphRAG versus Retrieval."}'
 ```
 
-Only `query` and optional `document_ids` are accepted; unsupported fields such as
-`top_k`, `page`, or model options are 422 errors rather than ignored controls.
+Accepted fields are `query`, optionally either `document_ids` or `collection_id`
+(not both), and optional `max_chunks_per_document`. The quota must be a strict
+integer from 1 to 50; omit it for no per-document quota. Explicit HTTP null is
+rejected. See [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for
+the shared query/preview contract. Unsupported fields such as `top_k`, `page`,
+or model options are 422 errors rather than ignored controls.
+
 Both `/retrieve` and `/query` require a nonblank string. Non-string, empty, or
 whitespace-only questions (including Unicode whitespace) return 422 before the
 runner, planning, retrieval, model calls, or agent-event writes. Validation does
@@ -122,7 +127,7 @@ The response is the preview object directly, not `/query`'s `{"result": ...}`:
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | `"1.0"` for this inspection contract |
-| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped) |
+| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no quota) |
 | `plan.tasks`, `plan.rationale_trace` | Actual clamped tasks and operational rationale, not hidden model reasoning |
 | `configuration` | Copied effective source/hop caps and retrieval/reasoning timeouts |
 | `sources` | Final ordered full chunks: IDs, text, title, source, metadata, score, one-based rank, retriever, path, `text_sha256` |
