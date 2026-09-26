@@ -108,6 +108,11 @@ failures are HTTP errors rather than `ERROR` run bodies. See the complete
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) for scope,
 limits, Python usage, privacy, and a measured offline demo.
 
+To inspect the same questions against each selected paper, use
+`POST /research/worksheet` with explicit document IDs or a saved collection.
+The [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) provides a complete
+offline example and JSON/Markdown downloads without generation or new run events.
+
 ## 6. Recover run IDs after restart
 
 ```bash

@@ -17,6 +17,7 @@ accumulated feature list in the project README.
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
+| Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |

@@ -1,25 +1,17 @@
 """Safe JSON and literal-Markdown downloads for completed evidence bundles."""
 
 import json
-import re
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from agent.evidence import EvidenceBundle, text_digest
+from agent.markdown import literal_block as _literal
 from api.dependencies import AppContainer
 from storage.evidence_export import EvidenceExportError
 
 router = APIRouter()
-
-
-def _literal(text: str, language: str = "text") -> str:
-    """Keep arbitrary HTML/Markdown inert, including embedded closing fences."""
-    fence_length = max((len(match[0]) + 1 for match in re.finditer(r"`+", text)), default=3)
-    fence = "`" * max(3, fence_length)
-    newline = "" if text.endswith("\n") else "\n"
-    return f"{fence}{language}\n{text}{newline}{fence}\n"
 
 
 def _json_block(value: BaseModel) -> str:

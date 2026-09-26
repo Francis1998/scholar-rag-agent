@@ -99,6 +99,25 @@ errors (409 for generative retrieval), not `ERROR` run bodies or empty successes
 Task cancellation propagates without journaling. See the
 [retrieval preview contract](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Research Worksheets
+
+`POST /research/worksheet` requires explicit document IDs or a saved collection,
+never an unscoped default. It inspects at most five questions across ten papers,
+returning at most three passages per cell with 800-character excerpt prefixes
+and explicit truncation flags. Both download formats must fit 262,144 UTF-8 bytes.
+An overall cooperative 30-second deadline also covers export validation.
+
+The service reuses generation-free previews and writes no agent events.
+It rejects invalid provenance, unknown/stale selections, oversized output, or any
+failed cell rather than returning partial success or widening scope.
+`passages_returned` and `no_passages` describe retrieval output, not scientific
+support or absence of evidence. Model-backed HyDE remains incompatible.
+
+Membership is resolved once; corpus contents and indexes are not frozen.
+Downloads contain sensitive questions, identifiers, labels, and source excerpts;
+no-store/nosniff headers and literal Markdown are not access control or redaction.
+See [worksheet contracts and privacy](docs/guides/RESEARCH_WORKSHEET_GUIDE.md).
+
 ## Cancellation
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked

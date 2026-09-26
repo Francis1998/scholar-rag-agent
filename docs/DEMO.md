@@ -1,5 +1,26 @@
 # Demo
 
+## Per-paper research evidence worksheets
+
+![Measured synthetic offline research worksheet](assets/research-worksheet.gif)
+
+This generated illustration uses executed API/Python output: two questions,
+two selected papers, four cells, no model calls or agent events, and portable
+JSON/Markdown downloads. It is not a UI recording or a scientific finding.
+
+```bash
+WORKSHEET_DIR="$(mktemp -d)/worksheet-demo"
+uv run python -m scripts.demo_research_worksheet --output-dir "$WORKSHEET_DIR"
+uv run python -m scripts.create_research_worksheet_gif \
+  --transcript "$WORKSHEET_DIR/transcript.txt" \
+  --output "$WORKSHEET_DIR/research-worksheet.gif"
+```
+
+Read `checks.json`, both worksheet formats, and `transcript.txt` in the chosen
+directory. The temporary database is removed and existing named artifacts are
+not overwritten. The [worksheet guide](guides/RESEARCH_WORKSHEET_GUIDE.md)
+explains API/Python use, bounds, failure behavior, and honest portfolio use.
+
 ## Generation-free retrieval preview
 
 ![Measured synthetic offline retrieval preview](assets/retrieval-preview.gif)
