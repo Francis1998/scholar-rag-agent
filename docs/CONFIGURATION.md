@@ -35,6 +35,16 @@ are revalidated when copied at run/preview entry, before asynchronous work.
 See the [timeout policy](../SAFETY.md#timeout-policy) for error behavior and
 cooperative-timeout limitations.
 
+## Per-request evidence quotas
+
+`max_chunks_per_document` is optional on `/query`, `/retrieve`, `AgentRunner.run`,
+and `AgentRunner.preview`. It accepts strict integers 1-50, not booleans, strings,
+or floats. Omit it for unchanged behavior; HTTP null is rejected. There is no new
+environment setting. The frozen policy filters the existing post-rerank pool
+without extra retrieval and can leave fewer than `max_source_docs` passages.
+It is retained in the plan/events/exports, not added to `RunConfiguration`.
+See [the complete guide and offline demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 ## Provider Model IDs
 
 | Environment variable | `Settings` field | Default API model ID |

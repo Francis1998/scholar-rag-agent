@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agent.evidence import SHA256, RunConfiguration
 from llm.schemas import TaskType
+from retrieval.evidence_policy import EvidencePolicy
 from retrieval.scope import DocumentIds
 
 PREVIEW_CHARACTERS = 240
@@ -59,6 +60,7 @@ class ComparedRun(_ComparisonModel):
     export_url: str | None
     query: TextSummary
     document_ids: DocumentIds | None
+    evidence_policy: EvidencePolicy | None = None
     configuration: RunConfiguration
     generation: SavedGenerationIdentity
     context_sha256: SHA256
@@ -133,6 +135,7 @@ class RunChanges(_ComparisonModel):
     query_changed: bool
     document_scope_changed: bool
     document_scope_membership_changed: bool
+    evidence_policy_changed: bool = False
     configuration_changed: bool
     provider_changed: bool
     model_changed: bool

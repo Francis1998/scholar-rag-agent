@@ -1,0 +1,27 @@
+1. Compare the same bounded candidate pool
+Synthetic papers=3; chunks=6; shared titles=1.
+Omitted: paper-a=3, paper-b=2, paper-c=1
+Cap 1: paper-a=1, paper-b=1, paper-c=1
+Hybrid / graph calls: omitted=1/1; capped=1/1
+Kept chunks=3 of max_source_docs=6; no refill.
+
+2. Combine a quota with a saved selection
+Collection paper-a + paper-b -> 2 chunks.
+Unknown selected ID -> 0 chunks (scope retained).
+Explicit null -> HTTP 422; boolean -> HTTP 422.
+Preview generation calls=0; preview event writes=0.
+The quota does not guarantee paper coverage or independent evidence.
+
+3. Generate after inspecting the exact evidence
+Query state=DONE; provider=fake.
+Preview / query sources and context identical=True.
+Policy in plan + initial event + export: cap 1.
+Context SHA-256: 2e9efbb792a3248fefe1b705cc9759359801221a41fb3c5d26c66c1b3b0391c8
+The fake answer is plumbing, not a scientific conclusion.
+
+4. Preserve policies and saved evidence
+Cap 1 vs 2 on paper-c: equal context=True.
+Comparison: evidence_policy_changed=True; any_changes=True.
+Exports and comparison after restart: byte-identical=True.
+Query fake generations=3; live HTTP attempts=0.
+Inspect bundle.json, bundle.md, comparison.json before sharing.

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from agent.models import AgentRunResult
+from retrieval.evidence_policy import MaxChunksPerDocument
 from retrieval.scope import DocumentIds
 from storage.paper_collections import CollectionId
 
@@ -57,6 +58,23 @@ class QueryRequest(BaseModel):
             "Null, malformed, unknown, or broken collections never widen scope."
         ),
     )
+    max_chunks_per_document: MaxChunksPerDocument | SkipJsonSchema[None] = Field(
+        default=None,
+        frozen=True,
+        description=(
+            "Optional strict integer 1-50: retain at most this many chunks per document_id "
+            "after normal reranking of the existing bounded candidate pool. Omit for no "
+            "per-document quota; explicit null is invalid. May return fewer than "
+            "max_source_docs; does not fetch extra candidates or guarantee distinct papers."
+        ),
+    )
+
+    @field_validator("max_chunks_per_document", mode="before")
+    @classmethod
+    def reject_null_evidence_limit(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("max_chunks_per_document cannot be null; omit it for no quota.")
+        return value
 
     @field_validator("query")
     @classmethod
