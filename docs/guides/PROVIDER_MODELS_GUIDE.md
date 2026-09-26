@@ -36,6 +36,12 @@ implement provider tool loops, streaming, multimodal inputs, or multi-turn
 reasoning-state replay. The local application uses FastAPI, SQLite, Pydantic, and
 a custom agent state machine; it is not a LangGraph integration.
 
+All four adapters admit each HTTP attempt, including retries and failed requests,
+against the per-instance sliding-minute rate limit (default 60). Transient
+failures retain the same three-retry cap and exponential backoff, then wait for
+capacity before sending another request. Cancellation while waiting or backing
+off sends no further request. See [rate-limit scope and safety](../../SAFETY.md#provider-backoff).
+
 ### Unusable HTTP-success responses
 
 All four live adapters require a JSON object and nonblank final answer text.

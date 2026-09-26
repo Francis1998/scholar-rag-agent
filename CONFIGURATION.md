@@ -42,4 +42,11 @@ test or confirmation of account entitlement.
 Live adapters reject invalid JSON or absent/blank final answer text with an
 explicit, nonretryable provider-response error; `/query` records an `ERROR` run
 rather than a completed empty answer.
+
+Live rate admission counts every HTTP attempt, including failed requests and
+retries, against the default 60 attempts per adapter instance per sliding minute.
+Retries wait for capacity after the existing backoff; the three-retry cap and
+phase timeouts are unchanged. This is not a shared account-wide quota. See
+[provider backoff and rate limits](SAFETY.md#provider-backoff).
+
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.
