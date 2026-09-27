@@ -18,6 +18,7 @@ accumulated feature list in the project README.
 | Apply a per-request passage quota to each paper in query and preview evidence | [Per-paper evidence limits and measured demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
 | Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |
