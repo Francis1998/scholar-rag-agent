@@ -18,9 +18,13 @@ class AsyncRateLimiter:
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
-        """Reject capacities that can never admit a request."""
-        if self.requests_per_minute <= 0:
-            raise ValueError("requests_per_minute must be positive")
+        """Require a positive integer request capacity without coercion."""
+        if (
+            not isinstance(self.requests_per_minute, int)
+            or isinstance(self.requests_per_minute, bool)
+            or self.requests_per_minute <= 0
+        ):
+            raise ValueError("requests_per_minute must be a positive integer")
 
     async def acquire(self) -> None:
         """Wait for capacity; cancellation before admission consumes no slot."""
