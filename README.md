@@ -44,6 +44,7 @@ database and empty provider keys. The interactive API documentation is at
 | Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
@@ -83,6 +84,12 @@ stored evidence, without another retrieval or generation call. Keep the query,
 plan, answer, claims, exact source chunks, trace, and nonsecret model provenance
 together for review. The saved context survives corpus changes and restart; this
 is not a guarantee of identical output from a new LLM run or a signed audit record.
+
+`POST /runs/{run_id}/reviews` records a bounded human judgment and comment in a
+separate SQLite table. `GET /runs/{run_id}/reviews` reads retry-safe, paginated
+history after restart without changing the saved answer or events. Acceptance is
+an opinion, not factual verification or an authenticated approval. See the
+[review guide and actual-output offline GIF](docs/guides/ANSWER_REVIEWS_GUIDE.md).
 
 ## What actually runs
 
