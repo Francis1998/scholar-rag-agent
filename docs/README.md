@@ -187,6 +187,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Intention to treat](guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md) | Analysis-population descriptions |
 | [Protocol deviations](guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md) | Protocol-deviation wording |
 | [Interim analysis](guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Interim analysis, monitoring, and early stopping |
+| [Adaptive designs](guides/ADAPTIVE_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Sample-size re-estimation, adaptive randomization, and seamless-design wording |
 | [Noninferiority margins](guides/NONINFERIORITY_MARGIN_CUE_EXTRACTOR_GUIDE.md) | Noninferiority and equivalence-margin wording |
 | [Multiplicity adjustment](guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md) | Multiple-testing and adjustment descriptions |
 | [Primary endpoints](guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md) | Primary-outcome and endpoint wording |
