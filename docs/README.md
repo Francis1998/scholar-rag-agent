@@ -183,11 +183,14 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Cluster randomization](guides/CLUSTER_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md) | Cluster-randomized, stepped-wedge, and ICC wording |
 | [Crossover design](guides/CROSSOVER_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Crossover and treatment-sequence descriptions |
 | [Estimands](guides/ESTIMAND_ICH_E9_CUE_EXTRACTOR_GUIDE.md) | ICH-E9(R1) estimand strategy wording |
+| [Missing-data mechanisms](guides/MISSING_DATA_MECHANISM_CUE_EXTRACTOR_GUIDE.md) | MCAR/MAR/MNAR missingness wording |
+| [Adaptive designs](guides/ADAPTIVE_DESIGN_CUE_EXTRACTOR_GUIDE.md) | SSR, RAR, and seamless adaptive-design wording |
 | [Washout periods](guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md) | Washout, run-in, and wash-in periods |
 | [Baseline imbalance](guides/BASELINE_IMBALANCE_CUE_EXTRACTOR_GUIDE.md) | Baseline, covariate, and Table-1 imbalance wording |
 | [Intention to treat](guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md) | Analysis-population descriptions |
 | [Protocol deviations](guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md) | Protocol-deviation wording |
 | [Interim analysis](guides/INTERIM_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Interim analysis, monitoring, and early stopping |
+| [Adaptive designs](guides/ADAPTIVE_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Sample-size re-estimation, adaptive randomization, and seamless-design wording |
 | [Noninferiority margins](guides/NONINFERIORITY_MARGIN_CUE_EXTRACTOR_GUIDE.md) | Noninferiority and equivalence-margin wording |
 | [Multiplicity adjustment](guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md) | Multiple-testing and adjustment descriptions |
 | [Primary endpoints](guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md) | Primary-outcome and endpoint wording |
