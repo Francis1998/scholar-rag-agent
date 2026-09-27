@@ -73,8 +73,10 @@ context preparation, not semantic entailment or a promise about a changed corpus
 
 To block answer generation below a chosen distinct-document count, use
 [`min_evidence_documents`](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
-Failed previews keep their passages; failed queries preserve a diagnostic and
-snapshot without generating. Passing a count is not proof of scientific support.
+Previews with an unmet minimum keep their passages; queries with an unmet
+minimum preserve a diagnostic and snapshot without generating. Operational
+preview failures return errors, not partial evidence. Passing a count is not
+proof of scientific support.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
 

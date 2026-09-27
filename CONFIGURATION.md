@@ -27,6 +27,14 @@ It limits passages per document after reranking without increasing
 four-field run configuration. See
 [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
+`min_evidence_documents` is also **request-only**, not an environment setting.
+`/query`, `/retrieve`, and their runner methods accept strict integers 1-50;
+HTTP null is invalid, while omission or Python `None` leaves it unconfigured.
+It checks distinct document IDs in final captured context after reranking and
+quotas, without increasing any limits. Unmet minima stop answer generation;
+previews retain evidence and count diagnostics. See
+[Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
@@ -44,7 +52,7 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-26 America/Los_Angeles** and payload
+source-linked defaults rechecked on **2026-09-27 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
 

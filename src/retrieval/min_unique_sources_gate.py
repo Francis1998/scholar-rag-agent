@@ -17,10 +17,10 @@ class MinUniqueSourcesGate:
     below *min_sources* the entire batch is rejected (returns empty).
     Otherwise all results pass through with rewritten provenance.
 
-    Inspired by LlamaIndex/Haystack diversity-aware postprocessors.
-    Inputs are not mutated.  Local postprocessor for GPT-5.5 /
-    Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (not a DOI
-    connector).
+    Inputs are not mutated. This offline, library-only postprocessor is not
+    invoked by the API; gate() alone does not prevent answer generation.
+    The integrated min_evidence_documents requirement shares the counting
+    helper, not these discard/provenance-rewrite semantics.
     """
 
     def __init__(self, min_sources: int = 2) -> None:
