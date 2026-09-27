@@ -14,7 +14,11 @@ from agent.evidence import (
     RunConfiguration,
 )
 from agent.models import AgentAnswer, AgentState, QueryPlan
-from retrieval.evidence_policy import EvidencePolicy, ensure_evidence_policy
+from retrieval.evidence_policy import (
+    EvidencePolicy,
+    ensure_evidence_policy,
+    ensure_evidence_requirement,
+)
 from retrieval.scope import DocumentIds, documents_within_scope
 from storage.event_log import SQLiteEventLog
 
@@ -161,6 +165,7 @@ class EvidenceExporter:
             raise _invalid_record()
         try:
             ensure_evidence_policy(started.evidence_policy, snapshot.sources)
+            ensure_evidence_requirement(started.evidence_policy, snapshot.sources)
         except ValueError as exc:
             raise _invalid_record() from exc
 

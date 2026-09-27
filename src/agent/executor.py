@@ -7,7 +7,12 @@ from agent.models import AgentAnswer, Claim, QueryPlan
 from llm.base import BaseLLMAdapter
 from retrieval.citations import CitationGrounder
 from retrieval.diversity_cap_gate import DiversityCapGate
-from retrieval.evidence_policy import EvidencePolicy, ensure_evidence_policy, policy_arguments
+from retrieval.evidence_policy import (
+    EvidencePolicy,
+    ensure_evidence_policy,
+    ensure_evidence_requirement,
+    policy_arguments,
+)
 from retrieval.hybrid import HybridRetriever
 from retrieval.models import SearchResult
 from retrieval.multihop import MultiHopRetriever
@@ -93,7 +98,7 @@ class Executor:
         ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
         reranked = await self._reranker.rerank(plan.observation.original_query, retrieved)
         ensure_document_scope(scope, (result.chunk.document_id for result in reranked))
-        if policy is not None:
+        if policy is not None and policy.max_chunks_per_document is not None:
             reranked = DiversityCapGate(max_per_source=policy.max_chunks_per_document).gate(
                 reranked
             )
@@ -117,11 +122,25 @@ class Executor:
     ) -> AgentAnswer:
         """Generate and ground an answer using retrieved chunks."""
         policy = self._context_policy(plan, evidence_policy)
-        scope = plan.observation.document_ids
         snapshot = await self.prepare_context(plan, retrieved, **policy_arguments(policy))
         ensure_evidence_policy(policy, snapshot.sources)
         if on_context is not None:
             on_context(snapshot)
+        return await self.answer_prepared(plan, snapshot, on_generation=on_generation)
+
+    async def answer_prepared(
+        self,
+        plan: QueryPlan,
+        snapshot: EvidenceSnapshot,
+        *,
+        on_generation: Callable[[GenerationRecord], None] | None = None,
+    ) -> AgentAnswer:
+        """Consume already captured evidence without retrieving or preparing it again."""
+        policy = plan.observation.evidence_policy
+        scope = plan.observation.document_ids
+        ensure_document_scope(scope, (source.chunk.document_id for source in snapshot.sources))
+        ensure_evidence_policy(policy, snapshot.sources)
+        ensure_evidence_requirement(policy, snapshot.sources)
         response = await self._llm.generate(snapshot.request.model_copy(deep=True))
         raw_claims = response.parsed_claims or [response.text]
         claims = [Claim(text=claim, chunk_ids=response.citation_chunk_ids) for claim in raw_claims]

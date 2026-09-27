@@ -60,7 +60,7 @@ async def query(request: Request, payload: QueryRequest, response: Response) -> 
     result = await container.runner.run(
         payload.query,
         **scope_arguments(document_ids),
-        **evidence_limit_arguments(payload.max_chunks_per_document),
+        **evidence_limit_arguments(payload.max_chunks_per_document, payload.min_evidence_documents),
     )
     return QueryResponse(result=result)
 

@@ -1,6 +1,13 @@
 """Gate that requires a minimum number of unique source documents."""
 
+from collections.abc import Iterable
+
 from retrieval.models import SearchResult
+
+
+def count_evidence_documents(results: Iterable[SearchResult]) -> int:
+    """Count actual document IDs without discarding evidence or rewriting provenance."""
+    return len({result.chunk.document_id for result in results})
 
 
 class MinUniqueSourcesGate:
@@ -38,8 +45,7 @@ class MinUniqueSourcesGate:
         if not results:
             return []
 
-        unique = {r.chunk.document_id for r in results}
-        if len(unique) < self._min_sources:
+        if count_evidence_documents(results) < self._min_sources:
             return []
 
         limit = len(results) if top_k is None else min(top_k, len(results))

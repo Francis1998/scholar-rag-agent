@@ -1,6 +1,6 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-26 America/Los_Angeles** (2026-09-26 UTC);
+Model catalogs rechecked **2026-09-27 America/Los_Angeles** (2026-09-27 UTC);
 default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
 and Opus 5.5 migration notes on 2026-09-22. This is
 documentation verification plus offline HTTPX contract
@@ -165,6 +165,16 @@ DEFAULT the configured family. Missing adapters fall back to that family, then
 OpenAI, then fake; HTTP errors do not cause cross-provider failover. API synthesis
 always requests REASONING. These preferences are not benchmark claims that the
 selected Gemini/Kimi models are always fastest or cheapest.
+
+The optional [`min_evidence_documents`](MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md)
+requirement checks final captured document counts before answer synthesis.
+Insufficient built-in queries make no live or fake generation calls; sufficient
+queries keep this routing and provider payload contract. Opt-in LLM-backed HyDE
+is rejected explicitly, not silently replaced. The count is not a model-quality
+or scientific-answerability assessment, and no runtime model ID changes are
+required to use it. These dated catalog checks do not establish endpoint or
+account entitlement; in particular the Gemini Interactions example is not a
+live test of this adapter's retained `generateContent` endpoint.
 
 `LLMResponse.model_name` records the **configured/requested ID**, alongside the
 unchanged `raw_provider`; it does not substitute a provider-reported alias or

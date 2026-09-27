@@ -230,7 +230,13 @@ Review opposing findings and original documents; this is not a systematic review
 or a medical decision system.
 
 Live `/query` generation still sends the query and retained context to its
-configured provider, even when the context is empty. Previews and exports contain
+configured provider, even when the context is empty, **unless** the separate
+[`min_evidence_documents`](MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) requirement is
+requested. That minimum counts distinct documents after this quota and capture;
+it stops insufficient queries without rewriting the quota's provenance, while
+previews retain their evidence and count diagnostics. It uses an explicit
+prepared-answer extension contract rather than trusting a legacy answer override.
+Previews and exports contain
 full source text, identifiers, paths, and metadata. They are not redacted;
 no-store headers, document selection, quotas, and digests are not authentication,
 tenant isolation, or signatures. Saved evidence outlives corpus changes.

@@ -92,10 +92,14 @@ curl --fail-with-body --silent --show-error "$BASE_URL/retrieve" \
 ```
 
 Accepted fields are `query`, optionally either `document_ids` or `collection_id`
-(not both), and optional `max_chunks_per_document`. The quota must be a strict
-integer from 1 to 50; omit it for no per-document quota. Explicit HTTP null is
-rejected. See [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for
-the shared query/preview contract. Unsupported fields such as `top_k`, `page`,
+(not both), and optional `max_chunks_per_document` and `min_evidence_documents`.
+Each bound must be a strict integer from 1 to 50; explicit HTTP null is rejected.
+The [minimum-evidence guide](MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) describes the
+typed `evidence_assessment`: failed counts retain actual context without events
+or generation. A passing count is not scientific answerability.
+Omit either bound to leave it unconfigured. See
+[per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for the quota's
+shared query/preview contract. Unsupported fields such as `top_k`, `page`,
 or model options are 422 errors rather than ignored controls.
 
 Both `/retrieve` and `/query` require a nonblank string. Non-string, empty, or
@@ -127,13 +131,14 @@ The response is the preview object directly, not `/query`'s `{"result": ...}`:
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | `"1.0"` for this inspection contract |
-| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no quota) |
+| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no requested bounds) |
 | `plan.tasks`, `plan.rationale_trace` | Actual clamped tasks and operational rationale, not hidden model reasoning |
 | `configuration` | Copied effective source/hop caps and retrieval/reasoning timeouts |
 | `sources` | Final ordered full chunks: IDs, text, title, source, metadata, score, one-based rank, retriever, path, `text_sha256` |
 | `context`, `context_format` | Exact context text and `"chunk-id-title-text-v1"` format |
 | `context_sha256` | SHA-256 of the exact UTF-8 context |
 | `capture_limits` | Shared source/context/serialized-snapshot bounds |
+| `evidence_assessment` | Only when a minimum was requested: `required_documents`, `observed_documents`, and `passed`; no evidence is discarded on a failed count |
 
 Context joins `[chunk_id] title: text` records with newline separators, in final
 rank order. Text is the full indexed chunk after any configured reranking
