@@ -51,6 +51,12 @@ uv run python -m json.tool "$REVIEW_DIR/ingest.json"
 `title`, `text`, and `source` are the supported request fields; `source` defaults
 to `"api"`. The API assigns `source_type="api"` metadata internally.
 
+`text` must be a string containing at least one non-whitespace character.
+Missing, null, non-string, empty (`""`), or whitespace-only text (including
+Unicode such as `"\u00a0\u2003"`) returns HTTP 422 before ingestion, storage,
+or indexing. Nonblank text is passed through unchanged for document IDs and
+stored document content; existing chunk whitespace normalization still applies.
+
 ## Inspect retrieval before generating
 
 ```bash

@@ -65,6 +65,34 @@ def clock() -> Iterator[ManualClock]:
         yield manual_clock
 
 
+@pytest.fixture(
+    params=[
+        pytest.param(0, id="zero"),
+        pytest.param(-1, id="negative"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(1.0, id="integral-float"),
+        pytest.param(1.5, id="fractional-float"),
+        pytest.param(0.0, id="zero-float"),
+        pytest.param(-1.0, id="negative-float"),
+        pytest.param(float("nan"), id="nan"),
+        pytest.param(float("inf"), id="positive-infinity"),
+        pytest.param(float("-inf"), id="negative-infinity"),
+        pytest.param("1", id="numeric-string"),
+        pytest.param("one", id="nonnumeric-string"),
+        pytest.param("", id="empty-string"),
+        pytest.param(b"1", id="bytes"),
+        pytest.param(None, id="none"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+        pytest.param(object(), id="object"),
+        pytest.param(1 + 0j, id="complex"),
+    ],
+)
+def invalid_requests_per_minute(request: pytest.FixtureRequest) -> object:
+    return request.param
+
+
 async def checkpoint() -> None:
     """Let already-ready tasks reach their next await, without a timer."""
     ready: asyncio.Future[None] = asyncio.get_running_loop().create_future()
@@ -163,10 +191,43 @@ async def test_rate_limiter_waits_when_window_is_saturated() -> None:
     assert limiter._timestamps == [60.0]
 
 
-@pytest.mark.parametrize("requests_per_minute", [0, -1])
-def test_rate_limiter_rejects_nonpositive_capacity(requests_per_minute: int) -> None:
-    with pytest.raises(ValueError, match="requests_per_minute must be positive"):
-        AsyncRateLimiter(requests_per_minute=requests_per_minute)
+def test_rate_limiter_rejects_invalid_capacity(invalid_requests_per_minute: object) -> None:
+    with pytest.raises(ValueError, match="requests_per_minute"):
+        AsyncRateLimiter(requests_per_minute=invalid_requests_per_minute)  # type: ignore[arg-type]
+
+
+def test_http_provider_rejects_invalid_capacity(invalid_requests_per_minute: object) -> None:
+    with (
+        patch("llm.providers.httpx.AsyncClient") as client,
+        pytest.raises(ValueError, match="requests_per_minute"),
+    ):
+        HTTPProviderAdapter(
+            api_key="test-key",
+            model="configured-model",
+            requests_per_minute=invalid_requests_per_minute,  # type: ignore[arg-type]
+        )
+    client.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "requests_per_minute",
+    [
+        pytest.param(1, id="minimum"),
+        pytest.param(60, id="default"),
+        pytest.param(2**63, id="above-signed-64-bit"),
+        pytest.param(10**1000, id="above-float-range"),
+    ],
+)
+async def test_rate_limiter_accepts_positive_integer_capacity(
+    clock: ManualClock, requests_per_minute: int
+) -> None:
+    limiter = AsyncRateLimiter(requests_per_minute=requests_per_minute)
+    await limiter.acquire()
+
+    assert limiter.requests_per_minute == requests_per_minute
+    assert limiter._timestamps == [0.0]
+    assert not clock.delays
 
 
 @pytest.mark.asyncio

@@ -182,6 +182,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Blinding status](guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md) | Blinding and masking descriptions |
 | [Cluster randomization](guides/CLUSTER_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md) | Cluster-randomized, stepped-wedge, and ICC wording |
 | [Crossover design](guides/CROSSOVER_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Crossover and treatment-sequence descriptions |
+| [Estimands](guides/ESTIMAND_ICH_E9_CUE_EXTRACTOR_GUIDE.md) | ICH-E9(R1) estimand strategy wording |
 | [Washout periods](guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md) | Washout, run-in, and wash-in periods |
 | [Baseline imbalance](guides/BASELINE_IMBALANCE_CUE_EXTRACTOR_GUIDE.md) | Baseline, covariate, and Table-1 imbalance wording |
 | [Intention to treat](guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md) | Analysis-population descriptions |
