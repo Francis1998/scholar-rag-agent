@@ -35,6 +35,16 @@ are revalidated when copied at run/preview entry, before asynchronous work.
 See the [timeout policy](../SAFETY.md#timeout-policy) for error behavior and
 cooperative-timeout limitations.
 
+## Per-request evidence quotas
+
+`max_chunks_per_document` is optional on `/query`, `/retrieve`, `AgentRunner.run`,
+and `AgentRunner.preview`. It accepts strict integers 1-50, not booleans, strings,
+or floats. Omit it for unchanged behavior; HTTP null is rejected. There is no new
+environment setting. The frozen policy filters the existing post-rerank pool
+without extra retrieval and can leave fewer than `max_source_docs` passages.
+It is retained in the plan/events/exports, not added to `RunConfiguration`.
+See [the complete guide and offline demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 ## Provider Model IDs
 
 | Environment variable | `Settings` field | Default API model ID |
@@ -66,7 +76,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-23 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-09-26 America/Los_Angeles** catalog check and model-specific limitations.
 
 ## Optional Provider Keys
 
@@ -81,6 +91,14 @@ for the **2026-09-23 America/Los_Angeles** catalog check and model-specific limi
 Without LLM provider keys, generation uses deterministic local fakes. Setting a
 model ID alone does not enable HTTP calls. `SEMANTIC_SCHOLAR_API_KEY` is for paper
 metadata, not LLM routing.
+
+For `GEMINI_API_KEY`, Google's current guidance permits auth keys and appropriately
+restricted standard keys; **unrestricted standard keys are rejected**. Header
+transport does not change key type or restrictions. This adapter still sends
+`contents`/`parts` to `generateContent`, while Google's latest REST quickstart
+uses `model`/`input` at `/v1beta/interactions`. See the source-linked
+[Gemini compatibility notes](guides/PROVIDER_MODELS_GUIDE.md#google-gemini);
+the quickstart and our offline tests do not establish live endpoint/model access.
 
 ## Routing and Fallbacks
 
@@ -105,6 +123,13 @@ force all tasks offline when preferred live providers have keys.
 This fallback policy selects providers before a call. HTTP failures are surfaced
 after the existing transient-error retries; they do not trigger cross-provider
 or fake failover.
+
+Each live adapter instance admits 60 HTTP attempts per sliding minute by default,
+counting the initial request, retries, and failed requests separately. Retries
+wait for capacity after backoff; waiting does not consume retry attempts. The
+three-retry cap and generation timeout remain unchanged. Admission state is
+in memory, not shared across instances or workers. See
+[provider backoff and rate limits](../SAFETY.md#provider-backoff).
 
 HTTP-success bodies must be JSON objects with nonblank final answer text.
 `ProviderResponseError` reports unusable output without raw body or credential

@@ -12,6 +12,7 @@ from api.schemas import (
     QueryResponse,
 )
 from ingestion.chunking import stable_id
+from retrieval.evidence_policy import evidence_limit_arguments
 from retrieval.models import Document
 from retrieval.scope import scope_arguments
 
@@ -56,7 +57,11 @@ async def query(request: Request, payload: QueryRequest, response: Response) -> 
     document_ids = resolve_document_scope(container, payload)
     if payload.collection_id is not None:
         response.headers.update(COLLECTION_HEADERS)
-    result = await container.runner.run(payload.query, **scope_arguments(document_ids))
+    result = await container.runner.run(
+        payload.query,
+        **scope_arguments(document_ids),
+        **evidence_limit_arguments(payload.max_chunks_per_document),
+    )
     return QueryResponse(result=result)
 
 

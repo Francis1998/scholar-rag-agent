@@ -91,9 +91,19 @@ curl --fail-with-body --silent --show-error "$BASE_URL/retrieve" \
   -d '{"query":"Compare GraphRAG versus Retrieval."}'
 ```
 
-Only `query` and optional `document_ids` are accepted; unsupported fields such as
-`top_k`, `page`, or model options are 422 errors rather than ignored controls.
-Query must be a nonblank string; the analyzer trims its outer whitespace.
+Accepted fields are `query`, optionally either `document_ids` or `collection_id`
+(not both), and optional `max_chunks_per_document`. The quota must be a strict
+integer from 1 to 50; omit it for no per-document quota. Explicit HTTP null is
+rejected. See [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for
+the shared query/preview contract. Unsupported fields such as `top_k`, `page`,
+or model options are 422 errors rather than ignored controls.
+
+Both `/retrieve` and `/query` require a nonblank string. Non-string, empty, or
+whitespace-only questions (including Unicode whitespace) return 422 before the
+runner, planning, retrieval, model calls, or agent-event writes. Validation does
+not trim nonblank input. The existing analyzer still trims outer whitespace in
+observations, plans, and generation prompts; `/query` keeps the raw question in
+its initial event and exported bundle.
 Use the existing ingestion IDs, including imported non-ASCII IDs, not titles.
 If you no longer have an ingestion response, discover selectable IDs with
 `GET /documents?limit=20`; the [document catalog guide](DOCUMENT_CATALOG_GUIDE.md)
@@ -117,7 +127,7 @@ The response is the preview object directly, not `/query`'s `{"result": ...}`:
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | `"1.0"` for this inspection contract |
-| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped) |
+| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no quota) |
 | `plan.tasks`, `plan.rationale_trace` | Actual clamped tasks and operational rationale, not hidden model reasoning |
 | `configuration` | Copied effective source/hop caps and retrieval/reasoning timeouts |
 | `sources` | Final ordered full chunks: IDs, text, title, source, metadata, score, one-based rank, retriever, path, `text_sha256` |
@@ -177,11 +187,14 @@ PY
 For your existing application, call its `AppContainer.runner.preview` directly;
 `AgentRunner` also supports it when wired with the built-in non-generative
 retrieval components. Python accepts a list or tuple for `document_ids`, and
-omission or `None` means unscoped. Invalid Python input raises `ValueError`
-(including Pydantic validation errors) before retrieval. Operational failures
-raise `agent.retrieval_preview.RetrievalPreviewError`, exposing `code`,
-`status_code`, and a sanitized message; the chained `__cause__` retains the
-underlying diagnostic exception for trusted local debugging.
+omission or `None` means unscoped. Both `AgentRunner.run` and `preview` reject
+non-string, empty, or whitespace-only questions with `ValueError` before
+creating a run/planner ID, calling dependencies, or writing agent events.
+Nonblank input reaches the analyzer unchanged. Invalid scope also raises
+`ValueError` (including Pydantic validation errors) before retrieval.
+Operational preview failures raise `agent.retrieval_preview.RetrievalPreviewError`,
+exposing `code`, `status_code`, and a sanitized message; the chained `__cause__`
+retains the underlying diagnostic exception for trusted local debugging.
 
 ## 5. Bounds, errors, and cancellation
 

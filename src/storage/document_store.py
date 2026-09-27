@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from retrieval.models import Chunk, Document
@@ -17,7 +18,7 @@ class SQLiteDocumentStore:
 
     def add_documents(self, documents: list[Document], chunks: list[Chunk]) -> None:
         """Persist documents and chunks."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.executemany(
                 """
                 INSERT OR REPLACE INTO documents (document_id, title, text, source, metadata)
@@ -59,7 +60,7 @@ class SQLiteDocumentStore:
             "SELECT chunk_id, document_id, title, text, source, metadata "
             "FROM chunks ORDER BY chunk_id"
         )
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             rows = connection.execute(select_chunks_sql).fetchall()
         return [
             Chunk(
@@ -75,7 +76,7 @@ class SQLiteDocumentStore:
 
     def _initialize(self) -> None:
         """Create document tables when missing."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS documents (

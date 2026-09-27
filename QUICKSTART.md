@@ -73,6 +73,12 @@ return `"ERROR"` inside a successful HTTP response. Read `answer.claims`,
 `answer.citations`, `answer.ungrounded`, and `answer.warnings`; a grounding flag is
 only a lexical check, not proof of support.
 
+Both `/query` and `/retrieve` require a nonblank string. Empty or whitespace-only
+questions, including Unicode whitespace, return HTTP 422 before planning,
+retrieval, model calls, or agent-event writes. Validation preserves nonblank input;
+the existing analyzer still trims outer whitespace in observations, plans, and
+generation prompts.
+
 To search only selected papers, pass their returned IDs in `document_ids` on
 `/query`. Omit the field for the whole corpus; an empty list or explicit `null`
 is rejected rather than widened. The [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md)
@@ -107,6 +113,11 @@ or fake LLM call, answer, or agent-event writes. Unlike `/query`, runtime
 failures are HTTP errors rather than `ERROR` run bodies. See the complete
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) for scope,
 limits, Python usage, privacy, and a measured offline demo.
+
+To inspect the same questions against each selected paper, use
+`POST /research/worksheet` with explicit document IDs or a saved collection.
+The [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) provides a complete
+offline example and JSON/Markdown downloads without generation or new run events.
 
 ## 6. Recover run IDs after restart
 

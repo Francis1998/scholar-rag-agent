@@ -14,6 +14,7 @@ from agent.evidence import (
     RunConfiguration,
 )
 from agent.models import AgentAnswer, AgentState, QueryPlan
+from retrieval.evidence_policy import EvidencePolicy, ensure_evidence_policy
 from retrieval.scope import DocumentIds, documents_within_scope
 from storage.event_log import SQLiteEventLog
 
@@ -62,6 +63,7 @@ class _Started(BaseModel):
     query: str
     configuration: RunConfiguration
     document_ids: DocumentIds | None = None
+    evidence_policy: EvidencePolicy | None = None
 
 
 class _Retrieved(BaseModel):
@@ -141,6 +143,7 @@ class EvidenceExporter:
             plan != retrieval_plan
             or plan.run_id != run_id
             or started.document_ids != plan.observation.document_ids
+            or started.evidence_policy != plan.observation.evidence_policy
             or started.query.strip() != plan.observation.original_query
             or snapshot.request.prompt != plan.observation.original_query
             or generation.task_type != snapshot.request.task_type
@@ -156,6 +159,10 @@ class EvidenceExporter:
             ],
         ):
             raise _invalid_record()
+        try:
+            ensure_evidence_policy(started.evidence_policy, snapshot.sources)
+        except ValueError as exc:
+            raise _invalid_record() from exc
 
         warnings = list(EXPORT_WARNINGS)
         rank_by_id = {source.chunk.chunk_id: source.rank for source in snapshot.sources}

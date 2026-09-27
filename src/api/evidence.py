@@ -1,25 +1,17 @@
 """Safe JSON and literal-Markdown downloads for completed evidence bundles."""
 
 import json
-import re
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from agent.evidence import EvidenceBundle, text_digest
+from agent.markdown import literal_block as _literal
 from api.dependencies import AppContainer
 from storage.evidence_export import EvidenceExportError
 
 router = APIRouter()
-
-
-def _literal(text: str, language: str = "text") -> str:
-    """Keep arbitrary HTML/Markdown inert, including embedded closing fences."""
-    fence_length = max((len(match[0]) + 1 for match in re.finditer(r"`+", text)), default=3)
-    fence = "`" * max(3, fence_length)
-    newline = "" if text.endswith("\n") else "\n"
-    return f"{fence}{language}\n{text}{newline}{fence}\n"
 
 
 def _json_block(value: BaseModel) -> str:
@@ -52,6 +44,15 @@ def render_markdown(bundle: EvidenceBundle) -> str:
             if bundle.plan.observation.document_ids is None
             else "Selected document IDs (unknown IDs may match no chunks):\n"
             + "\n".join(bundle.plan.observation.document_ids)
+        ),
+        "## Per-paper evidence policy\n",
+        _literal(
+            "No per-document quota requested. Older records may omit evidence_policy."
+            if bundle.plan.observation.evidence_policy is None
+            else "max_chunks_per_document="
+            f"{bundle.plan.observation.evidence_policy.max_chunks_per_document}\n"
+            "Applied after reranking within the bounded candidate pool; no extra retrieval.\n"
+            "Fewer passages may remain; distinct-paper coverage is not guaranteed."
         ),
         "## Effective runtime configuration\n",
         _json_block(bundle.configuration),

@@ -51,7 +51,8 @@ flowchart LR
   rrf --> merge[Merge by chunk ID and bound results]
   graph --> merge
   merge --> rerank[Lexical overlap reranking]
-  rerank --> snapshot[Persist exact context snapshot]
+  rerank --> quota[Optional per-document passage quota]
+  quota --> snapshot[Persist exact context snapshot]
   snapshot --> model[Routed provider or fake adapter]
   model --> ground[Token-overlap citation mapping]
   ground --> done[Persist answer and completed run]
@@ -77,12 +78,24 @@ ones. No shared index stores per-request scope. Unscoped calls preserve old
 signatures; unsupported scoped components fail rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+Optional `max_chunks_per_document` on `/query` and `/retrieve` freezes a strict
+1-50 integer in `QueryObservation.evidence_policy` before awaits.
+`Executor.prepare_context` applies the existing `DiversityCapGate` after normal
+reranking, before capture, within the already bounded candidate pool. It preserves
+scores, order, and chunk ownership while appending the prior reranker to gate
+provenance. There is no extra retrieval, oversampling, or shared index mutation;
+fewer passages may remain. The policy is recorded in the initial event and plan,
+validated in previews/exports, and compared even when saved contexts match.
+`RunConfiguration` keeps its four version-one fields; old records default to no
+policy. Unsupported opt-in executor overrides fail rather than discard the quota.
+See [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 ## Generation-Free Retrieval Preview
 
 `POST /retrieve`, in the separate `api.retrieval` router, calls
 `AgentRunner.preview`. It uses the same analyzer, planner, task clamping,
 bounded executor retrieval, and `Executor.prepare_context` as `/query`.
-The latter method performs reranking, scope enforcement, and detached
+The latter method performs reranking, scope/quota enforcement, and detached
 `EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
 only for real queries.
 
@@ -100,6 +113,27 @@ Existing `/query` response/event contracts and legacy executor override binding
 are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
+
+## Model-Free Research Worksheets
+
+`ResearchWorksheetService`, wired through `AppContainer.worksheets` and
+`POST /research/worksheet`, composes `AgentRunner.preview` for each question
+and selected paper. The existing collection store validates explicit IDs or
+resolves a saved collection once before asynchronous work. Each cell receives
+an immutable one-paper scope; no shared runner configuration is changed.
+
+Requests are capped at five questions, ten papers, fifty cells, and three
+returned passages per cell. The service validates preview ownership, ordering,
+context and full-text digests, then exposes bounded excerpts with explicit
+truncation flags. Both JSON and literal Markdown must fit 256 KiB. A cooperative
+30-second overall deadline complements the existing preview phase timeouts.
+Any failed cell rejects the whole worksheet; cancellation propagates.
+
+Construction does not invoke generation or append agent events, and introduces
+no schema or new retrieval algorithm. Membership is frozen, not corpus contents;
+inspection links read current chunks. Existence is rechecked before completion.
+See the [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) for schemas,
+errors, privacy, limitations, and the measured offline demonstration.
 
 ## Data Flow
 
@@ -131,6 +165,15 @@ The API also exposes `/retrieve`, `/health`, `/runs`, `/runs/{run_id}/events`, a
 below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
+
+### SQLite connection lifecycle
+
+The core event, document, and graph stores open a connection per operation.
+Their existing transaction context exits before the connection is explicitly
+closed, including after SQL, serialization, or commit failures. Reads materialize
+their rows before closing; connections do not depend on garbage collection for
+release. This does not add connection pooling, make multi-store ingestion atomic,
+or synchronize in-memory retrieval indexes across workers.
 
 ## Persistent Corpus Discovery
 

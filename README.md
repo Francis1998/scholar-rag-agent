@@ -1,18 +1,3 @@
-- **FundingConflictCueExtractor**: offline evidence cue extractor — see `docs/guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md`
-- **AllocationConcealmentCueExtractor**: offline evidence cue extractor — see `docs/guides/ALLOCATION_CONCEALMENT_CUE_EXTRACTOR_GUIDE.md`
-- **ProtocolDeviationCueExtractor**: offline evidence cue extractor — see `docs/guides/PROTOCOL_DEVIATION_CUE_EXTRACTOR_GUIDE.md`
-- **MultiplicityAdjustmentCueExtractor**: offline evidence cue extractor — see `docs/guides/MULTIPLICITY_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md`
-- **SurrogateEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/SURROGATE_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
-- **FollowUpDurationCueExtractor**: offline evidence cue extractor — see `docs/guides/FOLLOW_UP_DURATION_CUE_EXTRACTOR_GUIDE.md`
-- **AdverseEventCueExtractor**: offline evidence cue extractor — see `docs/guides/ADVERSE_EVENT_CUE_EXTRACTOR_GUIDE.md`
-- **SubgroupAnalysisCueExtractor**: offline evidence cue extractor — see `docs/guides/SUBGROUP_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`
-- **AttritionRateCueExtractor**: offline evidence cue extractor — see `docs/guides/ATTRITION_RATE_CUE_EXTRACTOR_GUIDE.md`
-- **BlindingStatusCueExtractor**: offline evidence cue extractor — see `docs/guides/BLINDING_STATUS_CUE_EXTRACTOR_GUIDE.md`
-- **PrimaryEndpointCueExtractor**: offline evidence cue extractor — see `docs/guides/PRIMARY_ENDPOINT_CUE_EXTRACTOR_GUIDE.md`
-- **IntentionToTreatCueExtractor**: offline evidence cue extractor — see `docs/guides/INTENTION_TO_TREAT_CUE_EXTRACTOR_GUIDE.md`
-- **NumberNeededToTreatHintExtractor**: offline evidence cue extractor — see `docs/guides/NNT_HINT_EXTRACTOR_GUIDE.md`
-- **RiskOfBiasCueExtractor**: offline Cochrane-style RoB cues — see `docs/guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md`
-
 # Scholar RAG Agent
 
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
@@ -55,6 +40,8 @@ database and empty provider keys. The interactive API documentation is at
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
+| Limit how many passages one paper contributes | Opt in to `max_chunks_per_document` on `/query` or `/retrieve`; retain the quota and gate provenance in saved evidence | [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
+| Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
@@ -63,6 +50,16 @@ database and empty provider keys. The interactive API documentation is at
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Compare selected papers before generating
+
+![Measured synthetic offline research worksheet](docs/assets/research-worksheet.gif)
+
+`POST /research/worksheet` inspects each question against each selected paper,
+so one paper's global ranking does not crowd another out of the worksheet.
+It returns retrieved passages, not generated answers or scientific judgments.
+The [complete guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) includes API/Python
+examples, fixed bounds, privacy, and reproduction of this measured illustration.
 
 ## Inspect a recorded run
 
@@ -73,15 +70,6 @@ and context-digest contracts, scope, and errors. This is the shared `/query`
 context preparation, not semantic entailment or a promise about a changed corpus.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
-![AttritionRateCueExtractor](docs/assets/attrition-rate-cue-extractor.gif)
-![SubgroupAnalysisCueExtractor](docs/assets/subgroup-analysis-cue-extractor.gif)
-![FundingConflictCueExtractor](docs/assets/funding-conflict-cue-extractor.gif)
-![AllocationConcealmentCueExtractor](docs/assets/allocation-concealment-cue-extractor.gif)
-![ProtocolDeviationCueExtractor](docs/assets/protocol-deviation-cue-extractor.gif)
-![MultiplicityAdjustmentCueExtractor](docs/assets/multiplicity-adjustment-cue-extractor.gif)
-![SurrogateEndpointCueExtractor](docs/assets/surrogate-endpoint-cue-extractor.gif)
-![FollowUpDurationCueExtractor](docs/assets/follow-up-duration-cue-extractor.gif)
-![AdverseEventCueExtractor](docs/assets/adverse-event-cue-extractor.gif)
 
 This generated animation illustrates the synthetic offline evidence-export demo,
 not a live research UI or a real model's scientific findings. Follow the
@@ -149,13 +137,11 @@ Read [Safety](SAFETY.md) before using non-synthetic material.
 
 ## Offline evidence extractors
 
-![Heterogeneity I2 hint extractor demo](docs/assets/heterogeneity-i2-hint-extractor.gif)
-
-Library helpers can surface meta-analysis and statistics cues from local paper
-text without a network call. `HeterogeneityI2HintExtractor` pulls I2 / I^2 /
-heterogeneity phrases from abstracts (Elicit/Consensus gap; distinct from
-`EffectSizeHintExtractor` and `PValueHintExtractor`). See the
-[heterogeneity I2 guide](docs/guides/HETEROGENEITY_I2_HINT_EXTRACTOR_GUIDE.md).
+Clinical and statistical cue extractors are **opt-in Python helpers**, not
+additional `/query` stages or clinical assessments. Browse the
+[categorized cue guides](docs/README.md#clinical-and-statistical-evidence-cues)
+for study-design, outcome, statistical, and reporting cues. Each guide retains
+its usage examples and illustration; these heuristics do not validate findings.
 
 ## Documentation
 

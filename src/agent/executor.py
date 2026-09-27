@@ -6,6 +6,8 @@ from agent.evidence import EvidenceSnapshot, GenerationRecord
 from agent.models import AgentAnswer, Claim, QueryPlan
 from llm.base import BaseLLMAdapter
 from retrieval.citations import CitationGrounder
+from retrieval.diversity_cap_gate import DiversityCapGate
+from retrieval.evidence_policy import EvidencePolicy, ensure_evidence_policy, policy_arguments
 from retrieval.hybrid import HybridRetriever
 from retrieval.models import SearchResult
 from retrieval.multihop import MultiHopRetriever
@@ -79,14 +81,30 @@ class Executor:
         ]
 
     async def prepare_context(
-        self, plan: QueryPlan, retrieved: list[SearchResult]
+        self,
+        plan: QueryPlan,
+        retrieved: list[SearchResult],
+        *,
+        evidence_policy: EvidencePolicy | None = None,
     ) -> EvidenceSnapshot:
-        """Rerank and capture exactly the context shared by queries and retrieval previews."""
+        """Rerank, optionally cap by document, and capture the shared exact context."""
+        policy = self._context_policy(plan, evidence_policy)
         scope = plan.observation.document_ids
         ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
         reranked = await self._reranker.rerank(plan.observation.original_query, retrieved)
         ensure_document_scope(scope, (result.chunk.document_id for result in reranked))
+        if policy is not None:
+            reranked = DiversityCapGate(max_per_source=policy.max_chunks_per_document).gate(
+                reranked
+            )
         return EvidenceSnapshot.capture(plan.observation.original_query, reranked)
+
+    @staticmethod
+    def _context_policy(plan: QueryPlan, requested: EvidencePolicy | None) -> EvidencePolicy | None:
+        policy = plan.observation.evidence_policy
+        if requested is not None and requested != policy:
+            raise ValueError("Planned evidence_policy does not match the requested quota.")
+        return policy
 
     async def answer(
         self,
@@ -95,10 +113,13 @@ class Executor:
         *,
         on_context: Callable[[EvidenceSnapshot], None] | None = None,
         on_generation: Callable[[GenerationRecord], None] | None = None,
+        evidence_policy: EvidencePolicy | None = None,
     ) -> AgentAnswer:
         """Generate and ground an answer using retrieved chunks."""
+        policy = self._context_policy(plan, evidence_policy)
         scope = plan.observation.document_ids
-        snapshot = await self.prepare_context(plan, retrieved)
+        snapshot = await self.prepare_context(plan, retrieved, **policy_arguments(policy))
+        ensure_evidence_policy(policy, snapshot.sources)
         if on_context is not None:
             on_context(snapshot)
         response = await self._llm.generate(snapshot.request.model_copy(deep=True))

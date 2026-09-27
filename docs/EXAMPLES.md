@@ -78,10 +78,16 @@ uv run python -m json.tool "$REVIEW_DIR/query.json"
 ```
 
 Check `result.state` before using `result.answer`. Runtime errors are returned as
-`state="ERROR"` and `error`, not necessarily an HTTP failure. An empty query is
-rejected with HTTP 422. A completed response includes the observed intent,
-planned tasks, claims, citation snippets, and grounding warnings. The absence of
-warnings is not factual verification.
+`state="ERROR"` and `error`, not necessarily an HTTP failure. Both `/query` and
+`/retrieve` reject non-string, empty, or whitespace-only questions with HTTP 422
+before runner execution, model calls, or agent-event writes. This includes JSON
+values such as `""`, `" \t\n"`, and `"\u00a0\u2003"`. Validation passes nonblank
+strings through unchanged; the existing analyzer still trims their outer
+whitespace in observations, plans, and generation prompts.
+
+A completed response includes the observed intent, planned tasks, claims,
+citation snippets, and grounding warnings. The absence of warnings is not
+factual verification.
 
 ## Read events and export evidence
 

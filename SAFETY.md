@@ -34,6 +34,16 @@ executor applies it as a maximum number of retrieved **chunk results**, not a
 distinct-document quota. Multiple chunks may come from one paper; this is not a
 guarantee of source diversity or comprehensive coverage.
 
+Requests may opt into `max_chunks_per_document`, a strict integer from 1 to 50.
+The frozen per-request policy caps actual document IDs after reranking of the
+existing bounded pool; it does not widen scope, fetch replacements, guarantee
+distinct papers, or establish study quality, recall, or source independence.
+HTTP null, strings, booleans, floats, and out-of-range values are rejected before
+work. Unsupported custom executors fail explicitly rather than ignore a quota.
+Previews remain generation/event-write free, and old saved runs without a policy
+remain readable. See the complete
+[per-paper evidence limits guide](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 Planner tasks request one to three graph hops, depending on intent.
 `SCHOLAR_RAG_MAX_HOPS` defaults to 5 and clamps those tasks; API settings allow
 no more than 5. Co-mention traversal is bounded retrieval, not proof of a
@@ -98,6 +108,25 @@ Unlike `/query`, preview reports operational failures as sanitized HTTP 500/504
 errors (409 for generative retrieval), not `ERROR` run bodies or empty successes.
 Task cancellation propagates without journaling. See the
 [retrieval preview contract](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
+
+## Research Worksheets
+
+`POST /research/worksheet` requires explicit document IDs or a saved collection,
+never an unscoped default. It inspects at most five questions across ten papers,
+returning at most three passages per cell with 800-character excerpt prefixes
+and explicit truncation flags. Both download formats must fit 262,144 UTF-8 bytes.
+An overall cooperative 30-second deadline also covers export validation.
+
+The service reuses generation-free previews and writes no agent events.
+It rejects invalid provenance, unknown/stale selections, oversized output, or any
+failed cell rather than returning partial success or widening scope.
+`passages_returned` and `no_passages` describe retrieval output, not scientific
+support or absence of evidence. Model-backed HyDE remains incompatible.
+
+Membership is resolved once; corpus contents and indexes are not frozen.
+Downloads contain sensitive questions, identifiers, labels, and source excerpts;
+no-store/nosniff headers and literal Markdown are not access control or redaction.
+See [worksheet contracts and privacy](docs/guides/RESEARCH_WORKSHEET_GUIDE.md).
 
 ## Cancellation
 
@@ -217,26 +246,32 @@ Existing captured input evidence remains subject to the privacy rules above.
 This check does not establish factual correctness or completeness of nonblank
 answers. See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
 
-Live adapters use an in-process rate limiter before generation and exponential
-backoff for transport failures and HTTP `429`, `500`, `502`, `503`, and `504`.
-The default is at most three retries after the initial attempt; permanent client
-errors are surfaced without those retries.
+Live adapters use an in-process rate limiter before every HTTP attempt and
+exponential backoff for transport failures and HTTP `429`, `500`, `502`, `503`,
+and `504`. The default remains at most three retries after the initial attempt,
+with backoff delays of 0.25, 0.5, and 1 second; permanent client errors are
+surfaced without those retries.
 
-Each adapter instance admits at most `requests_per_minute` generation calls
+Each adapter instance admits at most `requests_per_minute` HTTP attempts
 (default 60) in a sliding 60-second window measured by a monotonic clock; the
-capacity must be positive. A timestamp expires at exactly 60 seconds of age.
-Admission is serialized across concurrent callers on the same event loop. Only
-the caller holding the admission lock sleeps; it rechecks the clock and capacity
-after every wake, including early wakes, before recording an admission. Other
-callers wait for that lock. This allows a burst up to the configured capacity,
-not evenly spaced calls or a bound on concurrent in-flight generations.
+initial attempt and every retry each consume one slot, including failed
+requests. The capacity must be positive. A timestamp expires at exactly 60
+seconds of age. Admission is serialized across concurrent callers on the same
+event loop. Only the caller holding the admission lock sleeps; it rechecks the
+clock and capacity after every wake, including early wakes, before recording an
+admission. Other callers wait for that lock. This allows a burst up to the
+configured capacity, not evenly spaced requests or a bound on concurrent
+in-flight requests.
 
 Task cancellation while queued for the lock or sleeping propagates without
-consuming a slot or blocking later callers. Once admitted, a generation keeps
-its timestamp even if it fails or is cancelled; admission is not refunded.
-The lock is released before provider I/O and retries. Retries occur within that
-already-admitted call, so the limit is **not a strict count of HTTP requests**,
-a token/spend budget, or an account-wide provider quota.
+consuming a slot, sending a request, or blocking later callers. Once admitted,
+an attempt keeps its timestamp even if it fails or is cancelled; admission is
+not refunded. The lock is released before provider I/O. After a transient
+failure, backoff runs before the next attempt waits for rate capacity; waiting
+does not use up retries. Cancellation during backoff sends no further request.
+Rate waits and backoff remain subject to the existing generation phase timeout.
+This per-instance attempt limit is not a token/spend budget or an account-wide
+provider quota.
 
 Limiter state is in memory and separate for every adapter instance; it resets
 when the adapter is recreated. Use each instance on a single event loop; it is

@@ -50,10 +50,14 @@ class HTTPProviderAdapter(BaseLLMAdapter):
         self._limiter = AsyncRateLimiter(requests_per_minute=requests_per_minute)
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
-        """Generate a validated response through provider HTTP APIs."""
-        await self._limiter.acquire()
+        """Generate a validated response, admitting each provider attempt."""
+
+        async def admitted_attempt() -> LLMResponse:
+            await self._limiter.acquire()
+            return await self._generate_once(request)
+
         return await with_backoff(
-            lambda: self._generate_once(request),
+            admitted_attempt,
             is_retryable=_is_transient_http_error,
         )
 

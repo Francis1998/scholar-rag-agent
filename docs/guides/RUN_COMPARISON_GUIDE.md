@@ -11,6 +11,13 @@ belongs only to the candidate; removed evidence belongs only to the baseline.
 Neither chronological order nor the newest run automatically chooses a baseline.
 Comparing a run to itself is valid and reports no changes.
 
+Each side also carries its optional saved `evidence_policy`.
+`changes.evidence_policy_changed` contributes to `any_changes` even for identical
+or empty contexts, with an explicit notice when policies differ. Old records
+without a policy remain `None`; the four-field runtime configuration is unchanged.
+See [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for the request
+contract and a measured policy-only comparison.
+
 ![Actual synthetic offline saved-run comparison output](../assets/run-comparison.gif)
 
 **GIF provenance:** an original generated illustration of actual offline demo

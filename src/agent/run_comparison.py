@@ -58,6 +58,7 @@ def _warnings(bundle: EvidenceBundle) -> dict[str, JsonValue]:
 
 def _run(bundle: EvidenceBundle) -> ComparedRun:
     addressable = "/" not in bundle.run_id and bundle.run_id not in {"", ".", ".."}
+    policy = bundle.plan.observation.evidence_policy
     return ComparedRun(
         run_id=bundle.run_id,
         agent_id=bundle.agent_id,
@@ -65,6 +66,7 @@ def _run(bundle: EvidenceBundle) -> ComparedRun:
         export_url=f"/runs/{quote(bundle.run_id, safe='')}/export" if addressable else None,
         query=_text(bundle.query),
         document_ids=bundle.plan.observation.document_ids,
+        evidence_policy=policy.model_copy(deep=True) if policy is not None else None,
         configuration=bundle.configuration.model_copy(deep=True),
         generation=SavedGenerationIdentity(
             provider=bundle.generation.provider,
@@ -176,6 +178,9 @@ def compare_bundles(baseline: EvidenceBundle, candidate: EvidenceBundle) -> RunC
             (set(left_scope) if left_scope is not None else None)
             != (set(right_scope) if right_scope is not None else None)
         ),
+        evidence_policy_changed=(
+            baseline.plan.observation.evidence_policy != candidate.plan.observation.evidence_policy
+        ),
         configuration_changed=baseline.configuration != candidate.configuration,
         provider_changed=baseline.generation.provider != candidate.generation.provider,
         model_changed=baseline.generation.model_name != candidate.generation.model_name,
@@ -217,6 +222,12 @@ def compare_bundles(baseline: EvidenceBundle, candidate: EvidenceBundle) -> RunC
         notices.append(
             "The saved queries or document scopes differ; do not attribute differences "
             "to the model alone or interpret this as a fair model A/B test."
+        )
+    if changes.evidence_policy_changed:
+        notices.append(
+            "The saved per-paper evidence policies differ, even if the contexts match; "
+            "do not attribute differences to the model alone or treat this as a controlled "
+            "A/B test."
         )
     if "fake" in (baseline.generation.provider, candidate.generation.provider):
         notices.append(

@@ -19,6 +19,14 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
 
+`max_chunks_per_document` is an optional **request field**, not an environment
+setting. `/query`, `/retrieve`, and their runner methods accept strict integers
+1-50; HTTP null is invalid and omission leaves the existing behavior unchanged.
+It limits passages per document after reranking without increasing
+`SCHOLAR_RAG_MAX_SOURCE_DOCS`. Policy is saved separately from the unchanged
+four-field run configuration. See
+[Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
@@ -36,10 +44,23 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-23 America/Los_Angeles** and payload
+source-linked defaults rechecked on **2026-09-26 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
+
+Gemini still uses `generateContent`, not the current Interactions quickstart.
+Google rejects unrestricted standard keys; auth keys and appropriately restricted
+standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
+Setting an API key header does not migrate the endpoint or the key's permissions.
+
 Live adapters reject invalid JSON or absent/blank final answer text with an
 explicit, nonretryable provider-response error; `/query` records an `ERROR` run
 rather than a completed empty answer.
+
+Live rate admission counts every HTTP attempt, including failed requests and
+retries, against the default 60 attempts per adapter instance per sliding minute.
+Retries wait for capacity after the existing backoff; the three-retry cap and
+phase timeouts are unchanged. This is not a shared account-wide quota. See
+[provider backoff and rate limits](SAFETY.md#provider-backoff).
+
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.

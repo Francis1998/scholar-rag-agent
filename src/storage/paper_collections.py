@@ -34,6 +34,7 @@ CollectionId = Annotated[
 Revision = Annotated[int, Field(strict=True, ge=1, le=MAX_REVISION)]
 _COLLECTION_ID = TypeAdapter(CollectionId)
 _REVISION = TypeAdapter(Revision)
+_DOCUMENT_IDS = TypeAdapter(DocumentIds)
 
 
 def _readable_name(value: str) -> str:
@@ -359,3 +360,10 @@ class SQLitePaperCollections:
                     409,
                 )
             return collection.document_ids
+
+    def validate_document_ids(self, document_ids: DocumentIdsInput) -> tuple[str, ...]:
+        """Check an explicit selection with the same existence rules, without saving metadata."""
+        selection = _DOCUMENT_IDS.validate_python(document_ids)
+        with self._connection() as connection:
+            self._validate_documents(connection, selection)
+        return selection

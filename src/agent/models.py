@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from retrieval.evidence_policy import EvidencePolicy
 from retrieval.scope import DocumentIds
 
 
@@ -47,6 +48,7 @@ class QueryObservation(BaseModel):
     entities: list[str] = Field(default_factory=list)
     constraints: dict[str, Any] = Field(default_factory=dict)
     document_ids: DocumentIds | None = Field(default=None, frozen=True)
+    evidence_policy: EvidencePolicy | None = Field(default=None, frozen=True)
 
 
 class QueryPlan(BaseModel):
