@@ -1,5 +1,28 @@
 # Demo
 
+## Minimum evidence documents
+
+![Measured synthetic minimum-evidence check](assets/minimum-evidence-documents.gif)
+
+This generated illustration uses actual offline results: three chunks from one
+document fail a minimum of two without generation, while a two-paper collection
+passes after cap 1. Failed evidence, exports, and policy-only comparisons remain
+byte-identical after restart. Counts are not scientific support.
+
+```bash
+MINIMUM_DIR="$(mktemp -d)/minimum-evidence"
+uv run python -m scripts.demo_minimum_evidence_documents --output-dir "$MINIMUM_DIR"
+uv run python -m scripts.create_minimum_evidence_documents_gif \
+  --transcript "$MINIMUM_DIR/transcript.txt" \
+  --output "$MINIMUM_DIR/minimum-evidence-documents.gif"
+```
+
+Read `checks.json`, `failed-events.json`, the previews, both bundle formats,
+and `comparison.json`. External HTTP is denied, ambient credentials/settings
+are ignored, and the temporary database is removed. See the
+[complete guide](guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) for API/Python
+examples, provenance, errors, privacy, and limitations.
+
 ## Per-paper research evidence worksheets
 
 ![Measured synthetic offline research worksheet](assets/research-worksheet.gif)

@@ -18,7 +18,7 @@ _PRIVATE_HEADERS = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosn
 
 
 class RetrievalRequest(QueryRequest):
-    """The query, optional scope and document quota; no generation or paging options."""
+    """The query, optional scope and evidence bounds; no generation or paging options."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -29,7 +29,7 @@ class RetrievalRequest(QueryRequest):
     responses={
         404: {"description": "Unknown collection"},
         409: {"description": "Generative retrieval or invalid/broken collection"},
-        422: {"description": "Invalid query, scope, document quota, or unsupported request fields"},
+        422: {"description": "Invalid query, scope, evidence bounds, or unsupported fields"},
         500: {"description": "Planning, retrieval, scope, or context-capture failure"},
         503: {"description": "Collection storage unavailable"},
         504: {"description": "Retrieval or context-preparation timeout"},
@@ -45,7 +45,9 @@ async def retrieve(
         preview = await container.runner.preview(
             payload.query,
             **scope_arguments(document_ids),
-            **evidence_limit_arguments(payload.max_chunks_per_document),
+            **evidence_limit_arguments(
+                payload.max_chunks_per_document, payload.min_evidence_documents
+            ),
         )
     except RetrievalPreviewError as exc:
         logger.warning("Retrieval preview failed: %s", exc.code)

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from agent.evidence import EvidenceBundle, text_digest
 from agent.markdown import literal_block as _literal
 from api.dependencies import AppContainer
+from retrieval.evidence_policy import assess_evidence
 from storage.evidence_export import EvidenceExportError
 
 router = APIRouter()
@@ -19,6 +20,26 @@ def _json_block(value: BaseModel) -> str:
         json.dumps(value.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, indent=2),
         "json",
     )
+
+
+def _policy_description(bundle: EvidenceBundle) -> str:
+    policy = bundle.plan.observation.evidence_policy
+    description = (
+        "No per-document quota requested. Older records may omit evidence_policy."
+        if policy is None or policy.max_chunks_per_document is None
+        else f"max_chunks_per_document={policy.max_chunks_per_document}\n"
+        "Applied after reranking within the bounded candidate pool; no extra retrieval.\n"
+        "Fewer passages may remain; distinct-paper coverage is not guaranteed."
+    )
+    assessment = assess_evidence(policy, bundle.snapshot.sources)
+    if assessment is not None:
+        description += (
+            f"\nmin_evidence_documents={assessment.required_documents}\n"
+            f"Final captured context: observed_documents={assessment.observed_documents}; "
+            f"passed={assessment.passed}.\n"
+            "Document counts do not establish relevance, independence, or scientific answerability."
+        )
+    return description
 
 
 def render_markdown(bundle: EvidenceBundle) -> str:
@@ -46,14 +67,7 @@ def render_markdown(bundle: EvidenceBundle) -> str:
             + "\n".join(bundle.plan.observation.document_ids)
         ),
         "## Per-paper evidence policy\n",
-        _literal(
-            "No per-document quota requested. Older records may omit evidence_policy."
-            if bundle.plan.observation.evidence_policy is None
-            else "max_chunks_per_document="
-            f"{bundle.plan.observation.evidence_policy.max_chunks_per_document}\n"
-            "Applied after reranking within the bounded candidate pool; no extra retrieval.\n"
-            "Fewer passages may remain; distinct-paper coverage is not guaranteed."
-        ),
+        _literal(_policy_description(bundle)),
         "## Effective runtime configuration\n",
         _json_block(bundle.configuration),
         "## Answer\n",

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from agent.models import AgentRunResult
-from retrieval.evidence_policy import MaxChunksPerDocument
+from retrieval.evidence_policy import MaxChunksPerDocument, MinEvidenceDocuments
 from retrieval.scope import DocumentIds
 from storage.paper_collections import CollectionId
 
@@ -78,6 +78,24 @@ class QueryRequest(BaseModel):
             "max_source_docs; does not fetch extra candidates or guarantee distinct papers."
         ),
     )
+    min_evidence_documents: MinEvidenceDocuments | SkipJsonSchema[None] = Field(
+        default=None,
+        frozen=True,
+        description=(
+            "Optional strict integer 1-50: require at least this many distinct actual "
+            "document_id values in the final captured context after reranking and quotas. "
+            "Insufficient queries record ERROR without answer generation; previews retain "
+            "evidence and return a count assessment. Omit for no minimum; null is invalid. "
+            "Document counts do not prove relevance, independence, or answerability."
+        ),
+    )
+
+    @field_validator("min_evidence_documents", mode="before")
+    @classmethod
+    def reject_null_evidence_minimum(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("min_evidence_documents cannot be null; omit it for no minimum.")
+        return value
 
     @field_validator("max_chunks_per_document", mode="before")
     @classmethod

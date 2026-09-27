@@ -2,10 +2,11 @@
 
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
 from agent.evidence import SHA256, CaptureLimits, EvidenceSnapshot, EvidenceSource, RunConfiguration
 from agent.models import QueryObservation, QueryPlan, RetrievalTask
+from retrieval.evidence_policy import EvidenceAssessment, assess_evidence
 
 
 class RetrievalPreviewError(RuntimeError):
@@ -40,6 +41,15 @@ class RetrievalPreview(BaseModel):
     context_sha256: SHA256
     context_format: Literal["chunk-id-title-text-v1"] = "chunk-id-title-text-v1"
     capture_limits: CaptureLimits
+    evidence_assessment: EvidenceAssessment | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_assessment(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Omission preserves the original preview shape when no minimum was requested."""
+        fields: dict[str, object] = handler(self)
+        if self.evidence_assessment is None:
+            fields.pop("evidence_assessment", None)
+        return fields
 
     @classmethod
     def from_preparation(
@@ -56,4 +66,5 @@ class RetrievalPreview(BaseModel):
             context_sha256=snapshot.context_sha256,
             context_format=snapshot.context_format,
             capture_limits=snapshot.limits,
+            evidence_assessment=assess_evidence(plan.observation.evidence_policy, snapshot.sources),
         )

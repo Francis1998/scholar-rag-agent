@@ -53,7 +53,9 @@ flowchart LR
   merge --> rerank[Lexical overlap reranking]
   rerank --> quota[Optional per-document passage quota]
   quota --> snapshot[Persist exact context snapshot]
-  snapshot --> model[Routed provider or fake adapter]
+  snapshot --> minimum[Optional distinct-document minimum]
+  minimum -->|Met or omitted| model[Routed provider or fake adapter]
+  minimum -->|Insufficient| error[Persist ERROR without generation]
   model --> ground[Token-overlap citation mapping]
   ground --> done[Persist answer and completed run]
 ```
@@ -90,6 +92,18 @@ validated in previews/exports, and compared even when saved contexts match.
 policy. Unsupported opt-in executor overrides fail rather than discard the quota.
 See [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
+Optional `min_evidence_documents` extends the same frozen policy with a strict
+1-50 integer. Its count is taken from distinct actual document IDs in the final
+captured context, after the quota. The runner saves an insufficient snapshot and
+typed count diagnostic through `REASONING -> ERROR`, without invoking the
+prepared-answer hook or recording generation/`DONE`. Sufficient requests use
+`Executor.answer_prepared` on that same detached context; preparation and
+generation share one reasoning timeout. Opt-in generative retrieval and
+unsupported custom answer overrides fail explicitly, never switch algorithms.
+The existing count primitive is shared with `MinUniqueSourcesGate`, but its
+discard/provenance-rewrite behavior is not used. Passing is not a scientific
+answerability claim. See [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+
 ## Generation-Free Retrieval Preview
 
 `POST /retrieve`, in the separate `api.retrieval` router, calls
@@ -105,6 +119,12 @@ enter the state machine, call any live/fake generator, ground claims, or append
 agent events. Its context-preparation budget uses the existing reasoning timeout
 without running a reasoning model. LLM-backed HyDE is rejected rather than
 silently replaced by a different retrieval algorithm.
+
+With a minimum, preview adds `evidence_assessment` containing required/observed
+distinct-document counts and `passed`. Insufficiency is a valid inspection:
+context remains available, without events or generation. Operational failures
+still return errors, not partial evidence. Without a minimum, the new field is
+absent and the existing response shape remains unchanged.
 
 Unknown document IDs produce empty evidence, not a widened search. Invalid HTTP
 scope is 422; generative retrieval is 409; operational failures are sanitized

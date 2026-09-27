@@ -1,0 +1,30 @@
+1. Count documents, not passages
+Single-paper preview: chunks=3; distinct documents=1.
+Required=2; passed=False. Evidence stays inspectable.
+Unknown selected ID: observed=0; passed=False. No widened search.
+Counts use final captured document IDs, not titles or selected IDs.
+Synthetic fixtures only; document counts are not scientific support.
+
+2. Stop before answer generation
+Query state=ERROR; answer present=False.
+Required=2; observed=1.
+Failed-query generation calls=0.
+Saved snapshot chunks=3; generation records=0; DONE events=0.
+Failure / preview context identical=True.
+Read the diagnostic and evidence in failed-events.json.
+
+3. Inspect a sufficient selection
+Collection paper-a + paper-b, cap 1: chunks=2.
+Required=2; observed=2; passed=True.
+Query state=DONE; provider=fake.
+Preview / query context identical=True.
+Context SHA-256: 8ad6a36efe2be1fa90697d4f68b36fd23950f5535ea3630443fc4763e0391aa6
+The fake answer demonstrates plumbing, not a scientific conclusion.
+
+4. Preserve the requested threshold
+Minimum 1 vs 2: context equal=True; policy-only change=True.
+Failed events, exports, comparison after restart: identical=True.
+Preview generation calls=0; event writes=0.
+Query fake generations=2; live HTTP attempts=0.
+Read checks.json and the full saved artifacts before sharing.
+No refill, retry, relaxed capture bounds, or rewritten source provenance.

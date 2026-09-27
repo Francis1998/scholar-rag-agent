@@ -44,6 +44,16 @@ Previews remain generation/event-write free, and old saved runs without a policy
 remain readable. See the complete
 [per-paper evidence limits guide](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
+Opt-in `min_evidence_documents` requires a strict integer from 1 to 50 distinct
+document IDs in the final captured context, after reranking and any quota.
+An unmet minimum records `ERROR` with no answer or generation call, but retains
+the exact potentially sensitive snapshot and count diagnostic in run events.
+Previews with an unmet minimum retain evidence without generation or events;
+operational preview failures still return errors. No scope widening, replacement
+retrieval, or scientific-support guarantee is implied: a passing count proves
+neither relevance nor source independence. See
+[minimum evidence contracts and privacy](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+
 Planner tasks request one to three graph hops, depending on intent.
 `SCHOLAR_RAG_MAX_HOPS` defaults to 5 and clamps those tasks; API settings allow
 no more than 5. Co-mention traversal is bounded retrieval, not proof of a
@@ -62,7 +72,8 @@ papers cannot bridge into results. BM25 statistics still use the whole corpus.
 This is **corpus selection, not authentication or tenant isolation**. It neither
 authorizes document access nor protects run/event/export endpoints. Keep the
 service local/trusted. Source/hop/capture bounds and human evidence review still
-apply; even an empty context may be sent to a configured generation provider.
+apply; without a requested minimum, even an empty context may be sent to a
+configured generation provider.
 See the [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for behavior,
 legacy component handling, and the offline demonstration.
 
@@ -155,8 +166,8 @@ provider request.
 `CitationGrounder` keeps a claim's mapped chunk ID when the ID exists in the
 retrieved set and claim/chunk text share at least one meaningful term. If any
 claim fails that check, the answer is prefixed with `[UNGROUNDED]` and includes
-a warning. An empty retrieved corpus therefore produces an ungrounded fake
-answer rather than evidence.
+a warning. Without a requested minimum, an empty retrieved corpus therefore
+produces an ungrounded fake answer rather than evidence.
 
 This grounding check is **non-stopword token overlap**, not semantic entailment
 or scientific proof. Evidence exports preserve this flag and the warnings;

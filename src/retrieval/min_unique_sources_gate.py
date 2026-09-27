@@ -1,6 +1,13 @@
 """Gate that requires a minimum number of unique source documents."""
 
+from collections.abc import Iterable
+
 from retrieval.models import SearchResult
+
+
+def count_evidence_documents(results: Iterable[SearchResult]) -> int:
+    """Count actual document IDs without discarding evidence or rewriting provenance."""
+    return len({result.chunk.document_id for result in results})
 
 
 class MinUniqueSourcesGate:
@@ -10,10 +17,10 @@ class MinUniqueSourcesGate:
     below *min_sources* the entire batch is rejected (returns empty).
     Otherwise all results pass through with rewritten provenance.
 
-    Inspired by LlamaIndex/Haystack diversity-aware postprocessors.
-    Inputs are not mutated.  Local postprocessor for GPT-5.5 /
-    Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (not a DOI
-    connector).
+    Inputs are not mutated. This offline, library-only postprocessor is not
+    invoked by the API; gate() alone does not prevent answer generation.
+    The integrated min_evidence_documents requirement shares the counting
+    helper, not these discard/provenance-rewrite semantics.
     """
 
     def __init__(self, min_sources: int = 2) -> None:
@@ -38,8 +45,7 @@ class MinUniqueSourcesGate:
         if not results:
             return []
 
-        unique = {r.chunk.document_id for r in results}
-        if len(unique) < self._min_sources:
+        if count_evidence_documents(results) < self._min_sources:
             return []
 
         limit = len(results) if top_k is None else min(top_k, len(results))

@@ -7,7 +7,14 @@ from uuid import uuid4
 
 from agent.evidence import EvidenceSnapshot, GenerationRecord, RunConfiguration
 from agent.executor import Executor
-from agent.models import AgentRunResult, AgentState, QueryObservation, QueryPlan, StateTransition
+from agent.models import (
+    AgentAnswer,
+    AgentRunResult,
+    AgentState,
+    QueryObservation,
+    QueryPlan,
+    StateTransition,
+)
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
 from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
@@ -15,7 +22,9 @@ from agent.safety import CancellationToken, SafetyLimits, with_timeout
 from agent.state_machine import AgentStateMachine
 from retrieval.evidence_policy import (
     EvidencePolicy,
+    InsufficientEvidenceError,
     ensure_evidence_policy,
+    ensure_evidence_requirement,
     normalize_evidence_policy,
     policy_arguments,
 )
@@ -55,6 +64,7 @@ class AgentRunner:
         *,
         document_ids: DocumentIdsInput | None = None,
         max_chunks_per_document: int | None = None,
+        min_evidence_documents: int | None = None,
     ) -> RetrievalPreview:
         """Inspect the query's prepared context without generation, grounding, or event writes.
 
@@ -63,7 +73,7 @@ class AgentRunner:
         """
         self._validate_query(query)
         scope = normalize_document_ids(document_ids)
-        policy = normalize_evidence_policy(max_chunks_per_document)
+        policy = normalize_evidence_policy(max_chunks_per_document, min_evidence_documents)
         phase = "planning"
         try:
             limits = replace(self._safety_limits)
@@ -97,6 +107,8 @@ class AgentRunner:
                 configuration.reasoning_timeout_seconds,
                 "context preparation",
             )
+            if min_evidence_documents is not None:
+                snapshot = EvidenceSnapshot.model_validate(snapshot.model_dump(mode="json"))
             self._validate_plan_request(plan, scope, policy)
             ensure_document_scope(scope, (source.chunk.document_id for source in snapshot.sources))
             ensure_evidence_policy(policy, snapshot.sources)
@@ -120,17 +132,19 @@ class AgentRunner:
         *,
         document_ids: DocumentIdsInput | None = None,
         max_chunks_per_document: int | None = None,
+        min_evidence_documents: int | None = None,
     ) -> AgentRunResult:
         """Execute a query; invalid input raises ValueError before run IDs or event writes."""
         self._validate_query(query)
         scope = normalize_document_ids(document_ids)
-        policy = normalize_evidence_policy(max_chunks_per_document)
+        policy = normalize_evidence_policy(max_chunks_per_document, min_evidence_documents)
         run_id = str(uuid4())
         cancellation_token = token or CancellationToken()
         state = AgentState.IDLE
         observation: QueryObservation | None = None
         plan: QueryPlan | None = None
         context_captured = False
+        generation_captured = False
 
         def record_context(snapshot: EvidenceSnapshot) -> None:
             nonlocal context_captured
@@ -151,11 +165,29 @@ class AgentRunner:
             context_captured = True
 
         def record_generation(generation: GenerationRecord) -> None:
+            nonlocal generation_captured
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,
                 event_type="generation_record",
                 payload=generation.model_dump(mode="json"),
+            )
+            generation_captured = True
+
+        async def guarded_answer() -> AgentAnswer:
+            if plan is None:
+                raise ValueError("Evidence assessment requires the requested plan.")
+            snapshot = await self._executor.prepare_context(
+                plan, retrieved, **policy_arguments(policy)
+            )
+            snapshot = EvidenceSnapshot.model_validate(snapshot.model_dump(mode="json"))
+            if len(snapshot.sources) > configuration.max_source_docs:
+                raise ValueError("Prepared evidence exceeds the effective source limit.")
+            record_context(snapshot)
+            cancellation_token.raise_if_cancelled()
+            ensure_evidence_requirement(policy, snapshot.sources)
+            return await self._executor.answer_prepared(
+                plan, snapshot, on_generation=record_generation
             )
 
         try:
@@ -173,6 +205,13 @@ class AgentRunner:
                     "evidence_policy": policy.model_dump(mode="json") if policy else None,
                 },
             )
+            if min_evidence_documents is not None:
+                self._validate_prepared_answer_support()
+                if self._executor.retrieval_uses_llm:
+                    raise ValueError(
+                        "min_evidence_documents requires non-generative retrieval; "
+                        "LLM-backed HyDE is configured."
+                    )
             observation = self._observe(query, scope, policy)
             plan = self._planner.plan(run_id, observation)
             plan = self._clamp_plan(plan, limits)
@@ -209,31 +248,34 @@ class AgentRunner:
                 AgentState.REASONING,
                 {"chunk_ids": [result.chunk.chunk_id for result in retrieved]},
             )
-            answer_method = self._executor.answer
-            # Bind before calling: retrying a generation TypeError could run the model twice.
-            try:
-                signature(answer_method).bind(
-                    plan,
-                    retrieved,
-                    on_context=record_context,
-                    on_generation=record_generation,
-                    **policy_arguments(policy),
-                )
-            except TypeError as exc:
-                if policy is not None:
-                    raise TypeError(
-                        "Executor.answer does not support max_chunks_per_document "
-                        "with evidence_policy and evidence capture callbacks."
-                    ) from exc
-                answer_call = answer_method(plan, retrieved)
+            if min_evidence_documents is not None:
+                answer_call = guarded_answer()
             else:
-                answer_call = answer_method(
-                    plan,
-                    retrieved,
-                    on_context=record_context,
-                    on_generation=record_generation,
-                    **policy_arguments(policy),
-                )
+                answer_method = self._executor.answer
+                # Bind before calling: retrying a generation TypeError could run the model twice.
+                try:
+                    signature(answer_method).bind(
+                        plan,
+                        retrieved,
+                        on_context=record_context,
+                        on_generation=record_generation,
+                        **policy_arguments(policy),
+                    )
+                except TypeError as exc:
+                    if policy is not None:
+                        raise TypeError(
+                            "Executor.answer does not support max_chunks_per_document "
+                            "with evidence_policy and evidence capture callbacks."
+                        ) from exc
+                    answer_call = answer_method(plan, retrieved)
+                else:
+                    answer_call = answer_method(
+                        plan,
+                        retrieved,
+                        on_context=record_context,
+                        on_generation=record_generation,
+                        **policy_arguments(policy),
+                    )
             answer = await with_timeout(
                 answer_call,
                 configuration.reasoning_timeout_seconds,
@@ -242,6 +284,10 @@ class AgentRunner:
             if policy is not None and not context_captured:
                 raise ValueError(
                     "Executor.answer did not capture evidence for max_chunks_per_document."
+                )
+            if min_evidence_documents is not None and not generation_captured:
+                raise ValueError(
+                    "Executor.answer_prepared did not record generation for min_evidence_documents."
                 )
             ensure_document_scope(scope, (citation.document_id for citation in answer.citations))
 
@@ -267,14 +313,32 @@ class AgentRunner:
                 self._transition(run_id, state, AgentState.ERROR, {"error": reason})
             raise
         except Exception as exc:
+            diagnostic: dict[str, object] = {"error": str(exc)}
+            if isinstance(exc, InsufficientEvidenceError):
+                diagnostic.update(
+                    code="insufficient_evidence_documents",
+                    evidence_assessment=exc.assessment.model_dump(mode="json"),
+                )
             if state not in {AgentState.DONE, AgentState.ERROR}:
-                state = self._transition(run_id, state, AgentState.ERROR, {"error": str(exc)})
+                state = self._transition(run_id, state, AgentState.ERROR, diagnostic)
             return AgentRunResult(
                 run_id=run_id,
                 state=state,
                 observation=observation,
                 plan=plan,
                 error=str(exc),
+            )
+
+    def _validate_prepared_answer_support(self) -> None:
+        """Never bypass a custom answer override by silently inheriting the built-in hook."""
+        prepared = getattr(self._executor, "answer_prepared", None)
+        if not callable(prepared) or (
+            getattr(prepared, "__func__", None) is Executor.answer_prepared
+            and getattr(self._executor.answer, "__func__", None) is not Executor.answer
+        ):
+            raise TypeError(
+                "min_evidence_documents requires Executor.answer_prepared; custom answer "
+                "overrides must explicitly implement the prepared-context generation contract."
             )
 
     @staticmethod
@@ -297,6 +361,8 @@ class AgentRunner:
         if plan.observation.document_ids != scope:
             raise ValueError("Planned document_ids do not match the requested scope.")
         if plan.observation.evidence_policy != policy:
+            if policy is not None and policy.min_evidence_documents is not None:
+                raise ValueError("Planned evidence_policy does not match min_evidence_documents.")
             raise ValueError("Planned evidence_policy does not match the requested quota.")
 
     @staticmethod

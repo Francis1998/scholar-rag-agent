@@ -43,6 +43,7 @@ database and empty provider keys. The interactive API documentation is at
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Limit how many passages one paper contributes | Opt in to `max_chunks_per_document` on `/query` or `/retrieve`; retain the quota and gate provenance in saved evidence | [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
+| Require a minimum number of evidence documents before generating | Opt in to `min_evidence_documents`; inspect count diagnostics with `/retrieve`, or retain exact evidence in an `ERROR` run without generation | [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
 | Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
@@ -70,6 +71,13 @@ To inspect retrieval **without creating a run**, use `POST /retrieve` or
 includes a reproducible offline GIF, Python/API examples, exact chunk/rank/path
 and context-digest contracts, scope, and errors. This is the shared `/query`
 context preparation, not semantic entailment or a promise about a changed corpus.
+
+To block answer generation below a chosen distinct-document count, use
+[`min_evidence_documents`](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+Previews with an unmet minimum keep their passages; queries with an unmet
+minimum preserve a diagnostic and snapshot without generating. Operational
+preview failures return errors, not partial evidence. Passing a count is not
+proof of scientific support.
 
 ![Synthetic offline evidence-export walkthrough](docs/assets/evidence-export.gif)
 
