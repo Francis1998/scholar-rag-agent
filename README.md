@@ -6,6 +6,7 @@
 
 Load a small paper corpus, ask comparison or hypothesis questions, and inspect
 the passages and run history behind the response. Scholar RAG Agent is a
+![EstimandIchE9CueExtractor](docs/assets/estimand-ich-e9-cue-extractor.gif)
 **local-first Python toolkit and FastAPI service** for building inspectable
 literature workflows, with SQLite persistence and optional model-provider adapters.
 
