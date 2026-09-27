@@ -14,7 +14,7 @@ Distinct from `IntentionToTreatCueExtractor / PrimaryEndpointCueExtractor`.
 from retrieval.estimand_ich_e9_cues import EstimandIchE9CueExtractor
 
 rows = EstimandIchE9CueExtractor().extract(
-    [{"paper_id": "p1", "methods": 'The treatment-policy estimand was pre-specified.'}]
+    [{"paper_id": "p1", "methods": "The treatment-policy estimand was pre-specified."}]
 )
 print(rows[0].flagged, rows[0].cues)
 ```
