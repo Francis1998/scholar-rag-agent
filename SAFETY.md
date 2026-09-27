@@ -252,11 +252,18 @@ and `504`. The default remains at most three retries after the initial attempt,
 with backoff delays of 0.25, 0.5, and 1 second; permanent client errors are
 surfaced without those retries.
 
+The `requests_per_minute` argument to `AsyncRateLimiter` and the shared
+`HTTPProviderAdapter` constructor must be a positive Python `int`. Invalid
+capacities raise `ValueError` naming `requests_per_minute` during construction.
+Booleans, strings, all floats (including integral floats, NaN, and infinities),
+`None`, other non-integer types, zero, and negative integers are rejected without
+coercion. Positive Python integers have no fixed upper bound.
+
 Each adapter instance admits at most `requests_per_minute` HTTP attempts
 (default 60) in a sliding 60-second window measured by a monotonic clock; the
 initial attempt and every retry each consume one slot, including failed
-requests. The capacity must be positive. A timestamp expires at exactly 60
-seconds of age. Admission is serialized across concurrent callers on the same
+requests. A timestamp expires at exactly 60 seconds of age. Admission is
+serialized across concurrent callers on the same
 event loop. Only the caller holding the admission lock sleeps; it rechecks the
 clock and capacity after every wake, including early wakes, before recording an
 admission. Other callers wait for that lock. This allows a burst up to the
