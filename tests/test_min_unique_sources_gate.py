@@ -68,5 +68,9 @@ def test_does_not_mutate_inputs() -> None:
     assert original[0].retriever == "bm25"
 
 
-def test_docstring_mentions_frontier_models() -> None:
-    assert "GPT-5.5" in (MinUniqueSourcesGate.__doc__ or "")
+def test_docstring_distinguishes_library_gate_from_generation_requirement() -> None:
+    documentation = " ".join((MinUniqueSourcesGate.__doc__ or "").split())
+    assert "offline, library-only postprocessor" in documentation
+    assert "not invoked by the API" in documentation
+    assert "gate() alone does not prevent answer generation." in documentation
+    assert "min_evidence_documents" in documentation
