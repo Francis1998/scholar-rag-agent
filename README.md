@@ -8,6 +8,7 @@ Load a small paper corpus, ask comparison or hypothesis questions, and inspect
 the passages and run history behind the response. Scholar RAG Agent is a
 ![PerProtocolAnalysisCueExtractor](docs/assets/per-protocol-analysis-cue-extractor.gif)
 ![BayesianInterimPriorCueExtractor](docs/assets/bayesian-interim-prior-cue-extractor.gif)
+![ConfoundingAdjustmentCueExtractor](docs/assets/confounding-adjustment-cue-extractor.gif)
 ![MissingDataMechanismCueExtractor](docs/assets/missing-data-mechanism-cue-extractor.gif)
 ![EstimandIchE9CueExtractor](docs/assets/estimand-ich-e9-cue-extractor.gif)
 **local-first Python toolkit and FastAPI service** for building inspectable
