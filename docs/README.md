@@ -184,6 +184,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Crossover design](guides/CROSSOVER_DESIGN_CUE_EXTRACTOR_GUIDE.md) | Crossover and treatment-sequence descriptions |
 | [Estimands](guides/ESTIMAND_ICH_E9_CUE_EXTRACTOR_GUIDE.md) | ICH-E9(R1) estimand strategy wording |
 | [Per-protocol analysis](guides/PER_PROTOCOL_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Per-protocol / as-treated analysis wording |
+| [Bayesian interim priors](guides/BAYESIAN_INTERIM_PRIOR_CUE_EXTRACTOR_GUIDE.md) | Bayesian interim / prior / posterior wording |
 | [Missing-data mechanisms](guides/MISSING_DATA_MECHANISM_CUE_EXTRACTOR_GUIDE.md) | MCAR/MAR/MNAR missingness wording |
 | [Adaptive designs](guides/ADAPTIVE_DESIGN_CUE_EXTRACTOR_GUIDE.md) | SSR, RAR, and seamless adaptive-design wording |
 | [Washout periods](guides/WASHOUT_PERIOD_CUE_EXTRACTOR_GUIDE.md) | Washout, run-in, and wash-in periods |
