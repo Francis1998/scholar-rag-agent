@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `CompetingRiskCueExtractor` (`src/retrieval/competing_risk_cues.py`): offline Elicit / Consensus / STROBE competing-risk cues (distinct from FollowUpDurationCueExtractor / AttritionRateCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md`.
 - `MediationAnalysisCueExtractor` (`src/retrieval/mediation_analysis_cues.py`): offline Elicit / Consensus / AJE mediation-analysis cues (distinct from ConfoundingAdjustmentCueExtractor / IntentionToTreatCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`.
 - `ConfoundingAdjustmentCueExtractor` (`src/retrieval/confounding_adjustment_cues.py`): offline STROBE confounding-adjustment cues (Elicit / Consensus / STROBE confounding-adjustment gap; distinct from BaselineImbalanceCueExtractor / IntentionToTreatCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/CONFOUNDING_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md`.
 - `BayesianInterimPriorCueExtractor` (`src/retrieval/bayesian_interim_prior_cues.py`): offline FDA Bayesian interim prior cues (Elicit / Consensus / FDA Bayesian interim prior gap; distinct from InterimAnalysisCueExtractor / AdaptiveDesignCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/BAYESIAN_INTERIM_PRIOR_CUE_EXTRACTOR_GUIDE.md`.
