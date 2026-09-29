@@ -186,6 +186,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Estimands](guides/ESTIMAND_ICH_E9_CUE_EXTRACTOR_GUIDE.md) | ICH-E9(R1) estimand strategy wording |
 | [Per-protocol analysis](guides/PER_PROTOCOL_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Per-protocol / as-treated analysis wording |
 | [Bayesian interim priors](guides/BAYESIAN_INTERIM_PRIOR_CUE_EXTRACTOR_GUIDE.md) | Bayesian interim / prior / posterior wording |
+| [Transportability](guides/TRANSPORTABILITY_CUE_EXTRACTOR_GUIDE.md) | Transportability / external-validity / generalizability wording |
 | [Competing risks](guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md) | Competing-risk / Fine-Gray / cumulative-incidence wording |
 | [Mediation analysis](guides/MEDIATION_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Mediator / indirect-effect / path-analysis wording |
 | [Confounding adjustment](guides/CONFOUNDING_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md) | Propensity / IPTW / confounding-adjustment wording |
