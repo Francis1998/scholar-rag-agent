@@ -306,6 +306,27 @@ incomplete runs, and invalid saved records are rejected rather than backfilled
 from a changing corpus. See the [evidence export guide](docs/guides/EVIDENCE_EXPORT_GUIDE.md)
 for schema, bounds, privacy, and error contracts.
 
+## Saved Evidence Corpus Drift
+
+`SQLiteCorpusDrift.report(run_id)`, exposed through the separate
+`GET /runs/{run_id}/corpus-drift` router, opens one read-only SQLite transaction.
+The existing `EvidenceExporter` validates a completed run through a structural
+event-reader interface; the new reader bounds event counts and bytes before
+loading payloads. The original export logic and serialization are unchanged.
+
+The same transaction looks up only frozen chunk IDs and original document
+presence, with current text/record byte budgets derived from `CaptureLimits`.
+Exact chunk/document identity, UTF-8 text/title/source digests, and canonical
+string-metadata digests determine ordered unchanged/changed/missing findings.
+Reassigned chunks are missing evidence, not shared sources. Any selected-record
+corruption, size overflow, or operational failure rejects the entire report.
+
+The service requires no model, retriever, settings, writable store, new table,
+or migration. It does not inspect document bodies, rebuild indexes, append
+events, modify frozen artifacts, or claim scientific validity. Standalone use
+does not initialize storage; normal application startup remains unchanged.
+See [corpus-drift bounds, errors, and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md).
+
 ## Model Providers
 
 `ModelRouter` selects an adapter (`openai`, `anthropic`, `gemini`, `kimi`, or

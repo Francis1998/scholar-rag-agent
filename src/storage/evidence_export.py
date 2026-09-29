@@ -1,6 +1,7 @@
 """Read completed evidence bundles from the existing append-only event log."""
 
 from json import JSONDecodeError
+from typing import Any, Protocol
 
 from pydantic import BaseModel, JsonValue, ValidationError
 
@@ -20,7 +21,6 @@ from retrieval.evidence_policy import (
     ensure_evidence_requirement,
 )
 from retrieval.scope import DocumentIds, documents_within_scope
-from storage.event_log import SQLiteEventLog
 
 EXPECTED_EVENTS = [
     "state_transition",
@@ -57,6 +57,12 @@ class EvidenceExportError(ValueError):
         self.status_code = status_code
 
 
+class EvidenceEventReader(Protocol):
+    """Read saved events, including from an existing bounded read transaction."""
+
+    def list_events(self, run_id: str | None = None) -> list[dict[str, Any]]: ...
+
+
 class _Transition(BaseModel):
     from_state: AgentState
     to_state: AgentState
@@ -87,7 +93,7 @@ def _invalid_record() -> EvidenceExportError:
 class EvidenceExporter:
     """Export saved records without access to a model, retriever, or document store."""
 
-    def __init__(self, event_log: SQLiteEventLog) -> None:
+    def __init__(self, event_log: EvidenceEventReader) -> None:
         self._event_log = event_log
 
     def export(self, run_id: str) -> EvidenceBundle:

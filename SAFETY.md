@@ -238,6 +238,21 @@ or model quality; differing queries/scopes are explicitly not a fair model A/B
 test. Comparison does not retrieve, generate, read current corpus data, or write
 events. See [comparison limits and privacy](docs/guides/RUN_COMPARISON_GUIDE.md).
 
+`GET /runs/{run_id}/corpus-drift` uses a single read-only transaction to validate
+saved evidence and compare at most 50 selected current chunks. It never calls a
+live/fake generator, retrieves again, writes events, or mutates corpus/exports.
+Current text is capped at 262,144 UTF-8 bytes in aggregate and current records
+at 1,048,576; saved-event reads also have explicit count/per-record/total bounds.
+Corrupt selected chunks, oversized reads, and SQLite failures are errors, not
+partial successes or missing-evidence guesses.
+
+Drift responses contain bounded identities and digests, not source text or
+metadata values. These still permit identification/equality checks and are not
+anonymous. Matching retrieved chunks do not prove whole-paper equality or
+scientific validity; unselected rows and document bodies are not audited.
+Data and errors use no-store/nosniff headers, without adding access control.
+See [the exact drift contract and limitations](docs/guides/CORPUS_DRIFT_GUIDE.md).
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,

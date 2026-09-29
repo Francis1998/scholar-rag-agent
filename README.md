@@ -53,6 +53,7 @@ database and empty provider keys. The interactive API documentation is at
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
+| Check whether saved source chunks still match the local corpus | Read unchanged/changed/missing findings in frozen rank order, without regenerating or rewriting evidence | [Corpus drift and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md) |
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
@@ -103,6 +104,15 @@ separate SQLite table. `GET /runs/{run_id}/reviews` reads retry-safe, paginated
 history after restart without changing the saved answer or events. Acceptance is
 an opinion, not factual verification or an authenticated approval. See the
 [review guide and actual-output offline GIF](docs/guides/ANSWER_REVIEWS_GUIDE.md).
+
+![Measured synthetic offline corpus-drift report](docs/assets/corpus-drift.gif)
+
+`GET /runs/{run_id}/corpus-drift` compares frozen chunk/document identities and
+exact field digests with current persisted chunks in one read-only transaction.
+It reports changed or missing evidence without retrieval, generation, or event
+writes. “Unchanged” means matching chunk fields, not whole-paper equality or
+scientific validity. The [guide](docs/guides/CORPUS_DRIFT_GUIDE.md) includes bounded
+API/Python usage and reproduction of this actual-output offline illustration.
 
 ## What actually runs
 

@@ -133,6 +133,22 @@ is still executing, and a legacy `DONE` record may not have exportable evidence.
 The [run-history guide](docs/guides/RUN_HISTORY_GUIDE.md) includes a complete
 offline restart demonstration, filtering, pagination, and Python contracts.
 
+### Check saved evidence against the current corpus
+
+For a completed run with a valid saved snapshot:
+
+```bash
+RUN_ID='replace-with-your-completed-run-id'
+curl --fail-with-body --silent --show-error \
+  "http://127.0.0.1:8000/runs/$RUN_ID/corpus-drift" | uv run python -m json.tool
+```
+
+The bounded read-only report preserves frozen rank order and distinguishes
+unchanged, changed, and missing chunks. It does not generate, retrieve, or
+rewrite saved evidence. Matching chunks are not proof of whole-paper equality
+or scientific validity. See the [corpus-drift guide](docs/guides/CORPUS_DRIFT_GUIDE.md)
+for exact fields, explicit errors, Python usage, and a fully offline demonstration.
+
 ## Next steps
 
 Follow the [research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) for a clean
