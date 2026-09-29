@@ -9,6 +9,7 @@ the passages and run history behind the response. Scholar RAG Agent is a
 ![PerProtocolAnalysisCueExtractor](docs/assets/per-protocol-analysis-cue-extractor.gif)
 ![BayesianInterimPriorCueExtractor](docs/assets/bayesian-interim-prior-cue-extractor.gif)
 ![MediationAnalysisCueExtractor](docs/assets/mediation-analysis-cue-extractor.gif)
+![CompetingRiskCueExtractor](docs/assets/competing-risk-cue-extractor.gif)
 ![ConfoundingAdjustmentCueExtractor](docs/assets/confounding-adjustment-cue-extractor.gif)
 ![MissingDataMechanismCueExtractor](docs/assets/missing-data-mechanism-cue-extractor.gif)
 ![EstimandIchE9CueExtractor](docs/assets/estimand-ich-e9-cue-extractor.gif)
