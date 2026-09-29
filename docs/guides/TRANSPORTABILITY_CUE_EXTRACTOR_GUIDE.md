@@ -14,7 +14,12 @@ Distinct from `SubgroupAnalysisCueExtractor` and `ConfoundingAdjustmentCueExtrac
 from retrieval.transportability_cues import TransportabilityCueExtractor
 
 rows = TransportabilityCueExtractor().extract(
-    [{"paper_id": "p1", "methods": "We assessed transportability to the target population for external validity."}]
+    [
+        {
+            "paper_id": "p1",
+            "methods": "We assessed transportability to the target population for external validity.",
+        }
+    ]
 )
 print(rows[0].flagged, rows[0].cues)
 ```

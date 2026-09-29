@@ -62,9 +62,7 @@ class TransportabilityCue:
 class TransportabilityCueExtractor:
     """Extract offline advisory cues."""
 
-    def extract(
-        self, papers: Sequence[dict[str, object]]
-    ) -> tuple[TransportabilityCue, ...]:
+    def extract(self, papers: Sequence[dict[str, object]]) -> tuple[TransportabilityCue, ...]:
         """Return cues for ``papers``."""
 
         if not papers:
