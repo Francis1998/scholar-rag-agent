@@ -250,12 +250,18 @@ for the dated authentication source and auth-key migration requirements.
 An HTTP-success response is not automatically a successful answer. Live adapters
 raise `ProviderResponseError` for invalid/non-object JSON or absent/blank final
 answer text after excluding non-answer blocks. This includes thinking-only and
-tool-only responses. The diagnostic contains a provider name and fixed failure
+tool-only responses. Explicit output/context-limit truncation also fails, even
+with nonblank partial text: OpenAI/Kimi `length`, Anthropic `max_tokens` or
+`model_context_window_exceeded`, and Gemini `MAX_TOKENS`.
+The diagnostic contains a provider name and fixed failure
 category, not raw provider output. These errors are not retried or failed over;
-the runner records `ERROR` rather than persisting an empty completed answer.
+the runner records `ERROR` rather than persisting an empty or explicitly
+truncated completed answer. No partial answer is promoted to a generation record,
+and there is no automatic continuation or budget increase.
 Existing captured input evidence remains subject to the privacy rules above.
-This check does not establish factual correctness or completeness of nonblank
-answers. See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
+Unknown or missing finish reasons retain the existing text contract. This check
+does not establish factual correctness or completeness of other nonblank answers.
+See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
 
 Live adapters use an in-process rate limiter before every HTTP attempt and
 exponential backoff for transport failures and HTTP `429`, `500`, `502`, `503`,
