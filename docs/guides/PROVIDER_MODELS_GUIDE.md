@@ -1,8 +1,9 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-28 America/Los_Angeles** (2026-09-28 UTC);
+Model catalogs rechecked **2026-09-29 America/Los_Angeles** (2026-09-29 UTC);
 default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
-and Opus 5.5 migration notes on 2026-09-22. This is
+Opus 5.5 migration notes on 2026-09-22, and Sonnet 5.5 migration notes on
+2026-09-29. This is
 documentation verification plus offline HTTPX contract
 testing, **not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
@@ -13,7 +14,7 @@ account and workload.
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
-| Anthropic | `claude-sonnet-5` | Current Sonnet, a like-for-like successor to the previous Sonnet default. The [catalog](https://platform.claude.com/docs/en/models/overview) recommends Opus 5.5 (`claude-opus-5-5`) generally and lists Fable 5.1 for the most demanding work; Sonnet 5 is not the absolute newest Claude model. |
+| Anthropic | `claude-sonnet-5` | Retained compatible Sonnet default, not the newest Sonnet. The [catalog](https://platform.claude.com/docs/en/models/overview) now lists Sonnet 5.5 (`claude-sonnet-5-5`), recommends Opus 5.5 (`claude-opus-5-5`) generally, and lists Fable 5.1 for the most demanding work. The fixed budget/thinking contract below is intentionally unchanged. |
 | Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
 | Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.ai/docs/models), replacing the discontinued K2 default. |
 
@@ -128,6 +129,22 @@ for `claude-opus-5-5`, but still limits total output to 1024 tokens. Evaluate th
 budget and endpoint compatibility before switching; thinking-only output now
 fails explicitly instead of becoming a successful empty answer. The selected
 Sonnet default is intentionally unchanged.
+
+The **2026-09-29** catalog also lists newer Sonnet 5.5 (`claude-sonnet-5-5`).
+Its [migration guide](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md)
+states that `thinking: {"type": "disabled"}` returns HTTP 400. However, its
+[up-front thinking section](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md#turn-off-up-front-thinking)
+supports `thinking: {"type": "between_tools"}`: without tools, this produces
+text-only responses. It works at `low`, `medium`, and `high` effort without a
+beta header; `xhigh` and `max` require adaptive thinking. Its example uses
+`max_tokens=4096` and `output_config.effort="medium"`.
+
+This adapter disables thinking only for the exact older `claude-sonnet-5` ID.
+Overrides retain the 1024-token total budget and send neither `between_tools`
+nor an effort setting. Merely selecting the newer ID is therefore not a
+validated budget/payload migration. Evaluate the complete contract before
+changing defaults; no live/account compatibility is claimed by this dated
+documentation check.
 
 ### Google Gemini
 

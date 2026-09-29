@@ -1,0 +1,29 @@
+1. Save five synthetic evidence chunks
+POST /query -> 200; state=DONE
+Saved provider=fake; chunks=5
+Synthetic notes and a fake answer, not scientific findings.
+Frozen exports: bundle.json and bundle.md
+Live HTTP calls: 0; ambient settings ignored
+
+2. Inspect persisted chunks without generation
+GET /runs/<run_id>/corpus-drift -> 200
+Before edits: unchanged=5
+Re-ingest the same IDs, then remove and reassign synthetic chunks.
+After edits: unchanged=1, changed=1, missing=3
+Drift agent calls: 0; event writes: 0
+
+3. Explain exact changes, not scientific validity
+Changed fields: text, title, source, metadata
+Missing chunk: chunk_missing
+Missing document: document_missing
+Reassigned ID: chunk_reassigned
+Frozen source order retained; current text and metadata not returned.
+Unchanged chunks do not imply whole-paper equality or valid science.
+
+4. Restart without rewriting frozen evidence
+Report after restart: byte-identical
+Frozen JSON and Markdown exports: byte-identical
+Saved run events unchanged: True
+Temporary demo database removed: True
+Artifact checks and digests: checks.json
+Measured offline output, not a live research UI or new model answer.

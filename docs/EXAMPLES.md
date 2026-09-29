@@ -26,6 +26,7 @@ temporary database is removed on exit and is separate from the API's database.
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
+| `GET /runs/{run_id}/corpus-drift` | Bounded unchanged/changed/missing findings comparing frozen chunk identities and digests with the persisted corpus; no retrieval or generation |
 
 There are no public PDF-upload, corpus-update/delete, authentication, or multi-turn
 chat endpoints. The read-only [document catalog](guides/DOCUMENT_CATALOG_GUIDE.md)
@@ -136,6 +137,22 @@ not silently rerun retrieval or generation to fill missing evidence.
 See the [export contract](guides/EVIDENCE_EXPORT_GUIDE.md) before treating an old
 event trace as a complete evidence bundle. Exports include exact source text;
 review permissions and sensitive content before sharing.
+
+## Inspect corpus drift without regenerating
+
+```bash
+curl --fail-with-body --silent --show-error \
+  "$BASE_URL/runs/$RUN_ID/corpus-drift" > "$REVIEW_DIR/corpus-drift.json"
+uv run python -m json.tool "$REVIEW_DIR/corpus-drift.json"
+```
+
+The response preserves frozen source order and compares exact text/title/source
+digests and canonical chunk metadata. Missing documents, missing chunks, and
+reassigned chunk IDs are distinguished. It does not return current source text
+or modify the original exports. “Unchanged” is not whole-paper equality or a
+scientific-support judgment. Corruption, excessive read sizes, and storage
+failures are errors, not partial results. See the complete
+[API/Python contract and offline demo](guides/CORPUS_DRIFT_GUIDE.md).
 
 ## Network connectors
 
