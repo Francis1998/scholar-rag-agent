@@ -148,6 +148,8 @@ class AgentRunner:
 
         def record_context(snapshot: EvidenceSnapshot) -> None:
             nonlocal context_captured
+            if len(snapshot.sources) > configuration.max_source_docs:
+                raise ValueError("Prepared evidence exceeds the effective source limit.")
             if policy is not None:
                 if plan is None:
                     raise ValueError("Evidence capture requires the requested plan.")
@@ -181,8 +183,6 @@ class AgentRunner:
                 plan, retrieved, **policy_arguments(policy)
             )
             snapshot = EvidenceSnapshot.model_validate(snapshot.model_dump(mode="json"))
-            if len(snapshot.sources) > configuration.max_source_docs:
-                raise ValueError("Prepared evidence exceeds the effective source limit.")
             record_context(snapshot)
             cancellation_token.raise_if_cancelled()
             ensure_evidence_requirement(policy, snapshot.sources)
@@ -238,7 +238,7 @@ class AgentRunner:
             )
             ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
             self._validate_plan_request(plan, scope, policy)
-            if policy is not None and len(retrieved) > configuration.max_source_docs:
+            if len(retrieved) > configuration.max_source_docs:
                 raise ValueError("Retrieved evidence exceeds the effective source limit.")
 
             cancellation_token.raise_if_cancelled()

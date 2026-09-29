@@ -113,6 +113,13 @@ The latter method performs reranking, scope/quota enforcement, and detached
 `EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
 only for real queries.
 
+Both entrypoints enforce the copied `RunConfiguration.max_source_docs` on
+executor retrieval output and final captured sources, independent of quota or
+minimum opt-ins. Queries reject retrieval overflow before reasoning and context
+overflow in the capture callback before persistence or answer generation.
+Extension overflows fail explicitly rather than silently dropping evidence;
+preview retains its sanitized, event-free failure contract.
+
 Preview returns an inspection-only plan (without a run ID), full ordered sources,
 scores, ranks, paths, exact context/digest, and copied scope/limits. It does not
 enter the state machine, call any live/fake generator, ground claims, or append

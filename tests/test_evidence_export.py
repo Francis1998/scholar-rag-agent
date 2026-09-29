@@ -10,6 +10,7 @@ import sys
 from collections.abc import Awaitable
 from pathlib import Path
 from typing import Any, NoReturn
+from unittest.mock import AsyncMock
 from urllib.parse import quote
 
 import pytest
@@ -24,6 +25,7 @@ from api.main import app
 from config import Settings
 from llm.schemas import LLMRequest, LLMResponse
 from retrieval.models import Chunk, Document, SearchResult
+from storage.event_log import SQLiteEventLog
 
 LONG_TEXT = (
     "Synthetic GraphRAG evidence connects research entities. " * 10
@@ -791,3 +793,208 @@ def test_effective_run_configuration_is_frozen_allowlisted_and_used(
         "max_context_bytes": 262144,
         "max_snapshot_bytes": 1048576,
     }
+
+
+@pytest.mark.parametrize("stage", ["retrieve", "rerank"])
+@pytest.mark.parametrize("limit", [1, 2])
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"max_chunks_per_document": 1},
+        {"min_evidence_documents": 1},
+        {"max_chunks_per_document": 1, "min_evidence_documents": 1},
+    ],
+    ids=["ordinary", "per-paper", "minimum", "combined"],
+)
+def test_effective_source_limit_rejects_extension_overflow_before_generation(
+    api: tuple[TestClient, AppContainer, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    stage: str,
+    limit: int,
+    options: dict[str, int],
+) -> None:
+    client, container, database_path = api
+    executor = container.runner._executor
+    container.runner._safety_limits.max_source_docs = limit
+    results = [
+        SearchResult(
+            chunk=add_chunk(container, f"bounded-{index}"),
+            score=1.0,
+            retriever="fixture-extension",
+            path=["fixture-retrieval"],
+        )
+        for index in range(limit + 1)
+    ]
+    originals = [result.model_dump(mode="json") for result in results]
+    extension = AsyncMock(return_value=results)
+    target = executor if stage == "retrieve" else executor._reranker
+    monkeypatch.setattr(target, stage, extension)
+    prepare = AsyncMock(wraps=executor.prepare_context)
+    generate = AsyncMock(wraps=container.llm.generate)
+    monkeypatch.setattr(executor, "prepare_context", prepare)
+    monkeypatch.setattr(container.llm, "generate", generate)
+
+    response = client.post("/query", json={"query": QUERY, **options})
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["state"] == "ERROR", (
+        f"{result['state']} after {generate.await_count} generation call(s)"
+    )
+    label = "Retrieved" if stage == "retrieve" else "Prepared"
+    assert result["error"] == f"{label} evidence exceeds the effective source limit."
+    assert result["answer"] is None
+    generate.assert_not_awaited()
+    extension.assert_awaited_once()
+    if stage == "retrieve":
+        prepare.assert_not_awaited()
+    else:
+        prepare.assert_awaited_once()
+        assert len(prepare.await_args.args[1]) == limit
+    events = SQLiteEventLog(database_path).list_events(result["run_id"])
+    expected = ["state_transition", "decision_log", "state_transition"]
+    if stage == "rerank":
+        expected.append("state_transition")
+    assert [event["event_type"] for event in events] == [*expected, "state_transition"]
+    assert events[-1]["payload"]["from_state"] == (
+        "RETRIEVING" if stage == "retrieve" else "REASONING"
+    )
+    assert events[-1]["payload"]["to_state"] == "ERROR"
+    assert events[-1]["payload"]["payload"] == {"error": result["error"]}
+    assert events[0]["payload"]["payload"]["configuration"]["max_source_docs"] == limit
+    assert client.get(f"/runs/{result['run_id']}/export").status_code == 409
+
+    preview = client.post("/retrieve", json={"query": QUERY, **options})
+    phase = "retrieval" if stage == "retrieve" else "context_preparation"
+    assert preview.status_code == 500
+    assert preview.json()["detail"]["code"] == f"{phase}_failed"
+    assert f"Retrieval preview failed during {phase}; no partial evidence was returned." in (
+        preview.text
+    )
+    assert "Synthetic GraphRAG evidence" not in preview.text
+    assert "sources" not in preview.json()
+    generate.assert_not_awaited()
+    assert container.event_log.list_events() == events
+    assert [result.model_dump(mode="json") for result in results] == originals
+
+
+@pytest.mark.parametrize("limit", [1, 2])
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"max_chunks_per_document": 1},
+        {"min_evidence_documents": 1},
+        {"max_chunks_per_document": 1, "min_evidence_documents": 1},
+    ],
+    ids=["ordinary", "per-paper", "minimum", "combined"],
+)
+def test_effective_source_limit_accepts_exportable_at_limit_context(
+    api: tuple[TestClient, AppContainer, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    limit: int,
+    options: dict[str, int],
+) -> None:
+    client, container, _ = api
+    container.runner._safety_limits.max_source_docs = limit
+    chunks = [add_chunk(container, f"bounded-{index}") for index in range(limit + 1)]
+    originals = {chunk.chunk_id: chunk.model_dump(mode="json") for chunk in chunks}
+    generate = AsyncMock(wraps=container.llm.generate)
+    monkeypatch.setattr(container.llm, "generate", generate)
+    preview = client.post("/retrieve", json={"query": QUERY, **options})
+    assert preview.status_code == 200
+    generate.assert_not_awaited()
+    assert container.event_log.list_events() == []
+
+    response = client.post("/query", json={"query": QUERY, **options})
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["state"] == "DONE", result
+    generate.assert_awaited_once()
+    bundle = export_json(client, result["run_id"])
+    assert bundle["configuration"]["max_source_docs"] == limit
+    sources = bundle["snapshot"]["sources"]
+    assert len(sources) == limit
+    assert sources == preview.json()["sources"]
+    assert bundle["snapshot"]["request"] == generate.await_args.args[0].model_dump(mode="json")
+    assert bundle["snapshot"]["context_sha256"] == preview.json()["context_sha256"]
+    for rank, source in enumerate(sources, start=1):
+        assert source["rank"] == rank
+        assert source["chunk"] == originals[source["chunk"]["chunk_id"]]
+        assert source["retriever"] == (
+            "diversity_cap_gate" if "max_chunks_per_document" in options else "lexical_rerank"
+        )
+        assert source["path"]
+
+
+@pytest.mark.parametrize("stage", ["retrieve", "rerank"])
+async def test_concurrent_source_limits_remain_copied_at_both_boundaries(
+    api: tuple[TestClient, AppContainer, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    stage: str,
+) -> None:
+    client, container, database_path = api
+    runner = container.runner
+    runner._safety_limits.max_source_docs = 1
+    results = [
+        SearchResult(
+            chunk=add_chunk(container, f"concurrent-{index}"),
+            score=1.0,
+            retriever="fixture-extension",
+        )
+        for index in range(2)
+    ]
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def held(
+        plan_or_query: QueryPlan | str, results_or_limit: list[SearchResult] | int
+    ) -> list[SearchResult]:
+        query = (
+            plan_or_query.observation.original_query
+            if isinstance(plan_or_query, QueryPlan)
+            else plan_or_query
+        )
+        if query == "first GraphRAG":
+            if stage == "retrieve":
+                assert results_or_limit == 1
+            else:
+                assert isinstance(results_or_limit, list) and len(results_or_limit) == 1
+            entered.set()
+            await release.wait()
+        return results
+
+    target = runner._executor if stage == "retrieve" else runner._executor._reranker
+    monkeypatch.setattr(target, stage, held)
+    generate = AsyncMock(wraps=container.llm.generate)
+    monkeypatch.setattr(container.llm, "generate", generate)
+    pending = asyncio.create_task(runner.run("first GraphRAG"))
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=2)
+        runner._safety_limits.max_source_docs = 2
+        second = await asyncio.wait_for(runner.run("second GraphRAG"), timeout=5)
+        assert not pending.done()
+        runner._safety_limits.max_source_docs = 50
+        release.set()
+        first = await asyncio.wait_for(pending, timeout=5)
+    finally:
+        release.set()
+        pending.cancel()
+        await asyncio.gather(pending, return_exceptions=True)
+
+    assert first.state == AgentState.ERROR, (
+        f"{first.state} after {generate.await_count} total generation call(s)"
+    )
+    label = "Retrieved" if stage == "retrieve" else "Prepared"
+    assert first.error == f"{label} evidence exceeds the effective source limit."
+    assert second.state == AgentState.DONE
+    generate.assert_awaited_once()
+    assert generate.await_args.args[0].prompt == "second GraphRAG"
+    bundle = export_json(client, second.run_id)
+    assert bundle["configuration"]["max_source_docs"] == 2
+    assert len(bundle["snapshot"]["sources"]) == 2
+    events = SQLiteEventLog(database_path).list_events(first.run_id)
+    assert events[0]["payload"]["payload"]["configuration"]["max_source_docs"] == 1
+    assert events[-1]["payload"]["to_state"] == "ERROR"
+    assert not any(
+        event["event_type"] in {"evidence_snapshot", "generation_record"} for event in events
+    )
