@@ -34,6 +34,16 @@ executor applies it as a maximum number of retrieved **chunk results**, not a
 distinct-document quota. Multiple chunks may come from one paper; this is not a
 guarantee of source diversity or comprehensive coverage.
 
+The runner checks the copied effective limit against both executor retrieval
+output and the final captured context, even without an evidence policy. Excess
+retrieval stops before `REASONING`; an oversized snapshot is rejected before
+its event is appended or answer generation starts. Both produce a durable
+`ERROR`, never silent truncation or `DONE`. Preview enforces the same bounds
+with sanitized errors and no events. Later changes to shared limits do not
+alter an in-flight request's bound. Legacy ordinary answer overrides without
+capture callbacks remain supported, but their uncaptured context cannot be
+validated or exported as an evidence snapshot.
+
 Requests may opt into `max_chunks_per_document`, a strict integer from 1 to 50.
 The frozen per-request policy caps actual document IDs after reranking of the
 existing bounded pool; it does not widen scope, fetch replacements, guarantee
