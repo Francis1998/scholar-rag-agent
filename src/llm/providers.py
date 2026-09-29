@@ -157,6 +157,10 @@ class OpenAIAdapter(HTTPProviderAdapter):
         choices = data.get("choices")
         text = ""
         if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+            if choices[0].get("finish_reason") == "length":
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: answer was truncated."
+                )
             message = choices[0].get("message")
             if isinstance(message, dict):
                 text = self._message_text(message.get("content"))
@@ -235,6 +239,10 @@ class AnthropicAdapter(HTTPProviderAdapter):
         ``thinking`` or ``tool_use``) are skipped, so a leading non-text block
         neither raises nor truncates the answer.
         """
+        if data.get("stop_reason") in ("max_tokens", "model_context_window_exceeded"):
+            raise ProviderResponseError(
+                f"{self.provider_name} returned an invalid response: answer was truncated."
+            )
         content = data.get("content")
         text = ""
         if isinstance(content, list):
@@ -282,6 +290,10 @@ class GeminiAdapter(HTTPProviderAdapter):
         candidates = data.get("candidates")
         text = ""
         if isinstance(candidates, list) and candidates and isinstance(candidates[0], dict):
+            if candidates[0].get("finishReason") == "MAX_TOKENS":
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: answer was truncated."
+                )
             content = candidates[0].get("content", {})
             parts = content.get("parts", []) if isinstance(content, dict) else []
             if isinstance(parts, list):

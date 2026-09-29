@@ -76,7 +76,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-26 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-09-28 America/Los_Angeles** catalog check and model-specific limitations.
 
 ## Optional Provider Keys
 
@@ -131,12 +131,15 @@ three-retry cap and generation timeout remain unchanged. Admission state is
 in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 
-HTTP-success bodies must be JSON objects with nonblank final answer text.
+HTTP-success bodies must be JSON objects with nonblank final answer text and
+must not explicitly signal output/context-limit truncation.
 `ProviderResponseError` reports unusable output without raw body or credential
 content; it is not retried or replaced with an empty/fake answer. `/query`
 preserves its existing HTTP-200 `ERROR` result contract, so check `result.state`.
 See [response validation](guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses)
-for reasoning-only output, output-budget caveats, and persistence behavior.
+for reasoning-only output, rejected finish reasons, unchanged output budgets,
+and persistence behavior. Unknown or omitted finish reasons retain the existing
+text contract; this is not a general completeness check or automatic continuation.
 
 ## Response Provenance
 
