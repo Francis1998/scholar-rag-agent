@@ -16,6 +16,7 @@ from llm.providers import (
     HTTPProviderAdapter,
     KimiAdapter,
     OpenAIAdapter,
+    ProviderResponseError,
 )
 from llm.schemas import LLMRequest, TaskType
 from storage.event_log import SQLiteEventLog
@@ -57,6 +58,87 @@ def answer_payload(text: object) -> dict[str, object]:
         "content": [{"type": "text", "text": text}],
         "candidates": [{"content": {"parts": [{"text": text}]}}],
     }
+
+
+def finished_answer_payload(text: str, reason: object) -> dict[str, object]:
+    return {
+        "choices": [{"message": {"content": text}, "finish_reason": reason}],
+        "content": [{"type": "text", "text": text}],
+        "stop_reason": reason,
+        "candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": reason}],
+    }
+
+
+TRUNCATED_RESPONSES = [
+    (OpenAIAdapter, "length"),
+    (KimiAdapter, "length"),
+    (AnthropicAdapter, "max_tokens"),
+    (AnthropicAdapter, "model_context_window_exceeded"),
+    (GeminiAdapter, "MAX_TOKENS"),
+]
+
+
+@pytest.mark.parametrize(("provider", "reason"), TRUNCATED_RESPONSES)
+def test_explicit_truncation_rejects_nonblank_partial_answer(
+    provider: type[HTTPProviderAdapter], reason: str
+) -> None:
+    adapter = provider(api_key="dummy-offline-key")
+    with pytest.raises(ProviderResponseError, match="answer was truncated"):
+        adapter.parse_response(finished_answer_payload(PRIVATE_MARKER, reason), REQUEST)
+
+
+@pytest.mark.parametrize(("provider", "reason"), TRUNCATED_RESPONSES)
+async def test_truncation_is_sanitized_and_never_retried(
+    provider: type[HTTPProviderAdapter], reason: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    requests, sleep = mock_http(
+        monkeypatch,
+        httpx.Response(200, json=finished_answer_payload(PRIVATE_MARKER, reason)),
+    )
+    with pytest.raises(ProviderResponseError) as caught:
+        await provider(api_key="dummy-offline-key").generate(REQUEST)
+    assert str(caught.value) == (
+        f"{provider.provider_name} returned an invalid response: answer was truncated."
+    )
+    assert PRIVATE_MARKER not in str(caught.value)
+    assert "dummy-offline-key" not in str(caught.value)
+    assert len(requests) == 1
+    sleep.assert_not_awaited()
+
+
+@pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
+@pytest.mark.parametrize("reason", ["stop", "end_turn", "STOP", "custom_reason", None, [], {}])
+def test_other_finish_reasons_preserve_existing_text_contract(
+    provider: type[HTTPProviderAdapter], reason: object
+) -> None:
+    text = "  Synthetic graph evidence [c1].\n"
+    response = provider(api_key="dummy-offline-key", model="configured-model").parse_response(
+        finished_answer_payload(text, reason), REQUEST
+    )
+    assert response.text == text
+    assert response.citation_chunk_ids == REQUEST.citation_chunk_ids
+    assert response.raw_provider == provider.provider_name
+    assert response.model_name == "configured-model"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
+def test_only_selected_candidate_finish_reason_applies(
+    provider: type[HTTPProviderAdapter],
+) -> None:
+    text = "Synthetic graph evidence [c1]."
+    body = {
+        "choices": [
+            {"message": {"content": text}, "finish_reason": "stop"},
+            {"message": {"content": PRIVATE_MARKER}, "finish_reason": "length"},
+        ],
+        "content": [{"type": "text", "text": text}],
+        "stop_reason": "end_turn",
+        "candidates": [
+            {"content": {"parts": [{"text": text}]}, "finishReason": "STOP"},
+            {"content": {"parts": [{"text": PRIVATE_MARKER}]}, "finishReason": "MAX_TOKENS"},
+        ],
+    }
+    assert provider(api_key="dummy-offline-key").parse_response(body, REQUEST).text == text
 
 
 INVALID_BODIES: list[object] = [
@@ -133,8 +215,12 @@ async def test_valid_answer_keeps_text_citations_and_provenance(
 
 
 @pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
-def test_empty_response_fails_the_run_without_persisting_a_completed_answer(
-    provider: type[HTTPProviderAdapter], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize("failure", ["unusable", "truncated"])
+def test_invalid_response_fails_the_run_without_persisting_a_completed_answer(
+    provider: type[HTTPProviderAdapter],
+    failure: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "provider-errors.sqlite3"
     settings = Settings(
@@ -148,9 +234,15 @@ def test_empty_response_fails_the_run_without_persisting_a_completed_answer(
     )
     app = create_app(settings)
     app.state.container.runner._executor._llm = provider(api_key="dummy-offline-key")
-    requests, sleep = mock_http(
-        monkeypatch, httpx.Response(200, json={"error": {"message": PRIVATE_MARKER}})
+    reason = {"anthropic": "max_tokens", "gemini": "MAX_TOKENS"}.get(
+        provider.provider_name, "length"
     )
+    body = (
+        finished_answer_payload(PRIVATE_MARKER, reason)
+        if failure == "truncated"
+        else {"error": {"message": PRIVATE_MARKER}}
+    )
+    requests, sleep = mock_http(monkeypatch, httpx.Response(200, json=body))
     with TestClient(app) as client:
         response = client.post("/query", json={"query": REQUEST.prompt})
         assert response.status_code == 200

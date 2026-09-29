@@ -52,7 +52,7 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-27 America/Los_Angeles** and payload
+source-linked defaults rechecked on **2026-09-28 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
 
@@ -61,9 +61,11 @@ Google rejects unrestricted standard keys; auth keys and appropriately restricte
 standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 Setting an API key header does not migrate the endpoint or the key's permissions.
 
-Live adapters reject invalid JSON or absent/blank final answer text with an
-explicit, nonretryable provider-response error; `/query` records an `ERROR` run
-rather than a completed empty answer.
+Live adapters reject invalid JSON, absent/blank final answer text, and explicit
+output/context-limit truncation with a nonretryable provider-response error.
+`/query` records an `ERROR` run rather than a completed empty or known-partial
+answer. Existing payload budgets and routing are unchanged; see
+[finish-reason handling](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-truncated-answers).
 
 Live rate admission counts every HTTP attempt, including failed requests and
 retries, against the default 60 attempts per adapter instance per sliding minute.

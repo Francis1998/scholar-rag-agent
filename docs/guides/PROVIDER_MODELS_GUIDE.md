@@ -1,6 +1,6 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-27 America/Los_Angeles** (2026-09-27 UTC);
+Model catalogs rechecked **2026-09-28 America/Los_Angeles** (2026-09-28 UTC);
 default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
 and Opus 5.5 migration notes on 2026-09-22. This is
 documentation verification plus offline HTTPX contract
@@ -56,16 +56,41 @@ multipart concatenation, citation IDs, and configured-model provenance.
 These response errors are not retried and do not trigger another provider or
 the fake adapter. Their messages identify the provider and failure category,
 not raw response bodies, hidden thinking, credentials, or request headers.
-Transport/HTTP retries remain unchanged. This does not validate factual
-correctness, interpret every provider stop reason, or reject a nonblank partial
-answer merely because it reached an output limit.
+Transport/HTTP retries remain unchanged. Explicit output/context-limit
+truncation is also rejected, even when partial answer text is nonblank.
+This does not validate factual correctness or interpret every provider stop reason.
+
+### Explicitly truncated answers
+
+The adapters check the finish reason for the selected response before returning
+any answer text:
+
+| Provider | Rejected finish reason | Official contract |
+| --- | --- | --- |
+| OpenAI and Kimi | `choices[0].finish_reason: "length"` | [OpenAI Chat Completions](https://developers.openai.com/api/reference/resources/chat) and [Kimi Chat Completions](https://platform.kimi.ai/docs/api/chat) |
+| Anthropic | `stop_reason: "max_tokens"` or `"model_context_window_exceeded"` | [Claude stop reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) |
+| Gemini | `candidates[0].finishReason: "MAX_TOKENS"` | [Gemini finish reasons](https://ai.google.dev/api/generate-content#FinishReason) |
+
+These responses raise `ProviderResponseError` with a fixed, provider-labelled
+`answer was truncated` diagnostic. Partial answers, raw stop details, hidden
+thinking, and credentials are not included in the error or saved as completed
+answers. No retry, automatic continuation, larger-budget call, alternate
+candidate, or provider fallback is attempted. A later candidate's stop reason
+does not invalidate an otherwise accepted first candidate.
+
+Normal responses and legacy gateways that omit a finish reason retain their
+existing text contract. Other or unknown reasons are not exhaustively validated;
+absence of a truncation error is not a completeness or correctness guarantee.
+This is still a stateless text adapter, not a tool-loop continuation client.
 
 The existing `/query` contract still uses HTTP 200 with `result.state: "ERROR"`
 for a failed run. Inspect `state` and `error`, not just the HTTP status. The
 runner journals the failure without recording a generation or `DONE` event;
 the captured input evidence can remain, but the failed run cannot be exported
-as a completed answer. Correct the provider/model/output-budget configuration
-before explicitly starting another run; do not treat empty output as evidence.
+as a completed answer. Review the provider/model/output-budget configuration
+before explicitly starting another run; do not treat empty or explicitly
+truncated output as evidence. The Anthropic adapter's fixed `max_tokens=1024`
+is unchanged and no new environment setting is introduced.
 The offline fake and the public response schema for custom adapters are unchanged.
 
 ### OpenAI
