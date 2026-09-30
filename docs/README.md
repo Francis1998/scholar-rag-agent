@@ -189,6 +189,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Bayesian interim priors](guides/BAYESIAN_INTERIM_PRIOR_CUE_EXTRACTOR_GUIDE.md) | Bayesian interim / prior / posterior wording |
 | [Transportability](guides/TRANSPORTABILITY_CUE_EXTRACTOR_GUIDE.md) | Transportability / external-validity / generalizability wording |
 | [Competing risks](guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md) | Competing-risk / Fine-Gray / cumulative-incidence wording |
+| [Mendelian randomization](guides/MENDELIAN_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md) | MR / genetic instrument / pleiotropy wording |
 | [IV strength](guides/INSTRUMENTAL_VARIABLE_STRENGTH_CUE_EXTRACTOR_GUIDE.md) | Instrumental-variable / F-stat / weak-instrument wording |
 | [Time-varying confounding](guides/TIME_VARYING_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) | Time-varying / MSM / g-methods confounding wording |
 | [Mediation analysis](guides/MEDIATION_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | Mediator / indirect-effect / path-analysis wording |
