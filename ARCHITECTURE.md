@@ -306,12 +306,36 @@ incomplete runs, and invalid saved records are rejected rather than backfilled
 from a changing corpus. See the [evidence export guide](docs/guides/EVIDENCE_EXPORT_GUIDE.md)
 for schema, bounds, privacy, and error contracts.
 
+## Saved Cited Bibliographies
+
+`SQLiteSavedBibliography.export(run_id)`, wired as `container.saved_bibliography`
+and `GET /runs/{run_id}/bibliography?format=bibtex|json`, reads only existing
+saved events through one `mode=ro` transaction. The shared `BoundedRunEvents`
+reader supplies count/byte-preflighted events to the authoritative
+`EvidenceExporter`. No corpus table, retriever, generator, or writable store is
+needed by the standalone service; ordinary API startup is unchanged.
+
+Final-answer citation chunk IDs must resolve to the frozen snapshot with the
+same document owner. Matching chunks are grouped by exact document ID in
+first-cited-frozen-rank order. Captured title and 21 allowlisted metadata fields
+come from that first cited rank; conflicts warn without merging later fields.
+The public `BibTeXExporter.export_chunks` preserves exact identities and unique
+collection keys. Empty citations produce no entries, with a JSON warning.
+
+The JSON companion retains exact IDs, cited ranks/citation positions, raw
+selected bibliographic fields, context digest, BibTeX, and warnings, not query,
+answer, full passages, or arbitrary diagnostics. Both exact serialized formats
+must fit 256 KiB, even when only one is requested. Formatting does not fetch
+metadata or verify publication identity, author names, scientific claims, or
+TeX safety. No events or evidence schemas change. See the
+[complete contract and measured demonstration](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
+
 ## Saved Evidence Corpus Drift
 
 `SQLiteCorpusDrift.report(run_id)`, exposed through the separate
 `GET /runs/{run_id}/corpus-drift` router, opens one read-only SQLite transaction.
 The existing `EvidenceExporter` validates a completed run through a structural
-event-reader interface; the new reader bounds event counts and bytes before
+event-reader interface; shared `BoundedRunEvents` bounds event counts and bytes before
 loading payloads. The original export logic and serialization are unchanged.
 
 The same transaction looks up only frozen chunk IDs and original document

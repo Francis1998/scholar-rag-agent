@@ -4,17 +4,17 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 from agent.evidence import SHA256, CaptureLimits, EvidenceBundle, text_digest
 from retrieval.models import Chunk
-from storage.evidence_export import EvidenceExporter, EvidenceExportError
+from storage.evidence_export import MAX_EVENT_BYTES as MAX_EVENT_BYTES
+from storage.evidence_export import MAX_RUN_BYTES as MAX_RUN_BYTES
+from storage.evidence_export import MAX_RUN_EVENTS as MAX_RUN_EVENTS
+from storage.evidence_export import BoundedRunEvents, EvidenceExporter, EvidenceExportError
 
-MAX_RUN_EVENTS = 100
-MAX_EVENT_BYTES = CaptureLimits().max_snapshot_bytes
-MAX_RUN_BYTES = 8 * MAX_EVENT_BYTES
 MAX_CURRENT_BYTES = CaptureLimits().max_snapshot_bytes
 MAX_CURRENT_TEXT_BYTES = CaptureLimits().max_context_bytes
 MAX_ID_CHARACTERS = 256
@@ -110,22 +110,6 @@ def _invalid_corpus() -> CorpusDriftError:
     )
 
 
-_EVENT_SIZES_SQL = """
-SELECT typeof(timestamp) != 'text' OR typeof(agent_id) != 'text'
-           OR typeof(run_id) != 'text' OR typeof(event_type) != 'text'
-           OR typeof(payload) != 'text' AS invalid_record,
-       length(CAST(payload AS BLOB)) AS payload_bytes,
-       length(CAST(timestamp AS BLOB)) + length(CAST(agent_id AS BLOB))
-           + length(CAST(run_id AS BLOB)) + length(CAST(event_type AS BLOB))
-           + length(CAST(payload AS BLOB)) AS record_bytes
-FROM agent_events WHERE run_id = ? ORDER BY id LIMIT ?
-"""
-_EVENTS_SQL = """
-SELECT id, CAST(timestamp AS BLOB) AS timestamp, CAST(agent_id AS BLOB) AS agent_id,
-       CAST(run_id AS BLOB) AS run_id, CAST(event_type AS BLOB) AS event_type,
-       CAST(payload AS BLOB) AS payload
-FROM agent_events WHERE run_id = ? ORDER BY id LIMIT ?
-"""
 _CHUNK_SIZES_SQL = """
 SELECT typeof(chunk_id) != 'text' OR typeof(document_id) != 'text'
            OR typeof(title) != 'text' OR typeof(text) != 'text'
@@ -146,43 +130,6 @@ FROM chunks WHERE chunk_id = ? LIMIT 1
 
 def _decode(value: bytes, encoding: str) -> str:
     return value.decode(encoding)
-
-
-class _BoundedRunEvents:
-    """Feed the authoritative exporter without opening another connection or writing schema."""
-
-    def __init__(self, connection: sqlite3.Connection, encoding: str) -> None:
-        self._connection = connection
-        self._encoding = encoding
-
-    def list_events(self, run_id: str | None = None) -> list[dict[str, Any]]:
-        if run_id is None:
-            raise _invalid_run()
-        sizes = self._connection.execute(_EVENT_SIZES_SQL, (run_id, MAX_RUN_EVENTS + 1)).fetchall()
-        if len(sizes) > MAX_RUN_EVENTS:
-            raise _limit_exceeded()
-        if any(row["invalid_record"] for row in sizes):
-            raise _invalid_run()
-        # UTF-16 storage can use twice the UTF-8 budget; enforce exact UTF-8 after decoding.
-        factor = 1 if self._encoding == "UTF-8" else 2
-        if (
-            any(row["payload_bytes"] > factor * MAX_EVENT_BYTES for row in sizes)
-            or sum(row["record_bytes"] for row in sizes) > factor * MAX_RUN_BYTES
-        ):
-            raise _limit_exceeded()
-        rows = self._connection.execute(_EVENTS_SQL, (run_id, MAX_RUN_EVENTS)).fetchall()
-        events: list[dict[str, Any]] = []
-        total = 0
-        for row in rows:
-            record = {
-                field: _decode(row[field], self._encoding)
-                for field in ("timestamp", "agent_id", "run_id", "event_type", "payload")
-            }
-            total += sum(len(value.encode("utf-8")) for value in record.values())
-            if len(record["payload"].encode("utf-8")) > MAX_EVENT_BYTES or total > MAX_RUN_BYTES:
-                raise _limit_exceeded()
-            events.append({**record, "id": row["id"], "payload": json.loads(record["payload"])})
-        return events
 
 
 def _metadata_pairs(pairs: list[tuple[str, object]]) -> dict[str, str]:
@@ -248,12 +195,18 @@ class SQLiteCorpusDrift:
     @staticmethod
     def _bundle(connection: sqlite3.Connection, encoding: str, run_id: str) -> EvidenceBundle:
         try:
-            bundle = EvidenceExporter(_BoundedRunEvents(connection, encoding)).export(run_id)
+            bundle = EvidenceExporter(BoundedRunEvents(connection, encoding)).export(run_id)
             for source in bundle.snapshot.sources:
                 _IDENTITY.validate_python(source.chunk.chunk_id)
                 _IDENTITY.validate_python(source.chunk.document_id)
                 ChunkDigests.from_chunk(source.chunk)
             return bundle
+        except EvidenceExportError as exc:
+            if exc.code == "evidence_read_limit_exceeded":
+                raise _limit_exceeded() from exc
+            if exc.code == "invalid_run_record":
+                raise _invalid_run() from exc
+            raise
         except (ValidationError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
             raise _invalid_run() from exc
 

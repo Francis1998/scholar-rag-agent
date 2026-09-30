@@ -1,11 +1,14 @@
 """Read completed evidence bundles from the existing append-only event log."""
 
+import json
+import sqlite3
 from json import JSONDecodeError
 from typing import Any, Protocol
 
 from pydantic import BaseModel, JsonValue, ValidationError
 
 from agent.evidence import (
+    CaptureLimits,
     CitationEvidenceLink,
     ClaimEvidenceLink,
     EvidenceBundle,
@@ -21,6 +24,10 @@ from retrieval.evidence_policy import (
     ensure_evidence_requirement,
 )
 from retrieval.scope import DocumentIds, documents_within_scope
+
+MAX_RUN_EVENTS = 100
+MAX_EVENT_BYTES = CaptureLimits().max_snapshot_bytes
+MAX_RUN_BYTES = 8 * MAX_EVENT_BYTES
 
 EXPECTED_EVENTS = [
     "state_transition",
@@ -88,6 +95,71 @@ def _invalid_record() -> EvidenceExportError:
     return EvidenceExportError(
         "invalid_run_record", "Saved evidence is inconsistent, invalid, or an unsupported version."
     )
+
+
+def _read_limit_exceeded() -> EvidenceExportError:
+    return EvidenceExportError(
+        "evidence_read_limit_exceeded", "Saved events exceed the bounded evidence read limits."
+    )
+
+
+_EVENT_SIZES_SQL = """
+SELECT typeof(timestamp) != 'text' OR typeof(agent_id) != 'text'
+           OR typeof(run_id) != 'text' OR typeof(event_type) != 'text'
+           OR typeof(payload) != 'text' AS invalid_record,
+       length(CAST(payload AS BLOB)) AS payload_bytes,
+       length(CAST(timestamp AS BLOB)) + length(CAST(agent_id AS BLOB))
+           + length(CAST(run_id AS BLOB)) + length(CAST(event_type AS BLOB))
+           + length(CAST(payload AS BLOB)) AS record_bytes
+FROM agent_events WHERE run_id = ? ORDER BY id LIMIT ?
+"""
+_EVENTS_SQL = """
+SELECT id, CAST(timestamp AS BLOB) AS timestamp, CAST(agent_id AS BLOB) AS agent_id,
+       CAST(run_id AS BLOB) AS run_id, CAST(event_type AS BLOB) AS event_type,
+       CAST(payload AS BLOB) AS payload
+FROM agent_events WHERE run_id = ? ORDER BY id LIMIT ?
+"""
+
+
+class BoundedRunEvents:
+    """Read saved events in a caller-owned SQLite read transaction, without schema writes.
+
+    The connection must use sqlite3.Row. Pass its PRAGMA encoding result so byte
+    preflight and subsequent exact UTF-8 accounting also support UTF-16 databases.
+    """
+
+    def __init__(self, connection: sqlite3.Connection, encoding: str) -> None:
+        self._connection = connection
+        self._encoding = encoding
+
+    def list_events(self, run_id: str | None = None) -> list[dict[str, Any]]:
+        if run_id is None:
+            raise _invalid_record()
+        sizes = self._connection.execute(_EVENT_SIZES_SQL, (run_id, MAX_RUN_EVENTS + 1)).fetchall()
+        if len(sizes) > MAX_RUN_EVENTS:
+            raise _read_limit_exceeded()
+        if any(row["invalid_record"] for row in sizes):
+            raise _invalid_record()
+        # UTF-16 storage can use twice the UTF-8 budget; check exact UTF-8 after decoding.
+        factor = 1 if self._encoding == "UTF-8" else 2
+        if (
+            any(row["payload_bytes"] > factor * MAX_EVENT_BYTES for row in sizes)
+            or sum(row["record_bytes"] for row in sizes) > factor * MAX_RUN_BYTES
+        ):
+            raise _read_limit_exceeded()
+        rows = self._connection.execute(_EVENTS_SQL, (run_id, MAX_RUN_EVENTS)).fetchall()
+        events: list[dict[str, Any]] = []
+        total = 0
+        for row in rows:
+            record = {
+                field: row[field].decode(self._encoding)
+                for field in ("timestamp", "agent_id", "run_id", "event_type", "payload")
+            }
+            total += sum(len(value.encode("utf-8")) for value in record.values())
+            if len(record["payload"].encode("utf-8")) > MAX_EVENT_BYTES or total > MAX_RUN_BYTES:
+                raise _read_limit_exceeded()
+            events.append({**record, "id": row["id"], "payload": json.loads(record["payload"])})
+        return events
 
 
 class EvidenceExporter:

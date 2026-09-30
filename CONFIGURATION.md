@@ -35,6 +35,11 @@ quotas, without increasing any limits. Unmet minima stop answer generation;
 previews retain evidence and count diagnostics. See
 [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
 
+Saved bibliography exports add no setting or provider requirement. They read
+completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
+bounds, and do not use today's model configuration or corpus to enrich fields.
+See [the BibTeX/JSON contract](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
@@ -52,7 +57,7 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-28 America/Los_Angeles** and payload
+source-linked defaults rechecked on **2026-09-29 America/Los_Angeles** and payload
 compatibility limits. This is documentation verification, not a live inference
 test or confirmation of account entitlement.
 

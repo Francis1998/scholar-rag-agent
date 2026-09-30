@@ -18,6 +18,12 @@ account and workload.
 | Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
 | Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.ai/docs/models), replacing the discontinued K2 default. |
 
+The current [OpenAI catalog](https://developers.openai.com/api/docs/models.md)
+also positions `gpt-6.1-sol` for balancing intelligence and cost, and
+`gpt-6-luna` for cost-sensitive, high-volume workloads. These are provider
+catalog descriptions, not measured tradeoffs or additional adapter-contract
+tests in this repository; the selected flagship and routing remain unchanged.
+
 The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
 available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro
 preview rather than the current GA Flash choice. Moonshot explicitly lists the
@@ -201,6 +207,12 @@ Multi-turn/tool use requires preserving complete assistant messages including
 reasoning state; that is outside this stateless adapter's contract.
 
 ## Routing, Provenance, and Evidence Limits
+
+The [saved-run bibliography handoff](SAVED_BIBLIOGRAPHY_GUIDE.md) is independent
+of current provider/model selection. It uses only completed frozen citation
+records and captured metadata, without any live or fake generation, DOI lookup,
+or current-corpus enrichment. Exporting references is not a model migration,
+metadata-verification step, or new assessment of answer quality.
 
 Routing is unchanged: REASONING prefers Anthropic, SPEED Gemini, COST Kimi, and
 DEFAULT the configured family. Missing adapters fall back to that family, then

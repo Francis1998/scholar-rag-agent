@@ -133,6 +133,28 @@ is still executing, and a legacy `DONE` record may not have exportable evidence.
 The [run-history guide](docs/guides/RUN_HISTORY_GUIDE.md) includes a complete
 offline restart demonstration, filtering, pagination, and Python contracts.
 
+### Export the saved answer's cited references
+
+```bash
+RUN_ID='replace-with-your-completed-run-id'
+BIBLIOGRAPHY_DIR="$(mktemp -d)"
+curl --fail-with-body --silent --show-error \
+  "http://127.0.0.1:8000/runs/$RUN_ID/bibliography?format=json" \
+  > "$BIBLIOGRAPHY_DIR/bibliography.json"
+uv run --no-sync python -m json.tool "$BIBLIOGRAPHY_DIR/bibliography.json"
+curl --fail-with-body --silent --show-error \
+  "http://127.0.0.1:8000/runs/$RUN_ID/bibliography" \
+  > "$BIBLIOGRAPHY_DIR/bibliography.bib"
+```
+
+BibTeX is the default; review the JSON warnings and exact cited-chunk mapping
+before importing the `.bib` file into a reference manager. Only saved final
+citations qualify, not every retrieved source. Missing author/year/DOI fields
+remain absent; this text-ingestion example does not capture scholarly metadata.
+No current-corpus read, generation, metadata lookup, or event write occurs.
+See the [complete saved bibliography guide](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md)
+for the standalone Python reader, fixed byte limits, errors, and measured GIF.
+
 ### Check saved evidence against the current corpus
 
 For a completed run with a valid saved snapshot:

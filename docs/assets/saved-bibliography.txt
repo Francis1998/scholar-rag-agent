@@ -1,0 +1,33 @@
+1. Save synthetic evidence and a fake answer
+POST /query -> 200; state=DONE
+Saved provider: fake (placeholder, not scientific output)
+Frozen chunks: 4; final citations: 3
+Cited documents: 2; uncited chunk excluded
+Live HTTP/socket calls: 0; ambient settings ignored
+
+2. Download actual BibTeX, not a new answer
+GET /runs/<run_id>/bibliography -> 200
+Excerpt from the actual downloaded bibliography.bib:
+@misc{paper_a,
+  title = {Synthetic reference A},
+  author = {Ada Example},
+  year = {2024}
+}
+
+3. Keep cited identities and disclose conflicts
+a-1 -> paper-a; frozen rank 1; citation positions [1]
+a-2 -> paper-a; frozen rank 2; citation positions [2]
+b-1 -> paper-b; frozen rank 3; citation positions [3]
+Metadata conflicts disclosed: 1; first cited rank wins
+Chosen paper-a year: 2024; no field merging
+JSON keeps exact document IDs, citation mapping, BibTeX, and warnings.
+No DOI lookup. Missing metadata stays missing; review before importing.
+
+4. Remove the demo corpus, restart, repeat
+Remaining corpus chunks: 0
+BibTeX and JSON after restart: byte-identical
+Original frozen JSON and Markdown evidence: byte-identical
+Export agent/corpus calls: 0; event writes: 0
+Saved events unchanged: True
+Temporary database removed: True; digests in checks.json
+Actual offline output, not a research UI or reference-quality benchmark.
