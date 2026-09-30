@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `TimeVaryingConfoundingCueExtractor` (`src/retrieval/time_varying_confounding_cues.py`): offline Elicit / Consensus / AJE time-varying confounding cues (distinct from ConfoundingAdjustmentCueExtractor / MediationAnalysisCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/TIME_VARYING_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md`.
 - `TransportabilityCueExtractor` (`src/retrieval/transportability_cues.py`): offline Elicit / Consensus / external-validity transportability cues (distinct from SubgroupAnalysisCueExtractor / ConfoundingAdjustmentCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/TRANSPORTABILITY_CUE_EXTRACTOR_GUIDE.md`.
 - `CompetingRiskCueExtractor` (`src/retrieval/competing_risk_cues.py`): offline Elicit / Consensus / STROBE competing-risk cues (distinct from FollowUpDurationCueExtractor / AttritionRateCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md`.
 - `MediationAnalysisCueExtractor` (`src/retrieval/mediation_analysis_cues.py`): offline Elicit / Consensus / AJE mediation-analysis cues (distinct from ConfoundingAdjustmentCueExtractor / IntentionToTreatCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_ANALYSIS_CUE_EXTRACTOR_GUIDE.md`.
