@@ -179,6 +179,13 @@ claim fails that check, the answer is prefixed with `[UNGROUNDED]` and includes
 a warning. Without a requested minimum, an empty retrieved corpus therefore
 produces an ungrounded fake answer rather than evidence.
 
+Meaningful terms exclude common stopwords and require at least one Unicode
+letter or number. Symbols or punctuation alone are not support. Greek letters,
+non-Latin text, numbers, and scientific tokens such as `C++`, `p53`, `IL-6`,
+and `p<0.05` remain eligible, without splitting or broad punctuation normalization.
+This filter is shared by lexical-support helpers; the underlying BM25 and hash
+embedding tokenizer is unchanged.
+
 This grounding check is **non-stopword token overlap**, not semantic entailment
 or scientific proof. Evidence exports preserve this flag and the warnings;
 resolving a citation to a saved passage does not validate a conclusion.
