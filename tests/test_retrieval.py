@@ -1,5 +1,7 @@
 """Tests for hybrid retrieval components."""
 
+import math
+
 import pytest
 
 from ingestion.chunking import TextChunker, stable_id
@@ -7,7 +9,7 @@ from retrieval.dense import DenseRetriever
 from retrieval.embeddings import HashEmbeddingModel, cosine_similarity
 from retrieval.hybrid import HybridRetriever
 from retrieval.hyde import HyDEExpander
-from retrieval.models import Document, SearchResult
+from retrieval.models import Chunk, Document, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
 from retrieval.sparse import BM25Retriever
 
@@ -27,6 +29,46 @@ def test_hash_embedding_is_invariant_to_attached_punctuation() -> None:
     punctuated = embedder.embed("machine, learning.")
 
     assert cosine_similarity(plain, punctuated) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "retrieval",
+        "C++",
+        "p53",
+        "IL-6",
+        "p<0.05",
+        "42",
+        "-",
+        "/",
+        "+",
+        pytest.param("\u2014", id="em-dash"),
+        pytest.param("\u03b2", id="greek-letter"),
+        pytest.param("\u7814\u7a76", id="non-latin-text"),
+    ],
+)
+async def test_sparse_and_dense_preserve_existing_tokenization(query: str) -> None:
+    chunks = [
+        Chunk(
+            chunk_id=chunk_id,
+            document_id=chunk_id,
+            title="Evidence",
+            text=text,
+            source="fixture",
+        )
+        for chunk_id, text in [("unrelated", "unrelated"), ("matching", query)]
+    ]
+    retriever = BM25Retriever()
+    retriever.add_chunks(chunks)
+
+    results = await retriever.retrieve(query)
+
+    assert [result.chunk.chunk_id for result in results] == ["matching", "unrelated"]
+    assert results[0].score == pytest.approx(math.log(2.0))
+    assert results[1].score == 0.0
+    vector = HashEmbeddingModel().embed(query)
+    assert sum(value**2 for value in vector) == pytest.approx(1.0)
 
 
 def build_chunks() -> list:

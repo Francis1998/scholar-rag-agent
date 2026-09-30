@@ -35,20 +35,23 @@ STOPWORDS = frozenset(
 
 
 def tokenize(text: str) -> list[str]:
-    """Tokenize text into lowercase alphanumeric terms.
+    """Split on whitespace, lowercase, and strip selected surrounding punctuation.
 
-    Tokens that consist solely of punctuation collapse to an empty string once
-    surrounding punctuation is stripped; those are dropped so they cannot leak
-    into term sets (e.g. as a spurious empty-string term shared by any two
-    texts containing punctuation).
+    Drop tokens emptied by stripping, but retain other nonempty tokens for
+    BM25 and hash embeddings. ``meaningful_terms`` applies the stricter
+    lexical-overlap filter without changing retrieval tokenization.
     """
     tokens = [token.strip(".,;:()[]{}!?\"'").lower() for token in text.split()]
     return [token for token in tokens if token]
 
 
 def meaningful_terms(text: str) -> set[str]:
-    """Return lexical terms excluding common stopwords for grounding overlap."""
-    return {term for term in tokenize(text) if term not in STOPWORDS}
+    """Return non-stopword tokens containing at least one Unicode letter or number."""
+    return {
+        term
+        for term in tokenize(text)
+        if term not in STOPWORDS and any(char.isalnum() for char in term)
+    }
 
 
 class BM25Retriever:

@@ -72,6 +72,27 @@ def test_stopword_only_claim_is_unsupported() -> None:
     assert report.groundedness == 0.0
 
 
+@pytest.mark.parametrize(
+    ("claim", "evidence", "supported"),
+    [
+        ("Cold fusion - \u2014 confirmed.", "Graph retrieval - \u2014 connects passages.", False),
+        ("- \u2014.", "Graph retrieval - \u2014 connects passages.", False),
+        ("Retrieval - \u2014.", "Graph retrieval connects passages.", True),
+    ],
+    ids=["symbol-only-overlap", "symbol-only-claim", "symbols-do-not-dilute-support"],
+)
+def test_symbol_only_terms_do_not_affect_support(
+    claim: str, evidence: str, supported: bool
+) -> None:
+    report = ClaimVerificationGate().verify(claim, [_result("paper", evidence)])
+
+    assert len(report.claims) == 1
+    assert report.claims[0].supported is supported
+    assert report.claims[0].support_score == (1.0 if supported else 0.0)
+    assert report.claims[0].supporting_chunk_ids == (("paper",) if supported else ())
+    assert report.groundedness == (1.0 if supported else 0.0)
+
+
 def test_support_threshold_controls_verdict() -> None:
     results = [_result("partial", "Graph retrieval baselines were evaluated.")]
     answer = "Graph neural retrieval molecular prediction."
