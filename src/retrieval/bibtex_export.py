@@ -2,8 +2,7 @@
 
 Inspired by Zotero / PaperQA citation export and scholarly RAG bibliography
 pipelines. Pure local metadata transform with no network calls. Distinct from
-retrieval gates and from live DOI connectors. Local exporter for GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 literature workflows.
+retrieval gates and from live DOI connectors; independent of model providers.
 """
 
 from __future__ import annotations
@@ -101,10 +100,11 @@ def _format_entry(
     document_id: str,
     title: str,
     metadata: dict[str, str],
+    citation_key: str | None = None,
 ) -> str:
     """Format one BibTeX entry from normalized scholarly fields."""
     meta = dict(metadata)
-    cite = _cite_key(document_id, title, meta)
+    cite = _cite_key(document_id, title, meta) if citation_key is None else citation_key
     entry_type = _entry_type(meta)
     fields: list[tuple[str, str]] = [("title", title.strip() or "Untitled")]
     authors = _authors_field(meta)
@@ -127,13 +127,45 @@ def _format_entry(
     return f"@{entry_type}{{{cite},\n{body}\n}}"
 
 
+def _format_collection(records: Sequence[Document | Chunk]) -> str:
+    unique: dict[str, Document | Chunk] = {}
+    for record in records:
+        unique.setdefault(record.document_id, record)
+    base_keys = [
+        _cite_key(record.document_id, record.title, record.metadata) for record in unique.values()
+    ]
+    # Reserve natural keys before allocating suffixes for normalized collisions.
+    reserved = set(base_keys)
+    used: set[str] = set()
+    next_suffix: dict[str, int] = {}
+    entries: list[str] = []
+    for record, base in zip(unique.values(), base_keys, strict=True):
+        key = base
+        if key in used:
+            suffix = next_suffix.get(base, 2)
+            key = f"{base}_{suffix}"
+            while key in used or key in reserved:
+                suffix += 1
+                key = f"{base}_{suffix}"
+            next_suffix[base] = suffix + 1
+        used.add(key)
+        entries.append(
+            _format_entry(
+                document_id=record.document_id,
+                title=record.title,
+                metadata=record.metadata,
+                citation_key=key,
+            )
+        )
+    return "\n\n".join(entries)
+
+
 class BibTeXExporter:
     """Pure transform from Document / Chunk / SearchResult to BibTeX.
 
-    Deduplicates by ``document_id`` when exporting collections (first wins for
-    documents/chunks; highest score wins for search results). Inputs are not
-    mutated. Local exporter for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines (not a DOI connector).
+    Collections deduplicate exact ``document_id`` values and assign unique
+    citation keys. First wins for documents/chunks; highest score wins for
+    search results. Inputs are not mutated and no model or network is used.
     """
 
     def export_document(self, document: Document) -> str:
@@ -157,36 +189,20 @@ class BibTeXExporter:
         return self.export_chunk(result.chunk)
 
     def export_documents(self, documents: Sequence[Document]) -> str:
-        """Export documents as BibTeX, deduplicated by ``document_id``."""
-        seen: set[str] = set()
-        entries: list[str] = []
-        for document in documents:
-            key = document.document_id.strip().lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            entries.append(self.export_document(document))
-        return "\n\n".join(entries)
+        """Export first-seen exact document identities with unique citation keys."""
+        return _format_collection(documents)
 
     def export_chunks(self, chunks: Sequence[Chunk]) -> str:
-        """Export chunks as BibTeX, deduplicated by ``document_id``."""
-        seen: set[str] = set()
-        entries: list[str] = []
-        for chunk in chunks:
-            key = chunk.document_id.strip().lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            entries.append(self.export_chunk(chunk))
-        return "\n\n".join(entries)
+        """Export first-seen exact chunk document identities with unique citation keys."""
+        return _format_collection(chunks)
 
     def export_results(self, results: Sequence[SearchResult]) -> str:
         """Export ranked hits as BibTeX; highest score wins per document."""
         best: dict[str, SearchResult] = {}
         for result in results:
-            key = result.chunk.document_id.strip().lower()
+            key = result.chunk.document_id
             current = best.get(key)
             if current is None or result.score > current.score:
                 best[key] = result
         ordered = sorted(best.values(), key=lambda item: item.score, reverse=True)
-        return "\n\n".join(self.export_result(item) for item in ordered)
+        return self.export_chunks([item.chunk for item in ordered])
