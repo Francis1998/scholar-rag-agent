@@ -162,6 +162,27 @@ def test_stopword_only_sentence_is_ungrounded_even_with_valid_index() -> None:
     assert report.citations[0].overlap_score == 0.0
 
 
+@pytest.mark.parametrize(
+    ("claim", "evidence", "grounded"),
+    [
+        ("Cold fusion - \u2014 confirmed", "Graph retrieval - \u2014 connects passages.", False),
+        ("- \u2014", "Graph retrieval - \u2014 connects passages.", False),
+        ("Retrieval - \u2014", "Graph retrieval connects passages.", True),
+    ],
+    ids=["symbol-only-overlap", "symbol-only-claim", "symbols-do-not-dilute-support"],
+)
+def test_symbol_only_terms_do_not_affect_groundedness(
+    claim: str, evidence: str, grounded: bool
+) -> None:
+    report = CitationGroundednessScorer().score(f"{claim} [1].", [_result("paper", evidence)])
+
+    assert len(report.citations) == 1
+    assert report.citations[0].candidate_chunk_ids == ("paper",)
+    assert report.citations[0].grounded is grounded
+    assert report.citations[0].overlap_score == (1.0 if grounded else 0.0)
+    assert report.groundedness == (1.0 if grounded else 0.0)
+
+
 def test_overlap_threshold_controls_verdict() -> None:
     results = [_result("partial", "Graph retrieval baselines were evaluated recently.")]
     answer = "Graph neural retrieval molecular prediction results [1]."
