@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from api.bibliography import router as bibliography_router
 from api.collections import router as collections_router
 from api.comparisons import router as comparisons_router
 from api.corpus_drift import router as corpus_drift_router
@@ -25,6 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(documents_router)
     application.include_router(collections_router)
     application.include_router(evidence_router)
+    application.include_router(bibliography_router)
     application.include_router(runs_router)
     application.include_router(comparisons_router)
     application.include_router(corpus_drift_router)

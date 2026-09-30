@@ -31,6 +31,7 @@ from storage.graph_store import SQLiteGraphStore
 from storage.paper_collections import SQLitePaperCollections
 from storage.run_comparison import SavedRunComparator
 from storage.run_history import SQLiteRunHistory
+from storage.saved_bibliography import SQLiteSavedBibliography
 
 
 class AppContainer:
@@ -41,6 +42,7 @@ class AppContainer:
         database_path = Path(settings.database_path)
         self.event_log = SQLiteEventLog(database_path)
         self.evidence_exporter = EvidenceExporter(self.event_log)
+        self.saved_bibliography = SQLiteSavedBibliography(database_path)
         self.run_comparator = SavedRunComparator(self.evidence_exporter)
         self.corpus_drift = SQLiteCorpusDrift(database_path)
         self.run_history = SQLiteRunHistory(database_path)

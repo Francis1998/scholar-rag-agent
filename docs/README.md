@@ -19,6 +19,7 @@ accumulated feature list in the project README.
 | Stop generation below a final-context document minimum while retaining inspectable evidence | [Minimum evidence documents and measured demo](guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
 | Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Export only a completed saved answer's cited references as BibTeX with provenance | [Saved bibliography and measured offline demo](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |

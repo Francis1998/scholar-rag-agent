@@ -26,6 +26,8 @@ temporary database is removed on exit and is separate from the API's database.
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
+| `GET /runs/{run_id}/bibliography?format=bibtex` | Default: cited-only frozen-source BibTeX, deduplicated by exact document ID |
+| `GET /runs/{run_id}/bibliography?format=json` | Exact document/cited-chunk provenance, selected metadata, BibTeX, and warnings |
 | `GET /runs/{run_id}/corpus-drift` | Bounded unchanged/changed/missing findings comparing frozen chunk identities and digests with the persisted corpus; no retrieval or generation |
 
 There are no public PDF-upload, corpus-update/delete, authentication, or multi-turn
@@ -137,6 +139,25 @@ not silently rerun retrieval or generation to fill missing evidence.
 See the [export contract](guides/EVIDENCE_EXPORT_GUIDE.md) before treating an old
 event trace as a complete evidence bundle. Exports include exact source text;
 review permissions and sensitive content before sharing.
+
+## Import cited references without another query
+
+```bash
+curl --fail-with-body --silent --show-error \
+  "$BASE_URL/runs/$RUN_ID/bibliography?format=json" > "$REVIEW_DIR/bibliography.json"
+uv run --no-sync python -m json.tool "$REVIEW_DIR/bibliography.json"
+curl --fail-with-body --silent --show-error \
+  "$BASE_URL/runs/$RUN_ID/bibliography" > "$REVIEW_DIR/bibliography.bib"
+```
+
+Review the JSON warnings and citation mapping, then use a reference manager's
+BibTeX file-import workflow. Only the saved answer's final citations qualify;
+conflicting metadata uses the first cited frozen rank with a warning, and
+missing metadata is not recovered from current documents or DOI services.
+No live/fake model or event writer is invoked. Both representations must fit
+262,144 UTF-8 bytes; failures never yield partial references. This API example
+has title-only metadata. See the [full field/error/Python contract and actual-output
+GIF](guides/SAVED_BIBLIOGRAPHY_GUIDE.md); do not compile imported LaTeX to inspect it.
 
 ## Inspect corpus drift without regenerating
 

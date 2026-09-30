@@ -47,6 +47,11 @@ See [the complete guide and offline demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE
 
 ## Provider Model IDs
 
+The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
+or environment configuration: it reads completed frozen events without provider
+calls or current-corpus enrichment. Its fixed source/read limits and exact
+262,144-byte JSON and BibTeX ceilings apply regardless of runtime model settings.
+
 | Environment variable | `Settings` field | Default API model ID |
 | --- | --- | --- |
 | `SCHOLAR_RAG_OPENAI_MODEL` | `openai_model` | `gpt-6-astra` |
@@ -76,7 +81,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-28 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-09-29 America/Los_Angeles** catalog check and model-specific limitations.
 
 ## Optional Provider Keys
 

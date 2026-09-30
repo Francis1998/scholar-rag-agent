@@ -6,14 +6,6 @@
 
 Load a small paper corpus, ask comparison or hypothesis questions, and inspect
 the passages and run history behind the response. Scholar RAG Agent is a
-![PerProtocolAnalysisCueExtractor](docs/assets/per-protocol-analysis-cue-extractor.gif)
-![BayesianInterimPriorCueExtractor](docs/assets/bayesian-interim-prior-cue-extractor.gif)
-![MediationAnalysisCueExtractor](docs/assets/mediation-analysis-cue-extractor.gif)
-![CompetingRiskCueExtractor](docs/assets/competing-risk-cue-extractor.gif)
-![TransportabilityCueExtractor](docs/assets/transportability-cue-extractor.gif)
-![ConfoundingAdjustmentCueExtractor](docs/assets/confounding-adjustment-cue-extractor.gif)
-![MissingDataMechanismCueExtractor](docs/assets/missing-data-mechanism-cue-extractor.gif)
-![EstimandIchE9CueExtractor](docs/assets/estimand-ich-e9-cue-extractor.gif)
 **local-first Python toolkit and FastAPI service** for building inspectable
 literature workflows, with SQLite persistence and optional model-provider adapters.
 
@@ -53,6 +45,7 @@ database and empty provider keys. The interactive API documentation is at
 | Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
@@ -70,6 +63,18 @@ so one paper's global ranking does not crowd another out of the worksheet.
 It returns retrieved passages, not generated answers or scientific judgments.
 The [complete guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) includes API/Python
 examples, fixed bounds, privacy, and reproduction of this measured illustration.
+
+## Export cited sources to a reference manager
+
+![Measured synthetic offline saved bibliography export](docs/assets/saved-bibliography.gif)
+
+`GET /runs/{run_id}/bibliography` downloads BibTeX from only the completed saved
+answer's cited chunks, deduplicated by exact document ID in frozen rank order.
+Add `?format=json` for captured metadata, cited-chunk mappings, and explicit
+conflict/empty-citation warnings. No current corpus, model, or DOI service is
+consulted. Metadata is unverified; review before import, not by compiling LaTeX.
+The [complete guide](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) includes offline
+API/Python usage and reproduction of this actual-output illustration.
 
 ## Inspect a recorded run
 
@@ -168,6 +173,19 @@ additional `/query` stages or clinical assessments. Browse the
 [categorized cue guides](docs/README.md#clinical-and-statistical-evidence-cues)
 for study-design, outcome, statistical, and reporting cues. Each guide retains
 its usage examples and illustration; these heuristics do not validate findings.
+
+Existing cue illustrations remain available without interrupting the introduction:
+
+| Opt-in helper | Illustration |
+| --- | --- |
+| PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
+| BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
+| MediationAnalysisCueExtractor | [GIF](docs/assets/mediation-analysis-cue-extractor.gif) |
+| CompetingRiskCueExtractor | [GIF](docs/assets/competing-risk-cue-extractor.gif) |
+| TransportabilityCueExtractor | [GIF](docs/assets/transportability-cue-extractor.gif) |
+| ConfoundingAdjustmentCueExtractor | [GIF](docs/assets/confounding-adjustment-cue-extractor.gif) |
+| MissingDataMechanismCueExtractor | [GIF](docs/assets/missing-data-mechanism-cue-extractor.gif) |
+| EstimandIchE9CueExtractor | [GIF](docs/assets/estimand-ich-e9-cue-extractor.gif) |
 
 ## Documentation
 
