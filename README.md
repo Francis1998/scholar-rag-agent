@@ -180,6 +180,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | --- | --- |
 | PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
 | BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
+| DifferenceInDifferencesCueExtractor | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
 | NegativeControlOutcomeCueExtractor | [GIF](docs/assets/negative-control-outcome-cue-extractor.gif) |
 | MendelianRandomizationCueExtractor | [GIF](docs/assets/mendelian-randomization-cue-extractor.gif) |
 | InstrumentalVariableStrengthCueExtractor | [GIF](docs/assets/instrumental-variable-strength-cue-extractor.gif) |
