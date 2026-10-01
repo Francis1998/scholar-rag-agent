@@ -5,6 +5,11 @@ import re
 from agent.models import QueryIntent, QueryObservation
 
 _ENTITY_PATTERN = re.compile(r"\b[A-Z][A-Za-z0-9\-]{2,}(?:\s+[A-Z][A-Za-z0-9\-]{2,})*\b")
+_COMPARISON_PATTERN = re.compile(r"\b(?:compare[ds]?|versus|vs|differences?)\b")
+_HYPOTHESIS_PATTERN = re.compile(
+    r"\b(?:hypothesis|validate[ds]?|support(?:s|ed|ing)?|refute[ds]?)\b"
+)
+_SYNTHESIS_PATTERN = re.compile(r"\b(?:synthesize[ds]?|summarize[ds]?|literatures?|overviews?)\b")
 
 
 class QueryAnalyzer:
@@ -14,16 +19,11 @@ class QueryAnalyzer:
         """Return a structured observation for a user query."""
         normalized_query = query.strip()
         lowered_query = normalized_query.lower()
-        if any(token in lowered_query for token in ("compare", "versus", " vs ", "difference")):
+        if _COMPARISON_PATTERN.search(lowered_query):
             intent = QueryIntent.COMPARISON
-        elif any(
-            token in lowered_query for token in ("hypothesis", "validate", "support", "refute")
-        ):
+        elif _HYPOTHESIS_PATTERN.search(lowered_query):
             intent = QueryIntent.HYPOTHESIS_VALIDATION
-        elif any(
-            token in lowered_query
-            for token in ("synthesize", "summarize", "literature", "overview")
-        ):
+        elif _SYNTHESIS_PATTERN.search(lowered_query):
             intent = QueryIntent.SYNTHESIS
         else:
             intent = QueryIntent.FACTUAL_LOOKUP

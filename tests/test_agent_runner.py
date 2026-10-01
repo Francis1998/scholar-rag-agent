@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from agent.executor import Executor
-from agent.models import AgentAnswer, AgentState, QueryPlan, StateTransition
+from agent.models import AgentAnswer, AgentState, QueryIntent, QueryPlan, StateTransition
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
 from agent.runner import AgentRunner
@@ -106,6 +106,91 @@ async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
     assert all(task.max_hops <= 1 for task in result.plan.tasks)
     assert result.answer is not None
     assert event_log.list_events(result.run_id)
+
+
+@pytest.mark.parametrize(
+    ("query", "intent", "expected_tasks"),
+    [
+        (
+            "Which GraphRAG features are unsupported?",
+            QueryIntent.FACTUAL_LOOKUP,
+            [("factual-lookup", "")],
+        ),
+        (
+            "Which changes invalidate cached GraphRAG results?",
+            QueryIntent.FACTUAL_LOOKUP,
+            [("factual-lookup", "")],
+        ),
+        (
+            "What causes indifference in GraphRAG results?",
+            QueryIntent.FACTUAL_LOOKUP,
+            [("factual-lookup", "")],
+        ),
+        (
+            "GraphRAG vs. BM25",
+            QueryIntent.COMPARISON,
+            [("comparison-evidence", ""), ("contrast-findings", "contrasting results for ")],
+        ),
+        (
+            "Compare GraphRAG versus BM25",
+            QueryIntent.COMPARISON,
+            [("comparison-evidence", ""), ("contrast-findings", "contrasting results for ")],
+        ),
+        (
+            "What evidence supports GraphRAG?",
+            QueryIntent.HYPOTHESIS_VALIDATION,
+            [
+                ("supporting-evidence", "evidence supporting "),
+                ("counter-evidence", "evidence refuting "),
+            ],
+        ),
+        (
+            "What evidence refutes GraphRAG?",
+            QueryIntent.HYPOTHESIS_VALIDATION,
+            [
+                ("supporting-evidence", "evidence supporting "),
+                ("counter-evidence", "evidence refuting "),
+            ],
+        ),
+        (
+            "Summarize the GraphRAG literature.",
+            QueryIntent.SYNTHESIS,
+            [("synthesis-corpus", "")],
+        ),
+    ],
+)
+async def test_agent_runner_routes_whole_intent_markers(
+    tmp_path: Path,
+    query: str,
+    intent: QueryIntent,
+    expected_tasks: list[tuple[str, str]],
+) -> None:
+    """Preview, execution, and the durable plan use the same bounded-word intent."""
+    runner, event_log = _build_runner(tmp_path)
+    padded_query = f"\t {query} \n"
+
+    preview = await runner.preview(padded_query)
+    assert event_log.list_events() == []
+    result = await runner.run(padded_query)
+
+    assert result.state == AgentState.DONE, result.error
+    assert result.observation is not None
+    assert result.observation.intent == intent
+    assert result.observation.original_query == query
+    assert result.plan is not None
+    assert result.plan.observation == result.observation
+    assert [(task.task_id, task.query) for task in result.plan.tasks] == [
+        (task_id, f"{prefix}{query}") for task_id, prefix in expected_tasks
+    ]
+    assert all(task.max_hops == 1 for task in result.plan.tasks)
+    assert preview.plan.observation == result.observation
+    assert preview.plan.tasks == result.plan.tasks
+    assert result.answer is not None
+    assert result.answer.citations
+
+    events = SQLiteEventLog(tmp_path / "agent.sqlite3").list_events(result.run_id)
+    decision_logs = [event["payload"] for event in events if event["event_type"] == "decision_log"]
+    assert decision_logs == [result.plan.model_dump(mode="json")]
 
 
 async def test_agent_runner_persists_decision_log_and_transition_sequence(
