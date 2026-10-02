@@ -4,18 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from agent.runner import AgentRunner
-
 __all__ = ["AgentRunner"]
 
-
-def __getattr__(name: str) -> type[AgentRunner]:
-    """Load the runner on demand without making model imports initialize the runtime."""
-    if name != "AgentRunner":
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
+if TYPE_CHECKING:
     from agent.runner import AgentRunner
+else:
 
-    globals()[name] = AgentRunner
-    return AgentRunner
+    def __getattr__(name: str) -> type[AgentRunner]:
+        """Load the runner on demand without making model imports initialize the runtime."""
+        if name != "AgentRunner":
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+        from agent.runner import AgentRunner
+
+        globals()[name] = AgentRunner
+        return AgentRunner

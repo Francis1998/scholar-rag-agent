@@ -32,7 +32,8 @@ These helpers are local lexical checks, not scientific verification. Importing
 `agent` or `agent.models` does not load the runner or executor. The public
 `AgentRunner` export loads on first access: `from agent import AgentRunner`,
 `agent.AgentRunner`, and `from agent.runner import AgentRunner` resolve to the
-same class.
+same class. Static type checking uses the explicit export, not the runtime
+attribute fallback, so unknown or misspelled exports remain type errors.
 
 For application construction in library code, use
 `from api.application import create_app`. Importing this factory does not read

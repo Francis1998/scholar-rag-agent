@@ -199,3 +199,53 @@ def test_api_entrypoint_still_initializes_its_explicit_database(
             """
         ),
     )
+
+
+def test_package_typing_rejects_unknown_exports_and_preserves_known_types(tmp_path: Path) -> None:
+    source = textwrap.dedent(
+        """
+        from typing import assert_type
+        import agent
+        from agent import AgentRunner
+        from agent.runner import AgentRunner as DirectRunner
+
+        def supported_types(
+            exported: AgentRunner, qualified: agent.AgentRunner, direct: DirectRunner
+        ) -> None:
+            assert_type(exported, DirectRunner)
+            assert_type(qualified, DirectRunner)
+            assert_type(direct, DirectRunner)
+
+        assert_type(AgentRunner.__name__, str)
+        assert_type(agent.AgentRunner.__name__, str)
+        assert_type(DirectRunner.__name__, str)
+        agent.AgentRuner
+        agent.MissingRunner
+        from agent import AgentRuner
+        from agent import MissingRunner
+        """
+    )
+    run_isolated(
+        tmp_path,
+        f"source = {source!r}\n"
+        + textwrap.dedent(
+            """
+            from mypy import api as mypy_api
+
+            os.environ["MYPYPATH"] = sys.argv[1]
+            output, errors, status = mypy_api.run([
+                "--config-file", str(Path(sys.argv[1]).parent / "pyproject.toml"),
+                "--strict", "--no-incremental", "--cache-dir", os.devnull,
+                "--show-error-codes", "--no-error-summary", "--no-pretty",
+                "--command", source,
+            ])
+            assert not errors, errors
+            assert status == 1, f"Expected rejection of unknown exports; got {status}: {output}"
+            assert output.count(": error:") == 4, output
+            assert output.count("[attr-defined]") == 4, output
+            assert output.count("AgentRuner") == 2, output
+            assert output.count("MissingRunner") == 2, output
+            assert _database_connections == []
+            """
+        ),
+    )
