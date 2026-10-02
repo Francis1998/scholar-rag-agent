@@ -211,6 +211,8 @@ For direct library integration, `DenseRetriever`, `BM25Retriever`,
 | Zero candidates with the fake adapter | `DONE` with zero context/citations and an ungrounded placeholder plus warning; exportable |
 | Unsupported scoped custom component | Explicit run `ERROR`; never retry it without the requested scope |
 | Out-of-scope custom retrieval/reranking output | Explicit run `ERROR` before generation, not post-top-k silent filtering |
+| Out-of-scope prepared or callback-captured sources | Explicit run `ERROR` before saving the snapshot or subsequent generation, even without an evidence policy |
+| Plan selection changed during preparation | Explicit run `ERROR` at capture; the original request's scope remains authoritative |
 
 The HTTP success envelope is unchanged: runtime failures can still return HTTP
 `200` with `result.state="ERROR"`. Always inspect `state` and `error`. A zero-source
@@ -238,14 +240,27 @@ any cross-corpus mapping; matching uses only this application's ingested chunks.
    bridge to another selected paper. Entity names remain shared; edges must be
    supported by selected chunks. Values, including IDs and entity names, are
    bound SQL parameters.
-4. Scoped results are checked before generation and after reranking; final
-   citations derive from the same detached allowed evidence. Shared indexes
-   are not mutated or given request-local filter state.
+4. Scoped results are checked after retrieval and reranking. Before persisting
+   an evidence snapshot, the runner's capture callback validates both the plan
+   and captured source IDs against the original request, regardless of optional
+   evidence quotas or minimums. A mismatch stops the callback before subsequent
+   generation, with no snapshot, generation record, `ANSWERING`, or `DONE`.
+   Preview enforces the same checks without event writes. Final citations are
+   also checked against the original scope. Shared indexes are not mutated or
+   given request-local filter state.
 
 Custom retrieval components must accept **and honor** the keyword for scoped
 runs. Unscoped calls omit the keyword entirely, keeping old signatures and test
 doubles working. There is no `TypeError` retry that silently broadens selection.
 Optional cataloged helpers do not become scope-aware merely by being installed.
+
+For ordinary queries without an evidence policy, legacy answer overrides that
+do not accept capture callbacks still run once without those keywords. Their
+retrieval results and returned citations are checked, but the runner cannot
+inspect their uncaptured generation context or export an evidence snapshot.
+Capture validation assumes the executor calls the callback before generation
+and propagates its errors; it does not sandbox arbitrary extension code or
+prevent model calls made outside that contract.
 
 ## Saved scope, compatibility and limits
 
