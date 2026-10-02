@@ -13,6 +13,33 @@ uv run python scripts/demo_local.py
 The fake adapter emits a cited placeholder, not a scientific summary. This demo's
 temporary database is removed on exit and is separate from the API's database.
 
+## Python library imports
+
+Import standalone retrieval helpers directly in a fresh Python interpreter; no
+prior agent or API import is required:
+
+```python
+from retrieval.citations import CitationGrounder
+from retrieval.claim_verification_gate import ClaimVerificationGate
+from retrieval.citation_groundedness_score import CitationGroundednessScorer
+
+grounder = CitationGrounder()
+claim_gate = ClaimVerificationGate()
+citation_scorer = CitationGroundednessScorer()
+```
+
+These helpers are local lexical checks, not scientific verification. Importing
+`agent` or `agent.models` does not load the runner or executor. The public
+`AgentRunner` export loads on first access: `from agent import AgentRunner`,
+`agent.AgentRunner`, and `from agent.runner import AgentRunner` resolve to the
+same class.
+
+For application construction in library code, use
+`from api.application import create_app`. Importing this factory does not read
+runtime settings or initialize storage; calling it creates the app and storage.
+By contrast, importing the server entrypoint `api.main` creates its default
+`app` using environment/`.env` settings and initializes the configured database.
+
 ## Public API
 
 | Endpoint | Response and purpose |
