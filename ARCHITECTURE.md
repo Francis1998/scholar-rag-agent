@@ -367,6 +367,37 @@ metadata or verify publication identity, author names, scientific claims, or
 TeX safety. No events or evidence schemas change. See the
 [complete contract and measured demonstration](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
 
+## Exact Frozen-Evidence Annotations
+
+`SQLiteEvidenceAnnotations`, exposed as `container.evidence_annotations` and
+POST/GET `/runs/{run_id}/annotations`, stores immutable human notes in one
+additive `evidence_annotations` table. Construction adds only that table and
+its index to an existing database; it does not initialize or backfill events.
+There are no changes to old answer, snapshot, export, review, or screening shapes.
+
+Each operation reads a completed snapshot through `BoundedRunEvents` and
+`EvidenceExporter`. The exact chunk/document identity, whole-text UTF-8 digest,
+strict Python Unicode offsets, and literal slice must agree. Any frozen source
+may be annotated, whether or not it became a final answer citation. There is
+no corpus lookup, term aligner, fuzzy relocation, retrieval, or model call.
+
+Creation uses `BEGIN IMMEDIATE` so evidence validation, run/UUID retry lookup,
+and insertion share one transaction. Identical retries return the same sequence
+and UTC timestamp; changed payloads conflict. New records receive global
+AUTOINCREMENT sequences. GET uses a single read-only snapshot for evidence and
+newest-first annotations, with an exclusive sequence cursor and validated
+lookahead. SQL count/type/byte preflights precede event and annotation hydration;
+the complete compact UTF-8 response must fit 256 KiB. Every connection closes
+on success or failure.
+
+Notes and quotes are bounded to 1000 code points. Imported identities are
+preserved exactly, not normalized as collection scope. Selected malformed or
+inconsistent records fail explicitly with sanitized errors. Current corpus
+edits/deletion do not invalidate a frozen anchor; inconsistent saved-evidence
+changes do. This is provenance plus opinion, not author authentication,
+semantic entailment, or signed tamper-proof history. See the
+[complete contract and measured GIF](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
+
 ## Saved Evidence Corpus Drift
 
 `SQLiteCorpusDrift.report(run_id)`, exposed through the separate

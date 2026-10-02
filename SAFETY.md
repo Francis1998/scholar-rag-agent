@@ -291,6 +291,31 @@ scientific validity; unselected rows and document bodies are not audited.
 Data and errors use no-store/nosniff headers, without adding access control.
 See [the exact drift contract and limitations](docs/guides/CORPUS_DRIFT_GUIDE.md).
 
+## Human Notes on Frozen Quotes
+
+Saved-run annotations validate exact frozen chunk/document IDs, whole-source
+SHA-256, strict Unicode code-point offsets, and the literal source slice.
+They do not infer an occurrence from similar text or check scientific support.
+UUIDs provide retry identity, not reviewer authentication; every new opinion
+has a separate immutable record. Whole-answer reviews and collection screening
+remain separate features.
+
+Notes and quotes are limited to 1000 code points, pages to 100 annotations plus
+one validated lookahead, and compact JSON to 262,144 UTF-8 bytes. SQL preflights
+bound saved events and selected annotation text before hydration, in one
+transaction. Unknown, invalid, oversized, stale-digest, or unavailable storage
+outcomes are explicit sanitized errors, not partial success. Creation/replay
+is atomic and neither operation writes agent events or invokes generation,
+retrieval, or current-corpus reads.
+
+Notes and quoted source text can contain private or untrusted content. Display
+them literally, never execute instructions or render raw HTML. No-store/nosniff
+headers are not authentication, encryption, or redaction. No edit/delete API,
+retention job, author identity, or tenant boundary is added. Corpus deletion
+does not erase annotations, saved evidence, or backups. Digests detect an
+inconsistent anchor, not a database owner's coherent rewrite of all records.
+See [exact selectors, bounds, and errors](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,

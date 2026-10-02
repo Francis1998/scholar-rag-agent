@@ -15,6 +15,7 @@ def run_isolated(tmp_path: Path, script: str) -> None:
         import os
         import sys
         from pathlib import Path
+        from urllib.parse import unquote, urlsplit
 
         sys.path[:0] = sys.argv[1:]
         _database_path = Path(os.environ["SCHOLAR_RAG_DATABASE_PATH"]).resolve()
@@ -24,7 +25,13 @@ def run_isolated(tmp_path: Path, script: str) -> None:
             if event in {"socket.connect", "socket.getaddrinfo", "socket.sendto"}:
                 raise AssertionError(f"Import checks must remain offline: {event}")
             if event == "sqlite3.connect":
-                assert Path(arguments[0]).resolve() == _database_path, arguments[0]
+                database = arguments[0]
+                if isinstance(database, str) and database.startswith("file:"):
+                    uri = urlsplit(database)
+                    assert not uri.netloc and not uri.fragment, database
+                    assert uri.query in {"mode=ro", "mode=rw"}, database
+                    database = unquote(uri.path, errors="strict")
+                assert Path(database).resolve() == _database_path, arguments[0]
                 _database_connections.append(arguments[0])
 
         sys.addaudithook(guard_io)
@@ -53,6 +60,40 @@ def run_isolated(tmp_path: Path, script: str) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_database_audit_accepts_exact_file_uris_and_rejects_other_targets(tmp_path: Path) -> None:
+    run_isolated(
+        tmp_path,
+        """
+        import sqlite3
+        from contextlib import closing
+
+        _database_path = _database_path.with_name("runtime %?# \\u7814\\u7a76.sqlite3")
+        with closing(sqlite3.connect(_database_path)) as connection:
+            connection.execute("CREATE TABLE marker (id INTEGER)")
+        for mode in ("rw", "ro"):
+            with closing(sqlite3.connect(
+                _database_path.as_uri() + f"?mode={mode}", uri=True
+            )) as connection:
+                assert connection.execute("SELECT count(*) FROM marker").fetchone() == (0,)
+
+        other = _database_path.with_name("not-authorized.sqlite3")
+        for target, is_uri in (
+            (str(other), False),
+            (other.as_uri() + "?mode=rw", True),
+            (_database_path.as_uri() + "?mode=rwc", True),
+        ):
+            try:
+                sqlite3.connect(target, uri=is_uri)
+            except AssertionError:
+                pass
+            else:
+                raise AssertionError(f"Unexpected database target was allowed: {target}")
+        assert not other.exists()
+        assert len(_database_connections) == 3
+        """,
+    )
 
 
 @pytest.mark.parametrize(

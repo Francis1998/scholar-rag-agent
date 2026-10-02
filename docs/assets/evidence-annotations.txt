@@ -1,0 +1,30 @@
+1. Freeze a synthetic source once
+POST /ingest/text -> 200
+POST /query -> 200; saved state=DONE
+Setup provider: fake (placeholder, not a finding)
+Frozen sources: 1; repeated quote occurs twice
+Network calls: 0; ambient keys/settings ignored
+
+2. Annotate the second exact occurrence
+POST /runs/<run_id>/annotations -> 201
+Selected span: [62, 88); first occurrence: 27
+Exact quote: GraphRAG connects evidence
+Note: Human opinion: inspect this occurrence; not proof of the claim.
+Source SHA-256 prefix: 985e6b16ebec71cba18ee777
+Offsets count Python Unicode characters, not bytes or UTF-16 units.
+
+3. Retry safely and page human notes
+Identical UUID + payload -> 200; byte-identical record
+Same UUID + changed note -> 409 (annotation_id_conflict)
+Saved annotations: 2
+GET limit=1 -> sequences [2]; next_cursor=2
+GET cursor=2 -> sequences [1]
+No overwrite, fuzzy matching, or relocation to another occurrence.
+
+4. Resume after corpus removal and restart
+Remaining current corpus chunks: 0
+Recovered history byte-identical: True
+Annotation agent/corpus calls: 0; event writes: 0
+Saved events unchanged: True
+Temporary database removed: True; raw responses + checks saved
+Human notes are opinions; exact quotes are provenance, not proof.

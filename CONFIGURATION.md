@@ -40,6 +40,13 @@ completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
 See [the BibTeX/JSON contract](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
 
+Exact frozen-evidence annotations also add no environment setting or provider
+requirement. They use an additive table in the existing database, fixed
+1000-character note/quote limits, 1-100-row pages, and a 256-KiB UTF-8 response
+cap. IDs and quote selectors come from a completed saved snapshot, not current
+model settings or corpus contents. See
+[the annotation contract and isolated demo](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
@@ -69,6 +76,8 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
+All four official model catalogs were checked again on **2026-10-02 America/Los_Angeles**;
+this catalog-only check leaves defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
 

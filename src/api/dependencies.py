@@ -26,6 +26,7 @@ from storage.document_catalog import SQLiteDocumentCatalog
 from storage.document_chunks import SQLiteDocumentChunks
 from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
+from storage.evidence_annotations import SQLiteEvidenceAnnotations
 from storage.evidence_export import EvidenceExporter
 from storage.graph_store import SQLiteGraphStore
 from storage.paper_collections import SQLitePaperCollections
@@ -50,6 +51,7 @@ class AppContainer:
         self.answer_reviews = AnswerReviewService(
             self.evidence_exporter, SQLiteAnswerReviews(database_path)
         )
+        self.evidence_annotations = SQLiteEvidenceAnnotations(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)
