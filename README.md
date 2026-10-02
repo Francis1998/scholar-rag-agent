@@ -48,6 +48,7 @@ database and empty provider keys. The interactive API documentation is at
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
+| Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
 | Check whether saved source chunks still match the local corpus | Read unchanged/changed/missing findings in frozen rank order, without regenerating or rewriting evidence | [Corpus drift and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md) |
@@ -86,6 +87,19 @@ conflict/empty-citation warnings. No current corpus, model, or DOI service is
 consulted. Metadata is unverified; review before import, not by compiling LaTeX.
 The [complete guide](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) includes offline
 API/Python usage and reproduction of this actual-output illustration.
+
+## Keep human notes on exact frozen quotes
+
+![Measured synthetic offline exact-quote annotations](docs/assets/evidence-annotations.gif)
+
+`POST /runs/{run_id}/annotations` saves a human note at an exact Unicode
+character span in completed frozen evidence. Repeated phrases stay tied to
+their selected occurrence; UUID retries are idempotent and changed payloads
+conflict instead of overwriting. GET recovers bounded history after restart
+even when the current corpus is removed. No model, retrieval, or agent-event
+write is involved. A note is an opinion and a quote is provenance, not proof.
+The [complete API/Python guide](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) covers
+selectors, errors, privacy, and reproduction from measured synthetic results.
 
 ## Inspect a recorded run
 

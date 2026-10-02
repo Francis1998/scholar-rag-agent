@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
 from api.collections import router as collections_router
 from api.comparisons import router as comparisons_router
@@ -34,4 +35,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(corpus_drift_router)
     application.include_router(research_router)
     application.include_router(reviews_router)
+    application.include_router(annotations_router)
     return application

@@ -164,6 +164,32 @@ No current-corpus read, generation, metadata lookup, or event write occurs.
 See the [complete saved bibliography guide](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md)
 for the standalone Python reader, fixed byte limits, errors, and measured GIF.
 
+### Keep a note on an exact frozen quote
+
+For a completed exportable run, POST `/runs/{run_id}/annotations` with a client
+UUID, exact document/chunk IDs, the frozen source's `text_sha256` as
+`source_text_sha256`, Python Unicode `start`/`end` offsets, exact `quote`, and
+a nonblank human `note`. Read these from the full saved export, not current
+corpus text or a truncated answer citation. Identical retries return 200 after
+the first 201; changed payloads under the same UUID return 409.
+
+The [complete offline API/Python guide](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md)
+includes working selector construction, limits, errors, privacy, and a GIF.
+For a self-contained measured demonstration with no running server:
+
+```bash
+ANNOTATION_DEMO="$(mktemp -d)"
+uv run --no-sync python -m scripts.demo_evidence_annotations \
+  --output-dir "$ANNOTATION_DEMO/results"
+uv run --no-sync python -m scripts.create_evidence_annotations_gif \
+  --transcript "$ANNOTATION_DEMO/results/transcript.txt" \
+  --output "$ANNOTATION_DEMO/evidence-annotations.gif"
+```
+
+The output directory must be new. The demo guards against ambient keys and
+network access, checks persistence after corpus removal/restart, and removes
+its synthetic database. Human notes are opinions, not scientific verification.
+
 ### Check saved evidence against the current corpus
 
 For a completed run with a valid saved snapshot:

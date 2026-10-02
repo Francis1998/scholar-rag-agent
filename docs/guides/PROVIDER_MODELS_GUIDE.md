@@ -1,10 +1,17 @@
 # Provider Models and Compatibility
 
-The Anthropic catalog and Sonnet 5.5 migration guidance were rechecked
-**2026-10-01 America/Los_Angeles** (2026-10-01 UTC). Other provider catalog notes
-retain their 2026-09-29 check, earlier default-model migration guidance its
-2026-09-17 check, and Opus 5.5 migration notes their 2026-09-22 check.
-This is documentation verification plus offline HTTPX contract testing,
+The four official model catalogs linked below were checked
+**2026-10-02 America/Los_Angeles**. This catalog-only check leaves the selected
+defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
+Anthropic lists Sonnet 5.5, Opus 5.5, and Fable 5.1; Gemini 3.8 Flash is GA;
+Kimi K3 remains the Kimi default. Anthropic's general Opus 5.5 recommendation
+does not replace this repository's selected Sonnet 5.5 text-adapter default.
+
+The separate Anthropic Sonnet 5.5 migration-contract check remains
+**2026-10-01 America/Los_Angeles** (2026-10-01 UTC), earlier default-model
+migration guidance **2026-09-17**, and Opus 5.5 migration notes **2026-09-22**.
+Sonnet 5.5's no-tools `between_tools` / medium-effort contract is unchanged.
+These are dated documentation checks and the existing offline HTTPX contract tests,
 **not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.
