@@ -226,8 +226,11 @@ class AnthropicAdapter(HTTPProviderAdapter):
                 }
             ],
         }
-        # Preserve Sonnet 5's bounded answer budget; older/custom IDs may reject this field.
-        if self._model == DEFAULT_ANTHROPIC_MODEL:
+        # Without tools, between_tools yields text only; Sonnet 5.5 rejects disabled.
+        if self._model == "claude-sonnet-5-5":
+            payload["thinking"] = {"type": "between_tools"}
+            payload["output_config"] = {"effort": "medium"}
+        elif self._model == "claude-sonnet-5":
             payload["thinking"] = {"type": "disabled"}
         return payload
 

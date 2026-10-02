@@ -1,11 +1,11 @@
 # Provider Models and Compatibility
 
-Model catalogs rechecked **2026-09-29 America/Los_Angeles** (2026-09-29 UTC);
-default-model migration guidance was checked on 2026-09-17 America/Los_Angeles,
-Opus 5.5 migration notes on 2026-09-22, and Sonnet 5.5 migration notes on
-2026-09-29. This is
-documentation verification plus offline HTTPX contract
-testing, **not an account-entitlement check or a live inference test**. Availability,
+The Anthropic catalog and Sonnet 5.5 migration guidance were rechecked
+**2026-10-01 America/Los_Angeles** (2026-10-01 UTC). Other provider catalog notes
+retain their 2026-09-29 check, earlier default-model migration guidance its
+2026-09-17 check, and Opus 5.5 migration notes their 2026-09-22 check.
+This is documentation verification plus offline HTTPX contract testing,
+**not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.
 
@@ -14,7 +14,7 @@ account and workload.
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
-| Anthropic | `claude-sonnet-5` | Retained compatible Sonnet default, not the newest Sonnet. The [catalog](https://platform.claude.com/docs/en/models/overview) now lists Sonnet 5.5 (`claude-sonnet-5-5`), recommends Opus 5.5 (`claude-opus-5-5`) generally, and lists Fable 5.1 for the most demanding work. The fixed budget/thinking contract below is intentionally unchanged. |
+| Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
 | Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
 | Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.ai/docs/models), replacing the discontinued K2 default. |
 
@@ -112,45 +112,54 @@ adapter, not evidence of tool support.
 
 ### Anthropic
 
-The adapter keeps `POST https://api.anthropic.com/v1/messages`, a user message,
-and `max_tokens=1024`. The
-[Sonnet 5 migration guide](https://platform.claude.com/docs/en/models/sonnet-5/migration-guide)
-says non-default `temperature`, `top_p`, or `top_k` can return HTTP 400 and
-adaptive thinking is enabled by default. Its output limit covers thinking and
-answer text together.
+The adapter keeps `POST https://api.anthropic.com/v1/messages`, one user message,
+`x-api-key`, `anthropic-version: 2023-06-01`, and `Content-Type: application/json`.
+The fixed output cap remains **`max_tokens=1024` per attempt**. It sends no tools,
+assistant prefill, beta headers, or sampling overrides.
 
-For the exact `claude-sonnet-5` ID, the adapter explicitly sends
-`thinking: {"type": "disabled"}` to retain the bounded single-turn answer budget.
-Other Anthropic IDs receive **no thinking override**, avoiding a new parameter
-on older/custom models; the 1024-token limit still applies. Custom models with
-default or mandatory thinking can spend that budget before producing an answer,
-so an ID override alone is not a universal migration to arbitrary Claude models.
-No sampling overrides are sent for either default or custom models. Only blocks
-whose `type` is `text` contribute to the final answer.
+The [Sonnet 5.5 migration guide](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md)
+enables adaptive thinking when the `thinking` field is omitted; thinking and
+answer text share `max_tokens`. It also rejects `thinking: {"type": "disabled"}`
+with HTTP 400. Merely updating the default ID while retaining the old payload
+would therefore break requests.
 
-The catalog's current general recommendation, [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview),
-has always-on adaptive thinking. Its [migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide)
-does not permit disabling thinking. The adapter sends no Sonnet-specific override
-for `claude-opus-5-5`, but still limits total output to 1024 tokens. Evaluate that
-budget and endpoint compatibility before switching; thinking-only output now
-fails explicitly instead of becoming a successful empty answer. The selected
-Sonnet default is intentionally unchanged.
+The adapter now selects controls by **exact API model ID**, independently of
+which ID is the configured default:
 
-The **2026-09-29** catalog also lists newer Sonnet 5.5 (`claude-sonnet-5-5`).
-Its [migration guide](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md)
-states that `thinking: {"type": "disabled"}` returns HTTP 400. However, its
-[up-front thinking section](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md#turn-off-up-front-thinking)
-supports `thinking: {"type": "between_tools"}`: without tools, this produces
-text-only responses. It works at `low`, `medium`, and `high` effort without a
-beta header; `xhigh` and `max` require adaptive thinking. Its example uses
-`max_tokens=4096` and `output_config.effort="medium"`.
+| Requested ID | `thinking` | `output_config` |
+| --- | --- | --- |
+| `claude-sonnet-5-5` (default or explicit override) | `{"type": "between_tools"}` | `{"effort": "medium"}` |
+| `claude-sonnet-5` (explicit rollback) | `{"type": "disabled"}` | Omitted |
+| All other IDs, including older/custom Sonnet, Opus, and Fable | Omitted | Omitted |
 
-This adapter disables thinking only for the exact older `claude-sonnet-5` ID.
-Overrides retain the 1024-token total budget and send neither `between_tools`
-nor an effort setting. Merely selecting the newer ID is therefore not a
-validated budget/payload migration. Evaluate the complete contract before
-changing defaults; no live/account compatibility is claimed by this dated
-documentation check.
+The guide's [up-front thinking section](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide#turn-off-up-front-thinking)
+states that `between_tools` produces only text **when no tools are sent**. It
+accepts `low`, `medium`, or `high` effort without a beta header, but rejects
+`xhigh`/`max` and extra thinking fields such as `budget_tokens` or `display`.
+The adapter pins the compatible `medium` level explicitly instead of relying
+on the model's default `high`. It does not copy the guide's larger example
+budgets, increase spend limits, or introduce a configurable effort surface.
+Only blocks whose `type` is `text` contribute to the normalized answer.
+
+The unchanged 1024-token cap is **not enough for every answer**. Explicit
+truncation, thinking-only output, and malformed responses still fail as described
+above. There is no automatic continuation, larger-budget retry, or provider/fake
+failover; transient HTTP/transport retries retain their existing bounded policy.
+
+The [catalog](https://platform.claude.com/docs/en/models/overview) generally
+recommends [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview)
+and positions Fable 5.1 for demanding work. Both use always-on adaptive thinking;
+the [Opus migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide)
+does not permit disabling it. Those IDs receive neither Sonnet-specific control,
+but retain the 1024-token total budget, which thinking can consume before final
+answer text. An arbitrary ID override is not a universal compatibility migration.
+Evaluate endpoint support, account access, and budget/quality for your workload.
+
+For rollback, set `SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5` and restart the
+application; `Settings(anthropic_model="claude-sonnet-5")` or the explicit adapter
+constructor work as well. To restore Sonnet 5.5, remove old overrides from both
+the environment and `.env`, or set `claude-sonnet-5-5` explicitly. Existing
+configuration precedence and provider routing do not change.
 
 ### Google Gemini
 
@@ -238,6 +247,10 @@ Credentials and headers are not copied into normalized responses.
 Offline regressions cover current defaults, settings validation and precedence,
 custom IDs reaching routed payloads/URLs, mocked HTTP request/response contracts,
 multipart answer extraction without thought text, and unchanged routing/fakes.
+Sonnet regressions check exact model-specific controls, unchanged headers and
+budget, legacy rollback, and the absence of those controls for unknown/Opus/Fable
+IDs. A real local runner using mocked HTTPX and SQLite confirms that the saved
+generation model matches the requested wire ID, not a provider-reported alias.
 Live sampling is provider-controlled and is not guaranteed deterministic. No
 paid calls, live keys, account access, performance, or generation quality were
 tested by this maintenance change.

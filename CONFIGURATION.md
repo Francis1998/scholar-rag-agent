@@ -12,7 +12,7 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound; planner tasks request one to three hops depending on intent. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
 | `SCHOLAR_RAG_OPENAI_MODEL` | `gpt-6-astra` | OpenAI Chat Completions model ID. |
-| `SCHOLAR_RAG_ANTHROPIC_MODEL` | `claude-sonnet-5` | Anthropic Messages model ID. |
+| `SCHOLAR_RAG_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Anthropic Messages model ID. |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini-3.8-flash` | Gemini generateContent model ID. |
 | `SCHOLAR_RAG_KIMI_MODEL` | `kimi-k3` | Moonshot Chat Completions model ID. |
 | `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
@@ -50,6 +50,16 @@ Model IDs are stripped of surrounding whitespace and must be non-empty strings.
 Unset values use the defaults; explicit blank values fail settings validation,
 even without API keys. Model IDs alone never enable live calls.
 
+The selected Anthropic default is the latest public Sonnet, not the catalog's
+general Opus recommendation. Exact `claude-sonnet-5-5` requests send
+`thinking: {"type": "between_tools"}` and `output_config: {"effort": "medium"}`;
+without tools this preserves text-only output within the unchanged
+`max_tokens=1024` cap. This cap is not enough for every answer. To roll back,
+set `SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5` and restart the application:
+that exact legacy ID still receives `thinking: {"type": "disabled"}` and no
+effort override. All other IDs receive neither control, not a compatibility
+guarantee for arbitrary models.
+
 API synthesis requests use REASONING routing, preferring Anthropic when its key
 is configured. SPEED prefers Gemini, COST prefers Kimi, and DEFAULT uses
 `SCHOLAR_RAG_DEFAULT_MODEL`. A missing preferred provider falls back to the
@@ -57,9 +67,10 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults rechecked on **2026-09-29 America/Los_Angeles** and payload
-compatibility limits. This is documentation verification, not a live inference
-test or confirmation of account entitlement.
+source-linked defaults and payload compatibility limits. The Anthropic catalog
+and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
+Documentation and offline HTTPX contract tests do not establish live inference
+compatibility or account entitlement.
 
 Gemini still uses `generateContent`, not the current Interactions quickstart.
 Google rejects unrestricted standard keys; auth keys and appropriately restricted
