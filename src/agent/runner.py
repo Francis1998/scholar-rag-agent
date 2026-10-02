@@ -150,14 +150,11 @@ class AgentRunner:
             nonlocal context_captured
             if len(snapshot.sources) > configuration.max_source_docs:
                 raise ValueError("Prepared evidence exceeds the effective source limit.")
-            if policy is not None:
-                if plan is None:
-                    raise ValueError("Evidence capture requires the requested plan.")
-                self._validate_plan_request(plan, scope, policy)
-                ensure_document_scope(
-                    scope, (source.chunk.document_id for source in snapshot.sources)
-                )
-                ensure_evidence_policy(policy, snapshot.sources)
+            if plan is None:
+                raise ValueError("Evidence capture requires the requested plan.")
+            self._validate_plan_request(plan, scope, policy)
+            ensure_document_scope(scope, (source.chunk.document_id for source in snapshot.sources))
+            ensure_evidence_policy(policy, snapshot.sources)
             self._event_log.append_event(
                 agent_id=self._agent_id,
                 run_id=run_id,

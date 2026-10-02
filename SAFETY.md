@@ -79,6 +79,19 @@ normalized characters, and retained in the plan and evidence export. HTTP
 no chunks and never trigger a whole-corpus fallback. Graph edges from excluded
 papers cannot bridge into results. BM25 statistics still use the whole corpus.
 
+At the evidence-capture callback, the runner checks both the plan's selection
+and captured source IDs against the original request, even without an evidence
+policy. A changed plan scope or out-of-scope snapshot produces a durable `ERROR`
+before snapshot persistence or subsequent generation; no snapshot or generation
+record is saved for that rejected capture. Preview applies the same selection
+checks with sanitized failures and no event writes.
+
+For ordinary queries without an evidence policy, legacy answer overrides without
+capture callbacks remain supported: retrieval results and returned citations
+are checked, but their uncaptured generation context cannot be inspected or
+exported. These are execution-contract checks, not a sandbox against arbitrary
+extension code or model calls made before capture.
+
 This is **corpus selection, not authentication or tenant isolation**. It neither
 authorizes document access nor protects run/event/export endpoints. Keep the
 service local/trusted. Source/hop/capture bounds and human evidence review still
