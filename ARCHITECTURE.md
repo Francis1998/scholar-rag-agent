@@ -34,6 +34,25 @@ stores `timestamp`, `agent_id`, `run_id`, event type, and a JSON payload; state
 transition payloads contain the source and target states. The plan includes
 operational rationale, not a model's hidden reasoning.
 
+## Query Analysis
+
+`QueryAnalyzer` uses case-insensitive whole-word markers, not semantic intent
+analysis. Precedence is comparison, then hypothesis validation, then synthesis,
+with factual lookup when no marker matches. The explicit forms are:
+
+| Intent | Recognized markers |
+| --- | --- |
+| Comparison | `compare`, `compares`, `compared`, `versus`, `vs`, `difference`, `differences` |
+| Hypothesis validation | `hypothesis`, `validate`, `validates`, `validated`, `support`, `supports`, `supported`, `supporting`, `refute`, `refutes`, `refuted` |
+| Synthesis | `synthesize`, `synthesizes`, `synthesized`, `summarize`, `summarizes`, `summarized`, `literature`, `literatures`, `overview`, `overviews` |
+
+Punctuation and whitespace separate markers, so `GraphRAG vs. BM25` selects
+comparison. Adjacent letters, digits, or underscores do not form boundaries:
+`unsupported`, `invalidate`, `indifference`, and `literature_count` alone do not
+select an intent. This is a finite lexical rule, not stemming or negation
+analysis. Only outer query whitespace is trimmed; interior text and the existing
+capitalized-entity extraction are unchanged.
+
 ## Retrieval Pipeline
 
 This is the integrated `/query` path. Hybrid and graph retrieval are separate
