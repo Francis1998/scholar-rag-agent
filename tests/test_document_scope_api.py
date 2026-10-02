@@ -3,7 +3,7 @@
 import asyncio
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
@@ -15,15 +15,17 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from scripts.demo_evidence_export import offline_settings
 
-from agent.evidence import EvidenceBundle, RunConfiguration
-from agent.models import AgentAnswer, AgentRunResult, AgentState, QueryPlan
+from agent.evidence import EvidenceBundle, EvidenceSnapshot, GenerationRecord, RunConfiguration
+from agent.models import AgentAnswer, AgentRunResult, AgentState, Citation, QueryPlan
 from api.application import create_app
 from api.dependencies import AppContainer
 from api.schemas import IngestResponse
 from llm.schemas import LLMRequest, LLMResponse
+from retrieval.evidence_policy import EvidencePolicy
 from retrieval.hyde import HyDEExpander
 from retrieval.models import Document, SearchResult
 from retrieval.rrf import reciprocal_rank_fusion
+from storage.event_log import SQLiteEventLog
 from storage.run_history import RunHistoryPage
 from tests.test_evidence_export import no_live_call
 
@@ -81,12 +83,22 @@ def test_api_schema_exposes_optional_nonempty_bounded_scope(scope_api: ScopeAPI)
     assert "pattern" not in field["items"]
 
 
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"max_chunks_per_document": 1},
+        {"min_evidence_documents": 1},
+        {"max_chunks_per_document": 1, "min_evidence_documents": 1},
+    ],
+    ids=["ordinary", "per-paper", "minimum", "combined"],
+)
 def test_real_api_excludes_other_papers_from_context_citations_and_export(
-    scope_api: ScopeAPI,
+    scope_api: ScopeAPI, options: dict[str, int]
 ) -> None:
     first = scope_api.ingest("Selected note", "GraphRAG connects selected synthetic evidence.")
     second = scope_api.ingest("Excluded note", "GraphRAG connects EXCLUDED_MARKER evidence.")
-    unscoped = scope_api.query("What does GraphRAG connect?")
+    unscoped = scope_api.query("What does GraphRAG connect?", **options)
     assert unscoped.state == AgentState.DONE
     assert unscoped.answer is not None
     assert {c.document_id for c in unscoped.answer.citations} == {
@@ -95,7 +107,9 @@ def test_real_api_excludes_other_papers_from_context_citations_and_export(
     }
 
     scoped = scope_api.query(
-        "What does GraphRAG connect?", document_ids=[f" {first.document_id} ", first.document_id]
+        "What does GraphRAG connect?",
+        document_ids=[f" {first.document_id} ", first.document_id],
+        **options,
     )
     assert scoped.state == AgentState.DONE, scoped.error
     assert scoped.answer is not None
@@ -498,6 +512,206 @@ def test_out_of_scope_custom_results_fail_before_generation(
         e["event_type"] == "evidence_snapshot"
         for e in scope_api.container.event_log.list_events(result.run_id)
     )
+
+
+def assert_scope_capture_rejected(
+    scope_api: ScopeAPI, result: AgentRunResult, generate: AsyncMock, error: str
+) -> None:
+    assert result.state == AgentState.ERROR, (
+        f"{result.state} after {generate.await_count} generation call(s)"
+    )
+    assert result.error == error
+    assert result.answer is None
+    generate.assert_not_awaited()
+    events = SQLiteEventLog(scope_api.database_path).list_events(result.run_id)
+    assert [event["event_type"] for event in events] == [
+        "state_transition",
+        "decision_log",
+        "state_transition",
+        "state_transition",
+        "state_transition",
+    ]
+    assert [
+        event["payload"]["to_state"]
+        for event in events
+        if event["event_type"] == "state_transition"
+    ] == ["PLANNING", "RETRIEVING", "REASONING", "ERROR"]
+    assert events[-1]["payload"]["payload"] == {"error": error}
+    assert scope_api.client.get(f"/runs/{result.run_id}/export").status_code == 409
+
+
+@pytest.mark.parametrize("change", ["sources", "removed_scope", "widened_scope"])
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"max_chunks_per_document": 1},
+        {"min_evidence_documents": 1},
+        {"max_chunks_per_document": 1, "min_evidence_documents": 1},
+    ],
+    ids=["ordinary", "per-paper", "minimum", "combined"],
+)
+def test_prepared_scope_is_checked_before_capture_and_generation(
+    scope_api: ScopeAPI,
+    monkeypatch: pytest.MonkeyPatch,
+    change: str,
+    options: dict[str, int],
+) -> None:
+    selected = scope_api.ingest("Selected", "GraphRAG selected evidence.")
+    excluded = scope_api.ingest("Excluded", "GraphRAG EXCLUDED_MARKER evidence.")
+    excluded_chunk = next(
+        chunk
+        for chunk in scope_api.container.document_store.list_chunks()
+        if chunk.document_id == excluded.document_id
+    )
+    executor = scope_api.container.runner._executor
+    prepare = executor.prepare_context
+
+    async def changed_preparation(
+        plan: QueryPlan,
+        retrieved: list[SearchResult],
+        *,
+        evidence_policy: EvidencePolicy | None = None,
+    ) -> EvidenceSnapshot:
+        snapshot = await prepare(plan, retrieved, evidence_policy=evidence_policy)
+        if change != "sources":
+            plan.observation = plan.observation.model_copy(
+                update={
+                    "document_ids": (
+                        None
+                        if change == "removed_scope"
+                        else (selected.document_id, excluded.document_id)
+                    )
+                }
+            )
+        source = snapshot.sources[0]
+        return EvidenceSnapshot.capture(
+            plan.observation.original_query,
+            [
+                SearchResult(
+                    chunk=excluded_chunk,
+                    score=source.score,
+                    retriever=source.retriever,
+                    path=source.path,
+                )
+            ],
+        )
+
+    extension = AsyncMock(side_effect=changed_preparation)
+    generate = AsyncMock(wraps=scope_api.container.llm.generate)
+    monkeypatch.setattr(executor, "prepare_context", extension)
+    monkeypatch.setattr(scope_api.container.llm, "generate", generate)
+    arguments = {"document_ids": [selected.document_id], **options}
+    preview = scope_api.client.post("/retrieve", json={"query": "GraphRAG evidence", **arguments})
+    assert preview.status_code == 500
+    assert preview.json()["detail"]["code"] == "context_preparation_failed"
+    assert "EXCLUDED_MARKER" not in preview.text
+    assert "sources" not in preview.json()
+    assert scope_api.container.event_log.list_events() == []
+    generate.assert_not_awaited()
+    extension.assert_awaited_once()
+
+    result = scope_api.query("GraphRAG evidence", **arguments)
+    assert extension.await_count == 2
+    error = (
+        "Retrieved evidence includes a document outside document_ids."
+        if change == "sources"
+        else "Planned document_ids do not match the requested scope."
+    )
+    assert_scope_capture_rejected(scope_api, result, generate, error)
+
+
+@pytest.mark.parametrize("cite_selected", [False, True], ids=["no-citations", "selected-citation"])
+def test_callback_scope_is_checked_before_capture_and_generation(
+    scope_api: ScopeAPI, monkeypatch: pytest.MonkeyPatch, cite_selected: bool
+) -> None:
+    selected = scope_api.ingest("Selected", "GraphRAG selected evidence.")
+    excluded = scope_api.ingest("Excluded", "GraphRAG EXCLUDED_MARKER evidence.")
+    excluded_chunk = next(
+        chunk
+        for chunk in scope_api.container.document_store.list_chunks()
+        if chunk.document_id == excluded.document_id
+    )
+
+    async def custom_answer(
+        plan: QueryPlan,
+        retrieved: list[SearchResult],
+        *,
+        on_context: Callable[[EvidenceSnapshot], None],
+        on_generation: Callable[[GenerationRecord], None],
+    ) -> AgentAnswer:
+        snapshot = EvidenceSnapshot.capture(
+            plan.observation.original_query,
+            [SearchResult(chunk=excluded_chunk, score=1.0, retriever="custom")],
+        )
+        on_context(snapshot)
+        response = await scope_api.container.llm.generate(snapshot.request)
+        on_generation(
+            GenerationRecord(
+                provider=response.raw_provider,
+                model_name=response.model_name,
+                task_type=snapshot.request.task_type,
+                claim_chunk_ids=[],
+            )
+        )
+        chunk = retrieved[0].chunk
+        return AgentAnswer(
+            answer=response.text,
+            claims=[],
+            citations=(
+                [
+                    Citation(
+                        chunk_id=chunk.chunk_id,
+                        document_id=chunk.document_id,
+                        title=chunk.title,
+                        snippet=chunk.text,
+                    )
+                ]
+                if cite_selected
+                else []
+            ),
+        )
+
+    monkeypatch.setattr(scope_api.container.runner._executor, "answer", custom_answer)
+    generate = AsyncMock(wraps=scope_api.container.llm.generate)
+    monkeypatch.setattr(scope_api.container.llm, "generate", generate)
+    result = scope_api.query("GraphRAG evidence", document_ids=[selected.document_id])
+    assert_scope_capture_rejected(
+        scope_api, result, generate, "Retrieved evidence includes a document outside document_ids."
+    )
+
+
+def test_scoped_legacy_answer_keeps_selected_retrieval_without_fabricating_capture(
+    scope_api: ScopeAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selected = scope_api.ingest("Selected", "GraphRAG selected evidence.")
+    scope_api.ingest("Excluded", "GraphRAG EXCLUDED_MARKER evidence.")
+    executor = scope_api.container.runner._executor
+    answer = executor.answer
+    calls = 0
+
+    async def legacy_answer(plan: QueryPlan, retrieved: list[SearchResult]) -> AgentAnswer:
+        nonlocal calls
+        calls += 1
+        assert {result.chunk.document_id for result in retrieved} == {selected.document_id}
+        return await answer(plan, retrieved)
+
+    monkeypatch.setattr(executor, "answer", legacy_answer)
+    generate = AsyncMock(wraps=scope_api.container.llm.generate)
+    monkeypatch.setattr(scope_api.container.llm, "generate", generate)
+    result = scope_api.query("GraphRAG evidence", document_ids=[selected.document_id])
+    assert result.state == AgentState.DONE, result.error
+    assert calls == 1
+    generate.assert_awaited_once()
+    assert result.answer is not None
+    assert {citation.document_id for citation in result.answer.citations} == {selected.document_id}
+    assert not any(
+        event["event_type"] in {"evidence_snapshot", "generation_record"}
+        for event in scope_api.container.event_log.list_events(result.run_id)
+    )
+    exported = scope_api.client.get(f"/runs/{result.run_id}/export")
+    assert exported.status_code == 409
+    assert exported.json()["detail"]["code"] == "snapshot_unavailable"
 
 
 def test_scope_reloads_with_corpus_and_frozen_exports_survive_later_changes(
