@@ -29,6 +29,7 @@ from storage.event_log import SQLiteEventLog
 from storage.evidence_export import EvidenceExporter
 from storage.graph_store import SQLiteGraphStore
 from storage.paper_collections import SQLitePaperCollections
+from storage.paper_screening import SQLitePaperScreening
 from storage.run_comparison import SavedRunComparator
 from storage.run_history import SQLiteRunHistory
 from storage.saved_bibliography import SQLiteSavedBibliography
@@ -53,6 +54,7 @@ class AppContainer:
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)
         self.paper_collections = SQLitePaperCollections(database_path)
+        self.paper_screening = SQLitePaperScreening(database_path)
         self.graph_store = SQLiteGraphStore(database_path)
         self.llm = RoutingLLMAdapter(build_model_router(settings))
         self.hybrid_retriever = HybridRetriever(

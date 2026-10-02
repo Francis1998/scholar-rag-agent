@@ -119,6 +119,24 @@ responses and operational errors carry no-store/nosniff headers; default
 validation handling is unchanged. See the complete
 [collection contracts](docs/guides/PAPER_COLLECTIONS_GUIDE.md).
 
+## Human Paper Screening
+
+Collection screening records human opinions, not authenticated approvals,
+scientific inclusion decisions, or PRISMA compliance. Only current-revision
+`include` labels enter the explicit included-ID selection; all other states are
+excluded from that selection. Collection edits make old labels stale, but
+changes to corpus text alone are not detected. Callers must review content
+changes and must not substitute the whole collection for an empty selection.
+
+The queue and decision writes validate current membership and revisions
+transactionally. Reasons are bounded to 1000 nonblank valid-Unicode characters;
+pages to 100 members; queue responses to 524,288 UTF-8 bytes. Malformed records,
+conflicts and unavailable storage fail explicitly. Screening never generates or
+writes agent events. Only the latest opinion is retained; deleting a collection
+does not erase its stored decisions or papers. Reasons and IDs can contain
+sensitive information, and no-store headers are not authorization. See the
+[screening guide](docs/guides/PAPER_SCREENING_GUIDE.md) for exact errors and limits.
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the

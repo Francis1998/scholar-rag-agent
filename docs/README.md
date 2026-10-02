@@ -13,6 +13,7 @@ accumulated feature list in the project README.
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Read bounded passages from a stored paper before choosing query scope | [Stored chunk reader and offline demo](guides/DOCUMENT_CHUNKS_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Apply a per-request passage quota to each paper in query and preview evidence | [Per-paper evidence limits and measured demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
