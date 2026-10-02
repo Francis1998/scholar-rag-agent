@@ -37,7 +37,7 @@ def test_router_defaults_to_fake_without_provider_keys() -> None:
     ("adapter", "model"),
     [
         (OpenAIAdapter(api_key="test-key"), "gpt-6-astra"),
-        (AnthropicAdapter(api_key="test-key"), "claude-sonnet-5"),
+        (AnthropicAdapter(api_key="test-key"), "claude-sonnet-5-5"),
         (GeminiAdapter(api_key="test-key"), "gemini-3.8-flash"),
         (KimiAdapter(api_key="test-key"), "kimi-k3"),
     ],
@@ -46,7 +46,7 @@ def test_router_defaults_to_fake_without_provider_keys() -> None:
 def test_live_provider_defaults_use_current_model_stack(
     adapter: HTTPProviderAdapter, model: str
 ) -> None:
-    """Default model IDs match the provider catalogs checked on 2026-09-17."""
+    """Default model IDs match the selected, source-documented provider contracts."""
     request = LLMRequest(
         task_type=TaskType.REASONING,
         prompt="What is GraphRAG?",

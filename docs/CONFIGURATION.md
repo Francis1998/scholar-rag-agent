@@ -55,7 +55,7 @@ calls or current-corpus enrichment. Its fixed source/read limits and exact
 | Environment variable | `Settings` field | Default API model ID |
 | --- | --- | --- |
 | `SCHOLAR_RAG_OPENAI_MODEL` | `openai_model` | `gpt-6-astra` |
-| `SCHOLAR_RAG_ANTHROPIC_MODEL` | `anthropic_model` | `claude-sonnet-5` |
+| `SCHOLAR_RAG_ANTHROPIC_MODEL` | `anthropic_model` | `claude-sonnet-5-5` |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini_model` | `gemini-3.8-flash` |
 | `SCHOLAR_RAG_KIMI_MODEL` | `kimi_model` | `kimi-k3` |
 
@@ -81,7 +81,36 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-09-29 America/Los_Angeles** catalog check and model-specific limitations.
+for the **2026-10-01 America/Los_Angeles** Anthropic catalog/migration check and
+model-specific limitations. Other providers' defaults and routing are unchanged.
+
+### Anthropic bounded text and rollback
+
+The selected latest public Sonnet, `claude-sonnet-5-5`, uses
+`thinking: {"type": "between_tools"}` with explicit `output_config.effort="medium"`.
+This stateless adapter sends no tools, so that setting produces text-only output
+without up-front thinking or beta headers. Sonnet 5.5 rejects the older
+`thinking.type="disabled"` setting.
+
+The output cap remains `max_tokens=1024` per attempt; no token-budget or effort
+environment setting is added. Longer answers can still be explicitly truncated
+and fail rather than trigger a larger-budget call or automatic continuation.
+The catalog's generally recommended Opus 5.5 and demanding-work Fable 5.1 use
+always-on thinking, which can exhaust this total budget before final answer text.
+
+To restore the previous Sonnet contract:
+
+```bash
+export SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5
+```
+
+Restart the application after changing settings. That exact ID retains
+`thinking: {"type": "disabled"}` without an effort override. All other older,
+custom, Opus, or Fable IDs receive neither Sonnet-specific control.
+To return to the new default, remove overrides from both the environment and
+`.env`, or explicitly set `claude-sonnet-5-5`; explicit `Settings(...)` arguments
+still take precedence. Neither these settings nor offline contract tests check
+account access, live answer quality, or whether the budget suits your workload.
 
 ## Optional Provider Keys
 

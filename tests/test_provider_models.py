@@ -9,6 +9,8 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
+from agent.models import AgentState
+from api.dependencies import AppContainer
 from config import Settings
 from llm.providers import (
     AnthropicAdapter,
@@ -19,6 +21,8 @@ from llm.providers import (
 )
 from llm.router import RoutingLLMAdapter, build_model_router
 from llm.schemas import LLMRequest, LLMResponse, TaskType
+from retrieval.models import Chunk, Document
+from storage.event_log import SQLiteEventLog
 
 
 class ProviderCase(NamedTuple):
@@ -36,7 +40,7 @@ PROVIDERS = [
     ProviderCase(
         "anthropic",
         AnthropicAdapter,
-        "claude-sonnet-5",
+        "claude-sonnet-5-5",
         "claude-haiku-4-5",
         "ANTHROPIC_API_KEY",
     ),
@@ -78,6 +82,33 @@ def assert_requested_model(adapter: HTTPProviderAdapter, request: LLMRequest, mo
         assert httpx.URL(adapter.endpoint).path == f"/v1beta/models/{model}:generateContent"
     else:
         assert adapter.payload(request)["model"] == model
+
+
+def assert_anthropic_request(request: httpx.Request, llm_request: LLMRequest, model: str) -> None:
+    """Assert the bounded text contract independently of the production payload builder."""
+    assert request.method == "POST"
+    assert str(request.url) == "https://api.anthropic.com/v1/messages"
+    assert request.headers["x-api-key"] == "test-provider-key"
+    assert request.headers["anthropic-version"] == "2023-06-01"
+    assert request.headers["content-type"] == "application/json"
+    assert "anthropic-beta" not in request.headers
+    assert "authorization" not in request.headers
+    expected: dict[str, object] = {
+        "model": model,
+        "max_tokens": 1024,
+        "messages": [
+            {
+                "role": "user",
+                "content": f"Context:\n{llm_request.context}\n\nQuestion:\n{llm_request.prompt}",
+            }
+        ],
+    }
+    if model == "claude-sonnet-5-5":
+        expected["thinking"] = {"type": "between_tools"}
+        expected["output_config"] = {"effort": "medium"}
+    elif model == "claude-sonnet-5":
+        expected["thinking"] = {"type": "disabled"}
+    assert json.loads(request.content) == expected
 
 
 def test_settings_expose_current_model_defaults(provider_case: ProviderCase) -> None:
@@ -151,12 +182,27 @@ def test_environment_model_reaches_routed_adapter(
 
 
 @pytest.mark.parametrize("use_override", [False, True], ids=["current", "override"])
+@pytest.mark.parametrize("selection", ["constructor", "router"])
 async def test_current_model_http_contract(
-    provider_case: ProviderCase, llm_request: LLMRequest, use_override: bool
+    provider_case: ProviderCase,
+    llm_request: LLMRequest,
+    use_override: bool,
+    selection: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """HTTPX exercises model-compatible JSON and normalized, non-secret provenance."""
     model = provider_case.override if use_override else provider_case.model
-    adapter = provider_case.adapter(api_key="test-provider-key", model=model)
+    if selection == "router":
+        monkeypatch.setenv(provider_case.key_env, "test-provider-key")
+        if use_override:
+            monkeypatch.setenv(f"SCHOLAR_RAG_{provider_case.name.upper()}_MODEL", f"  {model}  ")
+        router = build_model_router(Settings(_env_file=None, default_model=provider_case.name))
+        adapter = router.route(llm_request.task_type)
+        assert isinstance(adapter, HTTPProviderAdapter)
+    elif use_override:
+        adapter = provider_case.adapter(api_key="test-provider-key", model=model)
+    else:
+        adapter = provider_case.adapter(api_key="test-provider-key")
     requests: list[httpx.Request] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
@@ -201,13 +247,7 @@ async def test_current_model_http_contract(
                 ],
             }
         elif provider_case.name == "anthropic":
-            assert payload["model"] == model
-            assert payload["max_tokens"] == 1024
-            if use_override:
-                assert set(payload) == {"model", "max_tokens", "messages"}
-            else:
-                assert payload["thinking"] == {"type": "disabled"}
-                assert set(payload) == {"model", "max_tokens", "messages", "thinking"}
+            assert_anthropic_request(request, llm_request, model)
             data = {
                 "model": "server-reported-version",
                 "content": [
@@ -232,10 +272,13 @@ async def test_current_model_http_contract(
             }
         return httpx.Response(200, json=data)
 
-    client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
-    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+    client = httpx.AsyncClient(
+        timeout=60.0, transport=httpx.MockTransport(respond), trust_env=False
+    )
+    with patch("llm.providers.httpx.AsyncClient", return_value=client) as create_client:
         response = await adapter.generate(llm_request)
 
+    create_client.assert_called_once_with(timeout=60.0)
     assert len(requests) == 1
     assert response.text == "Grounded answer [c1]."
     assert response.citation_chunk_ids == ["c1"]
@@ -244,16 +287,120 @@ async def test_current_model_http_contract(
     assert "test-provider-key" not in response.model_dump_json()
 
 
-@pytest.mark.parametrize("model", ["claude-sonnet-4-6", "claude-haiku-4-5"])
-def test_older_anthropic_overrides_do_not_receive_thinking_parameters(
+@pytest.mark.parametrize(
+    "model",
+    [
+        "claude-sonnet-5-5",
+        "claude-sonnet-5",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5",
+        "claude-opus-5-5",
+        "claude-fable-5-1",
+        "custom-anthropic-model",
+        "claude-sonnet-5-custom",
+        "claude-sonnet-5-5-custom",
+    ],
+)
+async def test_anthropic_overrides_use_only_exact_model_controls(
     model: str, llm_request: LLMRequest
 ) -> None:
-    """Do not send Sonnet 5-specific controls to custom older model IDs."""
-    payload = AnthropicAdapter(api_key="test-key", model=model).payload(llm_request)
-    assert payload["model"] == model
-    assert payload["max_tokens"] == 1024
-    assert "thinking" not in payload
-    assert "temperature" not in payload
+    """New/legacy Sonnet contracts must not leak to other IDs, even lookalikes."""
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert_anthropic_request(request, llm_request, model)
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "stop_reason": "end_turn",
+                "content": [{"type": "text", "text": "Grounded answer [c1]."}],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        response = await AnthropicAdapter(api_key="test-provider-key", model=model).generate(
+            llm_request
+        )
+    assert len(requests) == 1
+    assert response.text == "Grounded answer [c1]."
+    assert response.model_name == model
+
+
+@pytest.mark.parametrize(
+    ("override", "model"),
+    [
+        (None, "claude-sonnet-5-5"),
+        ("  claude-sonnet-5  ", "claude-sonnet-5"),
+        ("custom-anthropic-model", "custom-anthropic-model"),
+    ],
+    ids=["default", "legacy-rollback", "custom"],
+)
+async def test_anthropic_runner_saves_the_actually_requested_model(
+    override: str | None, model: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Real routing and SQLite persistence retain the wire ID, not a server alias."""
+    if override is not None:
+        monkeypatch.setenv("SCHOLAR_RAG_ANTHROPIC_MODEL", override)
+    settings = Settings(
+        _env_file=None,
+        database_path=tmp_path / "anthropic-provenance.sqlite3",
+        ANTHROPIC_API_KEY="test-provider-key",
+        SEMANTIC_SCHOLAR_API_KEY="",
+    )
+    container = AppContainer(settings)
+    chunk = Chunk(
+        chunk_id="c1",
+        document_id="synthetic-document",
+        title="Synthetic evidence",
+        text="GraphRAG connects research entities.",
+        source="offline-fixture",
+    )
+    container.document_store.add_documents(
+        [Document(**chunk.model_dump(exclude={"chunk_id"}))], [chunk]
+    )
+    container.hybrid_retriever.add_chunks([chunk])
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "stop_reason": "end_turn",
+                "content": [{"type": "text", "text": "GraphRAG connects research entities [c1]."}],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        result = await container.runner.run("What does GraphRAG connect?")
+
+    assert result.state == AgentState.DONE, result.error
+    assert result.answer is not None
+    assert result.answer.answer == "GraphRAG connects research entities [c1]."
+    assert len(requests) == 1
+    events = SQLiteEventLog(settings.database_path).list_events(result.run_id)
+    [snapshot] = [
+        event["payload"] for event in events if event["event_type"] == "evidence_snapshot"
+    ]
+    [generation] = [
+        event["payload"] for event in events if event["event_type"] == "generation_record"
+    ]
+    llm_request = LLMRequest.model_validate(snapshot["request"])
+    assert llm_request.task_type == TaskType.REASONING
+    assert_anthropic_request(requests[0], llm_request, model)
+    assert generation == {
+        "provider": "anthropic",
+        "model_name": json.loads(requests[0].content)["model"],
+        "task_type": "reasoning",
+        "claim_chunk_ids": [["c1"]],
+    }
+    assert "test-provider-key" not in json.dumps(events)
+    assert "server-reported-version" not in json.dumps(events)
 
 
 @pytest.mark.parametrize(
