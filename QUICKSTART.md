@@ -101,6 +101,15 @@ includes a complete offline example, privacy limits, and a measured animation.
 
 ### Preview before generating
 
+For a saved collection, use
+`GET /collections/{collection_id}/screening?collection_revision=1` to inspect
+human labels and `PUT /collections/{collection_id}/screening/{document_id}` to
+record a revision-checked decision. Use the actual collection revision. Pass
+only the returned nonempty `included_document_ids` as `document_ids` to preview;
+ordinary `collection_id` scope still includes every member. The complete
+[paper-screening guide and offline GIF](docs/guides/PAPER_SCREENING_GUIDE.md)
+cover setup, reasons, restart, stale decisions, and explicit selection.
+
 ```bash
 curl --fail-with-body --silent --show-error http://127.0.0.1:8000/retrieve \
   -H 'Content-Type: application/json' \

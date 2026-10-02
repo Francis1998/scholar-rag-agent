@@ -260,6 +260,24 @@ collection replacement/deletion. No evidence schema or runner signature changes
 are needed. See [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) for
 schema, paging, conditional writes, errors, privacy, and the offline demo.
 
+## Human Paper Screening
+
+`SQLitePaperScreening`, wired through `AppContainer.paper_screening` and the
+collection screening router, stores the latest include/exclude/unsure opinion per
+collection/document in one additive table. It reuses
+`SQLitePaperCollections.resolved_collection` to validate membership/existence
+and the expected collection revision in the same transaction as dependent reads
+or writes. Decision writes reserve the transaction and require the previous
+decision revision, with zero only for the first write.
+
+Queue reads derive status, global counts and exact included IDs from current
+collection members in one snapshot. Old collection-revision decisions are
+visible as stale, never included. Bounded member-order pages and a UTF-8 response
+cap prevent unbounded queue downloads. Invalid records fail, not disappear.
+This does not version corpus contents, retain decision history, or alter the
+runner's inputs automatically. Existing query/preview scope and evidence schemas
+are unchanged. See [Paper screening](docs/guides/PAPER_SCREENING_GUIDE.md).
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,

@@ -14,6 +14,7 @@ from api.retrieval import router as retrieval_router
 from api.reviews import router as reviews_router
 from api.routes import router as core_router
 from api.runs import router as runs_router
+from api.screening import router as screening_router
 from config import Settings
 
 
@@ -25,6 +26,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(retrieval_router)
     application.include_router(documents_router)
     application.include_router(collections_router)
+    application.include_router(screening_router)
     application.include_router(evidence_router)
     application.include_router(bibliography_router)
     application.include_router(runs_router)

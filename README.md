@@ -38,6 +38,7 @@ database and empty provider keys. The interactive API documentation is at
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Limit how many passages one paper contributes | Opt in to `max_chunks_per_document` on `/query` or `/retrieve`; retain the quota and gate provenance in saved evidence | [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
@@ -63,6 +64,16 @@ so one paper's global ranking does not crowd another out of the worksheet.
 It returns retrieved passages, not generated answers or scientific judgments.
 The [complete guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) includes API/Python
 examples, fixed bounds, privacy, and reproduction of this measured illustration.
+
+## Screen papers before retrieving evidence
+
+![Measured synthetic human paper-screening workflow](docs/assets/paper-screening.gif)
+
+Collection screening saves human labels and reasons without generation or agent
+events. Resume after restart, inspect stale decisions after a collection edit,
+and explicitly pass current included IDs to retrieval. It is not automated
+screening or scientific validation. The [complete guide](docs/guides/PAPER_SCREENING_GUIDE.md)
+includes API/Python usage, revision conflicts, privacy limits, and GIF reproduction.
 
 ## Export cited sources to a reference manager
 

@@ -350,16 +350,37 @@ class SQLitePaperCollections:
 
     def resolve(self, collection_id: str) -> tuple[str, ...]:
         """Freeze membership and check existence in one read transaction, before any await."""
+        with self.resolved_collection(collection_id) as (_, collection):
+            return collection.document_ids
+
+    @contextmanager
+    def resolved_collection(
+        self,
+        collection_id: str,
+        *,
+        expected_revision: int | None = None,
+        write: bool = False,
+    ) -> Iterator[tuple[sqlite3.Connection, PaperCollection]]:
+        """Keep validated membership and dependent metadata in the same transaction."""
         identifier = _COLLECTION_ID.validate_python(collection_id)
-        with self._connection() as connection:
+        revision = (
+            None if expected_revision is None else _REVISION.validate_python(expected_revision)
+        )
+        with self._connection(write=write) as connection:
             collection = self._get(connection, identifier)
+            if revision is not None and collection.revision != revision:
+                raise CollectionError(
+                    "collection_revision_conflict",
+                    "Collection changed; read it again before continuing.",
+                    409,
+                )
             if self._missing_documents(connection, collection.document_ids):
                 raise CollectionError(
                     "collection_documents_missing",
                     "Collection references missing documents; replace or delete its metadata.",
                     409,
                 )
-            return collection.document_ids
+            yield connection, collection
 
     def validate_document_ids(self, document_ids: DocumentIdsInput) -> tuple[str, ...]:
         """Check an explicit selection with the same existence rules, without saving metadata."""
