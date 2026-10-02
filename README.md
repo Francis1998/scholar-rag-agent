@@ -192,6 +192,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
 | BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
 | DifferenceInDifferencesCueExtractor | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
+| RegressionDiscontinuityCueExtractor | [GIF](docs/assets/regression-discontinuity-cue-extractor.gif) |
 | SyntheticControlCueExtractor | [GIF](docs/assets/synthetic-control-cue-extractor.gif) |
 | NegativeControlOutcomeCueExtractor | [GIF](docs/assets/negative-control-outcome-cue-extractor.gif) |
 | MendelianRandomizationCueExtractor | [GIF](docs/assets/mendelian-randomization-cue-extractor.gif) |
