@@ -76,7 +76,7 @@ def list_screening(
     return result
 
 
-@router.put("/{document_id}", response_model=ScreeningReview)
+@router.put("/{document_id:path}", response_model=ScreeningReview)
 def submit_screening(
     request: Request,
     response: Response,

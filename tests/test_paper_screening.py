@@ -5,6 +5,7 @@ import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, NoReturn
+from urllib.parse import quote
 
 import httpx
 import pytest
@@ -13,6 +14,7 @@ from scripts.demo_evidence_export import offline_settings
 
 from api.application import create_app
 from api.dependencies import AppContainer
+from retrieval.models import Document
 from storage import paper_screening
 
 
@@ -259,3 +261,23 @@ def test_invalid_store_and_deleted_collection_return_private_errors(
     deleted = client.delete(path.removesuffix("/screening"), params={"expected_revision": 1})
     assert deleted.status_code == 204
     assert client.get(path, params={"collection_revision": 1}).status_code == 404
+
+
+def test_api_preserves_slashes_in_existing_document_identities(
+    screening: tuple[TestClient, AppContainer, str, list[str]],
+) -> None:
+    client, container, _, _ = screening
+    identifier = "doi:10.1234/synthetic-paper"
+    container.document_store.add_documents(
+        [Document(document_id=identifier, title="Synthetic", text="Synthetic", source="synthetic")],
+        [],
+    )
+    created = client.post(
+        "/collections", json={"name": "Opaque identities", "document_ids": [identifier]}
+    )
+    assert created.status_code == 201
+    path = f"/collections/{created.json()['collection_id']}/screening"
+    response = client.put(f"{path}/{quote(identifier, safe='')}", json=submission())
+    assert response.status_code == 200, response.text
+    assert response.json()["document_id"] == identifier
+    assert queue(client, path)["included_document_ids"] == [identifier]

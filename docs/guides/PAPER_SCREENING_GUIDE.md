@@ -81,6 +81,10 @@ send that revision when changing the decision. There is no unconditional
 overwrite. A repeated write with the old revision returns 409, so read back the
 queue after an uncertain network outcome rather than retrying blindly.
 
+Percent-encode document IDs when building URLs. Embedded slashes in existing
+identities, such as `doi:10.1234/paper`, are preserved rather than treated as extra
+routes. The API-generated `doc-...` IDs used above need no additional escaping.
+
 `GET` returns the collection ID/revision, `total_documents`, disjoint counts for
 `unscreened`, `include`, `exclude`, `unsure`, and `stale`, a page of `items`, an
 exclusive `next_cursor`, and `included_document_ids`. Each item has its exact
