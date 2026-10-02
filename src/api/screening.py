@@ -11,9 +11,9 @@ from fastapi.routing import APIRoute
 
 from api.collections import COLLECTION_HEADERS, collection_errors
 from api.dependencies import AppContainer
+from storage.document_catalog import Identity
 from storage.paper_collections import MAX_REVISION, CollectionId
 from storage.paper_screening import (
-    ScreeningIdentity,
     ScreeningQueue,
     ScreeningReview,
     ScreeningStatus,
@@ -60,7 +60,7 @@ def list_screening(
     collection_id: CollectionId,
     collection_revision: Annotated[int, Query(ge=1, le=MAX_REVISION)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    cursor: Annotated[ScreeningIdentity | None, Query()] = None,
+    cursor: Annotated[Identity | None, Query()] = None,
     status: Annotated[ScreeningStatus | None, Query()] = None,
 ) -> ScreeningQueue:
     container: AppContainer = request.app.state.container
@@ -81,7 +81,7 @@ def submit_screening(
     request: Request,
     response: Response,
     collection_id: CollectionId,
-    document_id: ScreeningIdentity,
+    document_id: Identity,
     payload: ScreeningSubmission,
 ) -> ScreeningReview:
     container: AppContainer = request.app.state.container

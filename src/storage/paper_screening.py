@@ -46,13 +46,12 @@ def _readable_text(value: str) -> str:
     return value
 
 
-ScreeningIdentity = Annotated[Identity, AfterValidator(_readable_text)]
 Reason = Annotated[
     str,
     StringConstraints(strict=True, min_length=1, max_length=MAX_REASON_CHARACTERS),
     AfterValidator(_readable_text),
 ]
-_IDENTITY = TypeAdapter(ScreeningIdentity)
+_IDENTITY = TypeAdapter(Identity)
 
 
 class ScreeningSubmission(BaseModel):
@@ -73,7 +72,7 @@ class ScreeningReview(BaseModel):
 
     schema_version: Literal["1.0"]
     collection_id: CollectionId
-    document_id: ScreeningIdentity
+    document_id: Identity
     collection_revision: Revision
     revision: Revision
     decision: Decision
@@ -84,7 +83,7 @@ class ScreeningReview(BaseModel):
 class ScreeningItem(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    document_id: ScreeningIdentity
+    document_id: Identity
     status: ScreeningStatus
     review: ScreeningReview | None
 
@@ -105,14 +104,14 @@ class ScreeningQueue(BaseModel):
     total_documents: int = Field(ge=1, le=MAX_DOCUMENT_IDS)
     counts: ScreeningCounts
     items: list[ScreeningItem] = Field(max_length=MAX_DOCUMENT_IDS)
-    next_cursor: ScreeningIdentity | None
-    included_document_ids: tuple[ScreeningIdentity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
+    next_cursor: Identity | None
+    included_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
 
 
 class _QueueOptions(BaseModel):
     collection_revision: Revision
     limit: int = Field(default=20, strict=True, ge=1, le=MAX_DOCUMENT_IDS)
-    cursor: ScreeningIdentity | None = None
+    cursor: Identity | None = None
     status: ScreeningStatus | None = None
 
 

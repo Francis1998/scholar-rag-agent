@@ -263,11 +263,11 @@ def test_invalid_store_and_deleted_collection_return_private_errors(
     assert client.get(path, params={"collection_revision": 1}).status_code == 404
 
 
-def test_api_preserves_slashes_in_existing_document_identities(
-    screening: tuple[TestClient, AppContainer, str, list[str]],
+@pytest.mark.parametrize("identifier", ["doi:10.1234/synthetic-paper", "nul\x00id"])
+def test_api_preserves_existing_document_identities(
+    screening: tuple[TestClient, AppContainer, str, list[str]], identifier: str
 ) -> None:
     client, container, _, _ = screening
-    identifier = "doi:10.1234/synthetic-paper"
     container.document_store.add_documents(
         [Document(document_id=identifier, title="Synthetic", text="Synthetic", source="synthetic")],
         [],
@@ -277,6 +277,7 @@ def test_api_preserves_slashes_in_existing_document_identities(
     )
     assert created.status_code == 201
     path = f"/collections/{created.json()['collection_id']}/screening"
+    assert queue(client, path)["counts"]["unscreened"] == 1
     response = client.put(f"{path}/{quote(identifier, safe='')}", json=submission())
     assert response.status_code == 200, response.text
     assert response.json()["document_id"] == identifier

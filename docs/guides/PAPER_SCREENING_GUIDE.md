@@ -84,6 +84,8 @@ queue after an uncertain network outcome rather than retrying blindly.
 Percent-encode document IDs when building URLs. Embedded slashes in existing
 identities, such as `doi:10.1234/paper`, are preserved rather than treated as extra
 routes. The API-generated `doc-...` IDs used above need no additional escaping.
+Imported IDs retain the stored-document identity contract, including embedded
+NUL characters. Human reason-text restrictions do not redefine document identity.
 
 `GET` returns the collection ID/revision, `total_documents`, disjoint counts for
 `unscreened`, `include`, `exclude`, `unsure`, and `stale`, a page of `items`, an
