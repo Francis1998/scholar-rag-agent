@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `DoublyRobustIptwCueExtractor` (`retrieval/doubly_robust_iptw_cues.py`): offline Elicit/Consensus/AJE doubly-robust / IPTW cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOUBLY_ROBUST_IPTW_CUE_EXTRACTOR_GUIDE.md`.
 - `RegressionDiscontinuityCueExtractor` (`src/retrieval/regression_discontinuity_cues.py`): offline Elicit / Consensus / AJE regression-discontinuity cues (distinct from DifferenceInDifferencesCueExtractor / SyntheticControlCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/REGRESSION_DISCONTINUITY_CUE_EXTRACTOR_GUIDE.md`.
 - `InterruptedTimeSeriesCueExtractor` (`src/retrieval/interrupted_time_series_cues.py`): offline Elicit / Consensus / AJE interrupted-time-series cues (distinct from DifferenceInDifferencesCueExtractor / SyntheticControlCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md`.
 - `PropensityScoreMatchingCueExtractor` (`src/retrieval/propensity_score_matching_cues.py`): offline Elicit / Consensus / AJE propensity-score matching cues (distinct from ConfoundingAdjustmentCueExtractor / NegativeControlOutcomeCueExtractor). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PROPENSITY_SCORE_MATCHING_CUE_EXTRACTOR_GUIDE.md`.
