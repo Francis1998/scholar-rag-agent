@@ -193,6 +193,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Competing risks](guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md) | Competing-risk / Fine-Gray / cumulative-incidence wording |
 | [Regression discontinuity](guides/REGRESSION_DISCONTINUITY_CUE_EXTRACTOR_GUIDE.md) | RDD / running-variable / bandwidth wording |
 | [Interrupted time series](guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md) | ITS / level-change / slope-change wording |
+| [Doubly robust / IPTW](guides/DOUBLY_ROBUST_IPTW_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
 | [Propensity score matching](guides/PROPENSITY_SCORE_MATCHING_CUE_EXTRACTOR_GUIDE.md) | PSM / caliper / SMD balance wording |
 | [Synthetic control](guides/SYNTHETIC_CONTROL_CUE_EXTRACTOR_GUIDE.md) | Synthetic-control / donor-pool / placebo-in-space wording |
 | [Difference in differences](guides/DIFFERENCE_IN_DIFFERENCES_CUE_EXTRACTOR_GUIDE.md) | Difference-in-differences / parallel-trends / TWFE wording |
