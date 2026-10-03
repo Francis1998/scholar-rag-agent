@@ -13,7 +13,9 @@ Distinct from `PropensityScoreMatchingCueExtractor / ConfoundingAdjustmentCueExt
 ```python
 from retrieval.doubly_robust_iptw_cues import DoublyRobustIptwCueExtractor
 
-cues = DoublyRobustIptwCueExtractor().extract([{"paper_id": "p1", "abstract": 'We used a doubly robust estimator with IPTW.'}])
+cues = DoublyRobustIptwCueExtractor().extract(
+    [{"paper_id": "p1", "abstract": "We used a doubly robust estimator with IPTW."}]
+)
 print(cues[0].flagged, cues[0].cue_kind)
 ```
 
