@@ -1,5 +1,6 @@
 """Text ingestion rejects unusable API input without changing valid content or storage."""
 
+import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import closing
@@ -181,7 +182,10 @@ async def test_nonblank_text_preserves_document_id_content_and_chunks(
 ) -> None:
     source = source_fields.get("source", "api")
     payload = {"title": title, "text": PADDED_TEXT, **source_fields}
-    document_id = stable_id(f"{source}:{title}:{PADDED_TEXT}", "doc")
+    document_id = stable_id(
+        json.dumps([source, title, PADDED_TEXT], ensure_ascii=False, separators=(",", ":")),
+        "doc-api-v2",
+    )
     expected_chunk = Chunk(
         chunk_id=stable_id(f"{document_id}:0:{NORMALIZED_TEXT}", "chunk"),
         document_id=document_id,
@@ -191,7 +195,10 @@ async def test_nonblank_text_preserves_document_id_content_and_chunks(
         metadata={"source_type": "api", "chunk_index": "0"},
     )
     assert IngestTextRequest.model_validate(payload).text == PADDED_TEXT
-    assert document_id != stable_id(f"{source}:{title}:{PADDED_TEXT.strip()}", "doc")
+    assert document_id != stable_id(
+        json.dumps([source, title, PADDED_TEXT.strip()], ensure_ascii=False, separators=(",", ":")),
+        "doc-api-v2",
+    )
     with TestClient(ingest_app) as client:
         response = client.post("/ingest/text", json=payload)
     assert response.status_code == 200, response.text

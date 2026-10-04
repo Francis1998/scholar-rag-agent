@@ -1,5 +1,7 @@
 """Core API routes, independent of application and container initialization."""
 
+import json
+
 from fastapi import APIRouter, Request, Response
 
 from api.collections import COLLECTION_HEADERS, resolve_document_scope
@@ -29,8 +31,12 @@ async def health() -> HealthResponse:
 async def ingest_text(request: Request, payload: IngestTextRequest) -> IngestResponse:
     """Ingest raw text as a scientific document."""
     container: AppContainer = request.app.state.container
+    identity = json.dumps(
+        [payload.source, payload.title, payload.text], ensure_ascii=False, separators=(",", ":")
+    )
     document = Document(
-        document_id=stable_id(f"{payload.source}:{payload.title}:{payload.text}", "doc"),
+        # Keep structured identities disjoint from the ambiguous legacy doc-* namespace.
+        document_id=stable_id(identity, "doc-api-v2"),
         title=payload.title,
         text=payload.text,
         source=payload.source,

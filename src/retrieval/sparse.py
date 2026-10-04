@@ -93,7 +93,9 @@ class BM25Retriever:
             for chunk in self._chunks
             if allowed is None or chunk.document_id in allowed
         ]
-        return sorted(scored_results, key=lambda result: result.score, reverse=True)[:limit]
+        return sorted(scored_results, key=lambda result: (-result.score, result.chunk.chunk_id))[
+            :limit
+        ]
 
     def _score(self, chunk_id: str, query_terms: list[str]) -> float:
         """Compute BM25 score for a chunk."""
