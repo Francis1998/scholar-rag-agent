@@ -85,6 +85,32 @@ is rejected rather than widened. The [document scope guide](docs/guides/DOCUMENT
 has complete offline API/Python examples, validation rules, and a reproducible
 selected-versus-unscoped demonstration.
 
+### Text ingestion identity and upgrades
+
+`POST /ingest/text` derives `doc-api-v2-<digest>` from the exact parsed
+`[source, title, text]` values, encoded as a compact JSON array (UTF-8, unescaped
+Unicode, no separator whitespace), using the first 16 hexadecimal SHA-256
+characters. Omitted `source` defaults to `"api"`. Field boundaries remain distinct
+even with colons, quotes, backslashes, or Unicode. Identical values reuse the same
+document and chunk IDs, including after restarting with the same database.
+Changing any value, including whitespace or Unicode composition, changes the
+identity; raw document content is preserved and searchable chunks still normalize
+whitespace. Treat returned IDs as opaque.
+
+**Upgrade boundary:** pre-fix API documents used `doc-<digest>` over the ambiguous
+colon-joined fields. Existing documents, chunks, saved runs, and collection
+memberships are not rewritten and remain usable by their original IDs.
+Re-ingesting an old payload creates a separate `doc-api-v2-<digest>` document;
+subsequent identical requests reuse that new ID without overwriting the old one.
+Use the catalog to recover old IDs and the ingestion response to select new ones.
+There is no automatic remapping: a legacy ID cannot distinguish colliding
+payloads, and replacing it could misattribute saved evidence or collection
+memberships. Content already lost to an earlier overwrite is not recovered.
+
+Dense and BM25 retrieval now break equal-score ties by chunk ID before applying
+limits rather than by insertion order. This keeps tied preview ranks stable after
+restart; score calculations and rank fusion are unchanged.
+
 ## 5. Recover document IDs and select papers
 
 ```bash

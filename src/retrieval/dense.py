@@ -36,4 +36,4 @@ class DenseRetriever:
             for chunk in self._chunks
             if allowed is None or chunk.document_id in allowed
         ]
-        return sorted(results, key=lambda result: result.score, reverse=True)[:limit]
+        return sorted(results, key=lambda result: (-result.score, result.chunk.chunk_id))[:limit]
