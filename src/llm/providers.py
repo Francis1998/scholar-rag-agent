@@ -161,8 +161,21 @@ class OpenAIAdapter(HTTPProviderAdapter):
                 raise ProviderResponseError(
                     f"{self.provider_name} returned an invalid response: answer was truncated."
                 )
+            if choices[0].get("finish_reason") in ("tool_calls", "function_call"):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "nonfinal tool or continuation output."
+                )
             message = choices[0].get("message")
             if isinstance(message, dict):
+                tool_calls = message.get("tool_calls")
+                if (isinstance(tool_calls, list) and tool_calls) or isinstance(
+                    message.get("function_call"), dict
+                ):
+                    raise ProviderResponseError(
+                        f"{self.provider_name} returned an invalid response: "
+                        "nonfinal tool or continuation output."
+                    )
                 text = self._message_text(message.get("content"))
         return self._text_response(text, request)
 
@@ -238,17 +251,28 @@ class AnthropicAdapter(HTTPProviderAdapter):
         """Parse Anthropic response JSON.
 
         Anthropic returns ``content`` as an ordered list of typed blocks. All
-        text blocks are concatenated and non-text blocks (for example
-        ``thinking`` or ``tool_use``) are skipped, so a leading non-text block
-        neither raises nor truncates the answer.
+        text blocks are concatenated and thinking blocks are skipped. Tool
+        requests and paused turns cannot be completed by this text-only adapter.
         """
         if data.get("stop_reason") in ("max_tokens", "model_context_window_exceeded"):
             raise ProviderResponseError(
                 f"{self.provider_name} returned an invalid response: answer was truncated."
             )
+        if data.get("stop_reason") in ("tool_use", "pause_turn"):
+            raise ProviderResponseError(
+                f"{self.provider_name} returned an invalid response: "
+                "nonfinal tool or continuation output."
+            )
         content = data.get("content")
         text = ""
         if isinstance(content, list):
+            if any(
+                isinstance(block, dict) and block.get("type") == "tool_use" for block in content
+            ):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "nonfinal tool or continuation output."
+                )
             text = "".join(
                 str(block["text"])
                 for block in content
@@ -297,9 +321,30 @@ class GeminiAdapter(HTTPProviderAdapter):
                 raise ProviderResponseError(
                     f"{self.provider_name} returned an invalid response: answer was truncated."
                 )
+            if candidates[0].get("finishReason") in (
+                "MALFORMED_FUNCTION_CALL",
+                "UNEXPECTED_TOOL_CALL",
+                "TOO_MANY_TOOL_CALLS",
+            ):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "nonfinal tool or continuation output."
+                )
             content = candidates[0].get("content", {})
             parts = content.get("parts", []) if isinstance(content, dict) else []
             if isinstance(parts, list):
+                if any(
+                    isinstance(part, dict)
+                    and (
+                        isinstance(part.get("functionCall"), dict)
+                        or isinstance(part.get("toolCall"), dict)
+                    )
+                    for part in parts
+                ):
+                    raise ProviderResponseError(
+                        f"{self.provider_name} returned an invalid response: "
+                        "nonfinal tool or continuation output."
+                    )
                 text = "".join(
                     str(part["text"])
                     for part in parts

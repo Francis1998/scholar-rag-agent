@@ -66,8 +66,8 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
     """Gemini parsing must join every text part, not only the first.
 
     A Gemini candidate's ``content.parts`` is a list that can hold multiple
-    text segments interleaved with non-text parts (for example a
-    ``functionCall``). Reading only ``parts[0]`` silently truncated multi-part
+    text segments interleaved with non-text parts (for example
+    ``inlineData``). Reading only ``parts[0]`` silently truncated multi-part
     answers, dropping cited evidence from the grounded response.
     """
     adapter = GeminiAdapter(api_key="test-key")
@@ -84,7 +84,7 @@ def test_gemini_parse_response_concatenates_all_text_parts() -> None:
                     "parts": [
                         {"thought": True, "text": "Internal reasoning is not an answer."},
                         {"text": "The study "},
-                        {"functionCall": {"name": "noop"}},
+                        {"inlineData": {"mimeType": "image/png", "data": ""}},
                         {"text": "supports the hypothesis [c1]."},
                     ]
                 }
@@ -174,7 +174,7 @@ def test_anthropic_parse_response_joins_all_text_blocks() -> None:
     """Anthropic parsing must join text blocks and skip non-text blocks.
 
     Anthropic's ``content`` is an ordered list of typed blocks. A leading
-    non-text block (for example ``thinking`` or ``tool_use``) has no ``text``
+    non-text block (for example ``thinking`` or ``redacted_thinking``) has no ``text``
     key, so reading ``content[0]['text']`` raised ``KeyError`` and crashed the
     request; when the first block was text but more followed, the answer was
     truncated. All text blocks must be concatenated and non-text blocks skipped.
@@ -191,7 +191,7 @@ def test_anthropic_parse_response_joins_all_text_blocks() -> None:
             {"type": "thinking", "thinking": "internal reasoning"},
             {"type": "thinking", "text": "Non-answer text must also be ignored."},
             {"type": "text", "text": "The study "},
-            {"type": "tool_use", "text": "Not an answer."},
+            {"type": "redacted_thinking", "data": "Not an answer."},
             {"type": "text", "text": "supports the hypothesis [c1]."},
         ]
     }
