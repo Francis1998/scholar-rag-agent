@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `HeterogeneousTreatmentEffectCueExtractor` (`retrieval/heterogeneous_treatment_cues.py`): offline Elicit/Consensus/AJE HTE/CATE cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md`.
 - `FuzzyRddCueExtractor` (`retrieval/fuzzy_rdd_cues.py`): offline Elicit/Consensus/AJE fuzzy regression-discontinuity cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/FUZZY_RDD_CUE_EXTRACTOR_GUIDE.md`.
 - `EventStudyCueExtractor` (`retrieval/event_study_cues.py`): offline Elicit/Consensus/AJE event-study cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/EVENT_STUDY_CUE_EXTRACTOR_GUIDE.md`.
 - `DoublyRobustIptwCueExtractor` (`retrieval/doubly_robust_iptw_cues.py`): offline Elicit/Consensus/AJE doubly-robust / IPTW cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOUBLY_ROBUST_IPTW_CUE_EXTRACTOR_GUIDE.md`.
