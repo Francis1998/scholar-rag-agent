@@ -69,7 +69,7 @@ multipart concatenation, citation IDs, and configured-model provenance.
 
 These response errors are not retried and do not trigger another provider or
 the fake adapter. Their messages identify the provider and failure category,
-not raw response bodies, hidden thinking, credentials, or request headers.
+not raw response bodies, tool arguments, hidden thinking, credentials, or request headers.
 Transport/HTTP retries remain unchanged. Explicit output/context-limit
 truncation is also rejected, even when partial answer text is nonblank.
 This does not validate factual correctness or interpret every provider stop reason.
@@ -92,18 +92,47 @@ answers. No retry, automatic continuation, larger-budget call, alternate
 candidate, or provider fallback is attempted. A later candidate's stop reason
 does not invalidate an otherwise accepted first candidate.
 
+### Nonfinal tool and continuation output
+
+Visible, nonblank text can be a preamble rather than a completed answer. The
+following documented signals are rejected before extracting answer text,
+because these adapters send no tools and cannot execute tools or resume a turn.
+This response-contract check was performed **2026-10-03 America/Los_Angeles**,
+separately from the catalog and migration checks above.
+
+| Provider | Rejected signal | Official contract |
+| --- | --- | --- |
+| OpenAI | `choices[0].finish_reason` is `tool_calls` or `function_call`; or the selected message has a nonempty `tool_calls` list or a `function_call` object. | [Chat Completions](https://developers.openai.com/api/reference/resources/chat) defines tool calls and the deprecated function-call form. |
+| Kimi | The same checks, inherited from the OpenAI-compatible parser. | [Kimi Chat Completions](https://platform.kimi.ai/docs/api/chat) documents `tool_calls` and submitting tool results. The deprecated `function_call` guard is inherited compatibility handling, not a claim that current Kimi models emit it. |
+| Anthropic | `stop_reason` is `tool_use` or `pause_turn`; or a content block has `type: "tool_use"`. | [Claude stop reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) require tool results or a continuation request, respectively. |
+| Gemini | `candidates[0].finishReason` is `MALFORMED_FUNCTION_CALL`, `UNEXPECTED_TOOL_CALL`, or `TOO_MANY_TOOL_CALLS`; or a selected candidate part contains a `functionCall` or `toolCall` object. | [Finish reasons](https://ai.google.dev/api/generate-content#FinishReason), [function calls](https://ai.google.dev/api/generate-content#FunctionCall), and [server tool calls](https://ai.google.dev/api/generate-content#ToolCall). |
+
+These responses raise `ProviderResponseError` with the fixed, provider-labelled
+`nonfinal tool or continuation output` diagnostic, never the preamble, tool
+name/arguments, or raw stop details. A structural call still fails when a
+gateway omits the finish reason or reports a normal stop. Gemini's documented
+server `toolCall` requires replay in a subsequent turn, not client execution;
+neither continuation path is implemented here. Thought filtering cannot hide
+a call. Only the first OpenAI/Kimi choice or Gemini candidate is inspected:
+there is no alternate-candidate selection or retry to obtain a final answer.
+
 Normal responses and legacy gateways that omit a finish reason retain their
-existing text contract. Other or unknown reasons are not exhaustively validated;
-absence of a truncation error is not a completeness or correctness guarantee.
-This is still a stateless text adapter, not a tool-loop continuation client.
+existing text contract when no explicit truncation or nonfinal signal is present.
+Null call fields and empty OpenAI-compatible `tool_calls` lists are not calls;
+other non-text blocks are not generically rejected. Multipart concatenation,
+thought exclusion, citations, configured-model provenance, routing, and rate
+limits are unchanged. Other or unknown finish reasons are not exhaustively
+validated; absence of a response error is not a completeness or correctness
+guarantee. This is still a stateless text adapter, not a tool-loop client.
 
 The existing `/query` contract still uses HTTP 200 with `result.state: "ERROR"`
 for a failed run. Inspect `state` and `error`, not just the HTTP status. The
 runner journals the failure without recording a generation or `DONE` event;
 the captured input evidence can remain, but the failed run cannot be exported
 as a completed answer. Review the provider/model/output-budget configuration
-before explicitly starting another run; do not treat empty or explicitly
-truncated output as evidence. The Anthropic adapter's fixed `max_tokens=1024`
+before explicitly starting another run; do not treat empty, explicitly
+truncated, or nonfinal tool/continuation output as evidence.
+The Anthropic adapter's fixed `max_tokens=1024`
 is unchanged and no new environment setting is introduced.
 The offline fake and the public response schema for custom adapters are unchanged.
 
