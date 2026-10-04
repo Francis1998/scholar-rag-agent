@@ -206,6 +206,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
 | BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
 | DifferenceInDifferencesCueExtractor | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
+| NegativeControlExposureCueExtractor | [GIF](docs/assets/negative-control-exposure-cue-extractor.gif) |
 | PlaceboTestCueExtractor | [GIF](docs/assets/placebo-test-cue-extractor.gif) |
 | HeterogeneousTreatmentEffectCueExtractor | [GIF](docs/assets/heterogeneous-treatment-effect-cue-extractor.gif) |
 | RegressionDiscontinuityCueExtractor | [GIF](docs/assets/regression-discontinuity-cue-extractor.gif) |
