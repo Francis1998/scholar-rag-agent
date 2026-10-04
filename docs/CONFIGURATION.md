@@ -81,8 +81,9 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-01 America/Los_Angeles** Anthropic catalog/migration check and
-model-specific limitations. Other providers' defaults and routing are unchanged.
+for the **2026-10-04 America/Los_Angeles** four-provider catalog-only recheck,
+the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration check,
+and model-specific limitations. Defaults and routing are unchanged.
 
 ### Anthropic bounded text and rollback
 

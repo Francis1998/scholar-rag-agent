@@ -187,14 +187,15 @@ class SQLitePaperCollections:
             raise _invalid_record()
         return collection
 
-    def _get(self, connection: sqlite3.Connection, collection_id: str) -> PaperCollection:
+    @classmethod
+    def _get(cls, connection: sqlite3.Connection, collection_id: str) -> PaperCollection:
         row = connection.execute(
             _SELECT + " WHERE collection_id = :collection_id",
             {"collection_id": collection_id, "membership_limit": _MAX_MEMBERSHIP_CHARACTERS},
         ).fetchone()
         if row is None:
             raise CollectionError("collection_not_found", "Collection does not exist.", 404)
-        return self._record(row)
+        return cls._record(row)
 
     @staticmethod
     def _missing_documents(
@@ -381,6 +382,23 @@ class SQLitePaperCollections:
                     409,
                 )
             yield connection, collection
+
+    @classmethod
+    def resolve_in_snapshot(
+        cls,
+        connection: sqlite3.Connection,
+        collection_id: str,
+    ) -> PaperCollection:
+        """Resolve using a caller-owned Row connection/transaction, without schema writes."""
+        identifier = _COLLECTION_ID.validate_python(collection_id)
+        collection = cls._get(connection, identifier)
+        if cls._missing_documents(connection, collection.document_ids):
+            raise CollectionError(
+                "collection_documents_missing",
+                "Collection references missing documents; replace or delete its metadata.",
+                409,
+            )
+        return collection
 
     def validate_document_ids(self, document_ids: DocumentIdsInput) -> tuple[str, ...]:
         """Check an explicit selection with the same existence rules, without saving metadata."""

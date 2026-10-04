@@ -37,6 +37,7 @@ database and empty provider keys. The interactive API documentation is at
 | --- | --- | --- |
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
+| Find exact wording across stored papers | `POST /research/search` returns literal matches, Unicode offsets, and bounded excerpts without retrieval, generation, or run writes | [Literal passage search](docs/guides/LITERAL_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
@@ -55,6 +56,17 @@ database and empty provider keys. The interactive API documentation is at
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Find exact wording without ranking
+
+![Measured synthetic offline literal passage search](docs/assets/literal-search.gif)
+
+`POST /research/search` finds literal phrases in current persisted chunks,
+including text beyond the normal chunk prefix. Inspect exact Unicode match
+offsets and bounded excerpts, narrow scope by paper or collection, and page in
+stable ID order without retrieval, generation, or run writes. The
+[complete API/Python guide](docs/guides/LITERAL_SEARCH_GUIDE.md) covers limits,
+privacy, current-corpus semantics, and reproduction of this measured illustration.
 
 ## Compare selected papers before generating
 
