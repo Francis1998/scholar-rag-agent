@@ -194,6 +194,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Regression discontinuity](guides/REGRESSION_DISCONTINUITY_CUE_EXTRACTOR_GUIDE.md) | RDD / running-variable / bandwidth wording |
 | [Interrupted time series](guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md) | ITS / level-change / slope-change wording |
 | [Event study](guides/EVENT_STUDY_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
+| [Heterogeneous treatment effects](guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md) | HTE / CATE / effect-modifier wording |
 | [Fuzzy RDD](guides/FUZZY_RDD_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
 | [Doubly robust / IPTW](guides/DOUBLY_ROBUST_IPTW_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
 | [Propensity score matching](guides/PROPENSITY_SCORE_MATCHING_CUE_EXTRACTOR_GUIDE.md) | PSM / caliper / SMD balance wording |
