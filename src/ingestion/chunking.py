@@ -15,7 +15,20 @@ class TextChunker:
     """Split normalized documents into overlapping chunks."""
 
     def __init__(self, chunk_size: int = 800, overlap: int = 120) -> None:
-        """Create a text chunker."""
+        """Create a text chunker with valid integer window geometry.
+
+        Raises:
+            ValueError: If either value is not an integer (excluding booleans),
+                the size is nonpositive, or overlap is outside the window.
+        """
+        if not isinstance(chunk_size, int) or isinstance(chunk_size, bool) or chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer")
+        if (
+            not isinstance(overlap, int)
+            or isinstance(overlap, bool)
+            or not 0 <= overlap < chunk_size
+        ):
+            raise ValueError("overlap must be an integer satisfying 0 <= overlap < chunk_size")
         self._chunk_size = chunk_size
         self._overlap = overlap
 
