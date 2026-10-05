@@ -64,9 +64,15 @@ research UI.
 | Python `None` or omitted keyword | No quota; other invalid Python values raise `ValueError` before events |
 
 The order of operations is **scope selection -> normal bounded retrieval/merge
--> normal reranking -> document quota -> exact evidence capture**. Selection is
+-> normal reranking -> optional near-duplicate collapse -> document quota
+-> exact evidence capture**. Quota selection is
 the existing `DiversityCapGate.gate`; it retains the earliest eligible chunks in
 reranked order without changing scores, text, or document ownership.
+
+[`near_duplicate_threshold`](NEAR_DUPLICATE_COLLAPSE_GUIDE.md) is independently
+opt-in and runs before this quota; a representative removed by the quota does
+not cause a dropped near-duplicate to be restored. Without that field, the
+quota-only behavior and provenance remain unchanged.
 
 `SCHOLAR_RAG_MAX_SOURCE_DOCS` still bounds the candidate **chunk** pool before
 reranking, not the number of distinct papers. A quota does not enlarge that

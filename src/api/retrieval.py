@@ -46,7 +46,9 @@ async def retrieve(
             payload.query,
             **scope_arguments(document_ids),
             **evidence_limit_arguments(
-                payload.max_chunks_per_document, payload.min_evidence_documents
+                payload.max_chunks_per_document,
+                payload.min_evidence_documents,
+                payload.near_duplicate_threshold,
             ),
         )
     except RetrievalPreviewError as exc:

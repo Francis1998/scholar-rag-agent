@@ -44,8 +44,9 @@ agent state machine, not LangGraph or Haystack integration:
 3. `Executor.retrieve` merges bounded hybrid and graph results by chunk ID.
    Hybrid uses deterministic HyDE text, lexical hash-vector cosine, BM25, and RRF;
    graph traversal follows bounded entity co-mentions.
-4. The shared `Executor.prepare_context` performs lexical reranking, scope checks,
-   and `EvidenceSnapshot.capture`. `/query` uses this same method before its model
+4. The shared `Executor.prepare_context` performs lexical reranking, optional
+   near-duplicate collapse, per-document quotas, scope checks, and
+   `EvidenceSnapshot.capture`. `/query` uses this same method before its model
    call; preview projects its result into an inspection-only response.
 
 The default dense vectors are **not learned semantic embeddings**. Rerank scores
@@ -97,6 +98,11 @@ Each bound must be a strict integer from 1 to 50; explicit HTTP null is rejected
 The [minimum-evidence guide](MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) describes the
 typed `evidence_assessment`: failed counts retain actual context without events
 or generation. A passing count is not scientific answerability.
+Optional `near_duplicate_threshold` accepts a finite strict number greater than
+zero and at most one, not bool/string/null. It collapses lexical overlap before
+quotas and minimum assessment, with no refill or new model work. Omission disables
+it. See [the complete guide and measured GIF](NEAR_DUPLICATE_COLLAPSE_GUIDE.md);
+threshold `1` is equal meaningful-term sets, not identical text or scientific proof.
 Omit either bound to leave it unconfigured. See
 [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for the quota's
 shared query/preview contract. Unsupported fields such as `top_k`, `page`,
@@ -131,7 +137,7 @@ The response is the preview object directly, not `/query`'s `{"result": ...}`:
 | Field | Meaning |
 | --- | --- |
 | `schema_version` | `"1.0"` for this inspection contract |
-| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no requested bounds) |
+| `plan.observation` | Normalized query, intent, entities, constraints, effective `document_ids` (null means unscoped), and optional frozen `evidence_policy` (null means no requested evidence controls) |
 | `plan.tasks`, `plan.rationale_trace` | Actual clamped tasks and operational rationale, not hidden model reasoning |
 | `configuration` | Copied effective source/hop caps and retrieval/reasoning timeouts |
 | `sources` | Final ordered full chunks: IDs, text, title, source, metadata, score, one-based rank, retriever, path, `text_sha256` |
