@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `EValueSensitivityCueExtractor` (`retrieval/evalue_sensitivity_cues.py`): offline Elicit/Consensus/AJE E-value sensitivity cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md`.
 - `DoseResponseCueExtractor` (`retrieval/dose_response_cues.py`): offline Elicit/Consensus/AJE dose-response cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOSE_RESPONSE_CUE_EXTRACTOR_GUIDE.md`.
 - `SpilloverInterferenceCueExtractor` (`retrieval/spillover_interference_cues.py`): offline Elicit/Consensus/AJE spillover / interference / SUTVA cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SPILLOVER_INTERFERENCE_CUE_EXTRACTOR_GUIDE.md`.
 - `NegativeControlExposureCueExtractor` (`retrieval/negative_control_exposure_cues.py`): offline Elicit/Consensus/AJE negative-control exposure cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/NEGATIVE_CONTROL_EXPOSURE_CUE_EXTRACTOR_GUIDE.md`.
