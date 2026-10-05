@@ -12,6 +12,7 @@ accumulated feature list in the project README.
 | Work through a small corpus and prepare an honest portfolio demonstration | [Research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Read bounded passages from a stored paper before choosing query scope | [Stored chunk reader and offline demo](guides/DOCUMENT_CHUNKS_GUIDE.md) |
+| Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
@@ -195,6 +196,9 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Interrupted time series](guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md) | ITS / level-change / slope-change wording |
 | [Event study](guides/EVENT_STUDY_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
 | [Heterogeneous treatment effects](guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md) | HTE / CATE / effect-modifier wording |
+| [E-value sensitivity](guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md) | E-value / sensitivity / unmeasured-confounding wording |
+| [Dose-response](guides/DOSE_RESPONSE_CUE_EXTRACTOR_GUIDE.md) | Dose-response / exposure-response / ED50 wording |
+| [Spillover / interference](guides/SPILLOVER_INTERFERENCE_CUE_EXTRACTOR_GUIDE.md) | Spillover / interference / SUTVA wording |
 | [Placebo tests](guides/PLACEBO_TEST_CUE_EXTRACTOR_GUIDE.md) | Placebo-test / falsification / null-effect wording |
 | [Negative control exposures](guides/NEGATIVE_CONTROL_EXPOSURE_CUE_EXTRACTOR_GUIDE.md) | Negative-control exposure / falsification-exposure wording |
 | [Fuzzy RDD](guides/FUZZY_RDD_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |

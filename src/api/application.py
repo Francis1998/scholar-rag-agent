@@ -16,6 +16,7 @@ from api.reviews import router as reviews_router
 from api.routes import router as core_router
 from api.runs import router as runs_router
 from api.screening import router as screening_router
+from api.search import router as search_router
 from config import Settings
 
 
@@ -34,6 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(comparisons_router)
     application.include_router(corpus_drift_router)
     application.include_router(research_router)
+    application.include_router(search_router)
     application.include_router(reviews_router)
     application.include_router(annotations_router)
     return application

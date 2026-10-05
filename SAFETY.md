@@ -34,6 +34,22 @@ executor applies it as a maximum number of retrieved **chunk results**, not a
 distinct-document quota. Multiple chunks may come from one paper; this is not a
 guarantee of source diversity or comprehensive coverage.
 
+Python `SafetyLimits` requires integer `max_source_docs >= 1` and `max_hops >= 0`.
+Booleans, floats (including integral floats and non-finite values), strings, and
+`None` are rejected without coercion. These configured counts are never repaired
+by clamping. Construction and `dataclasses.replace` validate them; mutations made
+before run/preview entry fail before analysis, planning, retrieval, or generation.
+As with invalid timeouts, runs record a durable `ERROR` with a field-specific
+message that omits the invalid value; previews return sanitized `planning_failed`
+errors without events. Already copied in-flight limits remain isolated.
+
+Defaults remain 50 sources and 5 hops. The Python limits have no additional upper
+caps: configurations such as 100 sources and 8 hops remain valid, subject to the
+separate evidence-capture bounds. With valid configuration, negative *requested*
+counts still clamp to 1 source or 0 hops. API `Settings` and environment parsing
+retain their existing coercion and bounds; this stricter contract is specific to
+Python `SafetyLimits`, not a change to saved evidence schemas.
+
 The runner checks the copied effective limit against both executor retrieval
 output and the final captured context, even without an evidence policy. Excess
 retrieval stops before `REASONING`; an oversized snapshot is rejected before
@@ -109,6 +125,25 @@ still contain sensitive data: `no-store`/`nosniff` response headers are not acce
 control. Keep this read-only endpoint local/trusted like the rest of the API.
 Invalid stored IDs fail explicitly rather than returning a truncated selection.
 See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
+
+## Literal Passage Search
+
+`POST /research/search` searches current stored text without retrieval,
+generation, or persistence. It accepts a strict 1-200-character literal query,
+at most one nonnull document/collection scope, and a strict limit of 1-50.
+Unknown explicit IDs match nothing; invalid/missing collection membership
+never falls back to the whole corpus. Cursors bind the query and resolved
+scope/revision but are not signed authorization tokens or frozen evidence.
+
+Read-only SQLite snapshots, bounded projections, a 256-KiB UTF-8 response cap,
+a 4-MiB stored-passage limit, and a cooperative five-second scan deadline bound
+the workflow. Invalid/unsupported projected data and storage failures are
+sanitized errors, not empty successes. NUL-bearing passages are rejected
+instead of silently using SQLite's NUL-terminated excerpt behavior.
+Query text, excerpts, labels, IDs, and cursor digests may be sensitive.
+No-store/nosniff headers and scope do not provide authentication or tenant
+isolation. Exact wording is not scientific support. See the
+[complete literal-search guide](docs/guides/LITERAL_SEARCH_GUIDE.md).
 
 ## Saved Paper Collections
 

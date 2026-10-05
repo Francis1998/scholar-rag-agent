@@ -29,6 +29,7 @@ from storage.event_log import SQLiteEventLog
 from storage.evidence_annotations import SQLiteEvidenceAnnotations
 from storage.evidence_export import EvidenceExporter
 from storage.graph_store import SQLiteGraphStore
+from storage.literal_search import SQLiteLiteralSearch
 from storage.paper_collections import SQLitePaperCollections
 from storage.paper_screening import SQLitePaperScreening
 from storage.run_comparison import SavedRunComparator
@@ -55,6 +56,7 @@ class AppContainer:
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)
+        self.literal_search = SQLiteLiteralSearch(database_path)
         self.paper_collections = SQLitePaperCollections(database_path)
         self.paper_screening = SQLitePaperScreening(database_path)
         self.graph_store = SQLiteGraphStore(database_path)

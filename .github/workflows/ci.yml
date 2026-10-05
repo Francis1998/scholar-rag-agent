@@ -34,8 +34,10 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-fail-under=70
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+          name: coverage-${{ matrix.python-version }}
+          path: ./coverage.xml
+          if-no-files-found: error
+          retention-days: 7
