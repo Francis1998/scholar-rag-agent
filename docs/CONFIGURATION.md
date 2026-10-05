@@ -35,6 +35,15 @@ are revalidated when copied at run/preview entry, before asynchronous work.
 See the [timeout policy](../SAFETY.md#timeout-policy) for error behavior and
 cooperative-timeout limitations.
 
+Python `SafetyLimits` count bounds are stricter than timeout coercion:
+`max_source_docs` must be an integer at least 1 and `max_hops` an integer at least
+0; booleans, floats, strings, and `None` are invalid. Construction and dataclass
+replacement reject invalid configuration rather than clamping it. Defaults stay
+50/5, and larger Python bounds such as 100/8 are supported. Valid configurations
+still clamp negative requested counts to 1 source or 0 hops. API `Settings`,
+environment parsing, and evidence schemas are unchanged. See
+[scope bounds](../SAFETY.md#scope-bounds) for pre-work errors and copy isolation.
+
 ## Per-request evidence quotas
 
 `max_chunks_per_document` is optional on `/query`, `/retrieve`, `AgentRunner.run`,
