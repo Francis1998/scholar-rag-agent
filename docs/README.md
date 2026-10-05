@@ -16,6 +16,7 @@ accumulated feature list in the project README.
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
+| Collapse near-duplicate passages in query/preview with preserved survivor provenance | [Near-duplicate evidence collapse and zero-model demo](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
 | Apply a per-request passage quota to each paper in query and preview evidence | [Per-paper evidence limits and measured demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
 | Stop generation below a final-context document minimum while retaining inspectable evidence | [Minimum evidence documents and measured demo](guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
 | Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
@@ -55,6 +56,10 @@ application as their usage examples show. Installing optional dependencies alone
 does not enable every helper, a learned embedding model, or cross-encoder reranking
 in the API. See [the runtime wiring](../src/api/dependencies.py) and
 [architecture](../ARCHITECTURE.md).
+
+The explicitly requested API evidence controls listed above are exceptions:
+near-duplicate collapse and per-paper caps run only when their request fields
+are supplied. Their underlying helpers remain available independently.
 
 Most scoring, screening, extraction, and "verification" helpers use deterministic
 lexical or metadata heuristics. Their labels are advisory, not proof of factual

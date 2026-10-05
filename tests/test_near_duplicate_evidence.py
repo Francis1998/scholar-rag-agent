@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from scripts.demo_evidence_export import offline_settings
+from scripts.demo_near_duplicate_evidence import QUERY, seed_corpus
 
 from agent.comparison_models import RunComparison
 from agent.evidence import EvidenceBundle, EvidenceSnapshot
@@ -24,10 +25,8 @@ from api.dependencies import AppContainer
 from api.schemas import QueryRequest
 from retrieval.diversity_cap_gate import DiversityCapGate
 from retrieval.evidence_policy import EvidencePolicy
-from retrieval.models import Chunk, Document, SearchResult
+from retrieval.models import SearchResult
 from retrieval.near_duplicate_collapse import NearDuplicateCollapser
-
-QUERY = "retrieval evidence"
 
 
 def denied(*args: object, **kwargs: object) -> NoReturn:
@@ -60,26 +59,7 @@ def collapse_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Co
         offline_settings(database_path).model_copy(update={"max_source_docs": 5})
     )
     container: AppContainer = application.state.container
-    passages = (
-        ("a-original", "paper-a", "retrieval evidence alpha beta gamma delta"),
-        ("b-copy", "paper-b", "retrieval evidence alpha beta gamma delta"),
-        ("c-variant", "paper-c", "retrieval evidence alpha beta gamma delta epsilon"),
-        ("a-distinct", "paper-a", "retrieval evidence soil moisture remote sensing"),
-        ("d-distinct", "paper-d", "retrieval evidence telescope stellar calibration"),
-    )
-    for chunk_id, document_id, text in passages:
-        chunk = Chunk(
-            chunk_id=chunk_id,
-            document_id=document_id,
-            title="Synthetic retrieval fixture",
-            text=text,
-            source="synthetic:collapse",
-            metadata={"license": "synthetic-only"},
-        )
-        container.document_store.add_documents(
-            [Document(**chunk.model_dump(exclude={"chunk_id"}))], [chunk]
-        )
-        container.hybrid_retriever.add_chunks([chunk])
+    seed_corpus(container)
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", denied)
     monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", denied)
     with TestClient(application) as client:
@@ -639,3 +619,29 @@ def test_version_one_bundles_without_threshold_keep_their_shape_and_remain_reada
     if not options:
         payload["plan"]["observation"].pop("evidence_policy")
         assert EvidenceBundle.model_validate(payload).plan.observation.evidence_policy is None
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [("alpha beta alpha", "beta alpha"), ("the and of", "a an the")],
+)
+def test_threshold_one_collapses_equal_meaningful_term_sets_not_only_identical_text(
+    collapse_api: CollapseAPI, monkeypatch: pytest.MonkeyPatch, first: str, second: str
+) -> None:
+    executor = collapse_api.container.runner._executor
+    chunks = collapse_api.container.document_store.list_chunks()
+    ranked = [
+        SearchResult(
+            chunk=chunk.model_copy(update={"text": text}),
+            score=2 - index,
+            retriever="synthetic-rerank",
+        )
+        for index, (chunk, text) in enumerate(zip(chunks[:2], (first, second), strict=True))
+    ]
+    monkeypatch.setattr(executor._reranker, "rerank", AsyncMock(return_value=ranked))
+    assert first != second
+    preview = collapse_api.post("/retrieve", near_duplicate_threshold=1)
+    bundle = collapse_api.bundle(near_duplicate_threshold=1)
+    assert len(preview["sources"]) == len(bundle.snapshot.sources) == 1
+    assert bundle.snapshot.sources[0].chunk == ranked[0].chunk
+    assert bundle.snapshot.sources[0].score == ranked[0].score

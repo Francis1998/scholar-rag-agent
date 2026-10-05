@@ -31,9 +31,17 @@ four-field run configuration. See
 `/query`, `/retrieve`, and their runner methods accept strict integers 1-50;
 HTTP null is invalid, while omission or Python `None` leaves it unconfigured.
 It checks distinct document IDs in final captured context after reranking and
-quotas, without increasing any limits. Unmet minima stop answer generation;
+optional collapse and quotas, without increasing any limits. Unmet minima stop answer generation;
 previews retain evidence and count diagnostics. See
 [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+
+`near_duplicate_threshold` is also **request-only** on both endpoints and runner
+methods: a finite strict number greater than zero and at most one, not a bool
+or numeric string. HTTP null is invalid; omission or Python `None` disables
+collapse. The existing collapser runs after reranking, before quotas/minimums,
+without extra retrieval or changes to model defaults, endpoints, or budgets.
+Threshold `1` means equal meaningful-term sets, not byte-identical passages.
+See [the contract and zero-model demo](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
 
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
@@ -76,7 +84,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-02 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-04 America/Los_Angeles**;
 this catalog-only check leaves defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.

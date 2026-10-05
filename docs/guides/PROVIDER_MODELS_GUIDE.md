@@ -1,7 +1,7 @@
 # Provider Models and Compatibility
 
 The four official model catalogs linked below were checked
-**2026-10-02 America/Los_Angeles**. This catalog-only check leaves the selected
+**2026-10-04 America/Los_Angeles**. This catalog-only check leaves the selected
 defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
 Anthropic lists Sonnet 5.5, Opus 5.5, and Fable 5.1; Gemini 3.8 Flash is GA;
 Kimi K3 remains the Kimi default. Anthropic's general Opus 5.5 recommendation
@@ -274,6 +274,13 @@ or scientific-answerability assessment, and no runtime model ID changes are
 required to use it. These dated catalog checks do not establish endpoint or
 account entitlement; in particular the Gemini Interactions example is not a
 live test of this adapter's retained `generateContent` endpoint.
+
+The optional [`near_duplicate_threshold`](NEAR_DUPLICATE_COLLAPSE_GUIDE.md)
+uses the existing local lexical collapser before quotas and that minimum check.
+It needs no model or provider change; `/retrieve` still makes zero live or fake
+generation calls. Completed queries retain the selected models, existing
+endpoints, and payload budgets. Collapse is not a model-quality or scientific
+equivalence judgment.
 
 `LLMResponse.model_name` records the **configured/requested ID**, alongside the
 unchanged `raw_provider`; it does not substitute a provider-reported alias or
