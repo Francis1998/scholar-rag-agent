@@ -31,6 +31,15 @@ def _policy_description(bundle: EvidenceBundle) -> str:
         "Applied after reranking within the bounded candidate pool; no extra retrieval.\n"
         "Fewer passages may remain; distinct-paper coverage is not guaranteed."
     )
+    if policy is not None and policy.near_duplicate_threshold is not None:
+        description += (
+            f"\nnear_duplicate_threshold={policy.near_duplicate_threshold}\n"
+            "Lexical Jaccard collapse after reranking, before any per-document quota and "
+            "minimum assessment; no extra retrieval. Survivors retain exact chunks and scores.\n"
+            "Provenance: near_duplicate_collapse, then diversity_cap_gate if requested.\n"
+            "Similar passages may contain important differences. Lexical overlap is not "
+            "semantic equivalence, paper identity, evidence independence, or scientific truth."
+        )
     assessment = assess_evidence(policy, bundle.snapshot.sources)
     if assessment is not None:
         description += (

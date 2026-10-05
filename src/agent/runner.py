@@ -65,6 +65,7 @@ class AgentRunner:
         document_ids: DocumentIdsInput | None = None,
         max_chunks_per_document: int | None = None,
         min_evidence_documents: int | None = None,
+        near_duplicate_threshold: float | None = None,
     ) -> RetrievalPreview:
         """Inspect the query's prepared context without generation, grounding, or event writes.
 
@@ -73,7 +74,9 @@ class AgentRunner:
         """
         self._validate_query(query)
         scope = normalize_document_ids(document_ids)
-        policy = normalize_evidence_policy(max_chunks_per_document, min_evidence_documents)
+        policy = normalize_evidence_policy(
+            max_chunks_per_document, min_evidence_documents, near_duplicate_threshold
+        )
         phase = "planning"
         try:
             limits = replace(self._safety_limits)
@@ -133,11 +136,14 @@ class AgentRunner:
         document_ids: DocumentIdsInput | None = None,
         max_chunks_per_document: int | None = None,
         min_evidence_documents: int | None = None,
+        near_duplicate_threshold: float | None = None,
     ) -> AgentRunResult:
         """Execute a query; invalid input raises ValueError before run IDs or event writes."""
         self._validate_query(query)
         scope = normalize_document_ids(document_ids)
-        policy = normalize_evidence_policy(max_chunks_per_document, min_evidence_documents)
+        policy = normalize_evidence_policy(
+            max_chunks_per_document, min_evidence_documents, near_duplicate_threshold
+        )
         run_id = str(uuid4())
         cancellation_token = token or CancellationToken()
         state = AgentState.IDLE
@@ -261,8 +267,8 @@ class AgentRunner:
                 except TypeError as exc:
                     if policy is not None:
                         raise TypeError(
-                            "Executor.answer does not support max_chunks_per_document "
-                            "with evidence_policy and evidence capture callbacks."
+                            "Executor.answer does not support the requested evidence_policy "
+                            "and evidence capture callbacks."
                         ) from exc
                     answer_call = answer_method(plan, retrieved)
                 else:
@@ -280,7 +286,7 @@ class AgentRunner:
             )
             if policy is not None and not context_captured:
                 raise ValueError(
-                    "Executor.answer did not capture evidence for max_chunks_per_document."
+                    "Executor.answer did not capture evidence for the requested evidence_policy."
                 )
             if min_evidence_documents is not None and not generation_captured:
                 raise ValueError(
@@ -360,6 +366,8 @@ class AgentRunner:
         if plan.observation.evidence_policy != policy:
             if policy is not None and policy.min_evidence_documents is not None:
                 raise ValueError("Planned evidence_policy does not match min_evidence_documents.")
+            if policy is not None and policy.near_duplicate_threshold is not None:
+                raise ValueError("Planned evidence_policy does not match near_duplicate_threshold.")
             raise ValueError("Planned evidence_policy does not match the requested quota.")
 
     @staticmethod

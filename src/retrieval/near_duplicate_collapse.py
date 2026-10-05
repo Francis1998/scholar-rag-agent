@@ -9,8 +9,9 @@ from retrieval.sparse import meaningful_terms
 class NearDuplicateCollapser:
     """Keep one highest-scoring representative per near-duplicate cluster.
 
-    Inspired by LlamaIndex ``SimilarityPostprocessor`` / dedupe stages and
-    Haystack near-duplicate filters. Chunks whose ``meaningful_terms`` Jaccard
+    Uses the retrieval-to-synthesis postprocessing workflow described by
+    LlamaIndex, not its query-similarity ``SimilarityPostprocessor`` algorithm.
+    Chunks whose ``meaningful_terms`` Jaccard
     similarity on **text** (not title) meets or exceeds ``threshold`` are
     treated as near-duplicates. Within each cluster only the highest-scoring
     result is kept; survivors retain their relative score order. Unlike

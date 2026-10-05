@@ -1,6 +1,11 @@
 """Construct an API instance without initializing storage at module import."""
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
@@ -18,10 +23,26 @@ from api.runs import router as runs_router
 from api.screening import router as screening_router
 from config import Settings
 
+logger = logging.getLogger(__name__)
+
+
+async def _evidence_validation_error(request: Request, exc: RequestValidationError) -> Response:
+    """Do not echo unencodable numeric input; leave unrelated validation contracts intact."""
+    errors = exc.errors()
+    if not any(error["loc"][:2] == ("body", "near_duplicate_threshold") for error in errors):
+        return await request_validation_exception_handler(request, exc)
+    logger.warning("Evidence request validation failed: near_duplicate_threshold")
+    return JSONResponse(
+        {"detail": [{key: error[key] for key in ("loc", "type", "msg")} for error in errors]},
+        status_code=422,
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create an isolated app; omitted settings retain normal environment validation."""
     application = FastAPI(title="Scholar RAG Agent", version="0.1.0")
+    application.exception_handler(RequestValidationError)(_evidence_validation_error)
     application.state.container = create_container(settings)
     application.include_router(core_router)
     application.include_router(retrieval_router)

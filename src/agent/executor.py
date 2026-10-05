@@ -16,6 +16,7 @@ from retrieval.evidence_policy import (
 from retrieval.hybrid import HybridRetriever
 from retrieval.models import SearchResult
 from retrieval.multihop import MultiHopRetriever
+from retrieval.near_duplicate_collapse import NearDuplicateCollapser
 from retrieval.rerank import AdaptiveReranker
 from retrieval.scope import (
     DocumentIdsInput,
@@ -92,12 +93,24 @@ class Executor:
         *,
         evidence_policy: EvidencePolicy | None = None,
     ) -> EvidenceSnapshot:
-        """Rerank, optionally cap by document, and capture the shared exact context."""
+        """Rerank, optionally collapse then cap, and capture the shared exact context."""
         policy = self._context_policy(plan, evidence_policy)
         scope = plan.observation.document_ids
         ensure_document_scope(scope, (result.chunk.document_id for result in retrieved))
         reranked = await self._reranker.rerank(plan.observation.original_query, retrieved)
         ensure_document_scope(scope, (result.chunk.document_id for result in reranked))
+        if policy is not None and policy.near_duplicate_threshold is not None:
+            reranked = [
+                SearchResult(
+                    chunk=result.chunk,
+                    score=result.score,
+                    retriever="near_duplicate_collapse",
+                    path=[*result.path, result.retriever],
+                )
+                for result in NearDuplicateCollapser(
+                    threshold=policy.near_duplicate_threshold
+                ).collapse(reranked)
+            ]
         if policy is not None and policy.max_chunks_per_document is not None:
             reranked = DiversityCapGate(max_per_source=policy.max_chunks_per_document).gate(
                 reranked
@@ -108,7 +121,7 @@ class Executor:
     def _context_policy(plan: QueryPlan, requested: EvidencePolicy | None) -> EvidencePolicy | None:
         policy = plan.observation.evidence_policy
         if requested is not None and requested != policy:
-            raise ValueError("Planned evidence_policy does not match the requested quota.")
+            raise ValueError("Planned evidence_policy does not match the requested policy.")
         return policy
 
     async def answer(
