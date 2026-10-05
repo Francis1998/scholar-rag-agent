@@ -183,8 +183,11 @@ with TemporaryDirectory() as temporary:
         [Document(document_id="paper", title="Synthetic", source="local", text="Body")],
         [
             Chunk(
-                chunk_id=identifier, document_id="paper", title="Synthetic",
-                source="local", text=text,
+                chunk_id=identifier,
+                document_id="paper",
+                title="Synthetic",
+                source="local",
+                text=text,
             )
             for identifier in ("a", "b")
         ],
@@ -195,14 +198,12 @@ with TemporaryDirectory() as temporary:
     )
     match = first.matches[0]
     assert match.match_start > 800
-    assert text[match.match_start:match.match_end] == first.query
-    assert text[match.excerpt_start:match.excerpt_end] == match.excerpt
+    assert text[match.match_start : match.match_end] == first.query
+    assert text[match.excerpt_start : match.excerpt_end] == match.excerpt
     print(first.to_json())
     assert first.next_cursor is not None
     following = SQLiteLiteralSearch(database).search(
-        LiteralSearchRequest(
-            query="exact phrase", document_ids=["paper"], cursor=first.next_cursor
-        )
+        LiteralSearchRequest(query="exact phrase", document_ids=["paper"], cursor=first.next_cursor)
     )
     assert [item.chunk_id for item in following.matches] == ["b"]
     assert following.next_cursor is None
