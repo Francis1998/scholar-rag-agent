@@ -123,7 +123,16 @@ def test_http_strict_validation_is_private_and_non_caching(
 
 @pytest.mark.parametrize(
     "content",
-    [b'{"query":"\x80PRIVATE"}', '{"query":"x"}'.encode("utf-16"), b"{", b"[]"],
+    [
+        b'{"query":"\x80PRIVATE"}',
+        '{"query":"x"}'.encode("utf-16"),
+        pytest.param('{"query":"PRIVATE_QUERY"}'.encode("utf-16-le"), id="bomless-utf16le"),
+        pytest.param('{"query":"PRIVATE_QUERY"}'.encode("utf-16-be"), id="bomless-utf16be"),
+        pytest.param('{"query":"PRIVATE_QUERY"}'.encode("utf-32-le"), id="bomless-utf32le"),
+        pytest.param('{"query":"PRIVATE_QUERY"}'.encode("utf-32-be"), id="bomless-utf32be"),
+        b"{",
+        b"[]",
+    ],
 )
 def test_malformed_or_non_utf8_json_is_an_explicit_sanitized_validation_error(
     tmp_path: Path, content: bytes
@@ -136,6 +145,20 @@ def test_malformed_or_non_utf8_json_is_an_explicit_sanitized_validation_error(
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "PRIVATE" not in response.text
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig"])
+def test_utf8_json_preserves_unicode_queries_and_optional_bom(
+    tmp_path: Path, encoding: str
+) -> None:
+    query = "\u7814\u7a76"
+    content = json.dumps({"query": query}, ensure_ascii=False).encode(encoding)
+    with TestClient(create_app(offline_settings(tmp_path / "corpus.sqlite3"))) as client:
+        response = client.post(
+            "/research/search", content=content, headers={"Content-Type": "application/json"}
+        )
+    assert response.status_code == 200, response.text
+    assert response.json()["query"] == query
 
 
 @pytest.mark.parametrize(

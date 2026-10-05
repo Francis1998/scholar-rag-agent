@@ -219,6 +219,10 @@ constructing the schema-initializing collection store.
 
 ## Request, response, and fixed bounds
 
+HTTP bodies must be UTF-8 JSON, with an optional UTF-8 byte-order mark.
+UTF-16/UTF-32 bodies, with or without a byte-order mark, return sanitized 422
+errors before search. This is separate from the supported SQLite encodings.
+
 | Field/control | Contract |
 | --- | --- |
 | `query` | Required strict string, 1-200 Unicode characters, nonblank and valid UTF-8 |

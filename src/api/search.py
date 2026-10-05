@@ -23,9 +23,9 @@ class _SearchRoute(APIRoute):
 
         async def validated(request: Request) -> Response:
             try:
-                (await request.body()).decode("utf-8")
+                json.loads((await request.body()).decode("utf-8-sig"))
                 return await handler(request)
-            except (RequestValidationError, UnicodeDecodeError):
+            except (RequestValidationError, UnicodeDecodeError, json.JSONDecodeError):
                 logger.warning("Literal search request validation failed")
                 return Response(
                     content=json.dumps(
