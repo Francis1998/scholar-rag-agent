@@ -102,8 +102,12 @@ answer. Existing payload budgets and routing are unchanged; see
 
 Live rate admission counts every HTTP attempt, including failed requests and
 retries, against the default 60 attempts per adapter instance per sliding minute.
-Retries wait for capacity after the existing backoff; the three-retry cap and
-phase timeouts are unchanged. This is not a shared account-wide quota. See
+Retries honor valid `Retry-After` seconds/HTTP-date hints as a minimum alongside
+exponential backoff, then wait for capacity. Invalid hints retain the existing
+delays; the three-retry cap and phase timeouts are unchanged. A hint exceeding
+the remaining reasoning budget produces a timeout, not an early retry.
+Direct adapter callers need their own overall async deadline.
+This is not a shared account-wide quota. See
 [provider backoff and rate limits](SAFETY.md#provider-backoff).
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.

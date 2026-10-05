@@ -23,7 +23,7 @@ account and workload.
 | OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
 | Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
-| Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.ai/docs/models), replacing the discontinued K2 default. |
+| Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.com/docs/models), replacing the discontinued K2 default. |
 
 The current [OpenAI catalog](https://developers.openai.com/api/docs/models.md)
 also positions `gpt-6.1-sol` for balancing intelligence and cost, and
@@ -54,9 +54,31 @@ a custom agent state machine; it is not a LangGraph integration.
 
 All four adapters admit each HTTP attempt, including retries and failed requests,
 against the per-instance sliding-minute rate limit (default 60). Transient
-failures retain the same three-retry cap and exponential backoff, then wait for
-capacity before sending another request. Cancellation while waiting or backing
-off sends no further request. See [rate-limit scope and safety](../../SAFETY.md#provider-backoff).
+failures retain the same three-retry cap; exponential delays of 0.25, 0.5, and
+1 second are minima. A valid `Retry-After` on HTTP `429`, `500`, `502`, `503`, or
+`504` extends the wait when longer, followed by rate admission before the next
+request. Transport failures and HTTP responses without a usable hint retain
+the existing exponential delays.
+
+### Retry-After and timeouts
+
+[RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3) defines
+integer delay-seconds and HTTP-date hints. All three standard HTTP-date forms
+are accepted as UTC; remaining time is measured when the failed response is
+processed, using the local wall clock, not the response's `Date` header.
+Malformed/expired hints and numeric overflow fall back to exponential backoff
+without exposing header values. Valid finite hints are not capped or rounded
+down. [Claude's rate-limit documentation](https://platform.claude.com/docs/en/api/rate-limits)
+is one provider example; the header is not guaranteed on every retryable error.
+These retry contracts were checked **2026-10-05 America/Los_Angeles**.
+
+Backoff and admission waits count against the runner's reasoning timeout.
+A hint longer than the remaining budget causes a cancelled wait and the
+existing `/query` HTTP-200 `ERROR` result, not an early retry, provider failover,
+or saved completed answer. Direct `adapter.generate()` callers must supply
+their own async timeout for a total deadline; the HTTPX network-operation
+timeout does not bound these waits. Cancellation sends no further request.
+See [rate-limit scope, parsing bounds, and safety](../../SAFETY.md#provider-backoff).
 
 ### Unusable HTTP-success responses
 

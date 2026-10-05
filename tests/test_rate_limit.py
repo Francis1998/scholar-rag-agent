@@ -2,12 +2,21 @@
 
 import asyncio
 import json
-from collections.abc import Iterator
-from unittest.mock import AsyncMock, patch
+import math
+import sys
+import time
+from collections.abc import AsyncIterator, Iterator
+from datetime import UTC, datetime
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
+from agent.safety import with_timeout
+from api.application import create_app
+from config import Settings
 from llm.providers import (
     AnthropicAdapter,
     GeminiAdapter,
@@ -18,7 +27,9 @@ from llm.providers import (
 )
 from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, LLMResponse, TaskType
+from storage.event_log import SQLiteEventLog
 
+WALL_TIME = datetime(2026, 10, 5, 17, 0, tzinfo=UTC).timestamp()
 REQUEST = LLMRequest(
     task_type=TaskType.DEFAULT,
     prompt="Summarize the evidence.",
@@ -595,13 +606,16 @@ async def test_provider_exhaustion_counts_all_attempts_and_preserves_last_error(
 
 
 @pytest.mark.parametrize("status_code", [400, 401, 200], ids=["400", "401", "invalid-success"])
+@pytest.mark.parametrize("retry_after", [None, "120"])
 async def test_nonretryable_provider_errors_consume_one_http_admission(
     adapter: HTTPProviderAdapter,
     clock: ManualClock,
     monkeypatch: pytest.MonkeyPatch,
     status_code: int,
+    retry_after: str | None,
 ) -> None:
-    response = httpx.Response(status_code, json={})
+    headers = {"Retry-After": retry_after} if retry_after is not None else {}
+    response = httpx.Response(status_code, json={}, headers=headers)
     request_times = mock_provider_http(monkeypatch, adapter, clock, [response])
     task = asyncio.create_task(adapter.generate(REQUEST))
     try:
@@ -622,7 +636,9 @@ async def test_nonretryable_provider_errors_consume_one_http_admission(
         await asyncio.gather(task, return_exceptions=True)
 
 
-@pytest.mark.parametrize("phase", ["initial-admission", "retry-admission", "backoff"])
+@pytest.mark.parametrize(
+    "phase", ["initial-admission", "retry-admission", "backoff", "retry-after"]
+)
 async def test_provider_cancellation_sends_no_extra_request_or_claims_future_capacity(
     adapter: HTTPProviderAdapter,
     clock: ManualClock,
@@ -630,6 +646,8 @@ async def test_provider_cancellation_sends_no_extra_request_or_claims_future_cap
     phase: str,
 ) -> None:
     first_response = successful_response() if phase == "initial-admission" else httpx.Response(503)
+    if phase == "retry-after":
+        first_response.headers["Retry-After"] = "120"
     request_times = mock_provider_http(
         monkeypatch, adapter, clock, [first_response, successful_response()]
     )
@@ -644,6 +662,8 @@ async def test_provider_cancellation_sends_no_extra_request_or_claims_future_cap
         assert request_times == [0.0]
         assert not tasks[0].done()
         assert adapter._limiter._timestamps == [0.0]
+        if phase == "retry-after":
+            assert clock.delays == [120.0]
 
         assert tasks[0].cancel("cancel waiting generation")
         with pytest.raises(asyncio.CancelledError) as caught:
@@ -737,3 +757,445 @@ async def test_generate_once_override_is_admitted_before_each_attempt(clock: Man
     finally:
         task.cancel()
         await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_with_backoff_retry_after_minimum_does_not_replace_exponential_progression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    errors = [RuntimeError(f"failure {i}") for i in range(3)]
+    operation = AsyncMock(side_effect=[*errors, "ok"])
+    minimum_delay = Mock(side_effect=[2.0, 0.0, None])
+    sleep = AsyncMock()
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    assert await with_backoff(operation, minimum_delay_seconds=minimum_delay) == "ok"
+    assert [call.args[0] for call in sleep.await_args_list] == [2.0, 0.5, 1.0]
+    assert [call.args[0] for call in minimum_delay.call_args_list] == errors
+    assert operation.await_count == 4
+
+
+@pytest.mark.parametrize("retryable", [False, True])
+async def test_with_backoff_retry_after_is_not_read_for_permanent_or_final_failure(
+    retryable: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    error = RuntimeError("original operation failure")
+    operation = AsyncMock(side_effect=error)
+    minimum_delay = Mock(return_value=2.0)
+    sleep = AsyncMock()
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+    with pytest.raises(RuntimeError) as caught:
+        await with_backoff(
+            operation,
+            retries=1,
+            is_retryable=lambda _exc: retryable,
+            minimum_delay_seconds=minimum_delay,
+        )
+    assert caught.value is error
+    assert operation.await_count == (2 if retryable else 1)
+    assert minimum_delay.call_count == (1 if retryable else 0)
+    assert sleep.await_count == (1 if retryable else 0)
+
+
+@pytest.mark.parametrize("status_code", [429, 500, 502, 503, 504])
+@pytest.mark.parametrize("hint", ["2", "Mon, 05 Oct 2026 17:00:02 GMT"])
+async def test_retry_after_prevents_early_http_retry_for_every_provider(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+    hint: str,
+) -> None:
+    monkeypatch.setattr(time, "time", lambda: WALL_TIME + clock.now)
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        clock,
+        [httpx.Response(status_code, headers={"rEtRy-AfTeR": hint}), successful_response()],
+    )
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        assert clock.delays == [2.0]
+        assert request_times == [0.0]
+        assert adapter._limiter._timestamps == [0.0]
+        assert not task.done()
+
+        clock.wake_at(2.0)
+        await checkpoint()
+        assert task.done()
+        response = await task
+        assert request_times == [0.0, 2.0]
+        assert adapter._limiter._timestamps == request_times
+        assert response.text == "  Synthetic answer [c1].\n"
+        assert response.citation_chunk_ids == REQUEST.citation_chunk_ids
+        assert response.raw_provider == adapter.provider_name
+        assert response.model_name == "configured-model"
+        assert not clock.sleepers
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize(
+    "hint",
+    [
+        pytest.param(None, id="absent"),
+        pytest.param("", id="empty"),
+        pytest.param(" \t", id="whitespace"),
+        pytest.param("-1", id="negative"),
+        pytest.param("+2", id="signed"),
+        pytest.param("1.5", id="fractional"),
+        pytest.param("1e2", id="scientific"),
+        pytest.param("NaN", id="nan"),
+        pytest.param("Infinity", id="infinity"),
+        pytest.param("-inf", id="negative-infinity"),
+        pytest.param("1e999", id="exponent-overflow"),
+        pytest.param("0x10", id="hexadecimal"),
+        pytest.param(b"\xb2", id="non-ascii-digit"),
+        pytest.param(b"\xd9\xa2", id="unicode-digit"),
+        pytest.param("2, 3", id="multiple-values"),
+        pytest.param("synthetic-private-header", id="nonnumeric"),
+        pytest.param("Mon, 05 Oct 2026 16:59:59 GMT", id="past"),
+        pytest.param("Mon, 05 Oct 2026 17:00:00 GMT", id="now"),
+        pytest.param("Mon, 05 Oct 2026 17:00:02", id="missing-zone"),
+        pytest.param("Mon, 05 Oct 2026 17:00:02 +0000", id="mail-zone"),
+        pytest.param("Mon, 05 Oct 2026 10:00:02 PDT", id="non-gmt"),
+        pytest.param("Mon, 05 Oct 2026 17:00:02 GMT trailing", id="trailing-data"),
+        pytest.param("Mon, 05 Oct 2026 17:00:02 GMT, 2", id="date-and-number"),
+        pytest.param("Mon, 05 Foo 2026 17:00:02 GMT", id="invalid-month"),
+        pytest.param("Mon, 32 Oct 2026 17:00:02 GMT", id="invalid-day"),
+        pytest.param("Mon, 30 Feb 2027 17:00:02 GMT", id="invalid-calendar-date"),
+        pytest.param("Mon, 05 Oct 2026 25:00:02 GMT", id="invalid-hour"),
+        pytest.param("Mon, 05 Oct 2026 17:61:02 GMT", id="invalid-minute"),
+        pytest.param("Mon, 05 Oct 2026 17:00:61 GMT", id="invalid-second"),
+        pytest.param("Mon, 05 Oct 0000 17:00:02 GMT", id="invalid-year"),
+        pytest.param("Mon, 05 Oct 0026 17:00:02 GMT", id="past-four-digit-imf-year"),
+        pytest.param("Mon Oct  5 17:00:02 0026", id="past-four-digit-asctime-year"),
+        pytest.param("mon, 05 oct 2026 17:00:02 gmt", id="non-http-case"),
+        pytest.param("Mon,  05 Oct 2026 17:00:02 GMT", id="extra-date-space"),
+        pytest.param("9" * 309, id="float-overflow"),
+        pytest.param(str(int(sys.float_info.max) + 1), id="above-largest-float"),
+        pytest.param("9" * 10_000, id="oversized-integer"),
+        pytest.param("Mon, " + "9" * 10_000, id="oversized-date"),
+    ],
+)
+async def test_retry_after_unusable_hints_keep_existing_backoff(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    hint: str | bytes | None,
+) -> None:
+    monkeypatch.setattr(time, "time", lambda: WALL_TIME + clock.now)
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+    headers = {} if hint is None else {"Retry-After": hint}
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        clock,
+        [*[httpx.Response(429, headers=headers) for _ in range(3)], successful_response()],
+    )
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        for delay, now in [(0.25, 0.25), (0.5, 0.75), (1.0, 1.75)]:
+            assert clock.delays[-1] == delay
+            clock.wake_at(now)
+            await checkpoint()
+        assert task.done()
+        assert (await task).raw_provider == adapter.provider_name
+        assert request_times == [0.0, 0.25, 0.75, 1.75]
+        assert adapter._limiter._timestamps == request_times
+        assert clock.delays == [0.25, 0.5, 1.0]
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize(
+    ("hint", "minimum"),
+    [
+        pytest.param("0", 0.25, id="zero-keeps-exponential-minimum"),
+        pytest.param("\t 0002 \t", 2, id="optional-whitespace-and-leading-zeroes"),
+        pytest.param("0" * 10_000 + "2", 2, id="many-leading-zeroes"),
+        pytest.param("9007199254740993", 9007199254740993, id="integer-rounded-up"),
+        pytest.param("1" + "0" * 200, 10**200, id="large-finite"),
+        pytest.param(str(int(sys.float_info.max)), int(sys.float_info.max), id="largest-float"),
+        pytest.param("Monday, 05-Oct-26 17:00:02 GMT", 2, id="rfc850"),
+        pytest.param(
+            "Saturday, 05-Oct-75 17:00:02 GMT",
+            datetime(2075, 10, 5, 17, 0, 2, tzinfo=UTC).timestamp() - WALL_TIME,
+            id="rfc850-within-fifty-years",
+        ),
+        pytest.param(
+            "Monday, 05-Oct-76 17:00:00 GMT",
+            datetime(2076, 10, 5, 17, 0, tzinfo=UTC).timestamp() - WALL_TIME,
+            id="rfc850-exactly-fifty-years",
+        ),
+        pytest.param(
+            "Monday, 05-Oct-76 17:00:01 GMT", 0.25, id="rfc850-beyond-fifty-years-is-past"
+        ),
+        pytest.param("Sat Oct  5 17:00:02 2030", 126230402, id="asctime"),
+        pytest.param("Sat Oct 05 17:00:02 2030", 126230402, id="asctime-two-digits"),
+        pytest.param("Mon, 05 Oct 2026 17:00:60 GMT", 60, id="leap-second"),
+        pytest.param(
+            "Fri, 31 Dec 9999 23:59:59 GMT",
+            datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC).timestamp() - WALL_TIME,
+            id="distant-date",
+        ),
+    ],
+)
+async def test_retry_after_valid_hints_are_not_capped_or_rounded_down(
+    adapter: HTTPProviderAdapter,
+    clock: ManualClock,
+    monkeypatch: pytest.MonkeyPatch,
+    hint: str,
+    minimum: int | float,
+) -> None:
+    monkeypatch.setattr(time, "time", lambda: WALL_TIME + clock.now)
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        clock,
+        [httpx.Response(429, headers={"Retry-After": hint}), successful_response()],
+    )
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        delay = clock.delays[0]
+        assert math.isfinite(delay)
+        assert delay >= minimum
+        assert delay <= math.nextafter(float(minimum), math.inf)
+        assert request_times == [0.0]
+        assert not task.done()
+        clock.wake_at(delay)
+        await checkpoint()
+        assert task.done()
+        assert (await task).raw_provider == adapter.provider_name
+        assert request_times == [0.0, delay]
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_retry_after_date_uses_current_time_after_each_response_body(
+    adapter: HTTPProviderAdapter, clock: ManualClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(time, "time", lambda: WALL_TIME + clock.now)
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+
+    class DelayedBody(httpx.AsyncByteStream):
+        def __init__(self, received_at: float) -> None:
+            self.received_at = received_at
+
+        async def __aiter__(self) -> AsyncIterator[bytes]:
+            clock.now = self.received_at
+            yield b'{"error": "synthetic delayed response"}'
+
+    responses = [
+        httpx.Response(
+            503,
+            headers={
+                "Date": "Mon, 05 Oct 2026 17:00:00 GMT",
+                "Retry-After": "Mon, 05 Oct 2026 17:00:10 GMT",
+            },
+            stream=DelayedBody(7.75),
+        ),
+        httpx.Response(
+            503,
+            headers={
+                "Date": "Mon, 05 Oct 2026 17:05:00 GMT",
+                "Retry-After": "Mon, 05 Oct 2026 17:00:12 GMT",
+            },
+            stream=DelayedBody(10.5),
+        ),
+        successful_response(),
+    ]
+    request_times = mock_provider_http(monkeypatch, adapter, clock, responses)
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        assert request_times == [0.0]
+        assert clock.now == 7.75
+        assert clock.delays == [2.25]
+        clock.wake_at(10.0)
+        await checkpoint()
+        assert request_times == [0.0, 10.0]
+        assert clock.now == 10.5
+        assert clock.delays == [2.25, 1.5]
+        clock.wake_at(12.0)
+        await checkpoint()
+        assert task.done()
+        assert (await task).raw_provider == adapter.provider_name
+        assert request_times == [0.0, 10.0, 12.0]
+        assert adapter._limiter._timestamps == request_times
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_retry_after_runs_before_rate_admission_and_preserves_final_http_error(
+    adapter: HTTPProviderAdapter, clock: ManualClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failures = [httpx.Response(503, headers={"Retry-After": "2"}) for _ in range(4)]
+    request_times = mock_provider_http(monkeypatch, adapter, clock, failures)
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        for attempt in range(1, 4):
+            assert clock.delays[-1] == 2.0
+            assert request_times == [i * 60.0 for i in range(attempt)]
+            clock.wake_at((attempt - 1) * 60.0 + 2.0)
+            await checkpoint()
+            assert len(request_times) == attempt
+            assert clock.delays[-1] == 58.0
+            clock.wake_at(attempt * 60.0)
+            await checkpoint()
+        assert task.done()
+        with pytest.raises(httpx.HTTPStatusError) as caught:
+            await task
+        assert caught.value.response is failures[-1]
+        assert caught.value.request is failures[-1].request
+        assert request_times == [0.0, 60.0, 120.0, 180.0]
+        assert adapter._limiter._timestamps == [180.0]
+        assert clock.delays == [2.0, 58.0] * 3
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_retry_after_does_not_leak_a_previous_hint_into_later_retries(
+    adapter: HTTPProviderAdapter, clock: ManualClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter._limiter = AsyncRateLimiter(requests_per_minute=4)
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        clock,
+        [
+            httpx.Response(429, headers={"Retry-After": "2"}),
+            httpx.Response(503),
+            httpx.Response(429, headers={"Retry-After": "0"}),
+            successful_response(),
+        ],
+    )
+    task = asyncio.create_task(adapter.generate(REQUEST))
+    try:
+        await checkpoint()
+        for delay, now in [(2.0, 2.0), (0.5, 2.5), (1.0, 3.5)]:
+            assert clock.delays[-1] == delay
+            clock.wake_at(now)
+            await checkpoint()
+        assert task.done()
+        assert (await task).raw_provider == adapter.provider_name
+        assert request_times == [0.0, 2.0, 2.5, 3.5]
+        assert adapter._limiter._timestamps == request_times
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+@pytest.mark.parametrize(
+    "hint",
+    [
+        pytest.param("120", id="longer-than-request-timeout"),
+        pytest.param(str(int(sys.float_info.max)), id="largest-finite-delay"),
+    ],
+)
+async def test_retry_after_real_sleep_remains_cancellable_by_outer_timeout(
+    adapter: HTTPProviderAdapter, monkeypatch: pytest.MonkeyPatch, hint: str
+) -> None:
+    request_times = mock_provider_http(
+        monkeypatch,
+        adapter,
+        ManualClock(),
+        [httpx.Response(429, headers={"Retry-After": hint})],
+    )
+    with pytest.raises(TimeoutError, match="provider timed out"):
+        await with_timeout(adapter.generate(REQUEST), 0.02, "provider")
+    assert request_times == [0.0]
+    assert len(adapter._limiter._timestamps) == 1
+
+
+@pytest.mark.parametrize(
+    "provider",
+    [OpenAIAdapter, AnthropicAdapter, GeminiAdapter, KimiAdapter],
+    ids=lambda provider: provider.provider_name,
+)
+def test_retry_after_runner_timeout_is_a_durable_api_error_without_an_extra_request(
+    provider: type[HTTPProviderAdapter], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    database_path = tmp_path / "retry-after.sqlite3"
+    credentials = {
+        "OPENAI_API_KEY": "",
+        "ANTHROPIC_API_KEY": "",
+        "GEMINI_API_KEY": "",
+        "MOONSHOT_API_KEY": "",
+    }
+    credential = {
+        "openai": "OPENAI_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "kimi": "MOONSHOT_API_KEY",
+    }[provider.provider_name]
+    credentials[credential] = "synthetic-offline-key"
+    settings = Settings(
+        _env_file=None,
+        database_path=database_path,
+        default_model=provider.provider_name,
+        SEMANTIC_SCHOLAR_API_KEY="",
+        **credentials,
+    )
+    app = create_app(settings)
+    app.state.container.runner._safety_limits.reasoning_timeout_seconds = 0.05
+    original_client = httpx.AsyncClient
+    requests: list[httpx.Request] = []
+    delays: list[float] = []
+    cancellations: list[asyncio.CancelledError] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.url == provider(api_key="synthetic-offline-key").endpoint
+        return httpx.Response(
+            429,
+            headers={"Retry-After": "120"},
+            json={"error": "synthetic-private-provider-body"},
+        )
+
+    def create_client(*, timeout: float) -> httpx.AsyncClient:
+        return original_client(
+            timeout=timeout, transport=httpx.MockTransport(respond), trust_env=False
+        )
+
+    async def sleep(delay: float) -> None:
+        delays.append(delay)
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError as exc:
+            cancellations.append(exc)
+            raise
+
+    monkeypatch.setattr("llm.providers.httpx.AsyncClient", create_client)
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+    with TestClient(app) as client:
+        response = client.post("/query", json={"query": REQUEST.prompt})
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["state"] == "ERROR"
+        assert result["answer"] is None
+        assert result["error"] == "reasoning timed out after 0.1s"
+        events = SQLiteEventLog(database_path).list_events(result["run_id"])
+        assert events[-1]["payload"]["to_state"] == "ERROR"
+        assert sum(event["payload"].get("to_state") == "ERROR" for event in events) == 1
+        assert any(event["event_type"] == "evidence_snapshot" for event in events)
+        assert not any(event["event_type"] == "generation_record" for event in events)
+        assert not any(event["payload"].get("to_state") == "DONE" for event in events)
+        assert "synthetic-private-provider-body" not in json.dumps(events)
+        assert "synthetic-offline-key" not in response.text
+    with TestClient(create_app(settings)) as restarted:
+        assert restarted.get(f"/runs/{result['run_id']}/events").json() == events
+        assert restarted.get(f"/runs/{result['run_id']}/export").status_code == 409
+    assert len(requests) == 1
+    assert delays == [120.0]
+    assert len(cancellations) == 1

@@ -400,8 +400,35 @@ See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable
 Live adapters use an in-process rate limiter before every HTTP attempt and
 exponential backoff for transport failures and HTTP `429`, `500`, `502`, `503`,
 and `504`. The default remains at most three retries after the initial attempt,
-with backoff delays of 0.25, 0.5, and 1 second; permanent client errors are
+with minimum backoff delays of 0.25, 0.5, and 1 second; permanent client errors are
 surfaced without those retries.
+
+On retryable HTTP responses, a valid `Retry-After` can extend each wait to the
+larger of the exponential delay and the server hint. Following
+[RFC 9110 section 10.2.3](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3),
+the header accepts nonnegative ASCII integer seconds or an HTTP-date.
+The three [HTTP-date forms](https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7)
+(IMF-fixdate, obsolete RFC 850, and asctime) are interpreted as UTC, including the
+RFC 850 rolling 50-year rule. Dates use the remaining time from the local UTC
+wall clock when each failed response is processed, not request-start time or
+the response's `Date` header. Keep the host's wall clock synchronized.
+The resulting duration is awaited before re-entering monotonic rate admission.
+
+Missing, expired, malformed, duplicate, negative, fractional, nonfinite, and
+overflowing hints retain the existing exponential backoff. Numeric hints must
+fit a finite Python float; significant digits are bounded before integer
+conversion, and representable delays are rounded upward if necessary, never
+capped or rounded down to send early. Header contents are not added to error
+messages or logs. A hint applies only to that failed attempt: it does not change
+later exponential delays, impose an account-wide cooldown, change retryable
+statuses, or create a retry on a successful/permanent failure. Transport errors
+have no HTTP hint and retain their existing backoff.
+
+This implements a documented provider contract, not a promise that every error
+carries the header. For example, [Claude rate limits](https://platform.claude.com/docs/en/api/rate-limits)
+document `retry-after` on rate-limit responses, but not on monthly spend-cap
+errors. Both the RFC and provider retry contract were checked
+**2026-10-05 America/Los_Angeles**, independently of model migrations.
 
 The `requests_per_minute` argument to `AsyncRateLimiter` and the shared
 `HTTPProviderAdapter` constructor must be a positive Python `int`. Invalid
@@ -428,6 +455,15 @@ not refunded. The lock is released before provider I/O. After a transient
 failure, backoff runs before the next attempt waits for rate capacity; waiting
 does not use up retries. Cancellation during backoff sends no further request.
 Rate waits and backoff remain subject to the existing generation phase timeout.
+If a server wait outlasts the remaining reasoning budget, the runner cancels
+the wait instead of shortening it or sending another request. `/query` retains
+HTTP 200 with `result.state: "ERROR"` and a labelled reasoning timeout; there is
+no generation record, completed answer, or `DONE` event. Captured input evidence
+can remain, and completed-answer export stays unavailable for that run.
+Direct `adapter.generate()` calls have no overall generation deadline:
+HTTPX's 60-second network-operation timeouts do not bound backoff or admission
+waits. Direct callers needing a total deadline must wrap the call in an async
+timeout. Cancellation always stops the wait rather than forcing an early retry.
 This per-instance attempt limit is not a token/spend budget or an account-wide
 provider quota.
 

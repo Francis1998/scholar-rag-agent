@@ -180,8 +180,14 @@ or fake failover.
 
 Each live adapter instance admits 60 HTTP attempts per sliding minute by default,
 counting the initial request, retries, and failed requests separately. Retries
-wait for capacity after backoff; waiting does not consume retry attempts. The
-three-retry cap and generation timeout remain unchanged. Admission state is
+wait for the larger of exponential backoff and a valid `Retry-After` seconds or
+HTTP-date hint, then for rate capacity. Invalid/expired hints retain exponential
+backoff; waiting does not consume retry attempts. The three-retry cap and
+generation timeout remain unchanged. Server waits are not shortened to fit a
+timeout: the runner cancels them and returns an `ERROR` run without another HTTP
+attempt. Direct adapter calls need a caller-supplied async timeout to bound
+the complete operation, including waits; no new environment setting is added.
+Admission state is
 in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 
