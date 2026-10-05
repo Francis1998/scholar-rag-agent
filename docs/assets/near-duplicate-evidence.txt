@@ -1,0 +1,28 @@
+1. Inspect the unchanged baseline
+Omitted threshold: 5 chunks from 4 documents.
+Exact context bytes (UTF-8): 435.
+Threshold 1: 4 chunks; equal TERM SETS, not identical text.
+Bounded hybrid/graph retrieval and lexical reranking, not semantic search.
+These synthetic fixtures are not papers or scientific findings.
+
+2. Collapse similar passages, not papers
+Threshold 0.8: 3 chunks from 2 documents.
+Removed from baseline: b-copy, c-variant.
+Context bytes: 435 -> 264.
+Exact surviving chunks, scores, order, and upstream paths: True.
+Survivor retriever: near_duplicate_collapse. No candidate refill.
+
+3. Apply quotas and minimums afterwards
+Collapse 0.8 then cap 1: 2 chunks from 2 documents.
+Query, collapse 0.8 + minimum 4: ERROR; observed documents=2.
+Failed snapshot equals collapsed preview: True.
+Model calls=0; generation records=0.
+Read failed-events.json. HTTP 200 alone does not mean query success.
+
+4. Review the measured limits
+Preview event writes=0; external HTTP attempts=0.
+Corpus unchanged=True; no live OR fake generation.
+Frozen policy is retained in the failed run plan and events.
+Lexical overlap is not semantic equivalence or evidence independence.
+Important similar passages can be dropped. Inspect the originals.
+Actual route measurements, not a latency or retrieval-quality benchmark.

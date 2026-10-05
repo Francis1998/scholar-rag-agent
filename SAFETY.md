@@ -60,6 +60,17 @@ alter an in-flight request's bound. Legacy ordinary answer overrides without
 capture callbacks remain supported, but their uncaptured context cannot be
 validated or exported as an evidence snapshot.
 
+Opt-in `near_duplicate_threshold` accepts finite strict numbers greater than zero
+and at most one. It collapses text-term overlap after reranking, before quotas
+and minimum-document assessment, without refill or relaxed bounds. Omission
+disables collapse; invalid types, HTTP null, NaN/infinity, and invalid ranges fail
+before work. Threshold `1` means equal meaningful-term sets, not identical text.
+Lexical Jaccard cannot decide semantic equivalence, paper identity, independence,
+or scientific truth; it may drop important similar passages and lower the final
+document count enough to block generation. Inspect baseline and collapsed
+previews. Survivor paths show transformations, not full dropped-cluster histories.
+See [the collapse contract and limitations](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
+
 Requests may opt into `max_chunks_per_document`, a strict integer from 1 to 50.
 The frozen per-request policy caps actual document IDs after reranking of the
 existing bounded pool; it does not widen scope, fetch replacements, guarantee
@@ -71,7 +82,7 @@ remain readable. See the complete
 [per-paper evidence limits guide](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
 Opt-in `min_evidence_documents` requires a strict integer from 1 to 50 distinct
-document IDs in the final captured context, after reranking and any quota.
+document IDs in the final captured context, after reranking, optional collapse, and any quota.
 An unmet minimum records `ERROR` with no answer or generation call, but retains
 the exact potentially sensitive snapshot and count diagnostic in run events.
 Previews with an unmet minimum retain evidence without generation or events;

@@ -70,7 +70,8 @@ flowchart LR
   rrf --> merge[Merge by chunk ID and bound results]
   graph --> merge
   merge --> rerank[Lexical overlap reranking]
-  rerank --> quota[Optional per-document passage quota]
+  rerank --> collapse[Optional lexical near-duplicate collapse]
+  collapse --> quota[Optional per-document passage quota]
   quota --> snapshot[Persist exact context snapshot]
   snapshot --> minimum[Optional distinct-document minimum]
   minimum -->|Met or omitted| model[Routed provider or fake adapter]
@@ -99,11 +100,22 @@ ones. No shared index stores per-request scope. Unscoped calls preserve old
 signatures; unsupported scoped components fail rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+Optional `near_duplicate_threshold` on both endpoints and runner methods freezes
+a finite strict number greater than zero and at most one in the existing
+`EvidencePolicy`. `Executor.prepare_context` reuses `NearDuplicateCollapser`
+after reranking and before quotas/capture/minimum assessment. Survivors keep
+exact chunks, scores, and stable score order; their `near_duplicate_collapse`
+label appends the prior retriever to `path`. Final-source validation reuses the
+same algorithm without repairing invalid extension output. No candidate refill,
+network, mutable global setting, or new snapshot field is introduced.
+Threshold `1` means equal meaningful-term sets, not identical text or papers.
+See [the integrated collapse guide](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
+
 Optional `max_chunks_per_document` on `/query` and `/retrieve` freezes a strict
 1-50 integer in `QueryObservation.evidence_policy` before awaits.
 `Executor.prepare_context` applies the existing `DiversityCapGate` after normal
-reranking, before capture, within the already bounded candidate pool. It preserves
-scores, order, and chunk ownership while appending the prior reranker to gate
+reranking and any requested collapse, before capture, within the bounded pool. It preserves
+scores, order, and chunk ownership while appending the prior stage to gate
 provenance. There is no extra retrieval, oversampling, or shared index mutation;
 fewer passages may remain. The policy is recorded in the initial event and plan,
 validated in previews/exports, and compared even when saved contexts match.
@@ -113,7 +125,7 @@ See [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
 Optional `min_evidence_documents` extends the same frozen policy with a strict
 1-50 integer. Its count is taken from distinct actual document IDs in the final
-captured context, after the quota. The runner saves an insufficient snapshot and
+captured context, after collapse and the quota. The runner saves an insufficient snapshot and
 typed count diagnostic through `REASONING -> ERROR`, without invoking the
 prepared-answer hook or recording generation/`DONE`. Sufficient requests use
 `Executor.answer_prepared` on that same detached context; preparation and
@@ -128,7 +140,7 @@ answerability claim. See [Minimum evidence documents](docs/guides/MINIMUM_EVIDEN
 `POST /retrieve`, in the separate `api.retrieval` router, calls
 `AgentRunner.preview`. It uses the same analyzer, planner, task clamping,
 bounded executor retrieval, and `Executor.prepare_context` as `/query`.
-The latter method performs reranking, scope/quota enforcement, and detached
+The latter method performs reranking, optional collapse, scope/quota enforcement, and detached
 `EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
 only for real queries.
 
@@ -236,6 +248,28 @@ The API also exposes `/retrieve`, `/health`, `/runs`, `/runs/{run_id}/events`, a
 below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
+
+### Exact-ID incremental indexing
+
+Dense and BM25 `add_chunks` upsert by exact `chunk_id`: each ID has one current
+chunk payload and vector or term-frequency record. Later values replace earlier
+ones, including duplicates within one batch. Dense embedding is computed before
+replacing an entry, so an embedding failure leaves that entry unchanged and
+propagates to the caller. BM25 removes the old term contributions before adding
+the replacement; corpus size, document frequencies, and average length describe
+the unique current chunk IDs.
+
+Replaying identical ingestion into the same application does not consume extra
+top-k slots or change retrieval scores. Rebuilding from the same persisted chunks
+preserves results; ties still sort by chunk ID, and document scope still filters
+candidates before top-k using global BM25 statistics. Different IDs remain
+distinct even when their text is identical. Content-near-duplicate collapse and
+MMR are separate opt-in behaviors, not part of this exact-ID indexing contract.
+
+This does not change ID generation or stored document replacement/deletion
+semantics: chunks with different IDs are not removed by an upsert. It does not
+make batches or multi-store ingestion atomic, or synchronize in-memory indexes
+across application workers.
 
 ### SQLite connection lifecycle
 

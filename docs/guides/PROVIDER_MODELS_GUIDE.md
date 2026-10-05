@@ -297,6 +297,13 @@ required to use it. These dated catalog checks do not establish endpoint or
 account entitlement; in particular the Gemini Interactions example is not a
 live test of this adapter's retained `generateContent` endpoint.
 
+The optional [`near_duplicate_threshold`](NEAR_DUPLICATE_COLLAPSE_GUIDE.md)
+uses the existing local lexical collapser before quotas and that minimum check.
+It needs no model or provider change; `/retrieve` still makes zero live or fake
+generation calls. Completed queries retain the selected models, existing
+endpoints, and payload budgets. Collapse is not a model-quality or scientific
+equivalence judgment.
+
 `LLMResponse.model_name` records the **configured/requested ID**, alongside the
 unchanged `raw_provider`; it does not substitute a provider-reported alias or
 claim a resolved immutable snapshot. Fake responses leave `model_name=None`.

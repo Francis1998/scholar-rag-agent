@@ -1,5 +1,26 @@
 # Demo
 
+## Near-duplicate evidence collapse
+
+![Measured synthetic evidence collapse](assets/near-duplicate-evidence.gif)
+
+This actual-output illustration shows five passages becoming three, 435 context
+bytes becoming 264, and a minimum-document query stopping without generation.
+All measurements use synthetic fixtures, explicit isolated settings, a temporary
+database, and zero live/fake model calls or external HTTP attempts.
+
+```bash
+COLLAPSE_DIR="$(mktemp -d)/near-duplicate-evidence"
+uv run python -m scripts.demo_near_duplicate_evidence --output-dir "$COLLAPSE_DIR"
+uv run python -m scripts.create_near_duplicate_evidence_gif \
+  --transcript "$COLLAPSE_DIR/transcript.txt" \
+  --output "$COLLAPSE_DIR/near-duplicate-evidence.gif"
+```
+
+Inspect the preview JSON, failed-run events, checks, and transcript. Files are
+not overwritten. Equal term sets are not identical text or scientific equivalence;
+see the [complete guide](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) before opting in.
+
 ## Minimum evidence documents
 
 ![Measured synthetic minimum-evidence check](assets/minimum-evidence-documents.gif)

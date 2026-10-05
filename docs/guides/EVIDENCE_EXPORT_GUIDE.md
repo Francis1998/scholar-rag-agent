@@ -14,6 +14,11 @@ The old citation snippet contains at most 240 characters; it cannot recover the
 full context once an index changes. The new snapshot is recorded **after reranking
 and before generation**, not reconstructed later from today's corpus.
 
+When requested, [near-duplicate collapse](NEAR_DUPLICATE_COLLAPSE_GUIDE.md) runs
+before quotas and capture. Exports retain the frozen threshold and exact surviving
+chunks/scores with transformation paths, not every discarded passage or cluster
+assignment. Old version-one records without the threshold remain readable.
+
 ![Offline evidence export demonstration](../assets/evidence-export.gif)
 
 **GIF provenance:** generated illustration from the actual deterministic,

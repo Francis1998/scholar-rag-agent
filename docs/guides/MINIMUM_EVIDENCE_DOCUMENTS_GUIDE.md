@@ -73,12 +73,18 @@ demonstration, not a retrieval-quality or latency benchmark.
 | Python `None` or omitted | No minimum; other invalid Python values raise Pydantic `ValidationError` (a `ValueError`) before run IDs/events |
 
 The order is **resolve scope -> bounded retrieval/merge -> rerank -> optional
-per-document quota -> exact capture -> assess distinct documents -> generate
+near-duplicate collapse -> optional per-document quota -> exact capture
+-> assess distinct documents -> generate
 only if sufficient**. The check uses captured `sources[*].chunk.document_id`,
 not raw hits, chunk count, titles, URLs, source labels, or caller-selected IDs.
 Equality passes. Repeated passages from the same document count once; distinct
 IDs with identical titles count separately. No document ID is normalized or
 deduplicated by content during this assessment.
+
+The separate opt-in [`near_duplicate_threshold`](NEAR_DUPLICATE_COLLAPSE_GUIDE.md)
+can remove a document's last passage before this count, causing an otherwise
+sufficient run to stop without generation. It does not change what the minimum
+counts or imply that similar passages represent the same paper.
 
 The minimum does not refill the candidate pool, retry retrieval, broaden scope,
 lower itself, or change scores/order/provenance. `max_chunks_per_document` still

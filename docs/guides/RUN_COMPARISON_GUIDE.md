@@ -18,6 +18,11 @@ without a policy remain `None`; the four-field runtime configuration is unchange
 See [per-paper evidence limits](PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) for the request
 contract and a measured policy-only comparison.
 
+This includes [`near_duplicate_threshold`](NEAR_DUPLICATE_COLLAPSE_GUIDE.md):
+two thresholds can produce identical final contexts but still represent different
+requested policies. Survivor `retriever`/`path` changes are compared normally.
+Only saved final-source records are compared, not dropped-to-survivor cluster maps.
+
 ![Actual synthetic offline saved-run comparison output](../assets/run-comparison.gif)
 
 **GIF provenance:** an original generated illustration of actual offline demo
