@@ -303,6 +303,19 @@ This does not version corpus contents, retain decision history, or alter the
 runner's inputs automatically. Existing query/preview scope and evidence schemas
 are unchanged. See [Paper screening](docs/guides/PAPER_SCREENING_GUIDE.md).
 
+`SQLitePaperScreening.export_results` and
+`GET /collections/{collection_id}/screening/export` reuse the queue's complete
+status/count snapshot and existing review validators. Current title/source labels
+are read on that same `resolved_collection` connection using the catalog's bounded
+SQLite-encoding-aware decoder. No persistent schema, table, event or retrieval is
+created by export. JSON and CSV are fully materialized and checked against a 524,288-byte
+body cap before an attachment response is returned; no pagination or filtered
+export can imply completeness. CSV prefixes every textual cell with one
+reversible apostrophe and quotes every field. Export-only NUL label rejection
+does not alter opaque document IDs or catalog/queue behavior. See
+[Screening exports](docs/guides/SCREENING_EXPORT_GUIDE.md) for format and privacy
+limits; this snapshot does not version paper contents or authenticate reviewers.
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,

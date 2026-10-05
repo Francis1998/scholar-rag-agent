@@ -49,6 +49,7 @@ By contrast, importing the server entrypoint `api.main` creates its default
 | `POST /ingest/text` | `document_id`, `chunk_ids`; index supplied text |
 | `POST /retrieve` | Plan, scoped post-rerank chunks, scores/ranks/paths, context/digest, and effective bounds; no generation or agent events |
 | `GET /documents?limit=20` | Bounded titles/sources, stored chunk counts and selectable IDs; optional exact `source`, literal `title` and exclusive ID `cursor` filters |
+| `GET /collections/{collection_id}/screening/export?collection_revision=N&format=json\|csv` | All current human-screening results, labels, revisions and counts in one read snapshot; [download/CSV semantics](guides/SCREENING_EXPORT_GUIDE.md) |
 | `POST /query` | `{"result": ...}`; plan, answer, citations, warnings, and run status |
 | `GET /runs?limit=20&state=DONE` | Bounded query previews and recorded states, with creation-order cursor pagination; `state` is optional |
 | `GET /runs/{run_id}/events` | Event array for the run |

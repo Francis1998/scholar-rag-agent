@@ -1,8 +1,12 @@
 """Bounded, revisioned human screening of collection members, not scientific validation."""
 
+import csv
+import io
 import json
+import re
 import sqlite3
 from contextlib import closing
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Literal
@@ -19,11 +23,18 @@ from pydantic import (
 )
 
 from retrieval.scope import MAX_DOCUMENT_IDS
-from storage.document_catalog import Identity
+from storage.document_catalog import (
+    MAX_SOURCE_CHARACTERS,
+    MAX_TITLE_CHARACTERS,
+    DocumentCatalogError,
+    Identity,
+    _prefix,
+)
 from storage.paper_collections import (
     MAX_REVISION,
     CollectionError,
     CollectionId,
+    CollectionName,
     PaperCollection,
     Revision,
     SQLitePaperCollections,
@@ -32,8 +43,10 @@ from storage.paper_collections import (
 MAX_REASON_CHARACTERS = 1000
 MAX_RECORD_CHARACTERS = 16384
 MAX_RESPONSE_BYTES = 524288
+MAX_EXPORT_BYTES = 524288
 Decision = Literal["include", "exclude", "unsure"]
 ScreeningStatus = Literal["unscreened", "include", "exclude", "unsure", "stale"]
+ScreeningExportFormat = Literal["json", "csv"]
 
 
 def _readable_text(value: str) -> str:
@@ -108,11 +121,118 @@ class ScreeningQueue(BaseModel):
     included_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
 
 
+class ScreeningExportItem(ScreeningItem):
+    """Current catalog labels beside the latest recorded human opinion."""
+
+    title: str = Field(max_length=MAX_TITLE_CHARACTERS)
+    title_truncated: bool
+    source: str = Field(max_length=MAX_SOURCE_CHARACTERS)
+    source_truncated: bool
+
+
+class ScreeningExport(BaseModel):
+    """One complete read snapshot, not frozen paper contents or review history."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["1.0"] = "1.0"
+    collection_id: CollectionId
+    collection_name: CollectionName
+    collection_revision: Revision
+    total_documents: int = Field(ge=1, le=MAX_DOCUMENT_IDS)
+    counts: ScreeningCounts
+    items: list[ScreeningExportItem] = Field(min_length=1, max_length=MAX_DOCUMENT_IDS)
+    included_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
+
+
+@dataclass(frozen=True)
+class ScreeningDownload:
+    """Already serialized and byte-checked; API and Python save identical bytes."""
+
+    content: bytes
+    media_type: str
+    filename: str
+
+
 class _QueueOptions(BaseModel):
     collection_revision: Revision
     limit: int = Field(default=20, strict=True, ge=1, le=MAX_DOCUMENT_IDS)
     cursor: Identity | None = None
     status: ScreeningStatus | None = None
+
+
+class _ExportOptions(BaseModel):
+    collection_revision: Revision
+    format: ScreeningExportFormat = "json"
+
+
+def _csv_cell(value: str | int | bool | None) -> str | int:
+    # Uniform prefixes are reversible and protect even whitespace/control-led formulas.
+    if isinstance(value, str):
+        return "'" + value
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value
+
+
+def _csv_export(result: ScreeningExport) -> bytes:
+    output = io.StringIO(newline="")
+    fields = (
+        "schema_version",
+        "csv_text_encoding",
+        "collection_id",
+        "collection_name",
+        "collection_revision",
+        "total_documents",
+        "count_unscreened",
+        "count_include",
+        "count_exclude",
+        "count_unsure",
+        "count_stale",
+        "document_id",
+        "title",
+        "title_truncated",
+        "source",
+        "source_truncated",
+        "status",
+        "included_document_id",
+        "review_schema_version",
+        "review_collection_revision",
+        "review_revision",
+        "review_decision",
+        "review_reason",
+        "review_updated_at",
+    )
+    writer = csv.DictWriter(output, fieldnames=fields, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    writer.writeheader()
+    for item in result.items:
+        review = item.review
+        row: dict[str, str | int | bool | None] = {
+            "schema_version": result.schema_version,
+            "csv_text_encoding": "apostrophe-prefix-v1",
+            "collection_id": result.collection_id,
+            "collection_name": result.collection_name,
+            "collection_revision": result.collection_revision,
+            "total_documents": result.total_documents,
+            **{f"count_{status}": count for status, count in result.counts.model_dump().items()},
+            "document_id": item.document_id,
+            "title": item.title,
+            "title_truncated": item.title_truncated,
+            "source": item.source,
+            "source_truncated": item.source_truncated,
+            "status": item.status,
+            "included_document_id": item.document_id if item.status == "include" else None,
+            "review_schema_version": review.schema_version if review else None,
+            "review_collection_revision": review.collection_revision if review else None,
+            "review_revision": review.revision if review else None,
+            "review_decision": review.decision if review else None,
+            "review_reason": review.reason if review else None,
+            "review_updated_at": review.updated_at.isoformat() if review else None,
+        }
+        writer.writerow({field: _csv_cell(value) for field, value in row.items()})
+    return output.getvalue().encode("utf-8")
 
 
 def _invalid_record() -> CollectionError:
@@ -226,6 +346,45 @@ class SQLitePaperScreening:
             )
             return review
 
+    def _snapshot(
+        self, connection: sqlite3.Connection, collection: PaperCollection
+    ) -> ScreeningQueue:
+        reviews = self._reviews(connection, collection)
+        counts: dict[str, int] = {
+            "unscreened": 0,
+            "include": 0,
+            "exclude": 0,
+            "unsure": 0,
+            "stale": 0,
+        }
+        items = []
+        included = []
+        for identifier in collection.document_ids:
+            review = reviews.get(identifier)
+            status: ScreeningStatus = "unscreened"
+            if review is not None:
+                status = (
+                    review.decision
+                    if review.collection_revision == collection.revision
+                    else "stale"
+                )
+            counts[status] += 1
+            if status == "include":
+                included.append(identifier)
+            items.append(ScreeningItem(document_id=identifier, status=status, review=review))
+        try:
+            return ScreeningQueue(
+                collection_id=collection.collection_id,
+                collection_revision=collection.revision,
+                total_documents=len(collection.document_ids),
+                counts=ScreeningCounts.model_validate(counts),
+                items=items,
+                next_cursor=None,
+                included_document_ids=tuple(included),
+            )
+        except ValidationError as exc:
+            raise _invalid_record() from exc
+
     def list_queue(
         self,
         collection_id: str,
@@ -241,56 +400,27 @@ class SQLitePaperScreening:
         with self.collections.resolved_collection(
             collection_id, expected_revision=options.collection_revision
         ) as (connection, collection):
-            reviews = self._reviews(connection, collection)
+            snapshot = self._snapshot(connection, collection)
             if options.cursor is not None and options.cursor not in collection.document_ids:
                 raise CollectionError(
                     "screening_cursor_invalid", "Cursor must identify a collection member.", 422
                 )
-            counts: dict[str, int] = {
-                "unscreened": 0,
-                "include": 0,
-                "exclude": 0,
-                "unsure": 0,
-                "stale": 0,
-            }
-            items: list[ScreeningItem] = []
-            included = []
-            after_cursor = options.cursor is None
-            for identifier in collection.document_ids:
-                review = reviews.get(identifier)
-                item_status: ScreeningStatus = "unscreened"
-                if review is not None:
-                    item_status = (
-                        review.decision
-                        if review.collection_revision == collection.revision
-                        else "stale"
-                    )
-                counts[item_status] += 1
-                if item_status == "include":
-                    included.append(identifier)
-                if after_cursor and (options.status is None or item_status == options.status):
-                    try:
-                        items.append(
-                            ScreeningItem(document_id=identifier, status=item_status, review=review)
-                        )
-                    except ValidationError as exc:
-                        raise _invalid_record() from exc
-                if identifier == options.cursor:
-                    after_cursor = True
-            try:
-                result = ScreeningQueue(
-                    collection_id=collection.collection_id,
-                    collection_revision=collection.revision,
-                    total_documents=len(collection.document_ids),
-                    counts=ScreeningCounts.model_validate(counts),
-                    items=items[: options.limit],
-                    next_cursor=items[options.limit - 1].document_id
+            start = (
+                0 if options.cursor is None else collection.document_ids.index(options.cursor) + 1
+            )
+            items = [
+                item
+                for item in snapshot.items[start:]
+                if options.status is None or item.status == options.status
+            ]
+            result = snapshot.model_copy(
+                update={
+                    "items": items[: options.limit],
+                    "next_cursor": items[options.limit - 1].document_id
                     if len(items) > options.limit
                     else None,
-                    included_document_ids=tuple(included),
-                )
-            except ValidationError as exc:
-                raise _invalid_record() from exc
+                }
+            )
             if len(result.model_dump_json().encode("utf-8")) > MAX_RESPONSE_BYTES:
                 raise CollectionError(
                     "screening_response_too_large",
@@ -298,3 +428,91 @@ class SQLitePaperScreening:
                     413,
                 )
             return result
+
+    def export_results(
+        self,
+        collection_id: str,
+        *,
+        collection_revision: int,
+        format: ScreeningExportFormat = "json",
+    ) -> ScreeningDownload:
+        """Download every current member in one read transaction, without partial success."""
+        options = _ExportOptions(collection_revision=collection_revision, format=format)
+        with self.collections.resolved_collection(
+            collection_id, expected_revision=options.collection_revision
+        ) as (connection, collection):
+            snapshot = self._snapshot(connection, collection)
+            encoding = connection.execute("PRAGMA encoding").fetchone()[0]
+            # SQLite substr on an empty BLOB can return NULL; empty text labels are valid.
+            rows = connection.execute(
+                """SELECT document_id,
+                          CASE WHEN title = '' THEN X''
+                              ELSE substr(CAST(title AS BLOB), 1, ?) END AS title,
+                          CASE WHEN source = '' THEN X''
+                              ELSE substr(CAST(source AS BLOB), 1, ?) END AS source,
+                          typeof(title) != 'text' OR typeof(source) != 'text'
+                              OR instr(title, char(0)) > 0
+                              OR instr(source, char(0)) > 0 AS invalid
+                   FROM documents
+                   WHERE document_id IN (SELECT value FROM json_each(?))
+                   LIMIT ?""",
+                (
+                    4 * (MAX_TITLE_CHARACTERS + 1),
+                    4 * (MAX_SOURCE_CHARACTERS + 1),
+                    json.dumps(collection.document_ids),
+                    MAX_DOCUMENT_IDS + 1,
+                ),
+            ).fetchall()
+            labels = {row["document_id"]: row for row in rows}
+            try:
+                if (
+                    len(labels) != len(rows)
+                    or set(labels) != set(collection.document_ids)
+                    or any(row["invalid"] for row in rows)
+                ):
+                    raise DocumentCatalogError()
+                items = []
+                for item in snapshot.items:
+                    row = labels[item.document_id]
+                    title = _prefix(row["title"], encoding, MAX_TITLE_CHARACTERS)
+                    source = _prefix(row["source"], encoding, MAX_SOURCE_CHARACTERS)
+                    items.append(
+                        ScreeningExportItem(
+                            **item.model_dump(),
+                            title=title[:MAX_TITLE_CHARACTERS],
+                            title_truncated=len(title) > MAX_TITLE_CHARACTERS,
+                            source=source[:MAX_SOURCE_CHARACTERS],
+                            source_truncated=len(source) > MAX_SOURCE_CHARACTERS,
+                        )
+                    )
+            except (DocumentCatalogError, ValidationError) as exc:
+                error = DocumentCatalogError()
+                raise CollectionError(error.code, str(error), 409) from exc
+            result = ScreeningExport(
+                collection_id=collection.collection_id,
+                collection_name=collection.name,
+                collection_revision=collection.revision,
+                total_documents=snapshot.total_documents,
+                counts=snapshot.counts,
+                items=items,
+                included_document_ids=snapshot.included_document_ids,
+            )
+        content = (
+            (result.model_dump_json(indent=2) + "\n").encode("utf-8")
+            if options.format == "json"
+            else _csv_export(result)
+        )
+        if len(content) > MAX_EXPORT_BYTES:
+            raise CollectionError(
+                "screening_export_too_large",
+                "Complete screening export exceeds the download byte limit; no partial export.",
+                413,
+            )
+        slug = re.sub(r"[^A-Za-z0-9]+", "-", collection.name).strip("-")[:40] or "collection"
+        return ScreeningDownload(
+            content=content,
+            media_type="application/json"
+            if options.format == "json"
+            else "text/csv; charset=utf-8",
+            filename=f"screening-{slug}-{collection.collection_id}-r{collection.revision}.{options.format}",
+        )
