@@ -160,6 +160,26 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Model-Free Literal Passage Search
+
+`POST /research/search` delegates to `SQLiteLiteralSearch`, not the runner or
+retrieval pipeline. The standalone reader resolves an escaped file URI in
+read-only mode and uses parameterized SQLite `instr`/`substr` against current
+chunk text. Collection membership and chunk reads share one transaction via
+the existing collection validator's caller-owned-snapshot path. Explicit IDs
+are filtered before limit; unknown IDs never widen scope.
+
+Binary document/chunk keyset cursors bind the exact query and resolved scope,
+including collection revision. First-occurrence Unicode offsets accompany
+bounded excerpt/label projections; response bytes, stored text size, and a
+cooperative scan deadline are bounded. A connection-local function validates
+each eligible size-bounded passage's encoding; matching/projection stay in SQL.
+There is no corpus materialization,
+FTS index, migration, backfill, model call, or run/event write. One request is
+a snapshot, not a series of pages. Existing app startup still initializes its
+ordinary stores/indexes; standalone search avoids that startup path.
+See [literal search semantics, errors, and offline demo](docs/guides/LITERAL_SEARCH_GUIDE.md).
+
 ## Model-Free Research Worksheets
 
 `ResearchWorksheetService`, wired through `AppContainer.worksheets` and

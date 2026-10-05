@@ -17,6 +17,18 @@ pre-commit install
 uv run pytest tests/ -v --tb=short
 ```
 
+### CI Coverage Reports
+
+CI requires both Python 3.11 and 3.12 to pass Ruff lint/format checks, mypy,
+and the full test suite with at least 70% coverage. Each job uploads its
+`coverage.xml` to GitHub Actions as `coverage-3.11` or `coverage-3.12`,
+retained for seven days. Missing reports or failed uploads fail the job.
+
+Download a report from the workflow run's **Artifacts** section, or use
+`gh run download RUN_ID --name coverage-3.12` from a repository checkout.
+Coverage delivery no longer depends on Codecov's external uploader; Codecov
+dashboards are not updated automatically. No quality gate is disabled.
+
 ### Wheel Packaging
 
 ```bash
@@ -55,4 +67,4 @@ Do not push bulk documentation or workflow rewrites directly to `main`. Use a br
 type: feat | fix | docs | refactor | test | chore
 ```
 
-*Updated: 2026-04-06*
+*Updated: 2026-10-04*
