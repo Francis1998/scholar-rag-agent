@@ -6,6 +6,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -26,6 +27,13 @@ MAX_CHUNK_INDEX = 2**63 - 1
 
 ChunkIdentity = Annotated[str, Field(strict=True, min_length=1, max_length=MAX_CHUNK_ID_CHARACTERS)]
 ChunkCursor = Annotated[str, Field(strict=True, min_length=1, max_length=MAX_CURSOR_CHARACTERS)]
+
+
+def document_chunks_url(document_id: str) -> str | None:
+    """Dot segments cannot survive every HTTP client's path normalization."""
+    if any(part in {".", ".."} for part in document_id.split("/")):
+        return None
+    return f"/documents/{quote(document_id, safe='')}/chunks"
 
 
 class StoredChunk(BaseModel):

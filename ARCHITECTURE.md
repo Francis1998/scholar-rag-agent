@@ -172,6 +172,26 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Model-Free Literal Passage Search
+
+`POST /research/search` delegates to `SQLiteLiteralSearch`, not the runner or
+retrieval pipeline. The standalone reader resolves an escaped file URI in
+read-only mode and uses parameterized SQLite `instr`/`substr` against current
+chunk text. Collection membership and chunk reads share one transaction via
+the existing collection validator's caller-owned-snapshot path. Explicit IDs
+are filtered before limit; unknown IDs never widen scope.
+
+Binary document/chunk keyset cursors bind the exact query and resolved scope,
+including collection revision. First-occurrence Unicode offsets accompany
+bounded excerpt/label projections; response bytes, stored text size, and a
+cooperative scan deadline are bounded. A connection-local function validates
+each eligible size-bounded passage's encoding; matching/projection stay in SQL.
+There is no corpus materialization,
+FTS index, migration, backfill, model call, or run/event write. One request is
+a snapshot, not a series of pages. Existing app startup still initializes its
+ordinary stores/indexes; standalone search avoids that startup path.
+See [literal search semantics, errors, and offline demo](docs/guides/LITERAL_SEARCH_GUIDE.md).
+
 ## Model-Free Research Worksheets
 
 `ResearchWorksheetService`, wired through `AppContainer.worksheets` and
@@ -197,8 +217,13 @@ errors, privacy, limitations, and the measured offline demonstration.
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
    whitespace and produces overlapping character windows (800 characters with
-   120 overlap by default). PDF and scholarly-service connectors are separate
-   Python ingestion paths, not upload endpoints or automatic web searches.
+   120 overlap by default). Python callers may inject a custom chunker into
+   `IngestionPipeline`: construction rejects non-integer/boolean geometry,
+   nonpositive sizes, and overlap outside zero through size minus one, before
+   ingestion can persist or index anything. The HTTP endpoint exposes no chunk
+   geometry options. PDF and scholarly-service connectors are separate Python
+   ingestion paths, not upload endpoints or automatic web searches. See the
+   [chunking contract](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#chunking-http-defaults-and-python-injection).
 2. SQLite persists normalized documents and chunks. Hash-vector and BM25 indexes
    are in memory and are rebuilt from stored chunks when `AppContainer` starts.
    The graph store persists entity mentions and within-chunk co-mention edges.

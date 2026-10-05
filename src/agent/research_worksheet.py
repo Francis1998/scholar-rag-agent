@@ -3,7 +3,6 @@
 import asyncio
 import json
 from typing import Annotated, Literal, Self
-from urllib.parse import quote
 
 from pydantic import (
     BaseModel,
@@ -21,7 +20,7 @@ from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from agent.runner import AgentRunner
 from retrieval.scope import DocumentIds
 from storage.document_catalog import MAX_SOURCE_CHARACTERS, MAX_TITLE_CHARACTERS, Identity
-from storage.document_chunks import ChunkIdentity
+from storage.document_chunks import ChunkIdentity, document_chunks_url
 from storage.paper_collections import CollectionError, CollectionId, SQLitePaperCollections
 
 MAX_QUESTIONS = 5
@@ -362,11 +361,7 @@ class ResearchWorksheetService:
                 documents = tuple(
                     WorksheetDocument(
                         document_id=identifier,
-                        inspection_url=(
-                            None
-                            if any(part in {".", ".."} for part in identifier.split("/"))
-                            else f"/documents/{quote(identifier, safe='')}/chunks"
-                        ),
+                        inspection_url=document_chunks_url(identifier),
                     )
                     for identifier in document_ids
                 )

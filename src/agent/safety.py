@@ -27,7 +27,11 @@ class SafetyLimits:
     max_hops: int = 5
 
     def __post_init__(self) -> None:
-        """Validate phase timeouts on construction and dataclass replacement."""
+        """Validate execution limits on construction and dataclass replacement."""
+        for field, minimum in (("max_source_docs", 1), ("max_hops", 0)):
+            value = getattr(self, field)
+            if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
+                raise ValueError(f"{field} must be an integer >= {minimum}.")
         for field in ("retrieval_timeout_seconds", "reasoning_timeout_seconds"):
             try:
                 seconds = _TIMEOUT_SECONDS.validate_python(getattr(self, field))
