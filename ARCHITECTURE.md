@@ -232,6 +232,28 @@ below, plus FastAPI's schema/docs. It has no built-in authentication, tenant
 controls, PDF-upload UI, or public multi-turn chat endpoint. See
 [API examples](docs/EXAMPLES.md) and [Safety](SAFETY.md).
 
+### Exact-ID incremental indexing
+
+Dense and BM25 `add_chunks` upsert by exact `chunk_id`: each ID has one current
+chunk payload and vector or term-frequency record. Later values replace earlier
+ones, including duplicates within one batch. Dense embedding is computed before
+replacing an entry, so an embedding failure leaves that entry unchanged and
+propagates to the caller. BM25 removes the old term contributions before adding
+the replacement; corpus size, document frequencies, and average length describe
+the unique current chunk IDs.
+
+Replaying identical ingestion into the same application does not consume extra
+top-k slots or change retrieval scores. Rebuilding from the same persisted chunks
+preserves results; ties still sort by chunk ID, and document scope still filters
+candidates before top-k using global BM25 statistics. Different IDs remain
+distinct even when their text is identical. Content-near-duplicate collapse and
+MMR are separate opt-in behaviors, not part of this exact-ID indexing contract.
+
+This does not change ID generation or stored document replacement/deletion
+semantics: chunks with different IDs are not removed by an upsert. It does not
+make batches or multi-store ingestion atomic, or synchronize in-memory indexes
+across application workers.
+
 ### SQLite connection lifecycle
 
 The core event, document, and graph stores open a connection per operation.

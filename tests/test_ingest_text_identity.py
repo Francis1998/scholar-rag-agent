@@ -310,6 +310,48 @@ def test_preview_ranks_and_context_survive_restart_with_new_identities(
         assert after.json() == before.json()
 
 
+@pytest.mark.parametrize("scoped", [False, True])
+def test_replayed_ingestion_preserves_preview_before_and_after_restart(
+    database_path: Path, scoped: bool
+) -> None:
+    settings = offline_settings(database_path).model_copy(
+        update={"max_source_docs": 2, "max_hops": 1}
+    )
+    payloads = [
+        {"source": "synthetic:replay", "title": title, "text": "retrieval"}
+        for title in ("First paper", "Second paper")
+    ]
+    with TestClient(create_app(settings)) as client:
+        papers = [ingest(client, payload) for payload in payloads]
+        document_ids = [paper.document_id for paper in papers]
+        scope = {"document_ids": document_ids} if scoped else {}
+        query = {"query": "retrieval", **scope}
+        before = client.post("/retrieve", json=query)
+        assert before.status_code == 200, before.text
+        assert len(before.json()["sources"]) == 2
+        assert {source["chunk"]["document_id"] for source in before.json()["sources"]} == set(
+            document_ids
+        )
+        first_id = before.json()["sources"][0]["chunk"]["document_id"]
+        first_index = document_ids.index(first_id)
+        for _ in range(3):
+            assert ingest(client, payloads[first_index]) == papers[first_index]
+        replayed = client.post("/retrieve", json=query)
+        assert replayed.status_code == 200, replayed.text
+        assert len(client.get("/documents").json()["documents"]) == 2
+
+    with TestClient(create_app(settings)) as restarted:
+        after_restart = restarted.post("/retrieve", json=query)
+        assert after_restart.status_code == 200, after_restart.text
+        assert ingest(restarted, payloads[first_index]) == papers[first_index]
+        replayed_after_restart = restarted.post("/retrieve", json=query)
+        assert replayed_after_restart.status_code == 200, replayed_after_restart.text
+
+    assert after_restart.json() == before.json()
+    assert replayed.json() == before.json()
+    assert replayed_after_restart.json() == before.json()
+
+
 @pytest.mark.parametrize("retriever_type", [DenseRetriever, BM25Retriever])
 async def test_tied_chunk_ranks_are_insertion_independent_before_scope_and_limit(
     retriever_type: type[DenseRetriever] | type[BM25Retriever],

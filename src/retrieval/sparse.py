@@ -61,18 +61,24 @@ class BM25Retriever:
         """Create an empty BM25 index."""
         self._k1 = k1
         self._b = b
-        self._chunks: list[Chunk] = []
+        self._chunks: dict[str, Chunk] = {}
         self._term_frequencies: dict[str, Counter[str]] = {}
         self._document_frequencies: Counter[str] = Counter()
         self._document_lengths: dict[str, int] = {}
         self._average_length = 0.0
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Index chunks for BM25 retrieval."""
+        """Upsert by chunk ID, replacing its contribution to corpus statistics."""
         for chunk in chunks:
             terms = tokenize(chunk.text)
             frequencies: Counter[str] = Counter(terms)
-            self._chunks.append(chunk)
+            previous = self._term_frequencies.get(chunk.chunk_id)
+            if previous is not None:
+                for term in previous:
+                    self._document_frequencies[term] -= 1
+                    if self._document_frequencies[term] == 0:
+                        del self._document_frequencies[term]
+            self._chunks[chunk.chunk_id] = chunk
             self._term_frequencies[chunk.chunk_id] = frequencies
             self._document_lengths[chunk.chunk_id] = len(terms)
             self._document_frequencies.update(frequencies.keys())
@@ -90,7 +96,7 @@ class BM25Retriever:
             SearchResult(
                 chunk=chunk, score=self._score(chunk.chunk_id, query_terms), retriever="bm25"
             )
-            for chunk in self._chunks
+            for chunk in self._chunks.values()
             if allowed is None or chunk.document_id in allowed
         ]
         return sorted(scored_results, key=lambda result: (-result.score, result.chunk.chunk_id))[
