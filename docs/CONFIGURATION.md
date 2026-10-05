@@ -54,6 +54,16 @@ without extra retrieval and can leave fewer than `max_source_docs` passages.
 It is retained in the plan/events/exports, not added to `RunConfiguration`.
 See [the complete guide and offline demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
+`near_duplicate_threshold` opts both endpoints and runner methods into lexical
+collapse **after reranking and before quotas/minimum-document assessment**.
+It accepts finite strict numbers greater than zero and at most one; bools,
+strings, explicit HTTP null, non-finite values, and out-of-range values fail
+before work. Omission or Python `None` disables it. No environment setting,
+extra retrieval, model, endpoint, or budget change is introduced.
+The frozen policy and survivor paths remain reviewable in previews and saved
+evidence; threshold `1` means equal meaningful-term sets, not identical text.
+See [the complete collapse guide](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
@@ -90,9 +100,9 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-04 America/Los_Angeles** four-provider catalog-only recheck,
-the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration check,
-and model-specific limitations. Defaults and routing are unchanged.
+for the **2026-10-05 America/Los_Angeles** four-provider catalog-only recheck,
+the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
+and model-specific limitations. Defaults, endpoints, routing, and budgets remain unchanged.
 
 ### Anthropic bounded text and rollback
 
@@ -170,8 +180,14 @@ or fake failover.
 
 Each live adapter instance admits 60 HTTP attempts per sliding minute by default,
 counting the initial request, retries, and failed requests separately. Retries
-wait for capacity after backoff; waiting does not consume retry attempts. The
-three-retry cap and generation timeout remain unchanged. Admission state is
+wait for the larger of exponential backoff and a valid `Retry-After` seconds or
+HTTP-date hint, then for rate capacity. Invalid/expired hints retain exponential
+backoff; waiting does not consume retry attempts. The three-retry cap and
+generation timeout remain unchanged. Server waits are not shortened to fit a
+timeout: the runner cancels them and returns an `ERROR` run without another HTTP
+attempt. Direct adapter calls need a caller-supplied async timeout to bound
+the complete operation, including waits; no new environment setting is added.
+Admission state is
 in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 

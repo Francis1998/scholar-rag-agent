@@ -31,9 +31,17 @@ four-field run configuration. See
 `/query`, `/retrieve`, and their runner methods accept strict integers 1-50;
 HTTP null is invalid, while omission or Python `None` leaves it unconfigured.
 It checks distinct document IDs in final captured context after reranking and
-quotas, without increasing any limits. Unmet minima stop answer generation;
+optional collapse and quotas, without increasing any limits. Unmet minima stop answer generation;
 previews retain evidence and count diagnostics. See
 [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md).
+
+`near_duplicate_threshold` is also **request-only** on both endpoints and runner
+methods: a finite strict number greater than zero and at most one, not a bool
+or numeric string. HTTP null is invalid; omission or Python `None` disables
+collapse. The existing collapser runs after reranking, before quotas/minimums,
+without extra retrieval or changes to model defaults, endpoints, or budgets.
+Threshold `1` means equal meaningful-term sets, not byte-identical passages.
+See [the contract and zero-model demo](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
 
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
@@ -76,7 +84,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-04 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-05 America/Los_Angeles**;
 this catalog-only check leaves defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
@@ -94,8 +102,12 @@ answer. Existing payload budgets and routing are unchanged; see
 
 Live rate admission counts every HTTP attempt, including failed requests and
 retries, against the default 60 attempts per adapter instance per sliding minute.
-Retries wait for capacity after the existing backoff; the three-retry cap and
-phase timeouts are unchanged. This is not a shared account-wide quota. See
+Retries honor valid `Retry-After` seconds/HTTP-date hints as a minimum alongside
+exponential backoff, then wait for capacity. Invalid hints retain the existing
+delays; the three-retry cap and phase timeouts are unchanged. A hint exceeding
+the remaining reasoning budget produces a timeout, not an early retry.
+Direct adapter callers need their own overall async deadline.
+This is not a shared account-wide quota. See
 [provider backoff and rate limits](SAFETY.md#provider-backoff).
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the extended reference and local commands.
