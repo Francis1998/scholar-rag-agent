@@ -6,6 +6,17 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Complete human collection-screening exports through `SQLitePaperScreening.export_results`
+  and `GET /collections/{collection_id}/screening/export?collection_revision=N&format=json|csv`.
+  One read transaction retains all current members, current/stale/unscreened statuses,
+  full human reasons, recorded timestamps, collection/review revisions, bounded
+  catalog labels with truncation flags, consistent counts and explicit current
+  included IDs. JSON and reversible apostrophe-prefixed CSV enforce a 524,288-byte
+  full-download cap; invalid data, stale revisions and partial-selection parameters
+  fail explicitly. No model, retrieval, event writes or new persistent schema.
+  Includes the [complete guide](docs/guides/SCREENING_EXPORT_GUIDE.md), actual-output
+  synthetic/offline demo and measured GIF inspired by ASReview's human-label/export
+  workflow, without active learning, PRISMA compliance or frozen-paper claims.
 - `EValueSensitivityCueExtractor` (`retrieval/evalue_sensitivity_cues.py`): offline Elicit/Consensus/AJE E-value sensitivity cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md`.
 - `DoseResponseCueExtractor` (`retrieval/dose_response_cues.py`): offline Elicit/Consensus/AJE dose-response cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOSE_RESPONSE_CUE_EXTRACTOR_GUIDE.md`.
 - `SpilloverInterferenceCueExtractor` (`retrieval/spillover_interference_cues.py`): offline Elicit/Consensus/AJE spillover / interference / SUTVA cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SPILLOVER_INTERFERENCE_CUE_EXTRACTOR_GUIDE.md`.

@@ -40,6 +40,7 @@ database and empty provider keys. The interactive API documentation is at
 | Find exact wording across stored papers | `POST /research/search` returns literal matches, Unicode offsets, and bounded excerpts without retrieval, generation, or run writes | [Literal passage search](docs/guides/LITERAL_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
+| Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Collapse overlapping evidence before generating | Opt in to `near_duplicate_threshold` on `/query` or `/retrieve`; preserve exact survivors and reviewable transformation paths | [Near-duplicate evidence collapse](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
@@ -100,6 +101,19 @@ events. Resume after restart, inspect stale decisions after a collection edit,
 and explicitly pass current included IDs to retrieval. It is not automated
 screening or scientific validation. The [complete guide](docs/guides/PAPER_SCREENING_GUIDE.md)
 includes API/Python usage, revision conflicts, privacy limits, and GIF reproduction.
+
+## Export complete human screening results
+
+![Measured synthetic offline screening-result exports](docs/assets/screening-exports.gif)
+
+`GET /collections/{collection_id}/screening/export?collection_revision=N&format=json|csv`
+downloads all current members, labels, reasons, timestamps, revisions and counts
+in one read transaction. Stale includes never become current retrieval IDs.
+CSV text cells use a reversible apostrophe prefix; oversized full downloads fail
+instead of silently dropping rows. This measured synthetic/offline illustration
+is not a live UI, active learning, a PRISMA audit or frozen paper contents.
+The [complete API/Python guide](docs/guides/SCREENING_EXPORT_GUIDE.md) covers
+escaping, limits, errors, privacy, peer workflow attribution and reproduction.
 
 ## Export cited sources to a reference manager
 

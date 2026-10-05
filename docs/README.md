@@ -15,6 +15,7 @@ accumulated feature list in the project README.
 | Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
+| Download all current screening results as atomic, bounded JSON or spreadsheet-safe CSV | [Screening exports and measured offline demo](guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Collapse near-duplicate passages in query/preview with preserved survivor provenance | [Near-duplicate evidence collapse and zero-model demo](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |

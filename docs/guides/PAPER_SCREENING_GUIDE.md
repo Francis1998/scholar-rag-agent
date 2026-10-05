@@ -101,6 +101,13 @@ current collection, not just that page or status filter. An unknown cursor is
 an error. Labels may change between pages; pagination is not a multi-request
 snapshot. All GET requests require the expected `collection_revision`.
 
+For a complete, portable result rather than multiple queue pages, use
+`GET /collections/{collection_id}/screening/export?collection_revision=N&format=json|csv`.
+The [screening export guide](SCREENING_EXPORT_GUIDE.md) covers one-transaction
+membership/review/label reads, full-collection counts, stale includes, strict
+download bounds, and reversible spreadsheet-safe CSV. Queue and PUT behavior
+remain unchanged; exporting never initiates retrieval.
+
 Look up titles and bounded passages using the
 [document catalog](DOCUMENT_CATALOG_GUIDE.md) and
 [stored-chunk reader](DOCUMENT_CHUNKS_GUIDE.md); the queue does not copy paper
