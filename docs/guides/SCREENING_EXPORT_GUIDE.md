@@ -172,14 +172,11 @@ with Path("screening-results.csv").open(encoding="utf-8", newline="") as stream:
     rows = list(csv.DictReader(stream))
 if any(row["csv_text_encoding"] != "'apostrophe-prefix-v1" for row in rows):
     raise ValueError("Unsupported or modified CSV text encoding.")
-if any(row["included_document_id"] and not row["included_document_id"].startswith("'")
-       for row in rows):
+if any(
+    row["included_document_id"] and not row["included_document_id"].startswith("'") for row in rows
+):
     raise ValueError("The included-ID protection was removed; use the original download.")
-included_ids = [
-    row["included_document_id"][1:]
-    for row in rows
-    if row["included_document_id"]
-]
+included_ids = [row["included_document_id"][1:] for row in rows if row["included_document_id"]]
 if not included_ids:
     raise ValueError("No current includes; do not issue an unscoped retrieval request.")
 ```
