@@ -1,6 +1,11 @@
 """HTTP-based adapters for OpenAI, Anthropic, Gemini, and Moonshot Kimi."""
 
+import math
+import re
+import time
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
+from email.utils import parsedate
 from json import JSONDecodeError
 
 import httpx
@@ -16,6 +21,16 @@ from llm.rate_limit import AsyncRateLimiter, with_backoff
 from llm.schemas import LLMRequest, LLMResponse
 
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+_HTTP_DATE = re.compile(
+    r"(?:"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} [A-Z][a-z]{2} (?P<imf_year>[0-9]{4}) "
+    r"[0-9]{2}:[0-9]{2}:[0-9]{2} GMT"
+    r"|(?P<rfc850>(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day, "
+    r"[0-9]{2}-[A-Z][a-z]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT)"
+    r"|(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) [A-Z][a-z]{2} (?:[0-9]{2}| [0-9]) "
+    r"[0-9]{2}:[0-9]{2}:[0-9]{2} (?P<asctime_year>[0-9]{4})"
+    r")"
+)
 
 
 class ProviderResponseError(ValueError):
@@ -40,6 +55,59 @@ def _is_transient_http_error(exc: Exception) -> bool:
     return False
 
 
+def _retry_after_seconds(exc: Exception) -> float | None:
+    """Read an HTTP Retry-After minimum without exposing malformed header values."""
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return None
+    value = exc.response.headers.get("Retry-After")
+    if value is None:
+        return None
+    value = value.strip(" \t")
+    if value.isascii() and value.isdigit():
+        digits = value.lstrip("0") or "0"
+        # A finite float has at most 309 decimal digits; never parse an unbounded int.
+        if len(digits) > 309:
+            return None
+        integer = int(digits)
+        try:
+            seconds = float(integer)
+        except OverflowError:
+            return None
+        if seconds < integer:
+            seconds = math.nextafter(seconds, math.inf)
+        return seconds if math.isfinite(seconds) else None
+
+    # The mail parser also accepts non-HTTP forms, zones, and trailing data.
+    match = _HTTP_DATE.fullmatch(value)
+    if match is None:
+        return None
+    parts = parsedate(value)
+    if parts is None or not 0 <= parts[5] <= 60:
+        return None
+    now = time.time()
+    year, month, day, hour, minute, second = parts[:6]
+    explicit_year = match.group("imf_year") or match.group("asctime_year")
+    if explicit_year is not None:
+        year = int(explicit_year)
+    if match.group("rfc850") is not None:
+        current = datetime.fromtimestamp(now, UTC)
+        year = current.year + (year - current.year) % 100
+        if (year, month, day, hour, minute, second) > (
+            current.year + 50,
+            current.month,
+            current.day,
+            current.hour,
+            current.minute,
+            current.second,
+        ):
+            year -= 100
+    try:
+        target = datetime(year, month, day, hour, minute, tzinfo=UTC) + timedelta(seconds=second)
+    except (ValueError, OverflowError):
+        return None
+    return max(0.0, target.timestamp() - now)
+
+
 class HTTPProviderAdapter(BaseLLMAdapter):
     """Base class for optional live HTTP LLM providers."""
 
@@ -59,6 +127,7 @@ class HTTPProviderAdapter(BaseLLMAdapter):
         return await with_backoff(
             admitted_attempt,
             is_retryable=_is_transient_http_error,
+            minimum_delay_seconds=_retry_after_seconds,
         )
 
     async def _generate_once(self, request: LLMRequest) -> LLMResponse:

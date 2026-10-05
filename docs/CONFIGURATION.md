@@ -90,7 +90,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-04 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-05 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration check,
 and model-specific limitations. Defaults and routing are unchanged.
 
@@ -170,8 +170,14 @@ or fake failover.
 
 Each live adapter instance admits 60 HTTP attempts per sliding minute by default,
 counting the initial request, retries, and failed requests separately. Retries
-wait for capacity after backoff; waiting does not consume retry attempts. The
-three-retry cap and generation timeout remain unchanged. Admission state is
+wait for the larger of exponential backoff and a valid `Retry-After` seconds or
+HTTP-date hint, then for rate capacity. Invalid/expired hints retain exponential
+backoff; waiting does not consume retry attempts. The three-retry cap and
+generation timeout remain unchanged. Server waits are not shortened to fit a
+timeout: the runner cancels them and returns an `ERROR` run without another HTTP
+attempt. Direct adapter calls need a caller-supplied async timeout to bound
+the complete operation, including waits; no new environment setting is added.
+Admission state is
 in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 

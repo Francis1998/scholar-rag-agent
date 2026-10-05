@@ -46,6 +46,7 @@ async def with_backoff(
     retries: int = 3,
     initial_delay_seconds: float = 0.25,
     is_retryable: Callable[[Exception], bool] | None = None,
+    minimum_delay_seconds: Callable[[Exception], float | None] | None = None,
 ) -> T:
     """Run an async operation with exponential backoff for transient failures.
 
@@ -57,6 +58,9 @@ async def with_backoff(
             retried. When ``None`` every exception is treated as retryable,
             preserving the previous behavior. A non-retryable exception is
             re-raised immediately without consuming further attempts.
+        minimum_delay_seconds: Optional per-error minimum wait, returning finite,
+            nonnegative seconds or ``None``. Evaluated only before a retry;
+            it can extend, but never shorten, the exponential delay.
 
     Returns:
         The successful operation result.
@@ -75,7 +79,10 @@ async def with_backoff(
             last_error = exc
             if attempt == retries or not retry_predicate(exc):
                 break
-            await asyncio.sleep(delay_seconds)
+            minimum = minimum_delay_seconds(exc) if minimum_delay_seconds is not None else None
+            await asyncio.sleep(
+                max(delay_seconds, minimum) if minimum is not None else delay_seconds
+            )
             delay_seconds *= 2
     if last_error is None:
         raise RuntimeError("backoff operation failed without an exception")
