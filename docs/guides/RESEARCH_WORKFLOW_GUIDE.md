@@ -95,6 +95,34 @@ The [PDF and source adapter catalog](../README.md#source-adapters-papers-reposit
 describes optional Python ingestion paths. The `scholar-rag-ingest` CLI prints a
 normalized document; it does **not** populate the running API's SQLite corpus.
 
+### Chunking: HTTP defaults and Python injection
+
+`POST /ingest/text` uses `TextChunker` defaults: 800-character windows with
+120-character overlap after collapsing whitespace. Chunk geometry is not an HTTP
+request option. Python callers can construct and inject a custom chunker using
+their initialized document store, hybrid retriever, graph builder, and documents:
+
+```python
+from ingestion.chunking import TextChunker
+from ingestion.pipeline import IngestionPipeline
+
+chunker = TextChunker(chunk_size=400, overlap=60)
+pipeline = IngestionPipeline(document_store, hybrid_retriever, graph_builder, chunker=chunker)
+chunks = pipeline.ingest_documents(documents)
+```
+
+Both arguments must be integers, excluding booleans; floats, strings, and other
+types are not coerced. `chunk_size` must be positive, and `overlap` must be
+nonnegative and strictly smaller than `chunk_size`. For one-character windows,
+use `TextChunker(chunk_size=1, overlap=0)` explicitly: omitting overlap still
+means 120. Invalid geometry raises `ValueError` naming the field and invariant at
+construction, even for empty input, before ingestion can write documents or
+update indexes. Errors do not include source text.
+
+Valid geometry keeps the existing whitespace normalization, exact windows,
+stable chunk IDs, and provenance metadata; valid empty documents still yield no
+chunks. There is no upper size cap or automatic rewrite of an existing corpus.
+
 ## 3. Ask representative questions
 
 Start with comparison and hypothesis requests:

@@ -70,7 +70,8 @@ flowchart LR
   rrf --> merge[Merge by chunk ID and bound results]
   graph --> merge
   merge --> rerank[Lexical overlap reranking]
-  rerank --> quota[Optional per-document passage quota]
+  rerank --> collapse[Optional lexical near-duplicate collapse]
+  collapse --> quota[Optional per-document passage quota]
   quota --> snapshot[Persist exact context snapshot]
   snapshot --> minimum[Optional distinct-document minimum]
   minimum -->|Met or omitted| model[Routed provider or fake adapter]
@@ -99,11 +100,22 @@ ones. No shared index stores per-request scope. Unscoped calls preserve old
 signatures; unsupported scoped components fail rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+Optional `near_duplicate_threshold` on both endpoints and runner methods freezes
+a finite strict number greater than zero and at most one in the existing
+`EvidencePolicy`. `Executor.prepare_context` reuses `NearDuplicateCollapser`
+after reranking and before quotas/capture/minimum assessment. Survivors keep
+exact chunks, scores, and stable score order; their `near_duplicate_collapse`
+label appends the prior retriever to `path`. Final-source validation reuses the
+same algorithm without repairing invalid extension output. No candidate refill,
+network, mutable global setting, or new snapshot field is introduced.
+Threshold `1` means equal meaningful-term sets, not identical text or papers.
+See [the integrated collapse guide](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
+
 Optional `max_chunks_per_document` on `/query` and `/retrieve` freezes a strict
 1-50 integer in `QueryObservation.evidence_policy` before awaits.
 `Executor.prepare_context` applies the existing `DiversityCapGate` after normal
-reranking, before capture, within the already bounded candidate pool. It preserves
-scores, order, and chunk ownership while appending the prior reranker to gate
+reranking and any requested collapse, before capture, within the bounded pool. It preserves
+scores, order, and chunk ownership while appending the prior stage to gate
 provenance. There is no extra retrieval, oversampling, or shared index mutation;
 fewer passages may remain. The policy is recorded in the initial event and plan,
 validated in previews/exports, and compared even when saved contexts match.
@@ -113,7 +125,7 @@ See [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md).
 
 Optional `min_evidence_documents` extends the same frozen policy with a strict
 1-50 integer. Its count is taken from distinct actual document IDs in the final
-captured context, after the quota. The runner saves an insufficient snapshot and
+captured context, after collapse and the quota. The runner saves an insufficient snapshot and
 typed count diagnostic through `REASONING -> ERROR`, without invoking the
 prepared-answer hook or recording generation/`DONE`. Sufficient requests use
 `Executor.answer_prepared` on that same detached context; preparation and
@@ -128,7 +140,7 @@ answerability claim. See [Minimum evidence documents](docs/guides/MINIMUM_EVIDEN
 `POST /retrieve`, in the separate `api.retrieval` router, calls
 `AgentRunner.preview`. It uses the same analyzer, planner, task clamping,
 bounded executor retrieval, and `Executor.prepare_context` as `/query`.
-The latter method performs reranking, scope/quota enforcement, and detached
+The latter method performs reranking, optional collapse, scope/quota enforcement, and detached
 `EvidenceSnapshot.capture`; `Executor.answer` then adds generation and grounding
 only for real queries.
 
@@ -205,8 +217,13 @@ errors, privacy, limitations, and the measured offline demonstration.
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
    whitespace and produces overlapping character windows (800 characters with
-   120 overlap by default). PDF and scholarly-service connectors are separate
-   Python ingestion paths, not upload endpoints or automatic web searches.
+   120 overlap by default). Python callers may inject a custom chunker into
+   `IngestionPipeline`: construction rejects non-integer/boolean geometry,
+   nonpositive sizes, and overlap outside zero through size minus one, before
+   ingestion can persist or index anything. The HTTP endpoint exposes no chunk
+   geometry options. PDF and scholarly-service connectors are separate Python
+   ingestion paths, not upload endpoints or automatic web searches. See the
+   [chunking contract](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#chunking-http-defaults-and-python-injection).
 2. SQLite persists normalized documents and chunks. Hash-vector and BM25 indexes
    are in memory and are rebuilt from stored chunks when `AppContainer` starts.
    The graph store persists entity mentions and within-chunk co-mention edges.

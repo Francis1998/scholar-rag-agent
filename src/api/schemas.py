@@ -6,7 +6,11 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from agent.models import AgentRunResult
-from retrieval.evidence_policy import MaxChunksPerDocument, MinEvidenceDocuments
+from retrieval.evidence_policy import (
+    MaxChunksPerDocument,
+    MinEvidenceDocuments,
+    NearDuplicateThreshold,
+)
 from retrieval.scope import DocumentIds
 from storage.paper_collections import CollectionId
 
@@ -73,7 +77,7 @@ class QueryRequest(BaseModel):
         frozen=True,
         description=(
             "Optional strict integer 1-50: retain at most this many chunks per document_id "
-            "after normal reranking of the existing bounded candidate pool. Omit for no "
+            "after normal reranking and optional near-duplicate collapse. Omit for no "
             "per-document quota; explicit null is invalid. May return fewer than "
             "max_source_docs; does not fetch extra candidates or guarantee distinct papers."
         ),
@@ -83,12 +87,31 @@ class QueryRequest(BaseModel):
         frozen=True,
         description=(
             "Optional strict integer 1-50: require at least this many distinct actual "
-            "document_id values in the final captured context after reranking and quotas. "
+            "document_id values in the final context after reranking, collapse, and quotas. "
             "Insufficient queries record ERROR without answer generation; previews retain "
             "evidence and return a count assessment. Omit for no minimum; null is invalid. "
             "Document counts do not prove relevance, independence, or answerability."
         ),
     )
+    near_duplicate_threshold: NearDuplicateThreshold | SkipJsonSchema[None] = Field(
+        default=None,
+        frozen=True,
+        description=(
+            "Optional finite strict number greater than 0 and at most 1: collapse chunk "
+            "texts at or above this lexical Jaccard similarity after reranking, before "
+            "per-document quotas and minimum-document assessment. Keeps highest-scoring "
+            "representatives without refilling the bounded pool. Omit for no collapse; "
+            "null, strings, and booleans are invalid. Not semantic equivalence, paper "
+            "identity, evidence independence, or scientific truth; inspect the preview."
+        ),
+    )
+
+    @field_validator("near_duplicate_threshold", mode="before")
+    @classmethod
+    def reject_null_collapse_threshold(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("near_duplicate_threshold cannot be null; omit it for no collapse.")
+        return value
 
     @field_validator("min_evidence_documents", mode="before")
     @classmethod
