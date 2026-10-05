@@ -110,6 +110,25 @@ control. Keep this read-only endpoint local/trusted like the rest of the API.
 Invalid stored IDs fail explicitly rather than returning a truncated selection.
 See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
 
+## Literal Passage Search
+
+`POST /research/search` searches current stored text without retrieval,
+generation, or persistence. It accepts a strict 1-200-character literal query,
+at most one nonnull document/collection scope, and a strict limit of 1-50.
+Unknown explicit IDs match nothing; invalid/missing collection membership
+never falls back to the whole corpus. Cursors bind the query and resolved
+scope/revision but are not signed authorization tokens or frozen evidence.
+
+Read-only SQLite snapshots, bounded projections, a 256-KiB UTF-8 response cap,
+a 4-MiB stored-passage limit, and a cooperative five-second scan deadline bound
+the workflow. Invalid/unsupported projected data and storage failures are
+sanitized errors, not empty successes. NUL-bearing passages are rejected
+instead of silently using SQLite's NUL-terminated excerpt behavior.
+Query text, excerpts, labels, IDs, and cursor digests may be sensitive.
+No-store/nosniff headers and scope do not provide authentication or tenant
+isolation. Exact wording is not scientific support. See the
+[complete literal-search guide](docs/guides/LITERAL_SEARCH_GUIDE.md).
+
 ## Saved Paper Collections
 
 `/collections` manages metadata only. Named selections are local/trusted, not
