@@ -195,6 +195,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Interrupted time series](guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md) | ITS / level-change / slope-change wording |
 | [Event study](guides/EVENT_STUDY_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
 | [Heterogeneous treatment effects](guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md) | HTE / CATE / effect-modifier wording |
+| [Spillover / interference](guides/SPILLOVER_INTERFERENCE_CUE_EXTRACTOR_GUIDE.md) | Spillover / interference / SUTVA wording |
 | [Placebo tests](guides/PLACEBO_TEST_CUE_EXTRACTOR_GUIDE.md) | Placebo-test / falsification / null-effect wording |
 | [Negative control exposures](guides/NEGATIVE_CONTROL_EXPOSURE_CUE_EXTRACTOR_GUIDE.md) | Negative-control exposure / falsification-exposure wording |
 | [Fuzzy RDD](guides/FUZZY_RDD_CUE_EXTRACTOR_GUIDE.md) | offline cue extractor |
