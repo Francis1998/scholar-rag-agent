@@ -84,7 +84,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-04 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-05 America/Los_Angeles**;
 this catalog-only check leaves defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.

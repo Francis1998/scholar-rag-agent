@@ -363,10 +363,15 @@ class AgentRunner:
     ) -> None:
         if plan.observation.document_ids != scope:
             raise ValueError("Planned document_ids do not match the requested scope.")
-        if plan.observation.evidence_policy != policy:
-            if policy is not None and policy.min_evidence_documents is not None:
+        planned_policy = plan.observation.evidence_policy
+        if planned_policy != policy:
+            if (planned_policy.min_evidence_documents if planned_policy is not None else None) != (
+                policy.min_evidence_documents if policy is not None else None
+            ):
                 raise ValueError("Planned evidence_policy does not match min_evidence_documents.")
-            if policy is not None and policy.near_duplicate_threshold is not None:
+            if (
+                planned_policy.near_duplicate_threshold if planned_policy is not None else None
+            ) != (policy.near_duplicate_threshold if policy is not None else None):
                 raise ValueError("Planned evidence_policy does not match near_duplicate_threshold.")
             raise ValueError("Planned evidence_policy does not match the requested quota.")
 

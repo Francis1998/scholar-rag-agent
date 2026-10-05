@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import FastAPI, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -32,8 +33,14 @@ async def _evidence_validation_error(request: Request, exc: RequestValidationErr
     if not any(error["loc"][:2] == ("body", "near_duplicate_threshold") for error in errors):
         return await request_validation_exception_handler(request, exc)
     logger.warning("Evidence request validation failed: near_duplicate_threshold")
+    detail = [
+        {key: error[key] for key in ("loc", "type", "msg")}
+        if error["loc"][:2] == ("body", "near_duplicate_threshold")
+        else error
+        for error in errors
+    ]
     return JSONResponse(
-        {"detail": [{key: error[key] for key in ("loc", "type", "msg")} for error in errors]},
+        {"detail": jsonable_encoder(detail)},
         status_code=422,
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )

@@ -91,7 +91,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-04 America/Los_Angeles** catalog-only check, the separately
+for the **2026-10-05 America/Los_Angeles** catalog-only check, the separately
 dated **2026-10-01** Anthropic migration-contract check, and model-specific
 limitations. Defaults, endpoints, routing, and budgets remain unchanged.
 

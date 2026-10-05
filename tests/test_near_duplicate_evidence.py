@@ -645,3 +645,80 @@ def test_threshold_one_collapses_equal_meaningful_term_sets_not_only_identical_t
     assert len(preview["sources"]) == len(bundle.snapshot.sources) == 1
     assert bundle.snapshot.sources[0].chunk == ranked[0].chunk
     assert bundle.snapshot.sources[0].score == ranked[0].score
+
+
+@pytest.mark.parametrize("endpoint", ["/query", "/retrieve"])
+@pytest.mark.parametrize("threshold", [True, float("nan")])
+def test_mixed_validation_preserves_unrelated_errors_with_normal_fastapi_encoding(
+    collapse_api: CollapseAPI,
+    monkeypatch: pytest.MonkeyPatch,
+    endpoint: str,
+    threshold: object,
+) -> None:
+    monkeypatch.setattr(collapse_api.container.runner, "run", denied)
+    monkeypatch.setattr(collapse_api.container.runner, "preview", denied)
+    ordinary = {"query": " ", "min_evidence_documents": 0, "max_chunks_per_document": 0}
+    control = collapse_api.client.post(endpoint, json=ordinary)
+    assert control.status_code == 422
+    expected = control.json()["detail"]
+    assert any("input" in error and "ctx" in error for error in expected)
+    response = collapse_api.client.post(
+        endpoint,
+        content=json.dumps({**ordinary, "near_duplicate_threshold": threshold}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422, response.text
+    errors = response.json()["detail"]
+    assert [
+        error for error in errors if error["loc"][:2] != ["body", "near_duplicate_threshold"]
+    ] == expected
+    threshold_errors = [
+        error for error in errors if error["loc"][:2] == ["body", "near_duplicate_threshold"]
+    ]
+    assert threshold_errors
+    assert all(set(error) == {"loc", "type", "msg"} for error in threshold_errors)
+    json.dumps(response.json(), allow_nan=False)
+    assert collapse_api.container.event_log.list_events() == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "diagnostic"),
+    [
+        ("near_duplicate_threshold", None, "near_duplicate_threshold"),
+        ("near_duplicate_threshold", 1, "near_duplicate_threshold"),
+        ("max_chunks_per_document", 2, "the requested quota"),
+        ("min_evidence_documents", 3, "min_evidence_documents"),
+    ],
+)
+def test_combined_policy_diagnostic_names_the_field_that_actually_changed(
+    collapse_api: CollapseAPI,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: float | None,
+    diagnostic: str,
+) -> None:
+    runner = collapse_api.container.runner
+    original_plan = runner._planner.plan
+    options = {
+        "min_evidence_documents": 2,
+        "max_chunks_per_document": 1,
+        "near_duplicate_threshold": 0.8,
+    }
+
+    def changed(run_id: str, observation: QueryObservation) -> QueryPlan:
+        policy = EvidencePolicy(**{**options, field: value})
+        return original_plan(run_id, observation.model_copy(update={"evidence_policy": policy}))
+
+    monkeypatch.setattr(runner._planner, "plan", changed)
+    monkeypatch.setattr(runner._executor, "retrieve", denied)
+    monkeypatch.setattr(collapse_api.container.llm, "generate", denied)
+    result = collapse_api.post("/query", **options)
+    assert result["state"] == "ERROR"
+    assert result["error"] == f"Planned evidence_policy does not match {diagnostic}."
+    events = collapse_api.container.event_log.list_events(result["run_id"])
+    assert len(events) == 2
+    assert events[0]["payload"]["payload"]["evidence_policy"] == options
+    response = collapse_api.client.post("/retrieve", json={"query": QUERY, **options})
+    assert response.status_code == 500
+    assert response.json()["detail"]["code"] == "planning_failed"
+    assert collapse_api.container.event_log.list_events() == events
