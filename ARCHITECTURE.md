@@ -185,8 +185,13 @@ errors, privacy, limitations, and the measured offline demonstration.
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes
    whitespace and produces overlapping character windows (800 characters with
-   120 overlap by default). PDF and scholarly-service connectors are separate
-   Python ingestion paths, not upload endpoints or automatic web searches.
+   120 overlap by default). Python callers may inject a custom chunker into
+   `IngestionPipeline`: construction rejects non-integer/boolean geometry,
+   nonpositive sizes, and overlap outside zero through size minus one, before
+   ingestion can persist or index anything. The HTTP endpoint exposes no chunk
+   geometry options. PDF and scholarly-service connectors are separate Python
+   ingestion paths, not upload endpoints or automatic web searches. See the
+   [chunking contract](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#chunking-http-defaults-and-python-injection).
 2. SQLite persists normalized documents and chunks. Hash-vector and BM25 indexes
    are in memory and are rebuilt from stored chunks when `AppContainer` starts.
    The graph store persists entity mentions and within-chunk co-mention edges.
