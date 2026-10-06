@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `ImmortalTimeBiasCueExtractor` (`retrieval/immortal_time_bias_cues.py`): offline Elicit/Consensus/AJE immortal-time bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/IMMORTAL_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `SelectionBiasCueExtractor` (`retrieval/selection_bias_cues.py`): offline Elicit/Consensus/AJE selection-bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SELECTION_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - Complete human collection-screening exports through `SQLitePaperScreening.export_results`
   and `GET /collections/{collection_id}/screening/export?collection_revision=N&format=json|csv`.
