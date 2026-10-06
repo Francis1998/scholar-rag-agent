@@ -87,6 +87,11 @@ class Stores:
             "add_edges": lambda: self.graph.add_edges(
                 [EntityEdge(source="Alpha", target="Beta", chunk_id="chunk")]
             ),
+            "replace_chunk": lambda: self.graph.replace_chunk(
+                self.chunk,
+                [Entity(name="Alpha"), Entity(name="Gamma")],
+                [EntityEdge(source="Alpha", target="Gamma", chunk_id="chunk")],
+            ),
             "chunks_for_entities": lambda: self.graph.chunks_for_entities(["Alpha"]),
             "neighbours": lambda: self.graph.neighbours(["Alpha"]),
         }
@@ -132,6 +137,7 @@ def test_initialization_closes_connections(
         "list_chunks",
         "add_mentions",
         "add_edges",
+        "replace_chunk",
         "chunks_for_entities",
         "neighbours",
     ],
@@ -148,7 +154,7 @@ def test_successful_operations_close_connections(
 
 
 @pytest.mark.parametrize(
-    "operation", ["append_event", "add_documents", "add_mentions", "add_edges"]
+    "operation", ["append_event", "add_documents", "add_mentions", "add_edges", "replace_chunk"]
 )
 @pytest.mark.parametrize("failure", ["readonly", "commit"])
 def test_failed_writes_close_connections_and_preserve_data(
@@ -244,6 +250,12 @@ def test_serialization_failure_closes_event_connection(
             "WHEN NEW.target_name = 'Denied' "
             "BEGIN SELECT RAISE(ABORT, 'injected constraint failure'); END",
         ),
+        (
+            "replace_chunk",
+            "CREATE TRIGGER reject_edge BEFORE INSERT ON entity_edges "
+            "WHEN NEW.target_name = 'Denied' "
+            "BEGIN SELECT RAISE(ABORT, 'injected constraint failure'); END",
+        ),
     ],
 )
 def test_partial_writes_roll_back_before_closing(
@@ -265,6 +277,14 @@ def test_partial_writes_roll_back_before_closing(
                 EntityEdge(source="Alpha", target="Allowed", chunk_id="chunk"),
                 EntityEdge(source="Alpha", target="Denied", chunk_id="chunk"),
             ]
+        ),
+        "replace_chunk": lambda: stores.graph.replace_chunk(
+            stores.chunk.model_copy(update={"text": "Allowed Denied"}),
+            [Entity(name="Allowed"), Entity(name="Denied")],
+            [
+                EntityEdge(source="Alpha", target="Allowed", chunk_id="chunk"),
+                EntityEdge(source="Alpha", target="Denied", chunk_id="chunk"),
+            ],
         ),
     }
     with closing(sqlite3.connect(database)) as connection:

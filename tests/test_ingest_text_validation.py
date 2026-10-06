@@ -68,6 +68,7 @@ def ingestion_spies(ingest_app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> lis
         (hybrid._sparse_retriever, "add_chunks"),
         (container.graph_builder, "index_chunks"),
         (container.graph_builder._extractor, "extract"),
+        (container.graph_store, "replace_chunk"),
         (container.graph_store, "add_mentions"),
         (container.graph_store, "add_edges"),
         (container.event_log, "append_transition"),
