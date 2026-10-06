@@ -27,56 +27,24 @@ class SQLiteGraphStore:
     def add_mentions(self, chunk: Chunk, entities: list[Entity]) -> None:
         """Persist entity mentions for one chunk."""
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
-            connection.execute(
-                """
-                INSERT OR REPLACE INTO graph_chunks (
-                    chunk_id, document_id, title, text, source, metadata
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    chunk.chunk_id,
-                    chunk.document_id,
-                    chunk.title,
-                    chunk.text,
-                    chunk.source,
-                    json.dumps(chunk.metadata, sort_keys=True),
-                ),
-            )
-            connection.executemany(
-                """
-                INSERT OR IGNORE INTO entity_mentions (entity_name, entity_key, label, chunk_id)
-                VALUES (?, ?, ?, ?)
-                """,
-                [
-                    (entity.name, entity.name.lower(), entity.label, chunk.chunk_id)
-                    for entity in entities
-                ],
-            )
+            self._add_mentions(connection, chunk, entities)
             connection.commit()
 
     def add_edges(self, edges: list[EntityEdge]) -> None:
         """Persist entity co-mention edges."""
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
-            connection.executemany(
-                """
-                INSERT INTO entity_edges (
-                    source_key, target_key, source_name, target_name, chunk_id, weight
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    (
-                        edge.source.lower(),
-                        edge.target.lower(),
-                        edge.source,
-                        edge.target,
-                        edge.chunk_id,
-                        edge.weight,
-                    )
-                    for edge in edges
-                ],
-            )
+            self._add_edges(connection, edges)
+            connection.commit()
+
+    def replace_chunk(self, chunk: Chunk, entities: list[Entity], edges: list[EntityEdge]) -> None:
+        """Atomically replace a chunk's payload, mentions, and owned edges."""
+        if any(edge.chunk_id != chunk.chunk_id for edge in edges):
+            raise ValueError("Each edge chunk_id must match the chunk being replaced.")
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
+            connection.execute("DELETE FROM entity_mentions WHERE chunk_id = ?", (chunk.chunk_id,))
+            connection.execute("DELETE FROM entity_edges WHERE chunk_id = ?", (chunk.chunk_id,))
+            self._add_mentions(connection, chunk, entities)
+            self._add_edges(connection, edges)
             connection.commit()
 
     def chunks_for_entities(
@@ -147,8 +115,61 @@ class SQLiteGraphStore:
             ).fetchall()
         return [str(row[0]) for row in rows]
 
+    @staticmethod
+    def _add_mentions(connection: sqlite3.Connection, chunk: Chunk, entities: list[Entity]) -> None:
+        """Write the chunk and mentions within the caller's transaction."""
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO graph_chunks (
+                chunk_id, document_id, title, text, source, metadata
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                chunk.chunk_id,
+                chunk.document_id,
+                chunk.title,
+                chunk.text,
+                chunk.source,
+                json.dumps(chunk.metadata, sort_keys=True),
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT OR IGNORE INTO entity_mentions (entity_name, entity_key, label, chunk_id)
+            VALUES (?, ?, ?, ?)
+            """,
+            [
+                (entity.name, entity.name.lower(), entity.label, chunk.chunk_id)
+                for entity in entities
+            ],
+        )
+
+    @staticmethod
+    def _add_edges(connection: sqlite3.Connection, edges: list[EntityEdge]) -> None:
+        """Write edges within the caller's transaction."""
+        connection.executemany(
+            """
+            INSERT INTO entity_edges (
+                source_key, target_key, source_name, target_name, chunk_id, weight
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    edge.source.lower(),
+                    edge.target.lower(),
+                    edge.source,
+                    edge.target,
+                    edge.chunk_id,
+                    edge.weight,
+                )
+                for edge in edges
+            ],
+        )
+
     def _initialize(self) -> None:
-        """Create graph tables when missing."""
+        """Create graph tables and chunk ownership indexes when missing."""
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
@@ -185,5 +206,12 @@ class SQLiteGraphStore:
                     weight REAL NOT NULL
                 )
                 """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_entity_mentions_chunk_id "
+                "ON entity_mentions(chunk_id)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_entity_edges_chunk_id ON entity_edges(chunk_id)"
             )
             connection.commit()

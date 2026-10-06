@@ -266,10 +266,23 @@ candidates before top-k using global BM25 statistics. Different IDs remain
 distinct even when their text is identical. Content-near-duplicate collapse and
 MMR are separate opt-in behaviors, not part of this exact-ID indexing contract.
 
+`GraphRAGBuilder.index_chunks` also replaces by exact `chunk_id`. It prepares
+entities and co-mention edges before writing, then `SQLiteGraphStore.replace_chunk`
+updates the chunk payload and replaces only that chunk's mentions and edges in
+one transaction. Empty extraction clears old links; replay does not accumulate
+edges, and repeated IDs in a batch use the last successful value. Preparation or
+storage failure propagates without partially replacing that chunk's graph.
+Edge ownership is validated before opening the replacement transaction.
+Initialization adds missing chunk-ID indexes for these deletes without rewriting
+existing graph rows.
+Case-insensitive lookup, document scope, and unrelated chunks are unchanged;
+the low-level `add_mentions` and `add_edges` methods remain additive.
+
 This does not change ID generation or stored document replacement/deletion
-semantics: chunks with different IDs are not removed by an upsert. It does not
-make batches or multi-store ingestion atomic, or synchronize in-memory indexes
-across application workers.
+semantics: chunks with different IDs, including old chunks after a document
+shrinks or content-derived IDs change, are not removed by an upsert. It does
+not make batches or multi-store ingestion atomic, or synchronize in-memory
+indexes across application workers.
 
 ### SQLite connection lifecycle
 
