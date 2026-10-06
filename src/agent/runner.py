@@ -154,6 +154,7 @@ class AgentRunner:
 
         def record_context(snapshot: EvidenceSnapshot) -> None:
             nonlocal context_captured
+            cancellation_token.raise_if_cancelled()
             if len(snapshot.sources) > configuration.max_source_docs:
                 raise ValueError("Prepared evidence exceeds the effective source limit.")
             if plan is None:

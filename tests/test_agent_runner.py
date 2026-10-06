@@ -2,12 +2,13 @@
 
 import asyncio
 import sqlite3
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
+from agent.evidence import EvidenceSnapshot, GenerationRecord
 from agent.executor import Executor
 from agent.models import AgentAnswer, AgentState, QueryIntent, QueryPlan, StateTransition
 from agent.observer import QueryAnalyzer
@@ -17,8 +18,10 @@ from agent.safety import CancellationToken, SafetyLimits, with_timeout
 from ingestion.pipeline import IngestionPipeline
 from llm.fake import FakeLLMAdapter
 from llm.providers import OpenAIAdapter
+from llm.schemas import LLMRequest, LLMResponse
 from retrieval.citations import CitationGrounder
 from retrieval.dense import DenseRetriever
+from retrieval.evidence_policy import EvidencePolicy
 from retrieval.graph import GraphRAGBuilder
 from retrieval.hybrid import HybridRetriever
 from retrieval.hyde import HyDEExpander
@@ -248,6 +251,221 @@ async def test_agent_runner_transitions_to_error_when_cancelled(tmp_path: Path) 
     assert events[-1]["payload"]["from_state"] == "IDLE"
     assert events[-1]["payload"]["to_state"] == "ERROR"
     assert events[-1]["payload"]["payload"] == {"error": "agent run was cancelled"}
+
+
+@pytest.mark.parametrize("cancel_during_preparation", [False, True], ids=["continue", "cancel"])
+@pytest.mark.parametrize(
+    (
+        "document_ids",
+        "max_chunks_per_document",
+        "min_evidence_documents",
+        "near_duplicate_threshold",
+        "custom_answer",
+    ),
+    [
+        pytest.param(None, None, None, None, False, id="ordinary"),
+        pytest.param(("d1",), None, None, None, False, id="document-scope"),
+        pytest.param(None, 1, None, None, False, id="per-document-quota"),
+        pytest.param(None, None, None, 1.0, False, id="near-duplicate-collapse"),
+        pytest.param(None, None, 1, None, False, id="minimum-evidence"),
+        pytest.param(("d1",), 1, 1, 1.0, False, id="scoped-policies"),
+        pytest.param(None, None, None, None, True, id="callback-aware"),
+        pytest.param(("d1",), 1, None, 1.0, True, id="callback-aware-scoped-policies"),
+    ],
+)
+async def test_agent_runner_checks_cancellation_after_context_preparation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    document_ids: tuple[str, ...] | None,
+    max_chunks_per_document: int | None,
+    min_evidence_documents: int | None,
+    near_duplicate_threshold: float | None,
+    custom_answer: bool,
+    cancel_during_preparation: bool,
+) -> None:
+    """Cancellation during reranking stops capture and generation, not successful provenance."""
+    runner, _ = _build_runner(tmp_path)
+    executor = runner._executor
+    token = CancellationToken()
+    started, release = asyncio.Event(), asyncio.Event()
+    original_rerank = executor._reranker.rerank
+    custom_answer_calls = 0
+
+    async def blocked_rerank(query: str, retrieved: list[SearchResult]) -> list[SearchResult]:
+        started.set()
+        await release.wait()
+        return await original_rerank(query, retrieved)
+
+    async def callback_aware_answer(
+        plan: QueryPlan,
+        retrieved: list[SearchResult],
+        *,
+        on_context: Callable[[EvidenceSnapshot], None],
+        on_generation: Callable[[GenerationRecord], None],
+        evidence_policy: EvidencePolicy | None = None,
+    ) -> AgentAnswer:
+        nonlocal custom_answer_calls
+        custom_answer_calls += 1
+        snapshot = await executor.prepare_context(plan, retrieved, evidence_policy=evidence_policy)
+        on_context(snapshot)
+        return await executor.answer_prepared(plan, snapshot, on_generation=on_generation)
+
+    rerank = AsyncMock(side_effect=blocked_rerank)
+    generate = AsyncMock(wraps=executor._llm.generate)
+    monkeypatch.setattr(executor._reranker, "rerank", rerank)
+    monkeypatch.setattr(executor._llm, "generate", generate)
+    if custom_answer:
+        monkeypatch.setattr(executor, "answer", callback_aware_answer)
+
+    task = asyncio.create_task(
+        runner.run(
+            "Summarize literature on GraphRAG.",
+            token,
+            document_ids=document_ids,
+            max_chunks_per_document=max_chunks_per_document,
+            min_evidence_documents=min_evidence_documents,
+            near_duplicate_threshold=near_duplicate_threshold,
+        )
+    )
+    try:
+        await asyncio.wait_for(started.wait(), timeout=5)
+        assert not task.done()
+        generate.assert_not_called()
+        if cancel_during_preparation:
+            token.cancel()
+        release.set()
+        result = await asyncio.wait_for(task, timeout=5)
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+    rerank.assert_awaited_once()
+    assert custom_answer_calls == int(custom_answer)
+    assert not task.cancelled()
+    events = SQLiteEventLog(tmp_path / "agent.sqlite3").list_events(result.run_id)
+    expected_events = [
+        "state_transition",
+        "decision_log",
+        "state_transition",
+        "state_transition",
+    ]
+    expected_transitions = [
+        ("IDLE", "PLANNING"),
+        ("PLANNING", "RETRIEVING"),
+        ("RETRIEVING", "REASONING"),
+    ]
+    if cancel_during_preparation:
+        generate.assert_not_called()
+        assert result.state == AgentState.ERROR
+        assert result.answer is None
+        assert result.error == "agent run was cancelled"
+        assert events[-1]["payload"]["payload"] == {"error": result.error}
+        expected_events.append("state_transition")
+        expected_transitions.append(("REASONING", "ERROR"))
+    else:
+        generate.assert_awaited_once()
+        assert result.state == AgentState.DONE, result.error
+        assert result.error is None
+        assert result.answer is not None
+        assert result.answer.citations
+        snapshot = EvidenceSnapshot.model_validate(events[4]["payload"])
+        assert {source.chunk.document_id for source in snapshot.sources} == {"d1"}
+        assert generate.call_args.args[0] == snapshot.request
+        assert events[5]["payload"] == GenerationRecord(
+            provider="fake",
+            task_type=snapshot.request.task_type,
+            claim_chunk_ids=[snapshot.request.citation_chunk_ids[:3]],
+        ).model_dump(mode="json")
+        expected_events.extend(
+            ["evidence_snapshot", "generation_record", "state_transition", "state_transition"]
+        )
+        expected_transitions.extend([("REASONING", "ANSWERING"), ("ANSWERING", "DONE")])
+    assert [event["event_type"] for event in events] == expected_events
+    assert [
+        (event["payload"]["from_state"], event["payload"]["to_state"])
+        for event in events
+        if event["event_type"] == "state_transition"
+    ] == expected_transitions
+
+
+async def test_agent_runner_legacy_answer_observes_token_only_after_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Legacy overrides without capture callbacks cannot offer a pre-generation boundary."""
+    runner, _ = _build_runner(tmp_path)
+    executor = runner._executor
+    token = CancellationToken()
+    original_answer = executor.answer
+    original_rerank = executor._reranker.rerank
+
+    async def legacy_answer(plan: QueryPlan, retrieved: list[SearchResult]) -> AgentAnswer:
+        return await original_answer(plan, retrieved)
+
+    async def cancelling_rerank(query: str, retrieved: list[SearchResult]) -> list[SearchResult]:
+        token.cancel()
+        return await original_rerank(query, retrieved)
+
+    generate = AsyncMock(wraps=executor._llm.generate)
+    monkeypatch.setattr(executor, "answer", legacy_answer)
+    monkeypatch.setattr(executor._reranker, "rerank", cancelling_rerank)
+    monkeypatch.setattr(executor._llm, "generate", generate)
+
+    result = await runner.run("Summarize literature on GraphRAG.", token)
+
+    generate.assert_awaited_once()
+    assert result.state == AgentState.ERROR
+    assert result.answer is None
+    assert result.error == "agent run was cancelled"
+    events = SQLiteEventLog(tmp_path / "agent.sqlite3").list_events(result.run_id)
+    assert [event["event_type"] for event in events] == [
+        "state_transition",
+        "decision_log",
+        "state_transition",
+        "state_transition",
+        "state_transition",
+    ]
+    assert events[-1]["payload"]["from_state"] == "REASONING"
+    assert events[-1]["payload"]["to_state"] == "ERROR"
+    assert events[-1]["payload"]["payload"] == {"error": result.error}
+
+
+@pytest.mark.parametrize("minimum", [None, 1])
+async def test_agent_runner_token_does_not_preempt_started_generation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, minimum: int | None
+) -> None:
+    """Cancellation inside generation retains the captured evidence and completed generation."""
+    runner, _ = _build_runner(tmp_path)
+    token = CancellationToken()
+    original_generate = runner._executor._llm.generate
+
+    async def cancelling_generate(request: LLMRequest) -> LLMResponse:
+        token.cancel()
+        return await original_generate(request)
+
+    generate = AsyncMock(side_effect=cancelling_generate)
+    monkeypatch.setattr(runner._executor._llm, "generate", generate)
+
+    result = await runner.run(
+        "Summarize literature on GraphRAG.", token, min_evidence_documents=minimum
+    )
+
+    generate.assert_awaited_once()
+    assert result.state == AgentState.ERROR
+    assert result.answer is None
+    assert result.error == "agent run was cancelled"
+    events = SQLiteEventLog(tmp_path / "agent.sqlite3").list_events(result.run_id)
+    assert [event["event_type"] for event in events] == [
+        "state_transition",
+        "decision_log",
+        "state_transition",
+        "state_transition",
+        "evidence_snapshot",
+        "generation_record",
+        "state_transition",
+    ]
+    assert events[-1]["payload"]["from_state"] == "REASONING"
+    assert events[-1]["payload"]["to_state"] == "ERROR"
+    assert events[-1]["payload"]["payload"] == {"error": result.error}
 
 
 @pytest.mark.parametrize("phase", ["retrieval", "generation"])
