@@ -230,9 +230,26 @@ See [worksheet contracts and privacy](docs/guides/RESEARCH_WORKSHEET_GUIDE.md).
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked
 before planning, retrieval, reasoning, and the final answer transitions.
-Token cancellation produces an `ERROR` run; it is not polled inside every
-retrieval loop and does not interrupt an in-flight provider call. The HTTP API
-does not expose a cancellation endpoint.
+Token cancellation produces an `ERROR` run.
+
+For the built-in executor and callback-aware custom executors that invoke
+`on_context` before generation, the token is also checked at the shared
+evidence-capture boundary after context preparation/reranking. Cancellation
+observed there produces a durable `REASONING -> ERROR` with
+`agent run was cancelled`, without persisting the prepared snapshot, starting
+generation, or recording a generation result or `DONE`. This applies with or
+without document selection, per-document quotas, near-duplicate collapse, and
+a minimum-document requirement, even when that minimum would not be met.
+
+The token is not polled inside every retrieval loop and does not interrupt an
+in-flight provider call. If cancellation is first observed after generation,
+the earlier snapshot and completed generation record remain persisted, while
+the run returns `ERROR` instead of an answer or `DONE`. Legacy ordinary answer
+overrides without capture callbacks remain supported, but cancellation during
+their preparation can only be observed after the override returns; their
+generation is not preemptively stopped. Custom components are trusted, not
+sandboxed: the callback cannot prevent arbitrary model calls made before it.
+The HTTP API does not expose a cancellation endpoint.
 
 Cancelling an already-started `asyncio.Task` running `AgentRunner.run` is different:
 once cancellation reaches the runner, it persists one terminal `ERROR` transition
