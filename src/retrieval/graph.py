@@ -51,16 +51,15 @@ class GraphRAGBuilder:
         self._extractor = extractor or SpacyEntityExtractor()
 
     def index_chunks(self, chunks: list[Chunk]) -> None:
-        """Extract entities and co-mention edges for chunks."""
+        """Replace each chunk's graph after preparing its entities and co-mention edges."""
         for chunk in chunks:
             entities = self._extractor.extract(chunk.text)
             normalized_names = sorted({entity.name for entity in entities})
-            self._graph_store.add_mentions(chunk, entities)
             edges = [
                 EntityEdge(source=left, target=right, chunk_id=chunk.chunk_id)
                 for left, right in combinations(normalized_names, 2)
             ]
-            self._graph_store.add_edges(edges)
+            self._graph_store.replace_chunk(chunk, entities, edges)
 
 
 class GraphRetriever:
