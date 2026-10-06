@@ -55,6 +55,7 @@ By contrast, importing the server entrypoint `api.main` creates its default
 | `GET /runs/{run_id}/events` | Event array for the run |
 | `GET /runs/{run_id}/export?format=json` | Recorded evidence bundle; JSON is the default format |
 | `GET /runs/{run_id}/export?format=markdown` | Human-readable rendering of the recorded bundle |
+| `GET /runs/{run_id}/export?format=html` | [Self-contained offline reader](guides/OFFLINE_EVIDENCE_READER_GUIDE.md) with local citation links, literal frozen text and a 4 MiB full-render cap |
 | `GET /runs/{run_id}/bibliography?format=bibtex` | Default: cited-only frozen-source BibTeX, deduplicated by exact document ID |
 | `GET /runs/{run_id}/bibliography?format=json` | Exact document/cited-chunk provenance, selected metadata, BibTeX, and warnings |
 | `GET /runs/{run_id}/corpus-drift` | Bounded unchanged/changed/missing findings comparing frozen chunk identities and digests with the persisted corpus; no retrieval or generation |

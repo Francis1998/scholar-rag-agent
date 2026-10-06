@@ -354,7 +354,7 @@ def test_unknown_run_is_404(api: tuple[TestClient, AppContainer, Path], fmt: str
     assert response.json()["detail"]["code"] == "run_not_found"
 
 
-@pytest.mark.parametrize("fmt", ["html", "JSON", "", "../json"])
+@pytest.mark.parametrize("fmt", ["xml", "JSON", "", "../json"])
 def test_invalid_export_format_is_422(api: tuple[TestClient, AppContainer, Path], fmt: str) -> None:
     client, _, _ = api
     response = client.get("/runs/unknown/export", params={"format": fmt})

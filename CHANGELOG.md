@@ -6,6 +6,15 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Offline HTML evidence reader through `GET /runs/{run_id}/export?format=html`
+  and `agent.evidence_html.render_html`, using only validated saved bundles.
+  Proposed, grounded and missing references stay distinct; generated local links
+  resolve to full frozen passages with recorded provenance and collapsible trace.
+  Literal text, hash-only fixed-CSS CSP, safe attachment headers and a fixed
+  4 MiB rendered-byte limit prevent active content or silent truncation. No scripts,
+  network, new retrieval/generation, events, schema or dependencies; existing
+  JSON/Markdown remain unchanged. Includes the [API/Python and portfolio guide](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md)
+  and a measured, isolated synthetic demo/GIF, not scientific validation.
 - `ColliderStratificationCueExtractor` (`retrieval/collider_stratification_cues.py`): offline Elicit/Consensus/AJE collider-stratification cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/COLLIDER_STRATIFICATION_CUE_EXTRACTOR_GUIDE.md`.
 - `ImmortalTimeBiasCueExtractor` (`retrieval/immortal_time_bias_cues.py`): offline Elicit/Consensus/AJE immortal-time bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/IMMORTAL_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `SelectionBiasCueExtractor` (`retrieval/selection_bias_cues.py`): offline Elicit/Consensus/AJE selection-bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SELECTION_BIAS_CUE_EXTRACTOR_GUIDE.md`.

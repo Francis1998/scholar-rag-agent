@@ -23,6 +23,7 @@ accumulated feature list in the project README.
 | Stop generation below a final-context document minimum while retaining inspectable evidence | [Minimum evidence documents and measured demo](guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
 | Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Read a completed saved answer offline with local links to exact frozen passages | [Offline HTML evidence reader and measured demo](guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
 | Export only a completed saved answer's cited references as BibTeX with provenance | [Saved bibliography and measured offline demo](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
 | Save immutable human notes on exact character spans in frozen run evidence | [Exact quote annotations and measured offline demo](guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |

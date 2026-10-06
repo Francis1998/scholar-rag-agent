@@ -1,5 +1,28 @@
 # Demo
 
+## Offline HTML evidence reader
+
+![Measured synthetic offline HTML reader](assets/offline-evidence-reader.gif)
+
+This generated illustration comes from actual API execution, not a screen
+recording: two synthetic notes, a saved fake answer, six local source links,
+and byte-identical HTML/JSON/Markdown after corpus deletion and restart.
+Export performs no generation, retrieval, event writes or network calls.
+
+```bash
+READER_DIR="$(mktemp -d)/offline-evidence-reader"
+uv run --no-sync python -m scripts.demo_evidence_html --output-dir "$READER_DIR"
+uv run --no-sync python -m scripts.create_evidence_html_gif \
+  --transcript "$READER_DIR/transcript.txt" \
+  --output "$READER_DIR/offline-evidence-reader.gif"
+```
+
+Open the saved HTML without the API and inspect the companion JSON, measured
+checks and transcript. The scripts ignore ambient settings/provider keys and
+refuse overwrites; the new temporary database is removed. The
+[complete guide](guides/OFFLINE_EVIDENCE_READER_GUIDE.md) covers API/Python use,
+literal text and CSP, limits, attribution, privacy and portfolio boundaries.
+
 ## Near-duplicate evidence collapse
 
 ![Measured synthetic evidence collapse](assets/near-duplicate-evidence.gif)
