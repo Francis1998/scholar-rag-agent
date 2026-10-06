@@ -49,6 +49,7 @@ database and empty provider keys. The interactive API documentation is at
 | Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
+| Read a completed answer offline | Download one static HTML file with proposed/accepted citation links to frozen passages, recorded provenance and expandable trace; no scripts or network | [Offline evidence reader and measured demo](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
 | Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
@@ -58,6 +59,20 @@ database and empty provider keys. The interactive API documentation is at
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Read saved evidence without the server
+
+![Measured synthetic offline HTML evidence reader](docs/assets/offline-evidence-reader.gif)
+
+`GET /runs/{run_id}/export?format=html` saves a single script-free file with
+browser-native citation links, collapsible trace, Find and Print support.
+Proposed references are distinguished from accepted-by-recorded-grounding IDs;
+missing references stay explicit. Full frozen passages, scores, paths, metadata
+and digests remain available after corpus deletion and restart. This measured
+synthetic illustration is not a screen recording or scientific validation.
+The [complete API/Python guide](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md) covers
+hash-only CSS CSP, literal text safety, the fail-not-truncate 4 MiB cap, privacy,
+workflow sources and reproducible artifacts. JSON remains the default.
 
 ## Inspect near-duplicate evidence before generating
 
@@ -165,7 +180,7 @@ Forgot the run ID? `GET /runs?limit=20` discovers persisted runs with bounded
 query previews and creation-ordered pagination. Its recorded state is not a
 liveness claim; see [run history and restart recovery](docs/guides/RUN_HISTORY_GUIDE.md).
 
-`GET /runs/{run_id}/export?format=json|markdown` reconstructs a completed run from
+`GET /runs/{run_id}/export?format=json|markdown|html` reconstructs a completed run from
 stored evidence, without another retrieval or generation call. Keep the query,
 plan, answer, claims, exact source chunks, trace, and nonsecret model provenance
 together for review. The saved context survives corpus changes and restart; this

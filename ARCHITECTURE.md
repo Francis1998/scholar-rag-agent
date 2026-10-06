@@ -415,11 +415,20 @@ is needed.
 `EvidenceExporter` depends only on the event log. It validates a completed run,
 resolves references against the saved snapshot, preserves the original answer
 and warnings, and freezes the trace at the first terminal event.
-`GET /runs/{run_id}/export?format=json|markdown` derives both downloads from this
+`GET /runs/{run_id}/export?format=json|markdown|html` derives all downloads from this
 versioned model, without document-store reads, retrieval, or generation.
 Unknown event payloads are omitted explicitly rather than exporting arbitrary
 diagnostic content. Snapshot/provenance trace entries reference the top-level
 bundle fields to avoid duplicating those event payloads.
+
+The pure `agent.evidence_html.render_html` consumes only that validated bundle.
+Its semantic static document distinguishes proposed from grounded references,
+uses rank-derived local fragment links, and escapes all captured values as text.
+One fixed stylesheet is hash-authorized by CSP in both HTTP and saved-file
+metadata. No scripts, remote resources, current corpus or generation are involved.
+The full escaped UTF-8 document has a fixed 4 MiB cap; excess and unrepresentable
+literal text fail explicitly without truncation or changing JSON/Markdown.
+See the [offline reader guide](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md).
 
 No new database or event table is introduced. Existing `/query` responses are
 unchanged; `/events` gains the two additive event types and therefore includes

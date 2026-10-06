@@ -1,7 +1,8 @@
 # Provider Models and Compatibility
 
-The four official model catalogs linked below were checked
-**2026-10-05 America/Los_Angeles**. This catalog-only check leaves the selected
+The official OpenAI/Anthropic catalogs, Gemini latest-model guide and
+[Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
+**2026-10-06 America/Los_Angeles**. This catalog-only check leaves the selected
 defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
 Anthropic lists Sonnet 5.5, Opus 5.5, and Fable 5.1; Gemini 3.8 Flash is GA;
 Kimi K3 remains the Kimi default. Anthropic's general Opus 5.5 recommendation
@@ -28,8 +29,10 @@ account and workload.
 The current [OpenAI catalog](https://developers.openai.com/api/docs/models.md)
 also positions `gpt-6.1-sol` for balancing intelligence and cost, and
 `gpt-6-luna` for cost-sensitive, high-volume workloads. These are provider
-catalog descriptions, not measured tradeoffs or additional adapter-contract
-tests in this repository; the selected flagship and routing remain unchanged.
+catalog descriptions
+([6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)),
+not measured tradeoffs or additional adapter-contract tests in this repository;
+the selected flagship and routing remain unchanged.
 
 The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
 available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro

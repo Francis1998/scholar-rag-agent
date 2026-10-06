@@ -1,4 +1,4 @@
-"""Safe JSON and literal-Markdown downloads for completed evidence bundles."""
+"""Safe JSON, literal-Markdown and offline HTML downloads for completed evidence bundles."""
 
 import json
 from typing import Literal
@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from agent.evidence import EvidenceBundle, text_digest
+from agent.evidence_html import HTML_CSP, render_html
 from agent.markdown import literal_block as _literal
 from api.dependencies import AppContainer
 from retrieval.evidence_policy import assess_evidence
@@ -137,42 +138,57 @@ def render_markdown(bundle: EvidenceBundle) -> str:
     "/runs/{run_id}/export",
     response_model=EvidenceBundle,
     responses={
-        200: {"content": {"text/markdown": {"schema": {"type": "string"}}}},
+        200: {
+            "content": {
+                "text/markdown": {"schema": {"type": "string"}},
+                "text/html": {"schema": {"type": "string"}},
+            }
+        },
         404: {"description": "Unknown run"},
-        409: {"description": "Incomplete, failed, legacy, or invalid saved evidence"},
+        409: {"description": "Unexportable saved evidence or unrepresentable HTML text"},
+        413: {"description": "Complete HTML exceeds the rendered UTF-8 byte limit"},
     },
 )
 def export_run(
-    request: Request, run_id: str, format: Literal["json", "markdown"] = "json"
+    request: Request, run_id: str, format: Literal["json", "markdown", "html"] = "json"
 ) -> Response:
     """Download a completed run without retrieval, generation, or live provider calls."""
     container: AppContainer = request.app.state.container
     try:
         bundle = container.evidence_exporter.export(run_id)
+        if format == "html":
+            content = render_html(bundle)
+            extension = "html"
+            media_type = "text/html"
+        elif format == "markdown":
+            content = render_markdown(bundle)
+            extension = "md"
+            media_type = "text/markdown"
+        else:
+            content = (
+                json.dumps(
+                    bundle.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, indent=2
+                )
+                + "\n"
+            )
+            extension = "json"
+            media_type = "application/json"
     except EvidenceExportError as exc:
         raise HTTPException(
             status_code=exc.status_code,
             detail={"code": exc.code, "message": str(exc)},
-            headers={"Cache-Control": "no-store"},
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
         ) from exc
-    if format == "markdown":
-        content = render_markdown(bundle)
-        extension = "md"
-        media_type = "text/markdown"
-    else:
-        content = (
-            json.dumps(bundle.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, indent=2)
-            + "\n"
-        )
-        extension = "json"
-        media_type = "application/json"
     filename = f"evidence-{text_digest(run_id)[:16]}.{extension}"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if format == "html":
+        headers["Content-Security-Policy"] = HTML_CSP + "; frame-ancestors 'none'"
     return Response(
         content=content,
         media_type=media_type,
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Cache-Control": "no-store",
-            "X-Content-Type-Options": "nosniff",
-        },
+        headers=headers,
     )

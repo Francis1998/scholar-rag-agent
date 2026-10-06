@@ -1,9 +1,15 @@
 # Portable research evidence bundles
 
-A completed query can now be downloaded as a **versioned JSON bundle** or a
-**readable Markdown report**. Both use the same saved run: original question,
+A completed query can be downloaded as a **versioned JSON bundle**, a
+**readable Markdown report**, or a **self-contained offline HTML reader**.
+All three use the same saved run: original question,
 retrieval plan and operational rationale, answer, claims, citations, exact
 final-context passages, provider/model identity when available, and ordered events.
+
+The [offline reader guide](OFFLINE_EVIDENCE_READER_GUIDE.md) covers `format=html`:
+local claim/citation links, literal text, hash-only CSS CSP, explicit rendering
+limits and the measured synthetic demo. JSON remains the default; the original
+JSON/Markdown demo and schema described below remain unchanged.
 
 Forgot the run ID? [Run history](RUN_HISTORY_GUIDE.md) adds `GET /runs` discovery
 from persisted events, including after restart. Its export URLs are navigation
@@ -142,9 +148,10 @@ python -m json.tool evidence-demo/api/bundle.json
 ```
 
 `GET /runs/{run_id}/export` defaults to JSON. Responses are attachments with
-`application/json` or `text/markdown; charset=utf-8`, `Cache-Control: no-store`,
+`application/json`, `text/markdown; charset=utf-8`, or `text/html; charset=utf-8`,
+`Cache-Control: no-store`,
 and `X-Content-Type-Options: nosniff`. The suggested filename is
-`evidence-<16 hex characters>.json` or `.md`, derived from a hash of the run ID,
+`evidence-<16 hex characters>.json`, `.md`, or `.html`, derived from a hash of the run ID,
 never from a source title, URL, or path. The curl commands above choose their own
 fixed output filenames.
 
@@ -264,11 +271,13 @@ selected corpus.
 | HTTP status | `detail.code` | Meaning |
 | --- | --- | --- |
 | `404` | `run_not_found` | No saved events for this ID |
-| `422` | FastAPI validation response | `format` is not exactly `json` or `markdown` |
+| `422` | FastAPI validation response | `format` is not exactly `json`, `markdown`, or `html` |
 | `409` | `run_incomplete` | No terminal event, including an interrupted process |
 | `409` | `run_failed` | First terminal event is `ERROR`, even if a snapshot was already saved |
 | `409` | `snapshot_unavailable` | Legacy/completed run has no generation-time snapshot |
 | `409` | `invalid_run_record` | Missing/inconsistent required records, invalid digests, or unsupported saved version |
+| `409` | `html_text_not_representable` | HTML-only: literal text cannot be faithfully represented as UTF-8 HTML |
+| `413` | `html_export_too_large` | HTML-only: full escaped output exceeds 4,194,304 UTF-8 bytes; no truncation |
 
 Except for FastAPI's standard validation response, errors use:
 
