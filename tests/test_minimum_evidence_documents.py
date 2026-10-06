@@ -774,14 +774,15 @@ async def test_guarded_preview_cancellation_and_timeout_never_journal(
     assert evidence_api.container.event_log.list_events() == []
 
 
-async def test_cooperative_cancellation_before_and_during_preparation_stops_generation(
-    evidence_api: EvidenceAPI, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("minimum", [1, 4])
+async def test_cooperative_cancellation_before_and_during_preparation_stops_capture_and_generation(
+    evidence_api: EvidenceAPI, monkeypatch: pytest.MonkeyPatch, minimum: int
 ) -> None:
     runner = evidence_api.container.runner
     token = CancellationToken()
     token.cancel()
     monkeypatch.setattr(evidence_api.container.llm, "generate", denied)
-    cancelled = await runner.run(QUERY, token, min_evidence_documents=1)
+    cancelled = await runner.run(QUERY, token, min_evidence_documents=minimum)
     assert cancelled.error == "agent run was cancelled"
     assert len(evidence_api.container.event_log.list_events(cancelled.run_id)) == 1
     token = CancellationToken()
@@ -795,10 +796,18 @@ async def test_cooperative_cancellation_before_and_during_preparation_stops_gene
         return snapshot
 
     monkeypatch.setattr(runner._executor, "prepare_context", cancelling)
-    result = await runner.run(QUERY, token, min_evidence_documents=1)
+    result = await runner.run(QUERY, token, min_evidence_documents=minimum)
     assert result.state == AgentState.ERROR and result.error == "agent run was cancelled"
     events = evidence_api.container.event_log.list_events(result.run_id)
-    assert events[-2]["event_type"] == "evidence_snapshot"
+    assert [event["event_type"] for event in events] == [
+        "state_transition",
+        "decision_log",
+        "state_transition",
+        "state_transition",
+        "state_transition",
+    ]
+    assert events[-1]["payload"]["from_state"] == "REASONING"
+    assert events[-1]["payload"]["to_state"] == "ERROR"
     assert events[-1]["payload"]["payload"] == {"error": result.error}
 
 

@@ -263,8 +263,11 @@ The existing effective candidate chunk cap, graph-hop limit, retrieval timeout,
 limit all remain enforced. Oversized/inconsistent captures fail explicitly;
 they are never truncated into a passing assessment. **Preparation and generation
 share one existing reasoning timeout**, not two independent budgets. Captured
-evidence may remain after a timeout/cancellation; a cooperative cancellation
-observed after preparation also stops before generation.
+evidence may remain after a timeout or cancellation that arrives after capture.
+A cooperative cancellation already requested at the shared post-preparation
+capture boundary stops before both snapshot persistence and generation, even
+when the minimum would not be met. The run records `REASONING -> ERROR` with
+`agent run was cancelled`, not an insufficient-evidence diagnostic or `DONE`.
 
 The built-in executor adds `answer_prepared(plan, snapshot, *, on_generation=...)`
 to consume the validated, already captured context without reranking again.
