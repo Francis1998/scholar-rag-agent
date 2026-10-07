@@ -1,16 +1,16 @@
-"""Paper-scoped multi-turn chat memory for scholarly RAG sessions.
+"""Provider-agnostic SQLite chat memory for scholarly RAG library callers.
 
-Inspired by LocalGPT / PrivateGPT academic chat memory and PaperQA multi-turn
-paper Q&A. Stores conversation turns keyed by ``session_id`` with optional
-``document_ids`` / ``chunk_ids`` provenance. Distinct from the agent event log
-(run state machine) and from retrieval postprocessors. Local SQLite memory for
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 paper-chat pipelines.
+Stores conversation turns keyed by ``session_id`` with optional
+``document_ids`` / ``chunk_ids`` provenance. This standalone helper is distinct
+from the agent event log and retrieval postprocessors; HTTP routes, the agent
+runner, and LLM adapters do not automatically store or replay these turns.
 """
 
 from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,8 +30,9 @@ class PaperChatMemory:
 
     Turns are append-only per ``session_id``. ``format_context`` builds a
     bounded transcript string suitable for LLM prompts. Inputs are not mutated.
-    Local memory for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
-    paper-chat pipelines (not a DOI connector).
+    Each database operation closes its connection after its transaction exits.
+    Callers explicitly manage sessions and pass context to their chosen model;
+    this helper does not make provider calls or integrate with HTTP endpoints.
     """
 
     def __init__(self, database_path: Path | str) -> None:
@@ -65,7 +66,7 @@ class PaperChatMemory:
             raise ValueError("content must be a non-empty string")
         docs = tuple(item.strip() for item in (document_ids or ()) if item.strip())
         chunks = tuple(item.strip() for item in (chunk_ids or ()) if item.strip())
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             cursor = connection.execute(
                 """
                 INSERT INTO paper_chat_turns (
@@ -100,7 +101,7 @@ class PaperChatMemory:
             return []
         if limit is not None and limit <= 0:
             return []
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             if limit is None:
                 rows = connection.execute(
                     """
@@ -163,7 +164,7 @@ class PaperChatMemory:
         session = session_id.strip()
         if not session:
             return 0
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             cursor = connection.execute(
                 "DELETE FROM paper_chat_turns WHERE session_id = ?",
                 (session,),
@@ -173,7 +174,7 @@ class PaperChatMemory:
 
     def _initialize(self) -> None:
         """Create the paper-chat schema when missing."""
-        with sqlite3.connect(self._database_path) as connection:
+        with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS paper_chat_turns (
