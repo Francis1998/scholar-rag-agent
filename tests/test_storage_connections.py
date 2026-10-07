@@ -1,5 +1,6 @@
-"""Core stores release real SQLite connections without relying on garbage collection."""
+"""Storage helpers release real SQLite connections without relying on garbage collection."""
 
+import json
 import sqlite3
 from collections.abc import Callable, Iterator
 from contextlib import closing
@@ -13,12 +14,20 @@ from retrieval.models import Chunk, Document, Entity, EntityEdge
 from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
 from storage.graph_store import SQLiteGraphStore
+from storage.paper_chat_memory import ChatTurn, PaperChatMemory
 
-StoreFactory = type[SQLiteEventLog] | type[SQLiteDocumentStore] | type[SQLiteGraphStore]
+StoreFactory = (
+    type[SQLiteEventLog]
+    | type[SQLiteDocumentStore]
+    | type[SQLiteGraphStore]
+    | type[PaperChatMemory]
+)
 
 
 class TrackedConnection(sqlite3.Connection):
     transaction_at_close: bool | None = None
+    transaction_at_commit: bool | None = None
+    commit_calls = 0
     fail_commit = False
 
     def close(self) -> None:
@@ -26,6 +35,8 @@ class TrackedConnection(sqlite3.Connection):
         super().close()
 
     def commit(self) -> None:
+        self.commit_calls += 1
+        self.transaction_at_commit = self.in_transaction
         if self.fail_commit:
             raise sqlite3.OperationalError("injected commit failure")
         super().commit()
@@ -41,9 +52,9 @@ class ConnectionTracker:
         connections = self.connections[start:]
         assert len(connections) == 1
         for connection in connections:
-            assert connection.transaction_at_close is False
             with pytest.raises(sqlite3.ProgrammingError, match="closed"):
                 connection.execute("SELECT 1")
+            assert connection.transaction_at_close is False
 
 
 @pytest.fixture
@@ -114,7 +125,9 @@ def seed_stores(database: Path) -> Stores:
     return stores
 
 
-@pytest.mark.parametrize("factory", [SQLiteEventLog, SQLiteDocumentStore, SQLiteGraphStore])
+@pytest.mark.parametrize(
+    "factory", [SQLiteEventLog, SQLiteDocumentStore, SQLiteGraphStore, PaperChatMemory]
+)
 @pytest.mark.parametrize("read_only", [False, True])
 def test_initialization_closes_connections(
     tmp_path: Path, tracker: ConnectionTracker, factory: StoreFactory, read_only: bool
@@ -172,6 +185,217 @@ def test_failed_writes_close_connections_and_preserve_data(
     tracker.assert_closed_since(start)
     with closing(sqlite3.connect(database)) as connection:
         assert list(connection.iterdump()) == before
+
+
+def seed_chat_memory(database: Path) -> PaperChatMemory:
+    memory = PaperChatMemory(database)
+    memory.append_turn("s1", "user", "one")
+    memory.append_turn("s1", "assistant", "two")
+    memory.append_turn("s1", "user", "three")
+    memory.append_turn("s2", "user", "other")
+    return memory
+
+
+@pytest.mark.parametrize(
+    ("operation", "expected", "commits"),
+    [
+        ("append_turn", 5, 1),
+        (
+            "get_turns",
+            [ChatTurn("user", "one"), ChatTurn("assistant", "two"), ChatTurn("user", "three")],
+            0,
+        ),
+        ("get_recent_turns", [ChatTurn("assistant", "two"), ChatTurn("user", "three")], 0),
+        ("get_missing_turns", [], 0),
+        ("clear_session", 3, 1),
+        ("clear_missing_session", 0, 1),
+        ("format_context", "assistant: two\nuser: three", 0),
+        ("format_missing_context", "", 0),
+        ("format_context_without_room", "", 0),
+    ],
+)
+def test_paper_chat_operations_close_connections(
+    tmp_path: Path, tracker: ConnectionTracker, operation: str, expected: object, commits: int
+) -> None:
+    memory = seed_chat_memory(tmp_path / "chat.sqlite3")
+    operations: dict[str, Callable[[], object]] = {
+        "append_turn": lambda: memory.append_turn("s1", "assistant", "four"),
+        "get_turns": lambda: memory.get_turns("s1"),
+        "get_recent_turns": lambda: memory.get_turns("s1", limit=2),
+        "get_missing_turns": lambda: memory.get_turns("missing"),
+        "clear_session": lambda: memory.clear_session("s1"),
+        "clear_missing_session": lambda: memory.clear_session("missing"),
+        "format_context": lambda: memory.format_context("s1", max_chars=26),
+        "format_missing_context": lambda: memory.format_context("missing"),
+        "format_context_without_room": lambda: memory.format_context("s1", max_chars=1),
+    }
+    start = len(tracker.connections)
+    result = operations[operation]()
+    assert type(result) is type(expected)
+    assert result == expected
+    tracker.assert_closed_since(start)
+    assert tracker.connections[-1].commit_calls == commits
+
+
+def test_paper_chat_initialization_commit_failure_closes_connection(
+    tmp_path: Path, tracker: ConnectionTracker
+) -> None:
+    database = tmp_path / "chat.sqlite3"
+    tracker.fail_commit = True
+    with pytest.raises(sqlite3.OperationalError, match=r"^injected commit failure$"):
+        PaperChatMemory(database)
+    tracker.assert_closed_since(0)
+    assert tracker.connections[0].commit_calls == 1
+    assert tracker.connections[0].transaction_at_commit is False
+    with closing(sqlite3.connect(database)) as connection:
+        # Schema DDL retains SQLite's existing autocommit behavior.
+        assert connection.execute(
+            "SELECT type, name FROM sqlite_master "
+            "WHERE name IN ('paper_chat_turns', 'idx_paper_chat_session') ORDER BY type"
+        ).fetchall() == [
+            ("index", "idx_paper_chat_session"),
+            ("table", "paper_chat_turns"),
+        ]
+
+
+@pytest.mark.parametrize("operation", ["append_turn", "clear_session"])
+@pytest.mark.parametrize("failure", ["readonly", "commit"])
+def test_paper_chat_failed_writes_roll_back_before_closing(
+    tmp_path: Path, tracker: ConnectionTracker, operation: str, failure: str
+) -> None:
+    database = tmp_path / "chat.sqlite3"
+    memory = seed_chat_memory(database)
+    with closing(sqlite3.connect(database)) as connection:
+        before = list(connection.iterdump())
+    tracker.read_only = failure == "readonly"
+    tracker.fail_commit = failure == "commit"
+    start = len(tracker.connections)
+    with pytest.raises(sqlite3.OperationalError, match=failure):
+        if operation == "append_turn":
+            memory.append_turn("s1", "assistant", "four")
+        else:
+            memory.clear_session("s1")
+    tracker.assert_closed_since(start)
+    if failure == "commit":
+        assert tracker.connections[-1].commit_calls == 1
+        assert tracker.connections[-1].transaction_at_commit is True
+    else:
+        assert tracker.connections[-1].commit_calls == 0
+    with closing(sqlite3.connect(database)) as connection:
+        assert list(connection.iterdump()) == before
+
+
+@pytest.mark.parametrize("operation", ["get_turns", "get_recent_turns", "format_context"])
+@pytest.mark.parametrize("failure", ["missing_table", "document_json", "chunk_json"])
+def test_paper_chat_failed_reads_close_connections(
+    tmp_path: Path, tracker: ConnectionTracker, operation: str, failure: str
+) -> None:
+    database = tmp_path / "chat.sqlite3"
+    memory = seed_chat_memory(database)
+    corrupt_sql = {
+        "missing_table": "DROP TABLE paper_chat_turns",
+        "document_json": "UPDATE paper_chat_turns SET document_ids = 'invalid json'",
+        "chunk_json": "UPDATE paper_chat_turns SET chunk_ids = 'invalid json'",
+    }
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute(corrupt_sql[failure])
+        connection.commit()
+    operations: dict[str, Callable[[], object]] = {
+        "get_turns": lambda: memory.get_turns("s1"),
+        "get_recent_turns": lambda: memory.get_turns("s1", limit=2),
+        "format_context": lambda: memory.format_context("s1"),
+    }
+    error = sqlite3.OperationalError if failure == "missing_table" else JSONDecodeError
+    message = "no such table" if failure == "missing_table" else "Expecting value"
+    start = len(tracker.connections)
+    with pytest.raises(error, match=message):
+        operations[operation]()
+    tracker.assert_closed_since(start)
+    assert tracker.connections[-1].commit_calls == 0
+
+
+@pytest.mark.parametrize("fail_on_call", [1, 2])
+def test_paper_chat_serialization_failure_closes_connection(
+    tmp_path: Path, tracker: ConnectionTracker, monkeypatch: pytest.MonkeyPatch, fail_on_call: int
+) -> None:
+    database = tmp_path / "chat.sqlite3"
+    memory = seed_chat_memory(database)
+    with closing(sqlite3.connect(database)) as connection:
+        before = list(connection.iterdump())
+    original_dumps = json.dumps
+    error = TypeError("injected JSON serialization failure")
+    calls = 0
+
+    def dumps(values: list[str], *, sort_keys: bool) -> str:
+        nonlocal calls
+        calls += 1
+        if calls == fail_on_call:
+            raise error
+        return original_dumps(values, sort_keys=sort_keys)
+
+    monkeypatch.setattr("storage.paper_chat_memory.json.dumps", dumps)
+    start = len(tracker.connections)
+    with pytest.raises(TypeError, match="injected JSON serialization failure") as raised:
+        memory.append_turn("s1", "assistant", "four", document_ids=["paper-a"], chunk_ids=["c1"])
+    assert raised.value is error
+    assert calls == fail_on_call
+    tracker.assert_closed_since(start)
+    assert tracker.connections[-1].commit_calls == 0
+    with closing(sqlite3.connect(database)) as connection:
+        assert list(connection.iterdump()) == before
+
+
+@pytest.mark.parametrize(
+    ("operation", "expected"),
+    [
+        ("blank_read", []),
+        ("zero_limit_read", []),
+        ("negative_limit_read", []),
+        ("blank_clear", 0),
+        ("blank_context", ""),
+    ],
+)
+def test_paper_chat_early_returns_do_not_open_connections(
+    tmp_path: Path, tracker: ConnectionTracker, operation: str, expected: object
+) -> None:
+    memory = PaperChatMemory(tmp_path / "chat.sqlite3")
+    operations: dict[str, Callable[[], object]] = {
+        "blank_read": lambda: memory.get_turns("  "),
+        "zero_limit_read": lambda: memory.get_turns("s1", limit=0),
+        "negative_limit_read": lambda: memory.get_turns("s1", limit=-1),
+        "blank_clear": lambda: memory.clear_session("  "),
+        "blank_context": lambda: memory.format_context("  "),
+    }
+    start = len(tracker.connections)
+    assert operations[operation]() == expected
+    assert len(tracker.connections) == start
+
+
+@pytest.mark.parametrize(
+    ("operation", "message"),
+    [
+        ("blank_session", "session_id"),
+        ("invalid_role", "role"),
+        ("blank_content", "content"),
+        ("zero_max_chars", "max_chars"),
+        ("negative_max_chars", "max_chars"),
+    ],
+)
+def test_paper_chat_validation_errors_do_not_open_connections(
+    tmp_path: Path, tracker: ConnectionTracker, operation: str, message: str
+) -> None:
+    memory = PaperChatMemory(tmp_path / "chat.sqlite3")
+    operations: dict[str, Callable[[], object]] = {
+        "blank_session": lambda: memory.append_turn("  ", "user", "one"),
+        "invalid_role": lambda: memory.append_turn("s1", "system", "one"),
+        "blank_content": lambda: memory.append_turn("s1", "user", "  "),
+        "zero_max_chars": lambda: memory.format_context("s1", max_chars=0),
+        "negative_max_chars": lambda: memory.format_context("s1", max_chars=-1),
+    }
+    start = len(tracker.connections)
+    with pytest.raises(ValueError, match=message):
+        operations[operation]()
+    assert len(tracker.connections) == start
 
 
 @pytest.mark.parametrize(
