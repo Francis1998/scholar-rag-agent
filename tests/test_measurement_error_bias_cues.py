@@ -13,7 +13,8 @@ def test_extracts_hit() -> None:
             {
                 "paper_id": "p1",
                 "abstract": (
-                    "Measurement error and misclassification bias produced information bias under classical measurement error."
+                    "Measurement error and misclassification bias produced "
+                    "information bias under classical measurement error."
                 ),
             }
         ]
