@@ -30,6 +30,9 @@ continuous screen recording or scientific validation.
    the catalog page you came from, including its cursor. Choosing a document
    always reads that exact ID; the catalog filters are only back-link context.
 
+Whitespace-only catalog titles appear as **Untitled paper**. This display-only
+fallback does not change stored titles or trim nonblank title text.
+
 The browser uses native GET forms and links: no JavaScript, client runtime,
 external fonts/resources, analytics, cookies, or browser storage. Keyboard
 users can tab to a skip link, labeled controls, paper links, and pagination;
@@ -93,6 +96,10 @@ When both filters are present, both must match, before the page limit.
 **Only the empty string in the HTML source/title form fields maps to omission.**
 Nonempty values are not stripped, case-normalized, or replaced. Empty IDs,
 cursors, and limits remain invalid. JSON readers still reject empty filters.
+The server enforces the 300-title/512-source limits in Unicode codepoints.
+Text inputs deliberately omit native `maxlength`, which counts UTF-16 code
+units and would clip astral characters early. Over-limit requests still return
+sanitized 422 errors; the server bounds are unchanged.
 Unusual URL-supplied filters containing NUL/CR/LF cannot be round-tripped by
 native text inputs; the page displays their JSON representation and exact
 continuation links instead of silently changing them. Reset to edit normally.

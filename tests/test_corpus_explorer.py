@@ -258,6 +258,64 @@ def test_empty_form_filters_are_omitted_but_nonempty_values_are_not_changed(
     assert all(node.attrs["id"] in labels for node in inputs.values())
 
 
+@pytest.mark.parametrize(
+    ("field", "limit", "symbol"),
+    [("title", 300, "\U0001f52c"), ("source", 512, "\U0001f4da")],
+)
+def test_astral_filter_bounds_match_native_inputs_and_exact_pagination(
+    api: ExplorerAPI, field: str, limit: int, symbol: str
+) -> None:
+    filters = {"title": "\U0001f52c" * 300, "source": "\U0001f4da" * 512}
+    for identifier in ("a", "b"):
+        api.seed(identifier, (f"{identifier}-chunk",), **filters)
+    before = api.path.read_bytes()
+    first = api.page(limit=1, **filters)
+    assert identities(first) == ["a"]
+    inputs = {node.attrs["name"]: node for node in first.by_tag("input")}
+    assert len(filters[field]) == limit
+    assert len(filters[field].encode("utf-16-le")) // 2 == limit * 2
+    assert "maxlength" not in inputs[field].attrs
+    for name, value in filters.items():
+        assert inputs[name].attrs["value"] == value
+    next_url = href(first, "next-page")
+    query = parse_qs(urlsplit(next_url).query)
+    for name, value in filters.items():
+        assert query[name] == [value]
+    second = api.page(next_url)
+    assert identities(second) == ["b"]
+    document = api.page(href(second, "inspect-document-1"))
+    assert href(document, "back-to-catalog") == next_url
+    assert identities(api.page(href(document, "back-to-catalog"))) == ["b"]
+    response = api.client.get("/explore", params={**filters, field: filters[field] + symbol})
+    assert response.status_code == 422
+    assert_headers(response)
+    assert filters[field] not in response.text
+    assert "Invalid explorer request" in response.text
+    assert api.client.get("/documents", params=filters).status_code == 200
+    assert api.path.read_bytes() == before
+
+
+@pytest.mark.parametrize("title", [" ", " \t\r\n", "\u2003", "\u00a0\u3000", " \t\n\u2003"])
+def test_whitespace_title_labels_have_a_usable_inspection_link(
+    api: ExplorerAPI, title: str
+) -> None:
+    api.seed(title=title)
+    before = api.path.read_bytes()
+    catalog = api.page()
+    link = catalog.by_id("inspect-document-1")
+    assert link.text() == "Untitled paper"
+    assert identities(api.page(link.attrs["href"])) == ["selected"]
+    assert api.client.get("/documents").json()["documents"][0]["title"] == title
+    assert api.path.read_bytes() == before
+
+
+@pytest.mark.parametrize("title", ["  Graph methods  ", "\u2003\t\nGraph \U0001f52c\u00a0"])
+def test_nonblank_title_labels_preserve_original_padding(api: ExplorerAPI, title: str) -> None:
+    api.seed(title=title)
+    assert api.page().by_id("inspect-document-1").text() == title
+    assert api.client.get("/documents").json()["documents"][0]["title"] == title
+
+
 def test_control_character_filters_are_not_silently_rewritten_by_html_inputs(
     api: ExplorerAPI,
 ) -> None:

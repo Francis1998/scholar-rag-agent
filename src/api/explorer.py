@@ -293,25 +293,24 @@ def _filters(limit: int, source: str | None, title: str | None) -> Iterator[str]
         )
         return
     yield '<form method="get" action="/explore" autocomplete="off">'
-    for name, label, value, maximum, help_text in (
+    # Native maxlength counts UTF-16 units, unlike the readers' Unicode codepoint bounds.
+    for name, label, value, help_text in (
         (
             "source",
             "Exact source",
             source,
-            MAX_SOURCE_CHARACTERS,
             "Case-sensitive exact match, not a URL to open. Blank means any source.",
         ),
         (
             "title",
             "Title contains",
             title,
-            MAX_TITLE_CHARACTERS,
             "Literal substring; ASCII case-insensitive. %, _ and spaces stay literal.",
         ),
     ):
         yield (
             f'<div><label for="{name}">{label}</label>'
-            f'<input id="{name}" name="{name}" type="text" maxlength="{maximum}" '
+            f'<input id="{name}" name="{name}" type="text" '
             f'value="{_escaped(value or "")}" aria-describedby="{name}-help" '
             'autocomplete="off" autocapitalize="none" spellcheck="false" translate="no">'
             f'<p id="{name}-help">{help_text}</p></div>'
@@ -385,7 +384,7 @@ def _catalog(
             '<span class="literal document-title" dir="auto">'
             + _escaped(document.title)
             + "</span>"
-            if document.title
+            if document.title.strip()
             else "Untitled paper"
         )
         yield "</a></h3>"
