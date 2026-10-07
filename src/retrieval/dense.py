@@ -15,9 +15,9 @@ class DenseRetriever:
         self._vectors: dict[str, list[float]] = {}
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Upsert snapshots by chunk ID, keeping the last successfully embedded value."""
-        for chunk in chunks:
-            indexed_chunk = chunk.model_copy(deep=True)
+        """Snapshot the batch, then upsert the last successfully embedded value per ID."""
+        indexed_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        for indexed_chunk in indexed_chunks:
             vector = self._embedder.embed(indexed_chunk.text).copy()
             self._chunks[indexed_chunk.chunk_id] = indexed_chunk
             self._vectors[indexed_chunk.chunk_id] = vector

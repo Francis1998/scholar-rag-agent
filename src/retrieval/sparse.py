@@ -68,9 +68,9 @@ class BM25Retriever:
         self._average_length = 0.0
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Upsert snapshots by chunk ID, replacing their contribution to corpus statistics."""
-        for chunk in chunks:
-            indexed_chunk = chunk.model_copy(deep=True)
+        """Snapshot the batch, then upsert each chunk's contribution to corpus statistics."""
+        indexed_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        for indexed_chunk in indexed_chunks:
             terms = tokenize(indexed_chunk.text)
             frequencies: Counter[str] = Counter(terms)
             previous = self._term_frequencies.get(indexed_chunk.chunk_id)

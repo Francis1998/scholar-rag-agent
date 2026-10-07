@@ -9,7 +9,7 @@ from retrieval.embeddings import HashEmbeddingModel
 from retrieval.hybrid import HybridRetriever
 from retrieval.hyde import HyDEExpander
 from retrieval.models import Chunk
-from retrieval.sparse import BM25Retriever
+from retrieval.sparse import BM25Retriever, tokenize
 
 Retriever = DenseRetriever | BM25Retriever | HybridRetriever
 
@@ -246,3 +246,168 @@ async def test_snapshots_copy_only_indexed_inputs_and_returned_chunks(
                 assert [call.args[0].chunk_id for call in copy_chunk.call_args_list] == [
                     result.chunk.chunk_id for result in results
                 ]
+
+
+def change_batch(chunks: list[Chunk], mutation: str) -> None:
+    if mutation == "later-payload":
+        change_payload(chunks[0])
+        change_payload(chunks[1])
+    elif mutation == "later-metadata":
+        chunks[1].metadata["revision"] = "2"
+        chunks[1].metadata["added"] = "callback-owned"
+    elif mutation == "clear":
+        chunks.clear()
+    elif mutation == "replace":
+        replacement = make_chunks()[1]
+        change_payload(replacement)
+        chunks[:] = [replacement]
+    elif mutation == "append":
+        added = make_chunks()[1]
+        change_payload(added)
+        added.chunk_id = "added"
+        chunks.append(added)
+    else:
+        raise AssertionError(f"Unknown mutation: {mutation}")
+
+
+@pytest.mark.parametrize(
+    ("kind", "component_input"),
+    [
+        pytest.param("dense", False, id="dense"),
+        pytest.param("bm25", False, id="bm25"),
+        pytest.param("hybrid", False, id="hybrid-caller"),
+        pytest.param("hybrid", True, id="hybrid-component"),
+    ],
+)
+@pytest.mark.parametrize(
+    "mutation", ["later-payload", "later-metadata", "clear", "replace", "append"]
+)
+async def test_complete_batch_is_snapshotted_before_preparation(
+    monkeypatch: pytest.MonkeyPatch, kind: str, component_input: bool, mutation: str
+) -> None:
+    chunks = make_chunks()
+    embedder = HashEmbeddingModel()
+    embed = embedder.embed
+    dense, sparse = DenseRetriever(embedder), BM25Retriever()
+    hybrid = HybridRetriever(dense, sparse, HyDEExpander())
+    retrievers: dict[str, Retriever] = {"dense": dense, "bm25": sparse, "hybrid": hybrid}
+    retriever = retrievers[kind]
+    fresh_dense, fresh_sparse = DenseRetriever(), BM25Retriever()
+    fresh_hybrid = HybridRetriever(fresh_dense, fresh_sparse, HyDEExpander())
+    references: dict[str, Retriever] = {
+        "dense": fresh_dense,
+        "bm25": fresh_sparse,
+        "hybrid": fresh_hybrid,
+    }
+    fresh = references[kind]
+    fresh.add_chunks(make_chunks())
+    prepared_texts: list[str] = []
+    mutation_target = chunks
+    index_dense = dense.add_chunks
+
+    def capture_component_batch(component_chunks: list[Chunk]) -> None:
+        nonlocal mutation_target
+        mutation_target = component_chunks
+        index_dense(component_chunks)
+
+    def record_and_mutate(text: str) -> None:
+        prepared_texts.append(text)
+        if len(prepared_texts) == 1:
+            change_batch(mutation_target, mutation)
+
+    def embed_and_mutate(text: str) -> list[float]:
+        record_and_mutate(text)
+        return embed(text)
+
+    def tokenize_and_mutate(text: str) -> list[str]:
+        record_and_mutate(text)
+        return tokenize(text)
+
+    with monkeypatch.context() as context:
+        if component_input:
+            context.setattr(dense, "add_chunks", capture_component_batch)
+        if kind == "bm25":
+            context.setattr("retrieval.sparse.tokenize", tokenize_and_mutate)
+        else:
+            context.setattr(embedder, "embed", embed_and_mutate)
+        retriever.add_chunks(chunks)
+
+    assert prepared_texts == [chunk.text for chunk in make_chunks()]
+    await assert_matches_fresh(retriever, fresh)
+    if kind == "hybrid":
+        await assert_matches_fresh(dense, fresh_dense)
+        await assert_matches_fresh(sparse, fresh_sparse)
+    if component_input:
+        assert chunks == make_chunks()
+
+    fresh.add_chunks([chunk.model_copy(deep=True) for chunk in mutation_target])
+    retriever.add_chunks(mutation_target)
+    await assert_matches_fresh(retriever, fresh)
+    if kind == "hybrid":
+        await assert_matches_fresh(dense, fresh_dense)
+        await assert_matches_fresh(sparse, fresh_sparse)
+
+
+@pytest.mark.parametrize("use_hybrid", [False, True], ids=["dense", "hybrid"])
+@pytest.mark.parametrize("failed_id", ["a", "b", "new"])
+async def test_batch_mutation_preserves_partial_embedding_failure_and_explicit_retry(
+    monkeypatch: pytest.MonkeyPatch, use_hybrid: bool, failed_id: str
+) -> None:
+    embedder = HashEmbeddingModel()
+    embed = embedder.embed
+    dense, sparse = DenseRetriever(embedder), BM25Retriever()
+    hybrid = HybridRetriever(dense, sparse, HyDEExpander())
+    retriever = hybrid if use_hybrid else dense
+    retriever.add_chunks(make_chunks())
+    fresh_dense, fresh_sparse = DenseRetriever(), BM25Retriever()
+    fresh_hybrid = HybridRetriever(fresh_dense, fresh_sparse, HyDEExpander())
+    fresh = fresh_hybrid if use_hybrid else fresh_dense
+    fresh.add_chunks(make_chunks())
+    pending = make_chunks()
+    change_payload(pending[0])
+    pending[1].chunk_id = failed_id
+    pending[1].text = "embedding failure"
+    change_payload(pending[2])
+    retry = [chunk.model_copy(deep=True) for chunk in pending]
+    fresh_dense.add_chunks([retry[0]])
+    attempted: list[str] = []
+
+    def mutate_then_fail(text: str) -> list[float]:
+        attempted.append(text)
+        if len(attempted) == 1:
+            pending[0].metadata.clear()
+            pending[1].text = "caller changed the rejected input"
+            pending.clear()
+        elif len(attempted) == 2:
+            raise ValueError("embedding failed")
+        return embed(text)
+
+    with monkeypatch.context() as context:
+        context.setattr(embedder, "embed", mutate_then_fail)
+        with pytest.raises(ValueError, match="embedding failed"):
+            retriever.add_chunks(pending)
+
+    assert attempted == [retry[0].text, retry[1].text]
+    await assert_matches_fresh(dense, fresh_dense)
+    if use_hybrid:
+        await assert_matches_fresh(sparse, fresh_sparse)
+        await assert_matches_fresh(hybrid, fresh_hybrid)
+
+    fresh.add_chunks([chunk.model_copy(deep=True) for chunk in retry])
+    retriever.add_chunks(retry)
+    await assert_matches_fresh(retriever, fresh)
+    if use_hybrid:
+        await assert_matches_fresh(dense, fresh_dense)
+        await assert_matches_fresh(sparse, fresh_sparse)
+
+
+def test_hybrid_copies_only_the_incoming_batch_for_each_component() -> None:
+    retriever = HybridRetriever(DenseRetriever(), BM25Retriever(), HyDEExpander())
+    with patch.object(
+        Chunk, "model_copy", autospec=True, side_effect=Chunk.model_copy
+    ) as copy_chunk:
+        for batch in (make_chunks(), [make_chunks()[0]], []):
+            copy_chunk.reset_mock()
+            retriever.add_chunks(batch)
+            assert copy_chunk.call_count == 4 * len(batch)
+            assert all(call.kwargs == {"deep": True} for call in copy_chunk.call_args_list)
