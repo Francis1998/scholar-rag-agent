@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `LeftTruncationCueExtractor` (`retrieval/left_truncation_cues.py`): offline Elicit/Consensus/AJE left-truncation / delayed-entry cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEFT_TRUNCATION_CUE_EXTRACTOR_GUIDE.md`.
 - `MultipleTestingCorrectionCueExtractor` (`retrieval/multiple_testing_correction_cues.py`): offline Elicit/Consensus/AJE multiple-testing correction cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MULTIPLE_TESTING_CORRECTION_CUE_EXTRACTOR_GUIDE.md`.
 - `MeasurementErrorBiasCueExtractor` (`retrieval/measurement_error_bias_cues.py`): offline Elicit/Consensus/AJE measurement-error bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEASUREMENT_ERROR_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - Offline HTML evidence reader through `GET /runs/{run_id}/export?format=html`

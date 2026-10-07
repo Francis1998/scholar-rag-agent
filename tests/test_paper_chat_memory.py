@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from storage.paper_chat_memory import PaperChatMemory
+from storage.paper_chat_memory import ChatTurn, PaperChatMemory
 
 
 def test_rejects_blank_session(tmp_path: Path) -> None:
@@ -93,9 +93,21 @@ def test_empty_session_context(tmp_path: Path) -> None:
     assert memory.format_context("missing") == ""
 
 
-def test_docstring_mentions_frontier_models() -> None:
-    doc = PaperChatMemory.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+def test_reopened_memory_preserves_normalized_turns_without_mutating_inputs(tmp_path: Path) -> None:
+    database = tmp_path / "chat.db"
+    memory = PaperChatMemory(database)
+    document_ids = [" paper-a ", " "]
+    chunk_ids = [" c1 ", ""]
+    row_id = memory.append_turn(
+        " s1 ", " User ", " question ", document_ids=document_ids, chunk_ids=chunk_ids
+    )
+    assert isinstance(row_id, int)
+    assert row_id > 0
+    assert document_ids == [" paper-a ", " "]
+    assert chunk_ids == [" c1 ", ""]
+    document_ids.append("paper-b")
+    chunk_ids.append("c2")
+
+    reopened = PaperChatMemory(str(database))
+    assert reopened.get_turns(" s1 ") == [ChatTurn("user", "question", ("paper-a",), ("c1",))]
+    assert reopened.format_context("s1") == "user: question"
