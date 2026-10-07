@@ -15,26 +15,27 @@ class DenseRetriever:
         self._vectors: dict[str, list[float]] = {}
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Upsert by chunk ID, keeping the last successfully embedded value."""
-        for chunk in chunks:
-            vector = self._embedder.embed(chunk.text)
-            self._chunks[chunk.chunk_id] = chunk
-            self._vectors[chunk.chunk_id] = vector
+        """Snapshot the batch, then upsert the last successfully embedded value per ID."""
+        indexed_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        for indexed_chunk in indexed_chunks:
+            vector = self._embedder.embed(indexed_chunk.text).copy()
+            self._chunks[indexed_chunk.chunk_id] = indexed_chunk
+            self._vectors[indexed_chunk.chunk_id] = vector
 
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
     ) -> list[SearchResult]:
-        """Retrieve the most similar chunks for a query."""
+        """Return detached snapshots of the most similar chunks for a query."""
         scope = normalize_document_ids(document_ids)
         allowed = None if scope is None else frozenset(scope)
         query_vector = self._embedder.embed(query)
-        results = [
-            SearchResult(
-                chunk=chunk,
-                score=cosine_similarity(query_vector, self._vectors[chunk.chunk_id]),
-                retriever="dense",
-            )
+        scored_chunks = [
+            (chunk, cosine_similarity(query_vector, self._vectors[chunk.chunk_id]))
             for chunk in self._chunks.values()
             if allowed is None or chunk.document_id in allowed
         ]
-        return sorted(results, key=lambda result: (-result.score, result.chunk.chunk_id))[:limit]
+        ranked_chunks = sorted(scored_chunks, key=lambda item: (-item[1], item[0].chunk_id))[:limit]
+        return [
+            SearchResult(chunk=chunk.model_copy(deep=True), score=score, retriever="dense")
+            for chunk, score in ranked_chunks
+        ]

@@ -45,9 +45,11 @@ class HybridRetriever:
         return self._hyde_expander.uses_llm
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Index chunks into both dense and sparse retrievers."""
-        self._dense_retriever.add_chunks(chunks)
-        self._sparse_retriever.add_chunks(chunks)
+        """Prepare independent batch snapshots before indexing either component."""
+        dense_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        sparse_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        self._dense_retriever.add_chunks(dense_chunks)
+        self._sparse_retriever.add_chunks(sparse_chunks)
 
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None

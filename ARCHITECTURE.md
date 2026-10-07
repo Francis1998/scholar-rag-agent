@@ -259,6 +259,26 @@ propagates to the caller. BM25 removes the old term contributions before adding
 the replacement; corpus size, document frequencies, and average length describe
 the unique current chunk IDs.
 
+Dense and BM25 deep-copy the entire incoming batch, including each chunk's
+metadata, before embedding or term-statistic preparation begins. Later-chunk edits
+or list clearing, replacement, or appending during an injected embedder call
+cannot change that batch's captured inputs. Hybrid prepares independent dense
+and sparse input batches before invoking either component; each component then
+owns its private snapshots. A successful hybrid call therefore makes four deep
+copies per supplied chunk: two temporary component inputs and two indexed
+snapshots. Copy cost scales with the incoming batch, including entries not reached
+after a failure, rather than the previously indexed corpus. Dense also copies
+each embedding list, so an injected embedder can reuse its output buffer.
+
+Retrieval deep-copies only the chunks selected after ranking and the result
+limit. `Chunk` and `SearchResult` remain mutable: editing an input or returned hit
+does not change indexed IDs, document scope, payloads, scores, or other results.
+To change an indexed chunk, explicitly call `add_chunks` with its updated value
+and the same chunk ID. An embedding failure still propagates, preserving earlier
+successful updates and the failed ID's last successful value while skipping the
+remaining batch. If it occurs in hybrid's dense phase, sparse indexing is not run;
+batch snapshots do not make indexing transactional or thread-safe.
+
 Replaying identical ingestion into the same application does not consume extra
 top-k slots or change retrieval scores. Rebuilding from the same persisted chunks
 preserves results; ties still sort by chunk ID, and document scope still filters
