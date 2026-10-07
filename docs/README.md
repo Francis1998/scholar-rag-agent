@@ -205,6 +205,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Heterogeneous treatment effects](guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md) | HTE / CATE / effect-modifier wording |
 | [E-value sensitivity](guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md) | E-value / sensitivity / unmeasured-confounding wording |
 | [Measurement-error bias](guides/MEASUREMENT_ERROR_BIAS_CUE_EXTRACTOR_GUIDE.md) | Measurement error / misclassification / information-bias wording |
+| [Multiple-testing correction](guides/MULTIPLE_TESTING_CORRECTION_CUE_EXTRACTOR_GUIDE.md) | Bonferroni / FDR / family-wise error wording |
 | [Collider stratification](guides/COLLIDER_STRATIFICATION_CUE_EXTRACTOR_GUIDE.md) | Collider-stratification / Berkson bias wording |
 | [Immortal-time bias](guides/IMMORTAL_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) | Immortal-time / guarantee-time bias wording |
 | [Selection bias](guides/SELECTION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Selection-bias / healthy-user / volunteer-bias wording |
