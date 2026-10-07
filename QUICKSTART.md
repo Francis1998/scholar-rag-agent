@@ -43,6 +43,7 @@ new temporary directory if you want to read the same runs later. This is a local
 development server, not an authenticated deployment.
 
 Open `http://127.0.0.1:8000/docs` for FastAPI's interactive API documentation.
+Open `http://127.0.0.1:8000/explore` for the read-only local corpus explorer.
 There is no PDF-upload or paper-chat UI. Stop the server with Ctrl-C.
 
 ## 4. Ingest text and ask a question
@@ -112,6 +113,14 @@ limits rather than by insertion order. This keeps tied preview ranks stable afte
 restart; score calculations and rank fusion are unchanged.
 
 ## 5. Recover document IDs and select papers
+
+For browser-native discovery, open `http://127.0.0.1:8000/explore`. Use the
+exact-source/literal-title filters (blank means omitted), choose a paper title,
+then follow bounded passage pages or return to the same filtered catalog.
+No model, retrieval, ingestion, or event write runs while browsing. The
+[explorer guide](docs/guides/CORPUS_EXPLORER_GUIDE.md) covers exact-ID copying,
+limits, current-corpus privacy, and a reproducible synthetic browser GIF.
+The existing JSON discovery workflow remains available:
 
 ```bash
 curl --fail-with-body --silent --show-error \

@@ -172,6 +172,31 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Read-Only Local Corpus Explorer
+
+`GET /explore` and `GET /explore/document` in `api.explorer` render bounded
+server-side HTML over `AppContainer.document_catalog.list_documents` and
+`document_chunks.list_chunks`. Each synchronous handler calls one reader;
+the existing request-local SQLite read-only connections run on FastAPI's
+worker threads. No new SQL, schema/index, migration, front-end runtime or
+framework dependency is introduced. Normal app initialization is unchanged.
+
+Native GET forms omit only empty source/title filters. Fixed same-origin links
+URL-encode exact query parameters and separately escape HTML; document IDs are
+query values, not normalization-prone paths. Catalog filters and cursor survive
+the document back link; chunk cursors stay document-bound. The UI labels actual
+lexicographic ID order rather than implying ordinal or relevance order.
+Projected prefixes retain explicit truncation notices. The complete HTML is
+checked incrementally against a 1-MiB byte cap before any response is sent.
+
+A route-local boundary converts validation, projected-data, and SQLite errors
+to sanitized HTML without altering the existing JSON endpoints. Hash-authorized
+static CSS, script/resource/frame restrictions, no-store/nosniff and no-referrer
+headers protect rendering, not access rights. Page reads never enter ingestion,
+retrieval/reranking, model generation, collection editing or event persistence.
+See the [explorer guide and browser demo](docs/guides/CORPUS_EXPLORER_GUIDE.md)
+for current-corpus consistency, privacy and operational limits.
+
 ## Model-Free Literal Passage Search
 
 `POST /research/search` delegates to `SQLiteLiteralSearch`, not the runner or

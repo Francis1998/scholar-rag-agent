@@ -6,6 +6,12 @@ stored paper, including after restart. First recover a paper ID with the
 choose `document_ids` for an existing `/query` request. No query, retrieval,
 generation, external download, or run event is needed to browse evidence.
 
+The [local corpus explorer](CORPUS_EXPLORER_GUIDE.md) supplies a script-free
+browser view over this same reader. Its `/explore/document?document_id=...`
+links preserve imported IDs, including dot segments that cannot reliably
+survive the JSON endpoint's path transport. The JSON/Python contracts below
+are unchanged.
+
 ![Actual synthetic chunk-reader output, rendered as an illustration](../assets/document-chunks.gif)
 
 **Synthetic and offline:** this GIF is generated from the executable demo's
