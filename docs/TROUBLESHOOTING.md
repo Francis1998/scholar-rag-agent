@@ -26,6 +26,17 @@ Use another local port, for example `--host 127.0.0.1 --port 8001`, and change
 the example URLs or `BASE_URL` to match. Do not stop an unrelated service to run
 the demo.
 
+## The Local Corpus Explorer Is Empty or Reports an Error
+
+`/explore` reads the running API's current database, not the temporary corpus
+from the older local demo or a saved run's frozen evidence. Reuse the same
+database path after restart. Blank source/title fields omit those filters;
+nonempty exact-source spacing/case and literal-title characters are preserved.
+Use reset/start-again links for stale or wrong-document cursors. Reduce `limit`
+after 413; 409 means unsupported projected data or HTML text, and 503 means
+storage is unavailable, not empty. Do not erase a database to hide these errors.
+See the [complete browser/error guide](guides/CORPUS_EXPLORER_GUIDE.md).
+
 ## A Run Cannot Be Exported
 
 The export endpoint returns 404 for an unknown run, 409 for a run that is

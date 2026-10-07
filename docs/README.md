@@ -10,6 +10,7 @@ accumulated feature list in the project README.
 | --- | --- |
 | Install and run without model credentials | [Quickstart](../QUICKSTART.md) |
 | Work through a small corpus and prepare an honest portfolio demonstration | [Research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) |
+| Browse the current paper catalog and bounded passages with native browser forms/links | [Read-only local corpus explorer and actual browser demo](guides/CORPUS_EXPLORER_GUIDE.md) |
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Read bounded passages from a stored paper before choosing query scope | [Stored chunk reader and offline demo](guides/DOCUMENT_CHUNKS_GUIDE.md) |
 | Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |

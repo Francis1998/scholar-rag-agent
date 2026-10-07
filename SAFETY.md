@@ -137,6 +137,28 @@ control. Keep this read-only endpoint local/trusted like the rest of the API.
 Invalid stored IDs fail explicitly rather than returning a truncated selection.
 See [document catalog bounds and privacy](docs/guides/DOCUMENT_CATALOG_GUIDE.md).
 
+### Browser inspection of the current corpus
+
+`/explore` and `/explore/document` reuse the bounded read-only catalog/chunk
+readers without generation, retrieval/reranking, ingestion, collection changes,
+or event writes. Native GET forms/links preserve exact filters and document
+scope; only empty source/title fields mean omission. Passage order is chunk-ID
+order, not paragraph order. Current pages are not frozen evidence across requests.
+
+Untrusted text stays escaped plain text, sources never become external links,
+and metadata is not injected. Restrictive CSP denies scripts, base tags, objects
+and framing; only the hash of static CSS is allowed. No-store/nosniff and
+no-referrer apply to success and handled errors; errors do not echo inputs or
+exception details. Full HTML over 1 MiB fails instead of dropping rows.
+NUL-bearing labels/passages fail explicitly rather than being changed by HTML.
+
+There is no authentication or tenant isolation. URLs may expose filters/IDs in
+history, bookmarks and server/proxy logs; screenshots or saved pages retain
+passages despite no-store. Keep the API local/trusted. Startup still initializes
+ordinary stores/indexes, and bounded output is not a scan-time guarantee.
+See the [explorer guide](docs/guides/CORPUS_EXPLORER_GUIDE.md) for exact bounds,
+failure states, restart behavior and the guarded synthetic browser demo.
+
 ## Literal Passage Search
 
 `POST /research/search` searches current stored text without retrieval,

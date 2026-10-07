@@ -1,5 +1,15 @@
 # Demo
 
+## Local corpus explorer in a browser
+
+The [explorer guide](guides/CORPUS_EXPLORER_GUIDE.md#reproduce-the-offline-demo-and-actual-browser-gif)
+reproduces a persistent synthetic corpus, actual HTML responses, and a GIF made
+from four real browser screenshots. It checks filtered catalog paging, exact
+document scope, passage pagination/truncation, zero forbidden calls/events,
+unchanged SQLite bytes, and identical pages after restart. The loopback demo
+ignores ambient credentials and refuses overwrites; no papers or models are
+downloaded. The GIF is a screenshot sequence, not a continuous recording.
+
 ## Offline HTML evidence reader
 
 ![Measured synthetic offline HTML reader](assets/offline-evidence-reader.gif)

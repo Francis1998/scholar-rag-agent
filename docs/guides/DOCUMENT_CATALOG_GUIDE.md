@@ -5,6 +5,11 @@ corpus, including after a service restart. Browse bounded titles, sources, and
 stored chunk counts; filter the list; then pass the selected IDs to `/query`.
 You no longer have to preserve every `/ingest/text` response to select papers.
 
+Prefer a normal browser? The [local corpus explorer](CORPUS_EXPLORER_GUIDE.md)
+at `/explore` connects this catalog to bounded passage pages with native GET
+forms and exact-ID links. Its blank form filters mean omission; this JSON API's
+existing empty-filter validation remains unchanged.
+
 Before selecting a query scope, use the
 [stored chunk evidence reader](DOCUMENT_CHUNKS_GUIDE.md) to inspect bounded
 passages from one discovered document without running retrieval or generation.

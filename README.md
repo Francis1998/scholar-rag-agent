@@ -29,13 +29,15 @@ placeholder answer. Its temporary database is removed on exit.
 
 Next, use the [Quickstart](QUICKSTART.md) to start the API with an isolated
 database and empty provider keys. The interactive API documentation is at
-`http://127.0.0.1:8000/docs`; this is not a paper-chat or PDF-upload UI.
+`http://127.0.0.1:8000/docs`. For read-only paper and passage browsing, open
+`http://127.0.0.1:8000/explore`; neither is a paper-chat or PDF-upload UI.
 
 ## Choose a workflow
 
 | What you can do | Integrated path | Next guide |
 | --- | --- | --- |
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
+| Browse stored papers in a normal browser | Filter the current catalog, copy exact IDs, and follow bounded passage pages without models or writes | [Local corpus explorer](docs/guides/CORPUS_EXPLORER_GUIDE.md) |
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Find exact wording across stored papers | `POST /research/search` returns literal matches, Unicode offsets, and bounded excerpts without retrieval, generation, or run writes | [Literal passage search](docs/guides/LITERAL_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
@@ -59,6 +61,16 @@ database and empty provider keys. The interactive API documentation is at
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Browse papers and passages without generating
+
+![Actual browser frames of the synthetic corpus explorer](docs/assets/corpus-explorer.gif)
+
+`GET /explore` connects filtered document discovery to exact-scope passage
+pages using script-free native forms and links. These are actual browser
+screenshots of synthetic data, not a continuous recording or scientific claims.
+The [complete guide and offline demo](docs/guides/CORPUS_EXPLORER_GUIDE.md)
+cover restart, bounds, privacy, errors, and GIF reproduction.
 
 ## Read saved evidence without the server
 
