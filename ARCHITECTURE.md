@@ -259,6 +259,16 @@ propagates to the caller. BM25 removes the old term contributions before adding
 the replacement; corpus size, document frequencies, and average length describe
 the unique current chunk IDs.
 
+Each input chunk, including its metadata, is deep-copied before its embedding or
+term statistics are computed. Dense indexing also copies the embedding list, so
+an injected embedder can reuse its output buffer without changing indexed vectors.
+Retrieval deep-copies only the chunks selected after ranking and the result limit,
+not the whole corpus. `Chunk` and `SearchResult` remain mutable: editing an input
+or a returned hit does not change indexed IDs, document scope, payloads, scores,
+or other results, including across the dense and sparse components of a hybrid
+retriever. To change an indexed chunk, explicitly call `add_chunks` with its
+updated value and the same chunk ID.
+
 Replaying identical ingestion into the same application does not consume extra
 top-k slots or change retrieval scores. Rebuilding from the same persisted chunks
 preserves results; ties still sort by chunk ID, and document scope still filters

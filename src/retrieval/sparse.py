@@ -68,19 +68,20 @@ class BM25Retriever:
         self._average_length = 0.0
 
     def add_chunks(self, chunks: list[Chunk]) -> None:
-        """Upsert by chunk ID, replacing its contribution to corpus statistics."""
+        """Upsert snapshots by chunk ID, replacing their contribution to corpus statistics."""
         for chunk in chunks:
-            terms = tokenize(chunk.text)
+            indexed_chunk = chunk.model_copy(deep=True)
+            terms = tokenize(indexed_chunk.text)
             frequencies: Counter[str] = Counter(terms)
-            previous = self._term_frequencies.get(chunk.chunk_id)
+            previous = self._term_frequencies.get(indexed_chunk.chunk_id)
             if previous is not None:
                 for term in previous:
                     self._document_frequencies[term] -= 1
                     if self._document_frequencies[term] == 0:
                         del self._document_frequencies[term]
-            self._chunks[chunk.chunk_id] = chunk
-            self._term_frequencies[chunk.chunk_id] = frequencies
-            self._document_lengths[chunk.chunk_id] = len(terms)
+            self._chunks[indexed_chunk.chunk_id] = indexed_chunk
+            self._term_frequencies[indexed_chunk.chunk_id] = frequencies
+            self._document_lengths[indexed_chunk.chunk_id] = len(terms)
             self._document_frequencies.update(frequencies.keys())
         total_length = sum(self._document_lengths.values())
         self._average_length = total_length / max(len(self._document_lengths), 1)
@@ -88,19 +89,19 @@ class BM25Retriever:
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
     ) -> list[SearchResult]:
-        """Rank selected candidates using the unchanged global BM25 statistics."""
+        """Return detached hits, ranking scoped candidates with global BM25 statistics."""
         scope = normalize_document_ids(document_ids)
         allowed = None if scope is None else frozenset(scope)
         query_terms = tokenize(query)
-        scored_results = [
-            SearchResult(
-                chunk=chunk, score=self._score(chunk.chunk_id, query_terms), retriever="bm25"
-            )
+        scored_chunks = [
+            (chunk, self._score(chunk.chunk_id, query_terms))
             for chunk in self._chunks.values()
             if allowed is None or chunk.document_id in allowed
         ]
-        return sorted(scored_results, key=lambda result: (-result.score, result.chunk.chunk_id))[
-            :limit
+        ranked_chunks = sorted(scored_chunks, key=lambda item: (-item[1], item[0].chunk_id))[:limit]
+        return [
+            SearchResult(chunk=chunk.model_copy(deep=True), score=score, retriever="bm25")
+            for chunk, score in ranked_chunks
         ]
 
     def _score(self, chunk_id: str, query_terms: list[str]) -> float:
