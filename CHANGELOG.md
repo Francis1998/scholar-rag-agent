@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `MeasurementErrorBiasCueExtractor` (`retrieval/measurement_error_bias_cues.py`): offline Elicit/Consensus/AJE measurement-error bias cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEASUREMENT_ERROR_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - Offline HTML evidence reader through `GET /runs/{run_id}/export?format=html`
   and `agent.evidence_html.render_html`, using only validated saved bundles.
   Proposed, grounded and missing references stay distinct; generated local links
