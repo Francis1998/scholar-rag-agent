@@ -210,17 +210,15 @@ with TemporaryDirectory(prefix="scholar-explorer-example-") as directory:
     restarted = create_app(settings)
     before = path.read_bytes()
     with TestClient(restarted) as client, browsing_guards(restarted.state.container):
-        catalog = SQLiteDocumentCatalog(path).list_documents(
-            source=SOURCE, title="graph", limit=2
-        )
+        catalog = SQLiteDocumentCatalog(path).list_documents(source=SOURCE, title="graph", limit=2)
         paper = catalog.documents[0]
         reader = SQLiteDocumentChunks(path)
         first = reader.list_chunks(paper.document_id, limit=2)
         second = reader.list_chunks(paper.document_id, limit=2, cursor=first.next_cursor)
         print("Stored chunk IDs:", [chunk.chunk_id for chunk in first.chunks + second.chunks])
-        page = client.get("/explore/document", params={
-            "document_id": paper.document_id, "limit": 2
-        })
+        page = client.get(
+            "/explore/document", params={"document_id": paper.document_id, "limit": 2}
+        )
         page.raise_for_status()
         print("Browser page:", page.status_code, page.headers["content-type"])
     assert path.read_bytes() == before
