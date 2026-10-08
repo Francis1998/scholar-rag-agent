@@ -208,6 +208,8 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [E-value sensitivity](guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md) | E-value / sensitivity / unmeasured-confounding wording |
 | [Measurement-error bias](guides/MEASUREMENT_ERROR_BIAS_CUE_EXTRACTOR_GUIDE.md) | Measurement error / misclassification / information-bias wording |
 | [Multiple-testing correction](guides/MULTIPLE_TESTING_CORRECTION_CUE_EXTRACTOR_GUIDE.md) | Bonferroni / FDR / family-wise error wording |
+| [Healthy-worker effect](guides/HEALTHY_WORKER_EFFECT_CUE_EXTRACTOR_GUIDE.md) | Healthy-worker effect / employed-population bias wording |
+| [Recall bias](guides/RECALL_BIAS_CUE_EXTRACTOR_GUIDE.md) | Recall / reporting / retrospective-recall bias wording |
 | [Left truncation](guides/LEFT_TRUNCATION_CUE_EXTRACTOR_GUIDE.md) | Left-truncation / delayed-entry / late-entry wording |
 | [Collider stratification](guides/COLLIDER_STRATIFICATION_CUE_EXTRACTOR_GUIDE.md) | Collider-stratification / Berkson bias wording |
 | [Immortal-time bias](guides/IMMORTAL_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) | Immortal-time / guarantee-time bias wording |
