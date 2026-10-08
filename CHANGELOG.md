@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `InterviewerBiasCueExtractor` (`retrieval/interviewer_bias_cues.py`): offline advisory cues for interviewer-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INTERVIEWER_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `RecallBiasCueExtractor` (`retrieval/recall_bias_cues.py`): offline advisory cues for recall-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RECALL_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `HealthyWorkerEffectCueExtractor` (`retrieval/healthy_worker_effect_cues.py`): offline advisory cues for healthy-worker-effect wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEALTHY_WORKER_EFFECT_CUE_EXTRACTOR_GUIDE.md`.
 - `LeftTruncationCueExtractor` (`retrieval/left_truncation_cues.py`): offline Elicit/Consensus/AJE left-truncation / delayed-entry cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEFT_TRUNCATION_CUE_EXTRACTOR_GUIDE.md`.
@@ -242,6 +243,13 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   pypdf 6.19.0, addressing the advisories reported for the previous locked
   versions on 2026-10-08. Dependency ranges, other locked packages, model
   defaults, and CI gates are unchanged.
+- Live providers reject explicit content-filter/refusal and Gemini prompt/candidate
+  blocking signals before extracting nonblank partial or refusal text. Sanitized
+  provider-labelled errors are not retried or replaced with another candidate,
+  provider, or fake answer. `/query` retains HTTP-200 `ERROR`, frozen input evidence,
+  and unavailable completed exports without grounding or journaling blocked output.
+  Unknown finish reasons, ordinary prose, routing, budgets, and model defaults
+  remain unchanged. See the [dated provider blocking contract](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-blocked-or-refused-responses).
 - DataCite now accepts integer-valued float publication years (`2024.0` and `"2024.0"`) instead of dropping the year when upstream JSON serializes `publicationYear` as a float-like value.
 - CORE `yearPublished` parsing now accepts date-shaped strings such as `2021-07-01` by extracting the leading four-digit year instead of dropping the year metadata.
 - Semantic Scholar publication year used a naive coercion of the `year` field, so a JSON `null` could surface as the literal string `"None"` in metadata and a usable `publicationDate` (e.g. `2023-05-01`) was ignored when `year` was absent. The year is now resolved None-aware from an integer/digit `year`, falling back to the leading four digits of `publicationDate`, else `""`.
