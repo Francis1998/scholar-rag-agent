@@ -1,5 +1,9 @@
 """Hybrid dense and sparse retrieval with HyDE and RRF."""
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+from threading import RLock
+
 from retrieval.dense import DenseRetriever
 from retrieval.hyde import HyDEExpander
 from retrieval.mmr import MMRDiversifier
@@ -38,6 +42,7 @@ class HybridRetriever:
         self._sparse_retriever = sparse_retriever
         self._hyde_expander = hyde_expander
         self._diversifier = diversifier
+        self._index_lock = RLock()
 
     @property
     def uses_llm(self) -> bool:
@@ -48,8 +53,31 @@ class HybridRetriever:
         """Prepare independent batch snapshots before indexing either component."""
         dense_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
         sparse_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
-        self._dense_retriever.add_chunks(dense_chunks)
-        self._sparse_retriever.add_chunks(sparse_chunks)
+        with self._index_lock:
+            self._dense_retriever.add_chunks(dense_chunks)
+            self._sparse_retriever.add_chunks(sparse_chunks)
+
+    @contextmanager
+    def replacing_documents(
+        self, document_ids: frozenset[str], chunks: list[Chunk]
+    ) -> Iterator[None]:
+        """Serialize writers and prepare both indexes before any dependent storage writes."""
+        if (
+            getattr(self.add_chunks, "__func__", None) is not HybridRetriever.add_chunks
+            and getattr(self.replacing_documents, "__func__", None)
+            is HybridRetriever.replacing_documents
+        ):
+            raise TypeError(
+                "Custom hybrid add_chunks requires a replacing_documents implementation."
+            )
+        dense_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        sparse_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        with (
+            self._index_lock,
+            self._dense_retriever.replacing_documents(document_ids, dense_chunks),
+            self._sparse_retriever.replacing_documents(document_ids, sparse_chunks),
+        ):
+            yield
 
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None

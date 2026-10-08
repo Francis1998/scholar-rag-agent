@@ -236,6 +236,16 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- Complete-document ingestion now removes superseded chunks and graph evidence
+  for existing document IDs, including content-derived new chunk IDs, shorter
+  revisions, and blank Python replacements. Staged dense/BM25 updates preserve
+  corpus statistics, input ownership, scope, and deterministic ranking; shared
+  SQLite document/graph writes roll back together. Duplicate document IDs use
+  the last complete value. Low-level chunk upserts, HTTP identity semantics,
+  collections, and frozen exports/reviews/annotations remain unchanged. Custom
+  writers require explicit replacement hooks; separate SQLite files retain a
+  documented cross-file commit boundary. See the
+  [Python ingestion contract](docs/EXAMPLES.md#replace-a-complete-document-in-python).
 - DataCite now accepts integer-valued float publication years (`2024.0` and `"2024.0"`) instead of dropping the year when upstream JSON serializes `publicationYear` as a float-like value.
 - CORE `yearPublished` parsing now accepts date-shaped strings such as `2021-07-01` by extracting the leading four-digit year instead of dropping the year metadata.
 - Semantic Scholar publication year used a naive coercion of the `year` field, so a JSON `null` could surface as the literal string `"None"` in metadata and a usable `publicationDate` (e.g. `2023-05-01`) was ignored when `year` was absent. The year is now resolved None-aware from an integer/digit `year`, falling back to the leading four digits of `publicationDate`, else `""`.

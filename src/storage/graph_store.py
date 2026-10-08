@@ -8,6 +8,8 @@ from pathlib import Path
 from retrieval.models import Chunk, Entity, EntityEdge
 from retrieval.scope import DocumentIdsInput, normalize_document_ids
 
+PreparedGraphChunk = tuple[Chunk, list[Entity], list[EntityEdge]]
+
 
 def _document_filter(document_ids: tuple[str, ...] | None) -> str:
     """SQL structure only: IDs are bound separately, including quotes and Unicode."""
@@ -41,11 +43,75 @@ class SQLiteGraphStore:
         if any(edge.chunk_id != chunk.chunk_id for edge in edges):
             raise ValueError("Each edge chunk_id must match the chunk being replaced.")
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
-            connection.execute("DELETE FROM entity_mentions WHERE chunk_id = ?", (chunk.chunk_id,))
-            connection.execute("DELETE FROM entity_edges WHERE chunk_id = ?", (chunk.chunk_id,))
-            self._add_mentions(connection, chunk, entities)
-            self._add_edges(connection, edges)
+            self._replace_chunk(connection, chunk, entities, edges)
             connection.commit()
+
+    @property
+    def database_path(self) -> Path:
+        """Return the resolved file used to coordinate a shared ingestion transaction."""
+        return Path(self._database_path).resolve()
+
+    def replace_documents(
+        self,
+        document_ids: frozenset[str],
+        chunks: list[PreparedGraphChunk],
+        *,
+        connection: sqlite3.Connection | None = None,
+    ) -> None:
+        """Replace owned graphs in the caller's shared transaction or in this store's file."""
+        for chunk, _, edges in chunks:
+            if chunk.document_id not in document_ids:
+                raise ValueError("Each graph chunk must belong to a replacement document.")
+            if any(edge.chunk_id != chunk.chunk_id for edge in edges):
+                raise ValueError("Each edge chunk_id must match the chunk being replaced.")
+        if len({chunk.chunk_id for chunk, _, _ in chunks}) != len(chunks):
+            raise ValueError("Replacement graph chunks must have unique chunk_id values.")
+        if connection is not None:
+            self._replace_documents(connection, document_ids, chunks)
+        else:
+            with closing(sqlite3.connect(self._database_path)) as own_connection, own_connection:
+                own_connection.execute("BEGIN IMMEDIATE")
+                self._replace_documents(own_connection, document_ids, chunks)
+                own_connection.commit()
+
+    def _replace_documents(
+        self,
+        connection: sqlite3.Connection,
+        document_ids: frozenset[str],
+        chunks: list[PreparedGraphChunk],
+    ) -> None:
+        for chunk, _, _ in chunks:
+            owner = connection.execute(
+                "SELECT document_id FROM graph_chunks WHERE chunk_id = ?", (chunk.chunk_id,)
+            ).fetchone()
+            if owner is not None and owner[0] not in document_ids:
+                raise ValueError("Replacement graph chunk_id belongs to an unrelated document.")
+        parameters = [(document_id,) for document_id in sorted(document_ids)]
+        connection.executemany(
+            "DELETE FROM entity_mentions WHERE chunk_id IN "
+            "(SELECT chunk_id FROM graph_chunks WHERE document_id = ?)",
+            parameters,
+        )
+        connection.executemany(
+            "DELETE FROM entity_edges WHERE chunk_id IN "
+            "(SELECT chunk_id FROM graph_chunks WHERE document_id = ?)",
+            parameters,
+        )
+        connection.executemany("DELETE FROM graph_chunks WHERE document_id = ?", parameters)
+        for chunk, entities, edges in chunks:
+            self._replace_chunk(connection, chunk, entities, edges)
+
+    def _replace_chunk(
+        self,
+        connection: sqlite3.Connection,
+        chunk: Chunk,
+        entities: list[Entity],
+        edges: list[EntityEdge],
+    ) -> None:
+        connection.execute("DELETE FROM entity_mentions WHERE chunk_id = ?", (chunk.chunk_id,))
+        connection.execute("DELETE FROM entity_edges WHERE chunk_id = ?", (chunk.chunk_id,))
+        self._add_mentions(connection, chunk, entities)
+        self._add_edges(connection, edges)
 
     def chunks_for_entities(
         self,

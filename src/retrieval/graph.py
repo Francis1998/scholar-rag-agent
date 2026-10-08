@@ -5,7 +5,7 @@ from itertools import combinations
 
 from retrieval.models import Chunk, Entity, EntityEdge, SearchResult
 from retrieval.scope import DocumentIdsInput, normalize_document_ids, scope_arguments
-from storage.graph_store import SQLiteGraphStore
+from storage.graph_store import PreparedGraphChunk, SQLiteGraphStore
 
 _TERM_PATTERN = re.compile(
     r"\b(?:[A-Z][A-Za-z0-9\-]{2,}|[a-z]+(?:ase|tion|ology|omics|graph|model|agent))\b"
@@ -53,13 +53,29 @@ class GraphRAGBuilder:
     def index_chunks(self, chunks: list[Chunk]) -> None:
         """Replace each chunk's graph after preparing its entities and co-mention edges."""
         for chunk in chunks:
-            entities = self._extractor.extract(chunk.text)
+            prepared = self.prepare_chunks([chunk])
+            self._graph_store.replace_chunk(*prepared[0])
+
+    @property
+    def graph_store(self) -> SQLiteGraphStore:
+        """Expose the store for coordinating complete-document ingestion writes."""
+        return self._graph_store
+
+    def prepare_chunks(self, chunks: list[Chunk]) -> list[PreparedGraphChunk]:
+        """Snapshot and extract a complete batch without changing the stored graph."""
+        indexed_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+        prepared: list[PreparedGraphChunk] = []
+        for chunk in indexed_chunks:
+            entities = [
+                entity.model_copy(deep=True) for entity in self._extractor.extract(chunk.text)
+            ]
             normalized_names = sorted({entity.name for entity in entities})
             edges = [
                 EntityEdge(source=left, target=right, chunk_id=chunk.chunk_id)
                 for left, right in combinations(normalized_names, 2)
             ]
-            self._graph_store.replace_chunk(chunk, entities, edges)
+            prepared.append((chunk, entities, edges))
+        return prepared
 
 
 class GraphRetriever:
