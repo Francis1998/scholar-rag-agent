@@ -249,6 +249,10 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   writers require explicit replacement hooks; separate SQLite files retain a
   documented cross-file commit boundary. See the
   [Python ingestion contract](docs/EXAMPLES.md#replace-a-complete-document-in-python).
+- Refresh the reproducible dependency lock to AnyIO 4.14.2, Pillow 12.3.0, and
+  pypdf 6.19.0, addressing the advisories reported for the previous locked
+  versions on 2026-10-08. Dependency ranges, other locked packages, model
+  defaults, and CI gates are unchanged.
 - Live providers reject explicit content-filter/refusal and Gemini prompt/candidate
   blocking signals before extracting nonblank partial or refusal text. Sanitized
   provider-labelled errors are not retried or replaced with another candidate,
