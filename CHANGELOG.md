@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `InterviewerBiasCueExtractor` (`retrieval/interviewer_bias_cues.py`): offline advisory cues for interviewer-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INTERVIEWER_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - Bounded, generation-free retrieval-policy comparison through
   `POST /research/compare-retrieval` and `AppContainer.retrieval_comparator`.
   Exactly two strict named variants share a copied query/scope and one captured
