@@ -43,6 +43,15 @@ without extra retrieval or changes to model defaults, endpoints, or budgets.
 Threshold `1` means equal meaningful-term sets, not byte-identical passages.
 See [the contract and zero-model demo](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
 
+Retrieval-policy comparison adds no setting or provider requirement.
+`POST /research/compare-retrieval` accepts exactly two named policies over one
+shared query/scope. It retains each real preview's effective limits, with fixed
+500-character query, 50-source-per-preview, 30-second overall and
+256-KiB-per-export bounds. Both formats must fit; reduce scope or the existing
+`SCHOLAR_RAG_MAX_SOURCE_DOCS` setting and restart if they do not. No shared
+setting is changed per request. See the
+[API/Python comparison contract](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md).
+
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
@@ -84,8 +93,9 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-07 America/Los_Angeles**;
-this catalog-only check leaves defaults and separately dated migration contracts unchanged.
+All four official model catalogs were checked again on **2026-10-08 America/Los_Angeles**;
+Anthropic now also lists Haiku 5.5. This catalog-only check leaves selected
+defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
 

@@ -1,6 +1,7 @@
-"""Pure exact comparisons of validated, frozen evidence bundles."""
+"""Pure exact comparisons of captured sources and validated, frozen evidence bundles."""
 
 import json
+from collections.abc import Sequence
 from urllib.parse import quote
 
 from pydantic import BaseModel, JsonValue
@@ -135,9 +136,12 @@ def _shared(baseline: EvidenceSource, candidate: EvidenceSource) -> SharedSource
     )
 
 
-def _evidence(baseline: EvidenceBundle, candidate: EvidenceBundle) -> EvidenceComparison:
-    left = {_identity(source): source for source in baseline.snapshot.sources}
-    right = {_identity(source): source for source in candidate.snapshot.sources}
+def compare_sources(
+    baseline: Sequence[EvidenceSource], candidate: Sequence[EvidenceSource]
+) -> EvidenceComparison:
+    """Compare validated source sequences without assuming a completed or persisted run."""
+    left = {_identity(source): source for source in baseline}
+    right = {_identity(source): source for source in candidate}
     shared = left.keys() & right.keys()
     union = left.keys() | right.keys()
     left_owners = {source.chunk.chunk_id: source.chunk.document_id for source in left.values()}
@@ -239,6 +243,6 @@ def compare_bundles(baseline: EvidenceBundle, candidate: EvidenceBundle) -> RunC
         candidate=_run(candidate),
         changes=changes,
         any_changes=any(changes.model_dump().values()),
-        evidence=_evidence(baseline, candidate),
+        evidence=compare_sources(left_sources, right_sources),
         notices=notices,
     )

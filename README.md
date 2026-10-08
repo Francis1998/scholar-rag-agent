@@ -45,6 +45,7 @@ database and empty provider keys. The interactive API documentation is at
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
+| Compare evidence policies before generating | Two real previews share one query/scope and report exact source, provenance, and context-byte changes without saved runs | [Retrieval policy comparison and measured demo](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md) |
 | Collapse overlapping evidence before generating | Opt in to `near_duplicate_threshold` on `/query` or `/retrieve`; preserve exact survivors and reviewable transformation paths | [Near-duplicate evidence collapse](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
 | Limit how many passages one paper contributes | Opt in to `max_chunks_per_document` on `/query` or `/retrieve`; retain the quota and gate provenance in saved evidence | [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
 | Require a minimum number of evidence documents before generating | Opt in to `min_evidence_documents`; inspect count diagnostics with `/retrieve`, or retain exact evidence in an `ERROR` run without generation | [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
@@ -85,6 +86,19 @@ synthetic illustration is not a screen recording or scientific validation.
 The [complete API/Python guide](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md) covers
 hash-only CSS CSP, literal text safety, the fail-not-truncate 4 MiB cap, privacy,
 workflow sources and reproducible artifacts. JSON remains the default.
+
+## Compare retrieval policies without generating
+
+![Measured synthetic offline retrieval-policy comparison](docs/assets/retrieval-comparison.gif)
+
+`POST /research/compare-retrieval` compares exactly two named baseline/candidate
+policies using the real preview path. Full passages, plans, effective limits,
+minimum assessments, exact identity/provenance changes and context byte
+sizes/digests remain inspectable in bounded JSON/Markdown downloads. No fake or
+live generation, events, or corpus writes occur. Two awaits can see concurrent
+corpus changes: this is not a controlled experiment or a quality metric.
+The [API/Python and portfolio guide](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md)
+reproduces this actual-output illustration, not a screen recording.
 
 ## Inspect near-duplicate evidence before generating
 
@@ -238,6 +252,9 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
+The **2026-10-08 America/Los_Angeles** catalog-only check includes Haiku 5.5
+as an additional Anthropic option; selected defaults and separately dated
+migration contracts remain unchanged. It is not a live compatibility check.
 `/query` requests the reasoning route; the default-provider setting is not a
 universal override. Provider availability depends on your account and credentials.
 
