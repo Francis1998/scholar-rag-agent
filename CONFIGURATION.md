@@ -106,9 +106,15 @@ Setting an API key header does not migrate the endpoint or the key's permissions
 
 Live adapters reject invalid JSON, absent/blank final answer text, and explicit
 output/context-limit truncation with a nonretryable provider-response error.
+Explicit provider content filtering, refusal fields, and Gemini prompt/candidate
+blocks likewise fail with a fixed `response was blocked or refused` diagnostic,
+without retry, alternate-candidate selection, or provider/fake failover.
 `/query` records an `ERROR` run rather than a completed empty or known-partial
-answer. Existing payload budgets and routing are unchanged; see
-[finish-reason handling](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-truncated-answers).
+answer; blocked text is not grounded, journaled as a generation, or exportable
+as a completed answer. Captured input evidence can remain. Existing payload
+budgets and routing are unchanged; see
+[finish-reason handling](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-truncated-answers)
+and [blocked/refused responses](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-blocked-or-refused-responses).
 
 Live rate admission counts every HTTP attempt, including failed requests and
 retries, against the default 60 attempts per adapter instance per sliding minute.

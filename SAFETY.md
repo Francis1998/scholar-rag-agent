@@ -451,13 +451,25 @@ answer text after excluding non-answer blocks. This includes thinking-only and
 tool-only responses. Explicit output/context-limit truncation also fails, even
 with nonblank partial text: OpenAI/Kimi `length`, Anthropic `max_tokens` or
 `model_context_window_exceeded`, and Gemini `MAX_TOKENS`.
+Explicit content-filter/refusal signals also fail before text extraction:
+OpenAI/Kimi `content_filter`, nonempty message refusal strings or typed refusal
+parts; Anthropic `refusal`; and Gemini's documented blocked finish reasons,
+prompt block reasons, or boolean `blocked: true` safety ratings.
+These produce the fixed `response was blocked or refused` diagnostic, including
+responses without answer text. Only the selected first choice/candidate is used;
+prompt feedback applies to the whole response. See the
+[dated blocking contract](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-blocked-or-refused-responses).
 The diagnostic contains a provider name and fixed failure
 category, not raw provider output. These errors are not retried or failed over;
 the runner records `ERROR` rather than persisting an empty or explicitly
-truncated completed answer. No partial answer is promoted to a generation record,
-and there is no automatic continuation or budget increase.
+truncated/blocked completed answer. Blocked text is never grounded or promoted
+to a generation record or completed export, and there is no alternate candidate,
+automatic continuation, or budget increase.
 Existing captured input evidence remains subject to the privacy rules above.
-Unknown or missing finish reasons retain the existing text contract. This check
+Unknown or missing finish reasons retain the existing text contract when no
+explicit block/refusal signal is present; ordinary prose is not classified as
+a refusal. Raw refusal text, filter details, hidden thinking, headers, and
+credentials are not included in the fixed diagnostic. This check
 does not establish factual correctness or completeness of other nonblank answers.
 See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
 
