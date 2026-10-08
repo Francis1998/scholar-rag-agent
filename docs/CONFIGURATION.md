@@ -100,9 +100,19 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-05 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-08 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
-and model-specific limitations. Defaults, endpoints, routing, and budgets remain unchanged.
+and model-specific limitations. Haiku 5.5 is an additional current Anthropic
+catalog option, not a new adapter-compatibility claim. Defaults, endpoints,
+routing, and budgets remain unchanged.
+
+Retrieval-policy comparison does not use provider settings or add environment
+variables. It uses two ordinary previews, retaining each one's actual copied
+source/hop/phase limits. Its fixed 500-character query, two-variant, 30-second
+overall and 256-KiB complete-export bounds are independent of model output
+budgets. Reduce selected scope or `SCHOLAR_RAG_MAX_SOURCE_DOCS` and restart
+if the full output cannot fit; no per-variant source-limit override is accepted.
+See [the comparison guide](guides/RETRIEVAL_COMPARISON_GUIDE.md).
 
 ### Anthropic bounded text and rollback
 

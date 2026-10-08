@@ -168,6 +168,27 @@ failures are HTTP errors rather than `ERROR` run bodies. See the complete
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) for scope,
 limits, Python usage, privacy, and a measured offline demo.
 
+To compare policy choices before any fake/live generation:
+
+```bash
+curl --fail-with-body --silent --show-error \
+  http://127.0.0.1:8000/research/compare-retrieval \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query":"What does GraphRAG connect?",
+    "baseline":{},
+    "candidate":{"evidence_policy":{"max_chunks_per_document":1,"min_evidence_documents":2}}
+  }' | uv run python -m json.tool
+```
+
+Add the same top-level `document_ids` or `collection_id` scope if desired.
+An unmet minimum retains the preview and reports `passed: false`, without
+generating an answer. Inspect both full previews, exact source changes and
+context bytes; save `?format=markdown` for review. The
+[comparison guide](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md) covers complete
+Python/curl workflows, the 256 KiB all-or-nothing cap, and the measured GIF.
+This inspects the current corpus, not a frozen experiment or retrieval quality.
+
 To inspect the same questions against each selected paper, use
 `POST /research/worksheet` with explicit document IDs or a saved collection.
 The [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) provides a complete

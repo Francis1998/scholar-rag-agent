@@ -7,6 +7,20 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - `InterviewerBiasCueExtractor` (`retrieval/interviewer_bias_cues.py`): offline advisory cues for interviewer-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INTERVIEWER_BIAS_CUE_EXTRACTOR_GUIDE.md`.
+- Bounded, generation-free retrieval-policy comparison through
+  `POST /research/compare-retrieval` and `AppContainer.retrieval_comparator`.
+  Exactly two strict named variants share a copied query/scope and one captured
+  collection identity/revision. Real previews retain full evidence, plans,
+  actual limits and minimum assessments; shared source-comparison logic reports
+  exact chunk/document, rank/score/provenance/text and context-byte/digest deltas.
+  A 30-second overall deadline, complete 256-KiB JSON/Markdown caps, sanitized
+  all-or-nothing errors and literal exports add no models, events, schema,
+  corpus writes or dependencies. Current-corpus inspection is not a frozen
+  experiment or quality metric. Includes the [complete workflow/portfolio guide](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md),
+  tests-first coverage, measured offline demo and reproducible illustration.
+  Related provider-catalog references were checked 2026-10-08 America/Los_Angeles,
+  adding Haiku 5.5 as a catalog option without changing selected defaults or
+  separately dated migration contracts.
 - `RecallBiasCueExtractor` (`retrieval/recall_bias_cues.py`): offline advisory cues for recall-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RECALL_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `HealthyWorkerEffectCueExtractor` (`retrieval/healthy_worker_effect_cues.py`): offline advisory cues for healthy-worker-effect wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEALTHY_WORKER_EFFECT_CUE_EXTRACTOR_GUIDE.md`.
 - `LeftTruncationCueExtractor` (`retrieval/left_truncation_cues.py`): offline Elicit/Consensus/AJE left-truncation / delayed-entry cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEFT_TRUNCATION_CUE_EXTRACTOR_GUIDE.md`.
