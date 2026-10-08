@@ -156,8 +156,13 @@ The reader opens SQLite with `mode=ro` and never initializes or backfills it.
 Different requests are **not one frozen snapshot**. Re-ingestion may replace
 text under an existing ID; new IDs behind your cursor are missed until you start
 again. A removed boundary row does not invalidate its cursor. Existing ingestion
-does not guarantee removal of older chunks on re-import, so this API describes
-what is stored, not a reconstructed document version. Cursors are canonical
+through `IngestionPipeline.ingest_documents` now replaces the complete current
+chunk set for each supplied document ID, including shorter and blank Python
+revisions. Low-level chunk upserts remain incremental, and older stale rows are
+not migrated until that complete document is reingested. This API describes
+what is currently stored, not a historical document version. See the
+[Python ingestion boundary](../EXAMPLES.md#replace-a-complete-document-in-python).
+Cursors are canonical
 continuations, not signatures, secrets, authorization, or snapshot handles.
 
 ### Errors and privacy

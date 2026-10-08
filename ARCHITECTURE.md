@@ -328,7 +328,7 @@ To change an indexed chunk, explicitly call `add_chunks` with its updated value
 and the same chunk ID. An embedding failure still propagates, preserving earlier
 successful updates and the failed ID's last successful value while skipping the
 remaining batch. If it occurs in hybrid's dense phase, sparse indexing is not run;
-batch snapshots do not make indexing transactional or thread-safe.
+batch snapshots do not make these low-level upserts transactional across components.
 
 Replaying identical ingestion into the same application does not consume extra
 top-k slots or change retrieval scores. Rebuilding from the same persisted chunks
@@ -349,11 +349,61 @@ existing graph rows.
 Case-insensitive lookup, document scope, and unrelated chunks are unchanged;
 the low-level `add_mentions` and `add_edges` methods remain additive.
 
-This does not change ID generation or stored document replacement/deletion
-semantics: chunks with different IDs, including old chunks after a document
-shrinks or content-derived IDs change, are not removed by an upsert. It does
-not make batches or multi-store ingestion atomic, or synchronize in-memory
-indexes across application workers.
+These low-level upserts do not remove chunks with different IDs.
+`SQLiteDocumentStore.add_documents` likewise remains a row upsert:
+`add_documents([], chunks)` updates only the supplied chunk rows. It does not
+update the live retrieval indexes or graph. Complete-document ingestion uses
+the separate replacement boundary below.
+
+### Complete-document reingestion
+
+`IngestionPipeline.ingest_documents` treats each supplied `Document` as the
+complete current value of its exact `document_id`. A repeated ID in one batch
+uses the last document value, ordered by the ID's first appearance; discarded
+versions are not chunked or combined. Input documents and generated chunks are
+detached before subsequent preparation. Chunking, graph extraction/edge creation,
+and dense/BM25 preparation finish before the replacement writes begin.
+
+The document store's `replacing_documents` context reserves a `BEGIN IMMEDIATE`
+transaction, rejects incoming chunk IDs owned by unrelated documents, replaces
+the supplied document rows, and removes their previous chunks. The graph store
+removes those documents' graph chunks, mentions, and edges before inserting the
+prepared graphs. Default `AppContainer` wiring shares the same resolved database
+path, so these SQL writes commit or roll back together. Only after that commit
+do the retrievers publish their staged index state. Unrelated embeddings are
+retained, the configured embedder and BM25 parameters are reused, and removed
+chunks no longer contribute to BM25 corpus size, term frequencies, or mean length.
+Input/result ownership, scope filtering, and deterministic dense/BM25 ties remain
+unchanged.
+
+Graph initialization idempotently adds `idx_graph_chunks_document_id` on
+`graph_chunks(document_id, chunk_id)`. Both dependent deletion subqueries and
+the final graph-chunk deletion use indexed document lookups instead of scanning
+the entire graph once per supplied document. Fresh and reopened databases use
+the same index, with no data migration, row rewrite, or change to internal edge IDs.
+
+Empty or whitespace-only Python documents replace their previous evidence with
+zero chunks while keeping the document row and collection membership. A shorter
+revision also removes its superseded tail. Identical replay remains idempotent.
+The HTTP endpoint still rejects blank text and derives a new `doc-api-v2-*` ID
+when its parsed source/title/text changes; ID generation has not changed.
+
+Writers sharing one hybrid instance are serialized, and each component's readers
+are protected from partial index publication. A multi-stage retrieval, graph
+traversal, or sequence of pages is **not** a frozen corpus-revision snapshot.
+Separate application instances/processes do not hot-reload one another's indexes.
+If Python wiring uses different document and graph SQLite files, the graph file
+commits before the document transaction. A later document-commit failure leaves
+the old document/live indexes but the new graph; it propagates, with no silent
+repair. Explicitly retry the same complete batch to converge, or use one shared
+database for atomic persistence. There is no distributed transaction guarantee.
+
+Legacy custom writer overrides must opt in to the preparation/replacement hooks
+instead of being silently bypassed; unsupported overrides raise before storage
+writes. See the [Python ingestion contract](docs/EXAMPLES.md#replace-a-complete-document-in-python)
+for those hooks. Existing stale rows are removed when their document is next
+reingested, not by a startup migration. Completed frozen evidence, answer reviews,
+annotations, collections, and unrelated documents are never rewritten.
 
 ### SQLite connection lifecycle
 
@@ -361,8 +411,9 @@ The core event, document, and graph stores open a connection per operation.
 Their existing transaction context exits before the connection is explicitly
 closed, including after SQL, serialization, or commit failures. Reads materialize
 their rows before closing; connections do not depend on garbage collection for
-release. This does not add connection pooling, make multi-store ingestion atomic,
-or synchronize in-memory retrieval indexes across workers.
+release. This does not add connection pooling or synchronize retrieval indexes
+across workers; the shared ingestion transaction described above coordinates
+document and graph writes only.
 
 ## Persistent Corpus Discovery
 

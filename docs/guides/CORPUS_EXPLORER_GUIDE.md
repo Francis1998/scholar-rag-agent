@@ -163,8 +163,11 @@ or append events. They never fetch the full corpus behind a page limit.
 
 Each catalog SELECT / document read transaction is a current snapshot, not a
 snapshot shared across pages. Concurrent re-imports can replace text and labels;
-new IDs behind a cursor require starting again. Existing ingestion may retain
-older chunks. Browsing is not a document-version reconstruction or an audit log.
+new IDs behind a cursor require starting again. Complete-document Python ingestion
+removes that ID's superseded chunks, while low-level row upserts remain incremental.
+Existing stale rows are not migrated until the document is reingested through the
+[complete replacement boundary](../EXAMPLES.md#replace-a-complete-document-in-python).
+Browsing is not a document-version reconstruction or an audit log.
 Filtering/counting can scan many rows: bounded response size is not a fixed
 latency guarantee, and the UI adds no scan deadline.
 

@@ -112,6 +112,16 @@ Dense and BM25 retrieval now break equal-score ties by chunk ID before applying
 limits rather than by insertion order. This keeps tied preview ranks stable after
 restart; score calculations and rank fusion are unchanged.
 
+Python `IngestionPipeline.ingest_documents` has a separate **complete-document**
+contract: reusing an existing `Document.document_id` replaces all its current
+chunks and graph links, including when content-derived chunk IDs change or the
+paper becomes shorter. A blank Python replacement keeps the document but clears
+its evidence. This is useful for a PDF changed at the same file path; it does not
+change the HTTP identity rules above. Low-level `add_documents([], chunks)` is
+still an incremental row upsert, not a complete replacement. Saved collections
+retain their IDs, and frozen exports/reviews/annotations retain the original
+evidence. See the [Python reingestion walkthrough and failure boundaries](docs/EXAMPLES.md#replace-a-complete-document-in-python).
+
 ## 5. Recover document IDs and select papers
 
 For browser-native discovery, open `http://127.0.0.1:8000/explore`. Use the

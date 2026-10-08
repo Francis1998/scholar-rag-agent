@@ -90,6 +90,95 @@ Unicode such as `"\u00a0\u2003"`) returns HTTP 422 before ingestion, storage,
 or indexing. Nonblank text is passed through unchanged for document IDs and
 stored document content; existing chunk whitespace normalization still applies.
 
+## Replace a complete document in Python
+
+The Python ingestion boundary replaces the entire current document, not just
+matching chunk IDs. This also applies to `PDFConnector.load`: its document ID is
+derived from the resolved file path, so reimporting a changed PDF at the same
+path must remove obsolete passages. Use a complete document rather than passing
+only an appended passage under an existing ID.
+
+```python
+import asyncio
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from api.dependencies import AppContainer
+from retrieval.models import Document
+from scripts.demo_evidence_export import offline_settings
+
+with TemporaryDirectory(prefix="scholar-reingestion-") as directory:
+    settings = offline_settings(Path(directory) / "corpus.sqlite3")
+    container = AppContainer(settings)
+    original = Document(
+        document_id="same-paper",
+        title="Synthetic",
+        text="Alpha Beta obsolete methodology.",
+        source="fixture",
+    )
+    old = container.ingestion_pipeline.ingest_documents([original])
+    revised = original.model_copy(update={"text": "Gamma Delta revised methodology."})
+    current = container.ingestion_pipeline.ingest_documents([revised])
+    assert old[0].chunk_id != current[0].chunk_id
+    assert container.document_store.list_chunks() == current
+    hits = asyncio.run(container.hybrid_retriever.retrieve("Alpha", limit=10))
+    assert [hit.chunk for hit in hits] == current
+    assert AppContainer(settings).document_store.list_chunks() == current
+
+    blank = revised.model_copy(update={"text": ""})
+    assert container.ingestion_pipeline.ingest_documents([blank]) == []
+    assert container.document_store.list_chunks() == []
+    assert container.document_catalog.list_documents().documents[0].chunk_count == 0
+```
+
+An identical replay is idempotent; a shorter/blank revision removes all
+superseded chunks, mentions, and edges. In a multi-document batch, unrelated IDs
+are retained. Repeated IDs in that batch use the **last complete value** in
+first-ID-appearance order; earlier versions do not contribute chunks. IDs are
+exact and case-sensitive, with no new normalization.
+
+Chunking, extraction, and index preparation happen before destructive writes.
+With the default shared database, document/chunk/graph SQL commits together,
+then the already prepared dense/BM25 states are published. Preparation, SQL, and
+commit errors propagate without publishing the failed replacement. Two writers
+sharing a hybrid instance are serialized; in-flight multi-stage retrieval and
+separate workers are not one corpus snapshot or a live index-sync mechanism.
+Deliberately using separate document and graph files is **not atomic across
+files**: a graph commit can succeed before the document commit fails, leaving
+the old document/live indexes and the new graph. Retry the same complete batch
+explicitly after resolving the error; no fallback rebuild or automatic repair
+is attempted.
+
+Custom legacy writers are not silently replaced with the built-in algorithm.
+The pipeline rejects an overridden writer without its explicit replacement
+opt-in before storage writes:
+
+| Customized writer | Required opt-in |
+| --- | --- |
+| Dense/BM25/Hybrid `add_chunks` | `replacing_documents(document_ids, chunks)` context manager |
+| `SQLiteDocumentStore.add_documents` | `replacing_documents(documents, chunks)` context manager yielding its SQLite connection |
+| `GraphRAGBuilder.index_chunks` | `prepare_chunks(chunks)` returning detached chunk/entity/edge triples without writing |
+| `SQLiteGraphStore.replace_chunk` | `replace_documents(document_ids, prepared_chunks, connection=...)` |
+
+An opt-in owns its custom algorithm, validation, and side effects. Index contexts
+must prepare before yielding and publish only on successful exit. The graph
+writer must use a supplied connection without committing it. A custom hook can
+explicitly validate and delegate to the corresponding built-in replacement hook
+when its semantics are appropriate; unknown subclasses are never cloned.
+Custom chunkers must return unique chunk IDs owned by the input document.
+An ID collision with an unrelated stored document fails, rather than overwriting
+that paper.
+
+Low-level `SQLiteDocumentStore.add_documents([], chunks)` and retriever
+`add_chunks` remain incremental exact-chunk upserts; the store alone does not
+synchronize retrieval or graphs. Existing stale evidence for an ID is cleaned
+only when that complete document is next ingested, not during startup.
+Collections retain membership. Completed exports, reviews, and annotations keep
+their frozen evidence, even when corpus-drift inspection reports old chunks as
+missing. This is not a historical document-version archive or a new HTTP update
+endpoint: `/ingest/text` still rejects blank text and changes its document ID
+when source/title/text changes.
+
 ## Inspect retrieval before generating
 
 ```bash

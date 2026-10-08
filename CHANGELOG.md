@@ -253,6 +253,16 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- Complete-document ingestion now removes superseded chunks and graph evidence
+  for existing document IDs, including content-derived new chunk IDs, shorter
+  revisions, and blank Python replacements. Staged dense/BM25 updates preserve
+  corpus statistics, input ownership, scope, and deterministic ranking; shared
+  SQLite document/graph writes roll back together. Duplicate document IDs use
+  the last complete value. Low-level chunk upserts, HTTP identity semantics,
+  collections, and frozen exports/reviews/annotations remain unchanged. Custom
+  writers require explicit replacement hooks; separate SQLite files retain a
+  documented cross-file commit boundary. See the
+  [Python ingestion contract](docs/EXAMPLES.md#replace-a-complete-document-in-python).
 - Refresh the reproducible dependency lock to AnyIO 4.14.2, Pillow 12.3.0, and
   pypdf 6.19.0, addressing the advisories reported for the previous locked
   versions on 2026-10-08. Dependency ranges, other locked packages, model
