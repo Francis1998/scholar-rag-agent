@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `InterviewerBiasCueExtractor` (`retrieval/interviewer_bias_cues.py`): offline advisory cues for interviewer-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INTERVIEWER_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `RecallBiasCueExtractor` (`retrieval/recall_bias_cues.py`): offline advisory cues for recall-bias wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RECALL_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `HealthyWorkerEffectCueExtractor` (`retrieval/healthy_worker_effect_cues.py`): offline advisory cues for healthy-worker-effect wording (never network I/O). Gap vs Elicit/Consensus/AJE. Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEALTHY_WORKER_EFFECT_CUE_EXTRACTOR_GUIDE.md`.
 - `LeftTruncationCueExtractor` (`retrieval/left_truncation_cues.py`): offline Elicit/Consensus/AJE left-truncation / delayed-entry cue extractors (never network I/O). Optional polish via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEFT_TRUNCATION_CUE_EXTRACTOR_GUIDE.md`.
