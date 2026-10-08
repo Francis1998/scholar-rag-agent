@@ -229,6 +229,31 @@ errors (409 for generative retrieval), not `ERROR` run bodies or empty successes
 Task cancellation propagates without journaling. See the
 [retrieval preview contract](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Retrieval Policy Comparison
+
+`POST /research/compare-retrieval` runs exactly two real previews under one
+cooperative 30-second deadline, never generation or event/corpus writes. Strict
+nonblank valid-Unicode queries are bounded to 500 characters; optional shared
+scope uses the existing 1-100-ID contract. Only baseline/candidate evidence
+policies are accepted. Unsupported options, scoped components and generative
+HyDE fail, rather than widening scope or changing algorithms.
+
+One collection read captures membership, identity and revision before awaits;
+later edits cannot retarget the candidate. This is **not corpus isolation**:
+concurrent contents/index/configuration changes can affect either preview.
+Full evidence, actual limits and minimum assessments are retained. Empty overlap
+is null; an unmet minimum or `no_passages` is not a scientific judgment.
+
+Complete JSON and Markdown must each fit 262,144 UTF-8 bytes. Any phase failure,
+invalid provenance, oversized output or timeout rejects the whole comparison;
+external task cancellation propagates without a partial result. Validation
+omits request values, operational errors omit raw diagnostics, and responses
+use no-store/nosniff. Literal Markdown prevents active source formatting but
+does not redact full passages, queries, paths, metadata or identifiers.
+Downloads are caller-managed, not new saved runs. Keep the local/trusted API
+on loopback; scope/headers are not authentication. See the
+[comparison contract](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md).
+
 ## Research Worksheets
 
 `POST /research/worksheet` requires explicit document IDs or a saved collection,

@@ -7,6 +7,7 @@ from agent.executor import Executor
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
 from agent.research_worksheet import ResearchWorksheetService
+from agent.retrieval_comparison import RetrievalComparator
 from agent.runner import AgentRunner
 from agent.safety import SafetyLimits
 from config import Settings, load_settings
@@ -96,6 +97,7 @@ class AppContainer:
             ),
         )
         self.worksheets = ResearchWorksheetService(self.runner, self.paper_collections)
+        self.retrieval_comparator = RetrievalComparator(self.runner, self.paper_collections)
 
 
 def create_container(settings: Settings | None = None) -> AppContainer:

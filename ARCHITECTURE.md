@@ -172,6 +172,32 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+## Retrieval Policy Comparison
+
+`POST /research/compare-retrieval` in `api.research` delegates to
+`AppContainer.retrieval_comparator` / `RetrievalComparator.compare`.
+It revalidates and detaches one bounded query, exclusive optional scope, and
+exactly two named policy variants before awaiting. A collection's membership,
+ID and revision come from one existing `resolved_collection` read transaction;
+the connection closes before the baseline preview starts.
+
+Baseline and candidate each call the real `AgentRunner.preview`, with unchanged
+scope/policy enforcement and their actual copied effective limits. Complete
+previews are copied and checked before the next await. The extracted pure
+`agent.run_comparison.compare_sources` also serves completed-run comparisons,
+preserving that API's behavior without inventing evidence bundles or run IDs.
+Separate exact document identity sets, shared-field change counts, and context
+UTF-8 byte deltas complement the source-pair comparison.
+
+Both JSON and literal Markdown must fit 256 KiB; output is never shortened to
+make a successful response. One cooperative 30-second deadline covers selection,
+both previews, comparison and serialization preflight. Failure/cancellation
+cannot return a baseline-only success. No model, event, corpus write, schema,
+dependency or frontend is added. Scope membership is captured, but the corpus,
+indexes and per-call runtime configuration are not transactionally frozen across
+the two awaits: this is inspection, not a controlled experiment or quality metric.
+See the [complete contract and measured demo](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md).
+
 ## Read-Only Local Corpus Explorer
 
 `GET /explore` and `GET /explore/document` in `api.explorer` render bounded
