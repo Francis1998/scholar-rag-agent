@@ -239,6 +239,10 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- Refresh the reproducible dependency lock to AnyIO 4.14.2, Pillow 12.3.0, and
+  pypdf 6.19.0, addressing the advisories reported for the previous locked
+  versions on 2026-10-08. Dependency ranges, other locked packages, model
+  defaults, and CI gates are unchanged.
 - Live providers reject explicit content-filter/refusal and Gemini prompt/candidate
   blocking signals before extracting nonblank partial or refusal text. Sanitized
   provider-labelled errors are not retried or replaced with another candidate,
