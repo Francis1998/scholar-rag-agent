@@ -226,6 +226,11 @@ class OpenAIAdapter(HTTPProviderAdapter):
         choices = data.get("choices")
         text = ""
         if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+            if choices[0].get("finish_reason") == "content_filter":
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "response was blocked or refused."
+                )
             if choices[0].get("finish_reason") == "length":
                 raise ProviderResponseError(
                     f"{self.provider_name} returned an invalid response: answer was truncated."
@@ -237,6 +242,18 @@ class OpenAIAdapter(HTTPProviderAdapter):
                 )
             message = choices[0].get("message")
             if isinstance(message, dict):
+                content = message.get("content")
+                refusal = message.get("refusal")
+                if (isinstance(refusal, str) and refusal) or (
+                    isinstance(content, list)
+                    and any(
+                        isinstance(part, dict) and part.get("type") == "refusal" for part in content
+                    )
+                ):
+                    raise ProviderResponseError(
+                        f"{self.provider_name} returned an invalid response: "
+                        "response was blocked or refused."
+                    )
                 tool_calls = message.get("tool_calls")
                 if (isinstance(tool_calls, list) and tool_calls) or isinstance(
                     message.get("function_call"), dict
@@ -245,7 +262,7 @@ class OpenAIAdapter(HTTPProviderAdapter):
                         f"{self.provider_name} returned an invalid response: "
                         "nonfinal tool or continuation output."
                     )
-                text = self._message_text(message.get("content"))
+                text = self._message_text(content)
         return self._text_response(text, request)
 
     @staticmethod
@@ -323,6 +340,11 @@ class AnthropicAdapter(HTTPProviderAdapter):
         text blocks are concatenated and thinking blocks are skipped. Tool
         requests and paused turns cannot be completed by this text-only adapter.
         """
+        if data.get("stop_reason") == "refusal":
+            raise ProviderResponseError(
+                f"{self.provider_name} returned an invalid response: "
+                "response was blocked or refused."
+            )
         if data.get("stop_reason") in ("max_tokens", "model_context_window_exceeded"):
             raise ProviderResponseError(
                 f"{self.provider_name} returned an invalid response: answer was truncated."
@@ -383,9 +405,37 @@ class GeminiAdapter(HTTPProviderAdapter):
 
     def parse_response(self, data: Mapping[str, object], request: LLMRequest) -> LLMResponse:
         """Parse Gemini response JSON."""
+        feedback = data.get("promptFeedback")
+        if isinstance(feedback, dict):
+            block_reason = feedback.get("blockReason")
+            if (
+                isinstance(block_reason, str)
+                and block_reason.strip()
+                and block_reason != "BLOCK_REASON_UNSPECIFIED"
+            ) or self._has_blocked_rating(feedback.get("safetyRatings")):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "response was blocked or refused."
+                )
         candidates = data.get("candidates")
         text = ""
         if isinstance(candidates, list) and candidates and isinstance(candidates[0], dict):
+            if candidates[0].get("finishReason") in (
+                "SAFETY",
+                "RECITATION",
+                "BLOCKLIST",
+                "PROHIBITED_CONTENT",
+                "SPII",
+                "IMAGE_SAFETY",
+                "IMAGE_PROHIBITED_CONTENT",
+                "IMAGE_RECITATION",
+                "ESCALATION",
+                "PUP_LIMITED_DISABLED",
+            ) or self._has_blocked_rating(candidates[0].get("safetyRatings")):
+                raise ProviderResponseError(
+                    f"{self.provider_name} returned an invalid response: "
+                    "response was blocked or refused."
+                )
             if candidates[0].get("finishReason") == "MAX_TOKENS":
                 raise ProviderResponseError(
                     f"{self.provider_name} returned an invalid response: answer was truncated."
@@ -422,6 +472,12 @@ class GeminiAdapter(HTTPProviderAdapter):
                     and isinstance(part.get("text"), str)
                 )
         return self._text_response(text, request)
+
+    @staticmethod
+    def _has_blocked_rating(ratings: object) -> bool:
+        return isinstance(ratings, list) and any(
+            isinstance(rating, dict) and rating.get("blocked") is True for rating in ratings
+        )
 
 
 class KimiAdapter(OpenAIAdapter):

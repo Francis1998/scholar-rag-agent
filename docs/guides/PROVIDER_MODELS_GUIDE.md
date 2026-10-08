@@ -96,7 +96,8 @@ These response errors are not retried and do not trigger another provider or
 the fake adapter. Their messages identify the provider and failure category,
 not raw response bodies, tool arguments, hidden thinking, credentials, or request headers.
 Transport/HTTP retries remain unchanged. Explicit output/context-limit
-truncation is also rejected, even when partial answer text is nonblank.
+truncation and explicit provider blocks/refusals are also rejected, even when
+partial answer text is nonblank.
 This does not validate factual correctness or interpret every provider stop reason.
 
 ### Explicitly truncated answers
@@ -142,7 +143,8 @@ a call. Only the first OpenAI/Kimi choice or Gemini candidate is inspected:
 there is no alternate-candidate selection or retry to obtain a final answer.
 
 Normal responses and legacy gateways that omit a finish reason retain their
-existing text contract when no explicit truncation or nonfinal signal is present.
+existing text contract when no explicit truncation, nonfinal, or blocked/refusal
+signal is present.
 Null call fields and empty OpenAI-compatible `tool_calls` lists are not calls;
 other non-text blocks are not generically rejected. Multipart concatenation,
 thought exclusion, citations, configured-model provenance, routing, and rate
@@ -150,13 +152,52 @@ limits are unchanged. Other or unknown finish reasons are not exhaustively
 validated; absence of a response error is not a completeness or correctness
 guarantee. This is still a stateless text adapter, not a tool-loop client.
 
+### Explicitly blocked or refused responses
+
+Nonblank partial or refusal text is not a completed research answer when the
+provider explicitly marks it as blocked. The following response contracts were
+checked **2026-10-08 America/Los_Angeles**, independently of model catalogs or
+migrations. These checks run before answer-text extraction.
+
+| Provider | Rejected signal | Official contract |
+| --- | --- | --- |
+| OpenAI | `choices[0].finish_reason` is `content_filter`; the selected message has a nonempty `refusal` string; or a multipart content part has `type: "refusal"`. | [Chat Completions](https://developers.openai.com/api/reference/resources/chat) defines filtered output and explicit assistant refusals, including typed refusal content. |
+| Kimi | The same checks, inherited from the OpenAI-compatible parser. | [Kimi Chat Completions](https://platform.kimi.ai/docs/api/chat) documents the compatible API shape; this is defensive compatibility handling, not a claim that current Kimi models emit every OpenAI refusal/filter signal. |
+| Anthropic | `stop_reason` is `refusal`. | [Claude stop reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) identifies a declined response. This application does not adopt the documentation's retry/fallback recommendation. |
+| Gemini | `candidates[0].finishReason` is `SAFETY`, `RECITATION`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `SPII`, `IMAGE_SAFETY`, `IMAGE_PROHIBITED_CONTENT`, `IMAGE_RECITATION`, `ESCALATION`, or `PUP_LIMITED_DISABLED`. | [Finish reasons](https://ai.google.dev/api/generate-content#FinishReason) explicitly flag filtered candidate content, image safety/recitation, escalation filtering, or policy-disabled generation. |
+| Gemini prompt feedback | A nonblank string `promptFeedback.blockReason` other than `BLOCK_REASON_UNSPECIFIED`. | [Prompt feedback](https://ai.google.dev/api/generate-content#PromptFeedback) says a set block reason means the prompt was blocked; documented reasons include `SAFETY`, `OTHER`, `BLOCKLIST`, `PROHIBITED_CONTENT`, and `IMAGE_SAFETY`. |
+| Gemini safety ratings | A `safetyRatings` entry on the selected candidate or prompt feedback has boolean `blocked: true`. | [Safety ratings](https://ai.google.dev/api/generate-content#SafetyRating) explicitly identify content blocked by the rating. Probability alone is not a block. |
+
+All of these raise `ProviderResponseError` with the fixed, provider-labelled
+`response was blocked or refused` diagnostic, even when no text or candidate is
+returned. Refusal strings and typed refusal parts still fail when a compatible
+gateway omits the finish reason or reports a normal stop. A typed refusal part
+does not need nonblank refusal text to identify a refusal.
+
+Only the first OpenAI/Kimi choice or Gemini candidate is inspected; a later
+blocked candidate cannot invalidate an accepted first candidate, and a later
+valid candidate cannot replace a blocked first one. Gemini prompt feedback is
+response-wide: a nonblank, non-sentinel block reason remains an explicit block
+even if its string is unfamiliar or a candidate is present.
+
+Missing/null/empty refusal fields, unspecified prompt block reasons, false
+safety flags, and unknown finish reasons alone do not imply a block. Safety
+flags must be boolean `true`, not truthy strings or numbers. Ordinary prose
+such as "I cannot answer" is not interpreted as a refusal signal. Unblocked
+responses retain whitespace, multipart concatenation, thought filtering,
+citation mapping, and configured-model provenance.
+
 The existing `/query` contract still uses HTTP 200 with `result.state: "ERROR"`
 for a failed run. Inspect `state` and `error`, not just the HTTP status. The
-runner journals the failure without recording a generation or `DONE` event;
+runner journals the failure without grounding the blocked text or recording a
+generation or `DONE` event;
 the captured input evidence can remain, but the failed run cannot be exported
 as a completed answer. Review the provider/model/output-budget configuration
 before explicitly starting another run; do not treat empty, explicitly
-truncated, or nonfinal tool/continuation output as evidence.
+truncated, nonfinal tool/continuation, or blocked/refused output as evidence.
+No blocked/refused output, raw reasons/details, hidden thinking, headers, or
+credentials are included in the diagnostic. No retry, provider/fake failover,
+alternate candidate, continuation, or budget increase is attempted.
 The Anthropic adapter's fixed `max_tokens=1024`
 is unchanged and no new environment setting is introduced.
 The offline fake and the public response schema for custom adapters are unchanged.
