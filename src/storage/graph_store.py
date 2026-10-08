@@ -280,4 +280,8 @@ class SQLiteGraphStore:
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_entity_edges_chunk_id ON entity_edges(chunk_id)"
             )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_graph_chunks_document_id "
+                "ON graph_chunks(document_id, chunk_id)"
+            )
             connection.commit()

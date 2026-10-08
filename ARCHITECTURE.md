@@ -350,6 +350,12 @@ chunks no longer contribute to BM25 corpus size, term frequencies, or mean lengt
 Input/result ownership, scope filtering, and deterministic dense/BM25 ties remain
 unchanged.
 
+Graph initialization idempotently adds `idx_graph_chunks_document_id` on
+`graph_chunks(document_id, chunk_id)`. Both dependent deletion subqueries and
+the final graph-chunk deletion use indexed document lookups instead of scanning
+the entire graph once per supplied document. Fresh and reopened databases use
+the same index, with no data migration, row rewrite, or change to internal edge IDs.
+
 Empty or whitespace-only Python documents replace their previous evidence with
 zero chunks while keeping the document row and collection membership. A shorter
 revision also removes its superseded tail. Identical replay remains idempotent.

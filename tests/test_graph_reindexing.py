@@ -130,6 +130,68 @@ def test_chunk_deletion_uses_indexes_without_rewriting_existing_data(
     assert graph_rows(database) == before
 
 
+@pytest.mark.parametrize("reopen_legacy", [False, True], ids=["fresh", "legacy-reopen"])
+@pytest.mark.parametrize(
+    ("delete_sql", "remaining"),
+    [
+        (
+            "DELETE FROM entity_mentions WHERE chunk_id IN "
+            "(SELECT chunk_id FROM graph_chunks WHERE document_id = ?)",
+            (1, 0, 2),
+        ),
+        (
+            "DELETE FROM entity_edges WHERE chunk_id IN "
+            "(SELECT chunk_id FROM graph_chunks WHERE document_id = ?)",
+            (1, 2, 0),
+        ),
+        ("DELETE FROM graph_chunks WHERE document_id = ?", (0, 2, 2)),
+    ],
+    ids=["mentions-by-document", "edges-by-document", "chunks-by-document"],
+)
+def test_document_deletions_use_ownership_index_without_rewriting_data(
+    tmp_path: Path, reopen_legacy: bool, delete_sql: str, remaining: tuple[int, int, int]
+) -> None:
+    database = tmp_path / "graph.sqlite3"
+    document_id = "paper:10.1/'quoted-\u03b2'"
+    store = SQLiteGraphStore(database)
+    GraphRAGBuilder(store).index_chunks(
+        [chunk("stable", "Alpha Beta", document_id), chunk("other", "Alpha Gamma", "excluded")]
+    )
+    store.add_edges([EntityEdge(source="Alpha", target="Beta", chunk_id="stable", weight=0.25)])
+    before = graph_rows(database)
+    with closing(sqlite3.connect(database)) as connection, connection:
+        if reopen_legacy:
+            connection.execute("DROP INDEX IF EXISTS idx_graph_chunks_document_id")
+        edge_ids = connection.execute("SELECT id FROM entity_edges ORDER BY id").fetchall()
+    if reopen_legacy:
+        SQLiteGraphStore(database)
+    assert graph_rows(database) == before
+
+    with closing(sqlite3.connect(database)) as connection:
+        plans = [
+            row[3]
+            for row in connection.execute(
+                "EXPLAIN QUERY PLAN " + delete_sql, (document_id,)
+            ).fetchall()
+        ]
+        assert any("SEARCH" in plan and "idx_graph_chunks_document_id" in plan for plan in plans), (
+            plans
+        )
+        assert not any("SCAN graph_chunks" in plan for plan in plans), plans
+        assert connection.execute("SELECT id FROM entity_edges ORDER BY id").fetchall() == edge_ids
+        connection.execute("BEGIN")
+        connection.execute(delete_sql, (document_id,))
+        counts_sql = (
+            "SELECT (SELECT count(*) FROM graph_chunks WHERE chunk_id = ?), "
+            "(SELECT count(*) FROM entity_mentions WHERE chunk_id = ?), "
+            "(SELECT count(*) FROM entity_edges WHERE chunk_id = ?)"
+        )
+        assert connection.execute(counts_sql, ("stable",) * 3).fetchone() == remaining
+        assert connection.execute(counts_sql, ("other",) * 3).fetchone() == (1, 2, 1)
+        connection.rollback()
+    assert graph_rows(database) == before
+
+
 async def test_changed_chunk_replaces_old_entity_routes_and_payload(tmp_path: Path) -> None:
     database = tmp_path / "graph.sqlite3"
     store = SQLiteGraphStore(database)
