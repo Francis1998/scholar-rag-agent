@@ -36,6 +36,15 @@ from storage.document_chunks import (
     DocumentChunksError,
     DocumentChunksPage,
     DocumentNotFoundError,
+    StoredChunk,
+)
+from storage.source_context import (
+    DEFAULT_CONTEXT_NEIGHBORS,
+    MAX_CONTEXT_NEIGHBORS,
+    ContextChunkIdentity,
+    ContextDocumentIdentity,
+    SourceContext,
+    SourceContextError,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,6 +84,7 @@ button:hover { background: #0c355a; border-color: #0c355a; }
 nav { display: flex; flex-wrap: wrap; gap: .7rem 1.5rem; margin: 1rem 0; }
 nav a { display: inline-block; padding: .3rem 0; }
 article { margin: 1rem 0; content-visibility: auto; contain-intrinsic-size: auto 22rem; }
+article.selected-anchor { border: 2px solid #125d9c; content-visibility: visible; }
 dl { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: .4rem 1rem; }
 dt { font-weight: 650; }
 dd { margin: 0; min-width: 0; }
@@ -201,6 +211,16 @@ class _ExplorerRoute(APIRoute):
             try:
                 return await handler(request)
             except RequestValidationError:
+                if request.url.path == "/explore/context":
+                    return _error(
+                        422,
+                        "invalid_source_context_request",
+                        "Invalid source context request",
+                        "Use exact Unicode document and chunk IDs, before/after counts from "
+                        "0 to 5, and unchanged catalog/passage navigation parameters. "
+                        "Document IDs are 1-128 characters without surrounding whitespace; "
+                        "chunk IDs are 1-256 characters.",
+                    )
                 return _error(
                     422,
                     "invalid_explorer_request",
@@ -224,6 +244,33 @@ class _ExplorerRoute(APIRoute):
                     "Document not found",
                     "This document is not in the current stored corpus. It may have been "
                     "removed since browsing. Return to the catalog to discover current IDs.",
+                )
+            except SourceContextError as exc:
+                if exc.status_code == 404:
+                    return _error(
+                        404,
+                        exc.code,
+                        "Passage not found",
+                        "This exact chunk is not in this document in the current corpus. "
+                        "It may have been replaced or removed. Rediscover stored passages; "
+                        "the reader will not guess a replacement.",
+                    )
+                if exc.status_code == 503:
+                    return _error(
+                        503,
+                        exc.code,
+                        "Corpus storage unavailable",
+                        "The existing database could not be read. Check its availability "
+                        "and permissions locally; this is not an empty context window.",
+                    )
+                return _error(
+                    409,
+                    exc.code,
+                    "Source context unavailable",
+                    "Source order must be valid and unambiguous for every stored chunk in "
+                    "this document. The reader allows at most 2048 chunks and 8192 stored "
+                    "metadata bytes per chunk. No partial context or guessed order is shown. "
+                    "Review the import with trusted local tools; browsing cannot repair it.",
                 )
             except (DocumentCatalogError, DocumentChunksError):
                 return _error(
@@ -269,6 +316,7 @@ def _empty_filter(value: object) -> object:
 _OptionalSource = Annotated[SourceFilter | None, BeforeValidator(_empty_filter)]
 _OptionalTitle = Annotated[TitleFilter | None, BeforeValidator(_empty_filter)]
 _Limit = Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)]
+_NeighborCount = Annotated[int, Query(ge=0, le=MAX_CONTEXT_NEIGHBORS)]
 _RESPONSES: dict[int | str, dict[str, str]] = {
     404: {"description": "Document no longer exists"},
     409: {"description": "Invalid projected data or text not representable as HTML"},
@@ -344,6 +392,26 @@ def _pagination(first: str, next_url: str | None) -> str:
     else:
         links += "<span>End of this result set.</span>"
     return f'<nav aria-label="Pagination">{links}</nav>'
+
+
+def _passage(chunk: StoredChunk, *, continuation: str) -> Iterator[str]:
+    yield "<dl><dt>Chunk ID (JSON)</dt><dd>"
+    yield _identity(chunk.chunk_id, "chunk-id")
+    yield '</dd><dt>Stored chunk_index</dt><dd class="chunk-index">'
+    yield str(chunk.chunk_index) if chunk.chunk_index is not None else "Not recorded"
+    yield "</dd><dt>Title</dt><dd>" + _literal(chunk.title, "chunk-title") + "</dd>"
+    yield "</dl>" + _truncation("Title", chunk.title_truncated, MAX_TITLE_CHARACTERS)
+    yield "<dl><dt>Source</dt><dd>" + _literal(chunk.source, "chunk-source") + "</dd></dl>"
+    yield _truncation("Source", chunk.source_truncated, MAX_SOURCE_CHARACTERS)
+    yield _literal(chunk.text, "passage-text")
+    if not chunk.text:
+        yield "<p>This stored passage is empty.</p>"
+    if chunk.text_truncated:
+        yield (
+            f'<p class="notice">Passage truncated: only the first {MAX_TEXT_CHARACTERS} '
+            f"characters are shown. {continuation}, not the rest of this "
+            "passage. Consult the original trusted source for the omitted text.</p>"
+        )
 
 
 def _catalog(
@@ -440,25 +508,6 @@ def _document(
             else "This document has no stored passages."
         )
         yield f'<p class="notice">{message}</p>'
-    for number, chunk in enumerate(page.chunks, 1):
-        yield f"<article><h3>Passage {number} on this page</h3><dl><dt>Chunk ID (JSON)</dt><dd>"
-        yield _identity(chunk.chunk_id, "chunk-id")
-        yield '</dd><dt>Stored chunk_index</dt><dd class="chunk-index">'
-        yield str(chunk.chunk_index) if chunk.chunk_index is not None else "Not recorded"
-        yield "</dd><dt>Title</dt><dd>" + _literal(chunk.title, "chunk-title") + "</dd>"
-        yield "</dl>" + _truncation("Title", chunk.title_truncated, MAX_TITLE_CHARACTERS)
-        yield "<dl><dt>Source</dt><dd>" + _literal(chunk.source, "chunk-source") + "</dd></dl>"
-        yield _truncation("Source", chunk.source_truncated, MAX_SOURCE_CHARACTERS)
-        yield _literal(chunk.text, "passage-text")
-        if not chunk.text:
-            yield "<p>This stored passage is empty.</p>"
-        if chunk.text_truncated:
-            yield (
-                f'<p class="notice">Passage truncated: only the first {MAX_TEXT_CHARACTERS} '
-                "characters are shown. Next page moves to later chunk IDs, not the rest of this "
-                "passage. Consult the original trusted source for the omitted text.</p>"
-            )
-        yield "</article>"
     params: dict[str, str | int | None] = {
         "document_id": page.document_id,
         "limit": limit,
@@ -466,11 +515,151 @@ def _document(
         "title": title,
         "catalog_cursor": catalog_cursor,
     }
+    for number, chunk in enumerate(page.chunks, 1):
+        yield f"<article><h3>Passage {number} on this page</h3>"
+        yield from _passage(chunk, continuation="Next page moves to later chunk IDs")
+        yield (
+            "<p>"
+            + _link(
+                f"source-context-{number}",
+                _url(
+                    "/explore/context",
+                    {**params, "cursor": cursor, "chunk_id": chunk.chunk_id},
+                ),
+                "Read surrounding source context",
+            )
+            + "</p></article>"
+        )
     yield _pagination(
         _url("/explore/document", params),
         _url("/explore/document", {**params, "cursor": page.next_cursor})
         if page.next_cursor
         else None,
+    )
+    yield "</section>"
+
+
+def _context_window(page: SourceContext, params: Mapping[str, str | int | None]) -> Iterator[str]:
+    yield '<section aria-labelledby="window"><h2 id="window">Choose surrounding passages</h2>'
+    controls = {**params, "chunk_id": page.anchor_chunk_id}
+    if any(
+        isinstance(value, str) and any(character in value for character in "\0\r\n")
+        for value in controls.values()
+    ):
+        yield (
+            "<p>This selection contains control characters that a native form cannot "
+            "preserve. Use the exact window-size and passage links instead.</p>"
+        )
+    else:
+        yield '<form id="context-window" method="get" action="/explore/context" autocomplete="off">'
+        for name, value in controls.items():
+            if value is not None:
+                yield f'<input type="hidden" name="{name}" value="{_escaped(str(value))}">'
+        for name, count in (("before", page.before), ("after", page.after)):
+            yield (
+                f'<div><label for="{name}">Passages {name} the selection</label>'
+                f'<input id="{name}" name="{name}" type="number" min="0" '
+                f'max="{MAX_CONTEXT_NEIGHBORS}" value="{count}" required inputmode="numeric" '
+                'aria-describedby="window-help"></div>'
+            )
+        yield (
+            '<p id="window-help">0-5 stored neighbors on each side; the selected passage '
+            'is always included.</p><div class="actions">'
+            '<button type="submit">Read window</button></div></form>'
+        )
+    yield '<nav aria-label="Window shortcuts">'
+    for identifier, count, label in (
+        ("anchor-only", 0, "Selected passage only"),
+        ("default-window", DEFAULT_CONTEXT_NEIGHBORS, "Two on each side"),
+        ("maximum-window", MAX_CONTEXT_NEIGHBORS, "Five on each side"),
+    ):
+        yield _link(
+            identifier,
+            _url("/explore/context", {**controls, "before": count, "after": count}),
+            label,
+        )
+    yield "</nav></section>"
+
+
+def _context(
+    page: SourceContext,
+    *,
+    limit: int,
+    cursor: str | None,
+    source: str | None,
+    title: str | None,
+    catalog_cursor: str | None,
+) -> Iterator[str]:
+    params: dict[str, str | int | None] = {
+        "document_id": page.document_id,
+        "limit": limit,
+        "source": source,
+        "title": title,
+        "catalog_cursor": catalog_cursor,
+        "cursor": cursor,
+    }
+    yield '<nav aria-label="Corpus navigation">'
+    yield _link("back-to-passages", _url("/explore/document", params), "Back to passage page")
+    yield _link(
+        "back-to-catalog",
+        _url(
+            "/explore",
+            {"limit": limit, "source": source, "title": title, "cursor": catalog_cursor},
+        ),
+        "Back to filtered catalog",
+    )
+    yield "</nav><dl><dt>Document ID (JSON)</dt><dd>"
+    yield _identity(page.document_id, "document-id")
+    yield "</dd></dl>"
+    yield (
+        '<p class="notice">CURRENT CORPUS: this is not frozen saved-run evidence. '
+        "Only unique, validated ascending chunk_index values define source order. "
+        "Gaps are allowed; neighbors are stored chunks, not sentences or missing paragraphs. "
+        "Overlaps are preserved, not merged. Each window is one read snapshot.</p>"
+    )
+    yield from _context_window(page, params)
+    yield (
+        '<section aria-labelledby="context"><h2 id="context">Surrounding source context</h2>'
+        f"<p>Returned {page.returned_before} before + selected passage + "
+        f"{page.returned_after} after (requested {page.before} / {page.after}).</p>"
+    )
+    yield (
+        "<p>More stored passages exist before this window.</p>"
+        if page.has_more_before
+        else "<p>Start of the stored source order.</p>"
+    )
+    for number, chunk in enumerate(page.chunks, 1):
+        offset = number - page.returned_before - 1
+        label = (
+            "Selected passage"
+            if chunk.is_anchor
+            else f"{abs(offset)} passage(s) {'before' if offset < 0 else 'after'} the selection"
+        )
+        anchor = ' id="context-anchor" class="selected-anchor"' if chunk.is_anchor else ""
+        yield f'<article{anchor} aria-labelledby="context-passage-{number}">'
+        yield f'<h3 id="context-passage-{number}">{label}</h3>'
+        yield from _passage(chunk, continuation="Changing the window moves between stored chunks")
+        yield (
+            "<p>"
+            + _link(
+                f"center-context-{number}",
+                _url(
+                    "/explore/context",
+                    {
+                        **params,
+                        "chunk_id": chunk.chunk_id,
+                        "before": page.before,
+                        "after": page.after,
+                    },
+                ),
+                "Read around this passage",
+            )
+            + "</p></article>"
+        )
+    yield (
+        "<p>More stored passages exist after this window.</p>"
+        if page.has_more_after
+        else "<p>End of the stored source order.</p>"
     )
     yield "</section>"
 
@@ -519,6 +708,35 @@ def explore_document(
     return _page(
         "Stored passages",
         _document(
+            page,
+            limit=limit,
+            cursor=cursor,
+            source=source,
+            title=title,
+            catalog_cursor=catalog_cursor,
+        ),
+    )
+
+
+@router.get("/explore/context", response_class=HTMLResponse, responses=_RESPONSES)
+def explore_context(
+    request: Request,
+    document_id: Annotated[ContextDocumentIdentity, Query()],
+    chunk_id: Annotated[ContextChunkIdentity, Query()],
+    before: _NeighborCount = DEFAULT_CONTEXT_NEIGHBORS,
+    after: _NeighborCount = DEFAULT_CONTEXT_NEIGHBORS,
+    limit: _Limit = DEFAULT_PAGE_SIZE,
+    cursor: Annotated[ChunkCursor | None, Query()] = None,
+    source: Annotated[_OptionalSource, Query()] = None,
+    title: Annotated[_OptionalTitle, Query()] = None,
+    catalog_cursor: Annotated[Identity | None, Query()] = None,
+) -> HTMLResponse:
+    """Read exact source context, preserving native navigation back to the original page."""
+    container: AppContainer = request.app.state.container
+    page = container.source_context.read(document_id, chunk_id, before=before, after=after)
+    return _page(
+        "Source context reader",
+        _context(
             page,
             limit=limit,
             cursor=cursor,

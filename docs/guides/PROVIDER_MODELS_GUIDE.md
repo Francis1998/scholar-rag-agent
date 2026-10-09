@@ -2,7 +2,8 @@
 
 The official OpenAI/Anthropic catalogs, Gemini latest-model guide and
 [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
-**2026-10-08 America/Los_Angeles**. This catalog-only check leaves the selected
+**2026-10-09 America/Los_Angeles**, repeating the 2026-10-08 catalog check.
+This catalog-only check leaves the selected
 defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
 Anthropic lists Sonnet 5.5, Opus 5.5, Fable 5.1, and the additional Haiku 5.5
 option in its current table; Gemini 3.8 Flash is GA;

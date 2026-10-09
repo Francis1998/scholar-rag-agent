@@ -64,6 +64,18 @@ The frozen policy and survivor paths remain reviewable in previews and saved
 evidence; threshold `1` means equal meaningful-term sets, not identical text.
 See [the complete collapse guide](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md).
 
+## Source-context reader bounds
+
+`GET /documents/context`, `/explore/context`, and `SQLiteSourceContext.read`
+use the existing corpus database without any new environment setting. The
+request supplies exact document/chunk IDs and 0-5 before/after neighbors,
+defaulting to two on each side. One snapshot validates at most 2,048 chunks;
+metadata over 8,192 stored bytes per chunk fails before JSON parsing.
+These bounds are independent of retrieval limits, page size and provider
+budgets. Reducing the window does not bypass source-order validation.
+Standalone Python reading avoids normal app startup/index initialization.
+See [the complete API/Python/browser guide](guides/SOURCE_CONTEXT_GUIDE.md).
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
@@ -100,7 +112,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-08 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-09 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Haiku 5.5 is an additional current Anthropic
 catalog option, not a new adapter-compatibility claim. Defaults, endpoints,

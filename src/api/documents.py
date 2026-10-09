@@ -1,5 +1,6 @@
 """Discover selectable papers and inspect stored evidence without running an agent."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
@@ -21,7 +22,16 @@ from storage.document_chunks import (
     DocumentChunksPage,
     DocumentNotFoundError,
 )
+from storage.source_context import (
+    DEFAULT_CONTEXT_NEIGHBORS,
+    MAX_CONTEXT_NEIGHBORS,
+    ContextChunkIdentity,
+    ContextDocumentIdentity,
+    SourceContext,
+    SourceContextError,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -49,6 +59,42 @@ def list_documents(
     except DocumentCatalogError as exc:
         raise HTTPException(
             status_code=409,
+            detail={"code": exc.code, "message": str(exc)},
+            headers=headers,
+        ) from exc
+
+
+@router.get(
+    "/documents/context",
+    response_model=SourceContext,
+    responses={
+        404: {"description": "Document or exact chunk is not in the current corpus"},
+        409: {"description": "Invalid/ambiguous source order, evidence, or stored-data bound"},
+        422: {"description": "Invalid exact identifiers or neighbor counts"},
+        503: {"description": "Existing corpus storage unavailable"},
+    },
+)
+def read_source_context(
+    request: Request,
+    response: Response,
+    document_id: Annotated[ContextDocumentIdentity, Query()],
+    chunk_id: Annotated[ContextChunkIdentity, Query()],
+    before: Annotated[int, Query(ge=0, le=MAX_CONTEXT_NEIGHBORS)] = DEFAULT_CONTEXT_NEIGHBORS,
+    after: Annotated[int, Query(ge=0, le=MAX_CONTEXT_NEIGHBORS)] = DEFAULT_CONTEXT_NEIGHBORS,
+) -> SourceContext:
+    """Read a source-order window around an exact current chunk; never expand retrieval."""
+    container: AppContainer = request.app.state.container
+    headers = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
+    response.headers.update(headers)
+    try:
+        return container.source_context.read(document_id, chunk_id, before=before, after=after)
+    except (DocumentNotFoundError, DocumentChunksError, SourceContextError) as exc:
+        logger.warning("Source context read failed: %s", exc.code)
+        status = 404 if isinstance(exc, DocumentNotFoundError) else 409
+        if isinstance(exc, SourceContextError):
+            status = exc.status_code
+        raise HTTPException(
+            status_code=status,
             detail={"code": exc.code, "message": str(exc)},
             headers=headers,
         ) from exc

@@ -231,7 +231,7 @@ def test_query_document_identity_survives_links_and_cursor_exactly(
         for anchor in root.by_tag("a"):
             parts = urlsplit(anchor.attrs["href"])
             assert not parts.scheme and not parts.netloc
-            assert parts.path in {"", "/explore", "/explore/document"}
+            assert parts.path in {"", "/explore", "/explore/document", "/explore/context"}
 
 
 def test_empty_form_filters_are_omitted_but_nonempty_values_are_not_changed(
@@ -634,13 +634,13 @@ def test_explorer_routes_are_sync_get_only_and_described_as_html(api: ExplorerAP
         for route in router.routes
         if isinstance(route, APIRoute) and route.path.startswith("/explore")
     ]
-    assert {route.path for route in routes} == {"/explore", "/explore/document"}
+    assert {route.path for route in routes} == {"/explore", "/explore/document", "/explore/context"}
     for route in routes:
         assert route.methods == {"GET"}
         assert not inspect.iscoroutinefunction(route.endpoint)
         assert api.client.post(route.path).status_code == 405
     schema = api.client.get("/openapi.json").json()
-    for path in ("/explore", "/explore/document"):
+    for path in ("/explore", "/explore/document", "/explore/context"):
         responses = schema["paths"][path]["get"]["responses"]
         assert "text/html" in responses["200"]["content"]
         assert {"409", "413", "422", "503"} <= set(responses)

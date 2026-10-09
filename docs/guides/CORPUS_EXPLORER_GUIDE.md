@@ -30,6 +30,15 @@ continuous screen recording or scientific validation.
    the catalog page you came from, including its cursor. Choosing a document
    always reads that exact ID; the catalog filters are only back-link context.
 
+Each displayed passage now also has **Read surrounding source context**.
+This opens `/explore/context` with that exact document/chunk pair, highlights the
+anchor, and shows a bounded neighborhood in validated numeric source order.
+Native forms request 0-5 neighbors per side, and **Read around this passage**
+recenters while preserving the original passage/catalog return paths.
+Unlike the ID-ordered listings below, it requires valid unique indices across
+the document, subject to fixed chunk/metadata caps. See the
+[complete source-context contract and reproducible demo](SOURCE_CONTEXT_GUIDE.md).
+
 Whitespace-only catalog titles appear as **Untitled paper**. This display-only
 fallback does not change stored titles or trim nonblank title text.
 
@@ -53,8 +62,9 @@ not these current-corpus pages.
 | --- | --- |
 | `GET /explore` | `limit=20`, optional `source`, `title`, document-ID `cursor` |
 | `GET /explore/document` | Required exact `document_id`; `limit=20`; optional document-bound chunk `cursor`; optional `source`, `title`, `catalog_cursor` for the back link |
+| `GET /explore/context` | Required exact `document_id` and `chunk_id`; `before=2`, `after=2` (0-5 each); optional existing navigation fields for back links |
 
-Both return `text/html; charset=utf-8`. They are GET-only; unsupported methods
+All return `text/html; charset=utf-8`. They are GET-only; unsupported methods
 return the framework's 405 response. The existing JSON
 [`GET /documents`](DOCUMENT_CATALOG_GUIDE.md) and
 [`GET /documents/{document_id}/chunks`](DOCUMENT_CHUNKS_GUIDE.md) are unchanged.
@@ -121,7 +131,10 @@ Catalog pages sort by ascending document ID; passage pages sort by **ascending
 chunk ID in SQLite BINARY text order, not `chunk_index`**. For example,
 `chunk-10` precedes `chunk-2`. The stored index is a zero-based ordinal when
 present; missing values say **Not recorded** and are never guessed.
-Imported indices need not be unique or contiguous.
+Imported indices need not be unique or contiguous **for these ID-ordered
+listings**. The separate [source-context reader](SOURCE_CONTEXT_GUIDE.md)
+requires unique, valid indices for every chunk in the document; gaps remain
+allowed. A passage may be listable even when source-order reading is rejected.
 
 Limits count Unicode characters, except the final byte cap. A next-page cursor
 moves to later chunk IDs, **not the omitted tail of a truncated passage**.
@@ -143,8 +156,10 @@ exact filter; browse without that filter or by title.
 | 413 | Escaped HTML exceeds 1 MiB; reduce `limit`; no partial page is returned |
 | 503 | SQLite cannot be read; check local availability, permissions and configuration, then retry |
 
-Only projected rows and their bounded prefixes are validated, not unseen
-corpus data. A bad later row may therefore appear on a later request. Errors
+For catalog and passage listings, only projected rows and their bounded prefixes
+are validated, not unseen corpus data. A bad later row may therefore appear on a
+later request. Source-context reading additionally validates bounded ordering
+metadata across the exact selected document, not unselected passage text. Errors
 use fixed explanatory HTML and code-only application logging: no input values,
 SQL, filesystem paths, stored secrets, or exception internals are echoed.
 Valid control-bearing IDs remain lossless through query encoding and displayed

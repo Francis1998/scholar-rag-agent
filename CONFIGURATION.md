@@ -52,6 +52,13 @@ shared query/scope. It retains each real preview's effective limits, with fixed
 setting is changed per request. See the
 [API/Python comparison contract](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md).
 
+The [source-context reader](docs/guides/SOURCE_CONTEXT_GUIDE.md) adds no setting
+or provider requirement. Exact document/chunk selectors and before/after counts
+are request-only: default two neighbors per side, maximum five. The fixed
+2,048-chunk document and 8,192-stored-byte per-chunk metadata bounds apply to
+ordering validation even for an anchor-only read. Existing query, retrieval,
+pagination and generation defaults are unchanged.
+
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
@@ -93,7 +100,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-08 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-09 America/Los_Angeles**;
 Anthropic now also lists Haiku 5.5. This catalog-only check leaves selected
 defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference

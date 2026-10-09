@@ -1,0 +1,30 @@
+1. Discover a displayed passage
+GET /documents -> 200; matching papers=1
+Stored passages in this paper: 14
+ID-ordered indices: 0, 1, 10, 11, 12, 13, 2, 3, 4, 5, 6, 7, 8, 9
+Displayed anchor: chunk-10; stored index=10
+Original synthetic fixtures; isolated settings; no downloaded papers.
+
+2. Read the source-order window
+GET /documents/context -> 200
+Source indices: 8, 9, 10, 11, 12
+Returned 2 before + selected passage + 2 after.
+Native HTML link -> 200; HTML order agrees with JSON.
+Excluded-document chunks returned: 0
+Unique source indices, not chunk ID order or sentence parsing.
+
+3. Recenter or keep the anchor
+Recenter on chunk-11: 9, 10, 11, 12, 13
+Anchor-only window: 1 passage; index=10
+End window: 2 before + selected passage + 0 after.
+Long passage prefix: 4000 characters; truncated=True
+Missing exact anchor -> 404; no guessed replacement.
+Native links preserve the original passage-page return path.
+
+4. Restart without changing evidence
+Python/API identical: True; restart identical: True
+SQLite bytes unchanged by reads/restart: True
+Events before/after: 0/0
+Forbidden read-call attempts (model/retrieval/HTTP/writes): 0
+CURRENT CORPUS, not frozen saved-run evidence or scientific validation.
+JSON, HTML, checks and transcript saved; temporary database removed.
