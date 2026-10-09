@@ -119,7 +119,7 @@ _WINDOW_SQL = (
 WHERE c.document_id COLLATE BINARY = :document_id
   AND c.chunk_id COLLATE BINARY IN (SELECT value FROM json_each(:chunk_ids))
 LIMIT :fetch_limit
-"""
+"""  # nosec B608 # Static fragments; all selectors are bound parameters.
 )
 
 
