@@ -97,6 +97,13 @@ no more than 5. Co-mention traversal is bounded retrieval, not proof of a
 multi-step scientific argument. Effective bounds and phase timeouts are copied
 at run start and retained in evidence exports.
 
+Graph-neighbour limits count distinct stored lowercase entity keys, not display
+aliases. Both edge directions are filtered by document ownership before grouping
+and limiting; excluded edges cannot consume eligible slots or supply display
+representatives. The smallest eligible spelling in binary order represents each
+key, and neighbours are ordered by key. This deterministic order is not a relevance
+score and does not increase hop or result limits.
+
 ## Document Selection
 
 Optional `document_ids` restricts all query retrieval paths to selected ingested
@@ -344,6 +351,14 @@ retrieved set and claim/chunk text share at least one meaningful term. If any
 claim fails that check, the answer is prefixed with `[UNGROUNDED]` and includes
 a warning. Without a requested minimum, an empty retrieved corpus therefore
 produces an ungrounded fake answer rather than evidence.
+
+Direct Python calls with an empty claim list return `ungrounded=True`, empty
+`claims` and `citations`, the `[UNGROUNDED]` prefix, and the warning
+`No claims were available for grounding.` This applies even when retrieved
+passages overlap the answer or the answer is blank. An existing blank-text claim
+instead fails the normal support check and keeps its usual unsupported-claim
+warning. The grounder does not parse or synthesize claims; `Executor` still uses
+the whole response text as one claim when `parsed_claims` is empty.
 
 Meaningful terms exclude common stopwords and require at least one Unicode
 letter or number. Symbols or punctuation alone are not support. Greek letters,

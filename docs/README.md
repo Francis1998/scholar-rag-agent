@@ -358,3 +358,7 @@ OpenAlex, PubMed, Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, and Zenodo ad
 [Daily improvements](../DAILY_IMPROVEMENTS.md) and
 [the activity log](PULL_SHARK_LOG.md) are historical records, not onboarding
 instructions or evidence of current scientific performance.
+
+| Extract offline ConfoundingByIndication cues | [ConfoundingByIndicationCueExtractor](guides/CONFOUNDING_BY_INDICATION_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline LengthBias cues | [LengthBiasCueExtractor](guides/LENGTH_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline LeadTimeBias cues | [LeadTimeBiasCueExtractor](guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) |

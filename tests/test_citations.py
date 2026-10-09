@@ -10,6 +10,45 @@ from retrieval.models import Chunk
 from retrieval.sparse import meaningful_terms, tokenize
 
 
+@pytest.mark.parametrize(
+    "answer_text",
+    ["Graph retrieval connects passages.", "", " \t\n"],
+    ids=["nonempty-answer", "empty-answer", "whitespace-answer"],
+)
+@pytest.mark.parametrize(
+    "chunk_text",
+    [None, "Ocean warming persists.", "Graph retrieval connects passages."],
+    ids=["no-sources", "irrelevant-source", "overlapping-source"],
+)
+def test_grounder_flags_missing_claims(answer_text: str, chunk_text: str | None) -> None:
+    claims: list[Claim] = []
+    chunks = (
+        [
+            Chunk(
+                chunk_id="c1",
+                document_id="d1",
+                title="Evidence",
+                text=chunk_text,
+                source="fixture",
+                metadata={"kind": "test"},
+            )
+        ]
+        if chunk_text is not None
+        else []
+    )
+    original_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
+
+    answer = CitationGrounder().ground(answer_text, claims, chunks)
+
+    assert claims == []
+    assert chunks == original_chunks
+    assert answer.claims == []
+    assert answer.citations == []
+    assert answer.ungrounded is True
+    assert answer.answer == f"[UNGROUNDED] {answer_text}"
+    assert answer.warnings == ["No claims were available for grounding."]
+
+
 def test_tokenize_drops_tokens_emptied_by_punctuation_stripping() -> None:
     """Limited punctuation stripping drops empty terms, not all symbol tokens."""
     assert tokenize("alpha ( ) beta") == ["alpha", "beta"]
@@ -131,24 +170,36 @@ def test_grounder_keeps_only_lexically_supported_citations() -> None:
             text="Graph retrieval - connects passages.",
             source="fixture",
         ),
+        Chunk(
+            chunk_id="also-supported",
+            document_id="d3",
+            title="More graph evidence",
+            text="Graph retrieval follows entities.",
+            source="fixture",
+        ),
     ]
     claims = [
         Claim(text="Cold fusion - confirmed.", chunk_ids=["unrelated", "supported"], grounded=True),
-        Claim(text="Graph retrieval works.", chunk_ids=["unrelated", "supported"]),
+        Claim(
+            text="Graph retrieval works.",
+            chunk_ids=["also-supported", "unrelated", "supported"],
+        ),
     ]
     original_claims = [claim.model_copy(deep=True) for claim in claims]
+    original_chunks = [chunk.model_copy(deep=True) for chunk in chunks]
 
     answer = CitationGrounder().ground("Draft answer.", claims, chunks)
 
     assert answer.claims == [
         Claim(text=claims[0].text, chunk_ids=[], grounded=False),
-        Claim(text=claims[1].text, chunk_ids=["supported"], grounded=True),
+        Claim(text=claims[1].text, chunk_ids=["also-supported", "supported"], grounded=True),
     ]
-    assert [citation.chunk_id for citation in answer.citations] == ["supported"]
+    assert [citation.chunk_id for citation in answer.citations] == ["also-supported", "supported"]
     assert answer.ungrounded is True
     assert answer.answer == "[UNGROUNDED] Draft answer."
     assert answer.warnings == ["One or more claims lacked retrieved chunk support."]
     assert claims == original_claims
+    assert chunks == original_chunks
 
 
 def test_grounder_ignores_punctuation_only_token_overlap() -> None:
@@ -192,7 +243,8 @@ def test_grounder_flags_unsupported_claims() -> None:
     assert answer.answer.startswith("[UNGROUNDED]")
 
 
-def test_grounder_flags_empty_token_claim_as_ungrounded() -> None:
+@pytest.mark.parametrize("claim_text", ["", "   ", " \t\n"], ids=["empty", "spaces", "whitespace"])
+def test_grounder_flags_empty_token_claim_as_ungrounded(claim_text: str) -> None:
     """A claim that tokenizes to nothing must not be auto-grounded by an attached chunk id."""
     chunk = Chunk(
         chunk_id="c1",
@@ -202,13 +254,15 @@ def test_grounder_flags_empty_token_claim_as_ungrounded() -> None:
         source="fixture",
     )
     answer = CitationGrounder().ground(
-        answer_text="   ",
-        claims=[Claim(text="   ", chunk_ids=["c1"])],
+        answer_text=claim_text,
+        claims=[Claim(text=claim_text, chunk_ids=["c1"])],
         retrieved_chunks=[chunk],
     )
     assert answer.ungrounded is True
-    assert answer.answer.startswith("[UNGROUNDED]")
+    assert answer.answer == f"[UNGROUNDED] {claim_text}"
+    assert answer.claims == [Claim(text=claim_text, chunk_ids=[], grounded=False)]
     assert answer.citations == []
+    assert answer.warnings == ["One or more claims lacked retrieved chunk support."]
 
 
 def test_grounder_flags_stopword_only_overlap_as_ungrounded() -> None:

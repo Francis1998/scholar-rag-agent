@@ -94,11 +94,22 @@ presence in the [guide catalog](docs/README.md) do not imply execution in `/quer
 Optional `/query` `document_ids` selects eligible ingested papers for **all**
 planned tasks. A shared validator snapshots bounded, deduplicated IDs as an
 immutable tuple before awaits. Dense and BM25 filter before scoring/top-k/RRF;
-BM25 statistics remain global. Graph SQL filters chunks and both directions of
-edge ownership before `LIMIT`, so excluded documents cannot bridge selected
-ones. No shared index stores per-request scope. Unscoped calls preserve old
-signatures; unsupported scoped components fail rather than retrying globally.
+BM25 statistics remain global. Graph SQL filters chunks before `LIMIT` and both
+directions of edge ownership before neighbour deduplication and `LIMIT`, so
+excluded documents cannot bridge selected ones. No shared index stores per-request
+scope. Unscoped calls preserve old signatures; unsupported scoped components fail
+rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
+
+Graph neighbour lookup groups eligible edges by their stored `source_key` or
+`target_key`, using the graph's existing Python `str.lower()` identity, including
+non-ASCII casing. It returns one display spelling per key: `MIN(name)` in SQLite
+binary order, considering only eligible edges. Neighbours are ordered by normalized
+key before `LIMIT`, so case aliases and duplicate edges cannot consume extra
+identity slots or change the bounded selection when insertion order changes.
+A single spelling is preserved; ordering is by key rather than display name.
+This is deterministic traversal, not relevance ranking, and does not change
+multi-hop depth, visited-entity filtering, or result limits.
 
 Optional `near_duplicate_threshold` on both endpoints and runner methods freezes
 a finite strict number greater than zero and at most one in the existing

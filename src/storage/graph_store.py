@@ -157,7 +157,7 @@ class SQLiteGraphStore:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[str]:
-        """Return neighbours using only edges owned by selected documents, before LIMIT."""
+        """Return distinct neighbours in stored-key order, scoped before grouping and LIMIT."""
         scope = normalize_document_ids(document_ids)
         scope_parameters = () if scope is None else scope
         if not entities:
@@ -168,11 +168,18 @@ class SQLiteGraphStore:
         # Only the number of bound "?" placeholders is interpolated; every value
         # is passed as a query parameter, so this cannot be an injection vector.
         query = f"""
-            SELECT e.target_name FROM entity_edges e {join}
-            WHERE e.source_key IN ({placeholders}) {_document_filter(scope)}
-            UNION
-            SELECT e.source_name FROM entity_edges e {join}
-            WHERE e.target_key IN ({placeholders}) {_document_filter(scope)}
+            SELECT MIN(name)
+            FROM (
+                SELECT e.target_key AS entity_key, e.target_name AS name
+                FROM entity_edges e {join}
+                WHERE e.source_key IN ({placeholders}) {_document_filter(scope)}
+                UNION ALL
+                SELECT e.source_key AS entity_key, e.source_name AS name
+                FROM entity_edges e {join}
+                WHERE e.target_key IN ({placeholders}) {_document_filter(scope)}
+            )
+            GROUP BY entity_key
+            ORDER BY entity_key
             LIMIT ?
         """  # nosec B608
         with closing(sqlite3.connect(self._database_path)) as connection, connection:

@@ -10,7 +10,7 @@ import pytest
 
 from agent.evidence import EvidenceSnapshot, GenerationRecord
 from agent.executor import Executor
-from agent.models import AgentAnswer, AgentState, QueryIntent, QueryPlan, StateTransition
+from agent.models import AgentAnswer, AgentState, Claim, QueryIntent, QueryPlan, StateTransition
 from agent.observer import QueryAnalyzer
 from agent.planner import Planner
 from agent.runner import AgentRunner
@@ -109,6 +109,56 @@ async def test_agent_runner_completes_with_events(tmp_path: Path) -> None:
     assert all(task.max_hops <= 1 for task in result.plan.tasks)
     assert result.answer is not None
     assert event_log.list_events(result.run_id)
+
+
+@pytest.mark.parametrize(
+    ("text", "ungrounded"),
+    [
+        ("GraphRAG follows entities. Retrieval connects research.", False),
+        ("Unicorns teleport. Dragons levitate.", True),
+    ],
+    ids=["supported-response", "unsupported-response"],
+)
+async def test_agent_runner_grounds_whole_response_without_parsed_claims(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str, ungrounded: bool
+) -> None:
+    runner, event_log = _build_runner(tmp_path)
+    requests: list[LLMRequest] = []
+
+    async def generate(request: LLMRequest) -> LLMResponse:
+        requests.append(request.model_copy(deep=True))
+        return LLMResponse(
+            text=text,
+            parsed_claims=[],
+            citation_chunk_ids=request.citation_chunk_ids,
+            raw_provider="fake",
+        )
+
+    monkeypatch.setattr(runner._executor._llm, "generate", generate)
+
+    result = await runner.run("Summarize literature on GraphRAG for scientific retrieval.")
+
+    assert result.state == AgentState.DONE, result.error
+    assert len(requests) == 1
+    assert requests[0].citation_chunk_ids
+    assert result.answer is not None
+    expected_ids = [] if ungrounded else requests[0].citation_chunk_ids
+    assert result.answer.claims == [
+        Claim(text=text, chunk_ids=expected_ids, grounded=not ungrounded)
+    ]
+    assert [citation.chunk_id for citation in result.answer.citations] == expected_ids
+    assert result.answer.ungrounded is ungrounded
+    assert result.answer.answer == (f"[UNGROUNDED] {text}" if ungrounded else text)
+    assert result.answer.warnings == (
+        ["One or more claims lacked retrieved chunk support."] if ungrounded else []
+    )
+    generations = [
+        GenerationRecord.model_validate(event["payload"])
+        for event in event_log.list_events(result.run_id)
+        if event["event_type"] == "generation_record"
+    ]
+    assert len(generations) == 1
+    assert generations[0].claim_chunk_ids == [requests[0].citation_chunk_ids]
 
 
 @pytest.mark.parametrize(
