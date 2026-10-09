@@ -38,6 +38,7 @@ database and empty provider keys. The interactive API documentation is at
 | --- | --- | --- |
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
 | Browse stored papers in a normal browser | Filter the current catalog, copy exact IDs, and follow bounded passage pages without models or writes | [Local corpus explorer](docs/guides/CORPUS_EXPLORER_GUIDE.md) |
+| Read around an exact stored passage | Follow a displayed chunk into a bounded, validated source-order window in the same paper; recenter without generation | [Source-context API/Python/browser reader](docs/guides/SOURCE_CONTEXT_GUIDE.md) |
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Find exact wording across stored papers | `POST /research/search` returns literal matches, Unicode offsets, and bounded excerpts without retrieval, generation, or run writes | [Literal passage search](docs/guides/LITERAL_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
@@ -72,6 +73,24 @@ pages using script-free native forms and links. These are actual browser
 screenshots of synthetic data, not a continuous recording or scientific claims.
 The [complete guide and offline demo](docs/guides/CORPUS_EXPLORER_GUIDE.md)
 cover restart, bounds, privacy, errors, and GIF reproduction.
+
+## Read the surrounding source, not just an isolated passage
+
+![Measured synthetic offline source-context reading](docs/assets/source-context.gif)
+
+Choose **Read surrounding source context** in the corpus explorer, or call
+`GET /documents/context` / `SQLiteSourceContext.read` with exact document and
+chunk IDs. The selected passage stays anchored among up to five stored neighbors
+per side, in validated numeric source order rather than lexicographic chunk-ID
+order. Missing/ambiguous ordering fails explicitly; provenance and truncation
+remain visible. Native links/forms preserve the original passage page.
+
+This reads the **current corpus**, not frozen saved evidence or automatically
+expanded retrieval. No models, network, events or corpus writes occur during
+reads. The [complete guide](docs/guides/SOURCE_CONTEXT_GUIDE.md) covers bounds,
+errors, restart/edits, privacy, and reproducing this actual-output illustration
+with an isolated synthetic database. It is not a screen recording or a quality
+benchmark.
 
 ## Read saved evidence without the server
 
@@ -252,7 +271,7 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-08 America/Los_Angeles** catalog-only check includes Haiku 5.5
+The **2026-10-09 America/Los_Angeles** catalog-only recheck includes Haiku 5.5
 as an additional Anthropic option; selected defaults and separately dated
 migration contracts remain unchanged. It is not a live compatibility check.
 `/query` requests the reasoning route; the default-provider setting is not a

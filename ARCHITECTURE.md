@@ -223,6 +223,30 @@ retrieval/reranking, model generation, collection editing or event persistence.
 See the [explorer guide and browser demo](docs/guides/CORPUS_EXPLORER_GUIDE.md)
 for current-corpus consistency, privacy and operational limits.
 
+## Source-Context Reader
+
+`GET /documents/context` and `GET /explore/context` call the standalone
+`SQLiteSourceContext.read` through `AppContainer.source_context`. Exact
+document/chunk selectors use query parameters, preserving slash/dot/Unicode
+identities. One read-only SQLite connection and `BEGIN` snapshot cover existence,
+source-order validation, and selected evidence.
+
+Ordering discovery is capped at 2,049 rows to detect the fixed 2,048-chunk
+document ceiling. SQL gates metadata at 8,192 stored bytes before JSON parsing
+and projects only bounded IDs and indices. Every same-document index must be
+present, canonical and unique; duplicate index properties or identities fail.
+A bounded in-memory numeric sort selects up to five stored neighbors per side,
+allowing gaps without inventing missing passages. Only selected IDs use the
+shared bounded `StoredChunk` projection/decoder; prefixes keep provenance and
+truncation flags, and the typed response marks the exact anchor.
+
+The explorer reuses its CSP, escape helpers and byte cap, adds native count and
+recentering controls, and preserves catalog/passage return state. Existing
+ID-ordered pagination, retrieval, generation, saved evidence and settings are
+unchanged. There are no writes, schema changes or new dependencies. This is a
+current-corpus human reading operation, not automatic sentence-window retrieval
+expansion. See the [complete guide and measured demo](docs/guides/SOURCE_CONTEXT_GUIDE.md).
+
 ## Model-Free Literal Passage Search
 
 `POST /research/search` delegates to `SQLiteLiteralSearch`, not the runner or

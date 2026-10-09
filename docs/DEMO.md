@@ -1,5 +1,14 @@
 # Demo
 
+## Source context around a displayed passage
+
+The [source-context guide](guides/SOURCE_CONTEXT_GUIDE.md#reproduce-the-measured-demo-and-gif)
+reproduces the bounded API/Python/browser workflow in a temporary synthetic
+database. Its [actual-output GIF illustration](assets/source-context.gif) shows
+numeric source ordering, the selected anchor, recentering, edge counts, explicit
+truncation and restart/no-write measurements. It is not a screen recording,
+retrieval benchmark or scientific validation.
+
 ## Local corpus explorer in a browser
 
 The [explorer guide](guides/CORPUS_EXPLORER_GUIDE.md#reproduce-the-offline-demo-and-actual-browser-gif)

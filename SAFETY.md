@@ -159,6 +159,31 @@ ordinary stores/indexes, and bounded output is not a scan-time guarantee.
 See the [explorer guide](docs/guides/CORPUS_EXPLORER_GUIDE.md) for exact bounds,
 failure states, restart behavior and the guarded synthetic browser demo.
 
+## Source-Context Reading
+
+`/documents/context`, `/explore/context`, and `SQLiteSourceContext.read` inspect
+one exact document/chunk pair in one read-only snapshot, without retrieval,
+models, network, event writes or corpus mutation. Counts are 0-5 on each side.
+Every chunk's ordering is validated within a fixed 2,048-chunk document cap;
+SQL checks an 8,192-stored-byte metadata cap before JSON parsing. Missing,
+invalid or duplicate indices/identities fail explicitly, not by guessed ID
+order. Only selected chunks' bounded text/provenance prefixes are fetched.
+
+Missing corpus identities are 404; invalid requests 422; invalid/ambiguous
+ordering, oversized metadata/documents and invalid evidence 409; unavailable
+storage 503. No partial context is returned. JSON and handled HTML errors use
+sanitized diagnostics and no-store/nosniff; HTML retains the explorer CSP and
+literal-text rules. Native forms are omitted for control-bearing identities
+they cannot preserve; exact encoded navigation remains available.
+
+The window is current corpus, not a historical version or a scientific
+judgment. Gaps/overlaps remain, long passages carry explicit truncation flags,
+and reducing the window cannot bypass whole-document ordering validation.
+Unselected text is not validated; startup still initializes stores and loads
+retrieval indexes. Bounds are not a hard scan-time guarantee or an access-control
+boundary. IDs in GET URLs and saved artifacts can be sensitive. See
+[source-context semantics, privacy and limitations](docs/guides/SOURCE_CONTEXT_GUIDE.md).
+
 ## Literal Passage Search
 
 `POST /research/search` searches current stored text without retrieval,

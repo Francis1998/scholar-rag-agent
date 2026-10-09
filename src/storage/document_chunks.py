@@ -115,7 +115,7 @@ def _decode_cursor(value: str, document_id: str) -> _Cursor:
     return cursor
 
 
-_CHUNKS_SQL = """
+_CHUNK_PROJECTION_SQL = """
 SELECT coalesce(substr(CAST(chunk_id AS BLOB), 1, :identity_bytes), X'') AS chunk_id,
        coalesce(substr(CAST(title AS BLOB), 1, :title_bytes), X'') AS title,
        coalesce(substr(CAST(source AS BLOB), 1, :source_bytes), X'') AS source,
@@ -133,8 +133,8 @@ SELECT coalesce(substr(CAST(chunk_id AS BLOB), 1, :identity_bytes), X'') AS chun
                ELSE X'00' END
            ELSE X'00' END AS chunk_index
 FROM chunks AS c
-WHERE c.document_id = :document_id
 """
+_CHUNKS_SQL = _CHUNK_PROJECTION_SQL + " WHERE c.document_id = :document_id"
 _FIRST_PAGE_SQL = _CHUNKS_SQL + " ORDER BY c.chunk_id ASC LIMIT :fetch_limit"
 _NEXT_PAGE_SQL = (
     _CHUNKS_SQL + " AND c.chunk_id > :cursor ORDER BY c.chunk_id ASC LIMIT :fetch_limit"
@@ -151,6 +151,37 @@ def _chunk_index(value: object, encoding: str) -> int | None:
     if ordinal > MAX_CHUNK_INDEX or str(ordinal) != text:
         raise DocumentChunksError()
     return ordinal
+
+
+def _projection_limits() -> dict[str, int]:
+    return {
+        "identity_bytes": 4 * (MAX_CHUNK_ID_CHARACTERS + 1),
+        "title_bytes": 4 * (MAX_TITLE_CHARACTERS + 1),
+        "source_bytes": 4 * (MAX_SOURCE_CHARACTERS + 1),
+        "text_bytes": 4 * (MAX_TEXT_CHARACTERS + 1),
+    }
+
+
+def _stored_chunk(row: sqlite3.Row, encoding: str, document_id: str) -> StoredChunk:
+    if row["invalid_record"]:
+        raise DocumentChunksError()
+    try:
+        title = _prefix(row["title"], encoding, MAX_TITLE_CHARACTERS)
+        source = _prefix(row["source"], encoding, MAX_SOURCE_CHARACTERS)
+        text = _prefix(row["text"], encoding, MAX_TEXT_CHARACTERS)
+        return StoredChunk(
+            chunk_id=_prefix(row["chunk_id"], encoding, MAX_CHUNK_ID_CHARACTERS),
+            document_id=document_id,
+            chunk_index=_chunk_index(row["chunk_index"], encoding),
+            title=title[:MAX_TITLE_CHARACTERS],
+            title_truncated=len(title) > MAX_TITLE_CHARACTERS,
+            source=source[:MAX_SOURCE_CHARACTERS],
+            source_truncated=len(source) > MAX_SOURCE_CHARACTERS,
+            text=text[:MAX_TEXT_CHARACTERS],
+            text_truncated=len(text) > MAX_TEXT_CHARACTERS,
+        )
+    except (DocumentCatalogError, ValidationError) as exc:
+        raise DocumentChunksError() from exc
 
 
 class SQLiteDocumentChunks:
@@ -184,35 +215,10 @@ class SQLiteDocumentChunks:
                     "document_id": options.document_id,
                     "cursor": after.chunk_id if after else None,
                     "fetch_limit": options.limit + 1,
-                    "identity_bytes": 4 * (MAX_CHUNK_ID_CHARACTERS + 1),
-                    "title_bytes": 4 * (MAX_TITLE_CHARACTERS + 1),
-                    "source_bytes": 4 * (MAX_SOURCE_CHARACTERS + 1),
-                    "text_bytes": 4 * (MAX_TEXT_CHARACTERS + 1),
+                    **_projection_limits(),
                 },
             ).fetchall()
-        chunks = []
-        for row in rows:
-            if row["invalid_record"]:
-                raise DocumentChunksError()
-            try:
-                title = _prefix(row["title"], encoding, MAX_TITLE_CHARACTERS)
-                source = _prefix(row["source"], encoding, MAX_SOURCE_CHARACTERS)
-                text = _prefix(row["text"], encoding, MAX_TEXT_CHARACTERS)
-                chunks.append(
-                    StoredChunk(
-                        chunk_id=_prefix(row["chunk_id"], encoding, MAX_CHUNK_ID_CHARACTERS),
-                        document_id=options.document_id,
-                        chunk_index=_chunk_index(row["chunk_index"], encoding),
-                        title=title[:MAX_TITLE_CHARACTERS],
-                        title_truncated=len(title) > MAX_TITLE_CHARACTERS,
-                        source=source[:MAX_SOURCE_CHARACTERS],
-                        source_truncated=len(source) > MAX_SOURCE_CHARACTERS,
-                        text=text[:MAX_TEXT_CHARACTERS],
-                        text_truncated=len(text) > MAX_TEXT_CHARACTERS,
-                    )
-                )
-            except (DocumentCatalogError, ValidationError) as exc:
-                raise DocumentChunksError() from exc
+        chunks = [_stored_chunk(row, encoding, options.document_id) for row in rows]
         page = chunks[: options.limit]
         return DocumentChunksPage(
             document_id=options.document_id,

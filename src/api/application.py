@@ -31,6 +31,20 @@ logger = logging.getLogger(__name__)
 
 async def _evidence_validation_error(request: Request, exc: RequestValidationError) -> Response:
     """Do not echo unencodable numeric input; leave unrelated validation contracts intact."""
+    if request.url.path == "/documents/context":
+        logger.warning("Source context request validation failed: invalid_source_context_request")
+        return JSONResponse(
+            {
+                "detail": {
+                    "code": "invalid_source_context_request",
+                    "message": "Provide exact Unicode document_id (1-128 characters, no "
+                    "surrounding whitespace), chunk_id (1-256 characters), "
+                    "and before/after integer counts from 0 to 5.",
+                }
+            },
+            status_code=422,
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+        )
     errors = exc.errors()
     if not any(error["loc"][:2] == ("body", "near_duplicate_threshold") for error in errors):
         return await request_validation_exception_handler(request, exc)

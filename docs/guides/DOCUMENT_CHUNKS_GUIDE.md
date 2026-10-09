@@ -12,6 +12,12 @@ links preserve imported IDs, including dot segments that cannot reliably
 survive the JSON endpoint's path transport. The JSON/Python contracts below
 are unchanged.
 
+For source-order neighbors around an **exact chunk**, use the separate
+[source-context reader](SOURCE_CONTEXT_GUIDE.md): `GET /documents/context`,
+`SQLiteSourceContext.read`, or **Read surrounding source context** in the
+explorer. It requires valid unique ordering metadata and retains an explicit
+anchor. This listing's ID order, cursors, bounds and optional indices do not change.
+
 ![Actual synthetic chunk-reader output, rendered as an illustration](../assets/document-chunks.gif)
 
 **Synthetic and offline:** this GIF is generated from the executable demo's

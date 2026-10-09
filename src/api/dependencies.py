@@ -36,6 +36,7 @@ from storage.paper_screening import SQLitePaperScreening
 from storage.run_comparison import SavedRunComparator
 from storage.run_history import SQLiteRunHistory
 from storage.saved_bibliography import SQLiteSavedBibliography
+from storage.source_context import SQLiteSourceContext
 
 
 class AppContainer:
@@ -57,6 +58,7 @@ class AppContainer:
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)
+        self.source_context = SQLiteSourceContext(database_path)
         self.literal_search = SQLiteLiteralSearch(database_path)
         self.paper_collections = SQLitePaperCollections(database_path)
         self.paper_screening = SQLitePaperScreening(database_path)
