@@ -2,9 +2,12 @@
 
 from pathlib import Path
 
+import pytest
+
 from retrieval.graph import GraphRAGBuilder
 from retrieval.models import Chunk, Entity, EntityEdge
 from retrieval.multihop import MultiHopRetriever
+from retrieval.scope import DocumentIdsInput
 from storage.graph_store import SQLiteGraphStore
 
 
@@ -88,3 +91,59 @@ async def test_multihop_max_depth_can_exceed_five(tmp_path: Path) -> None:
 
     # c6 and c7 are only reachable at hop six and seven respectively.
     assert {"c6", "c7"}.issubset(reached)
+
+
+@pytest.mark.parametrize("scope", [None, ("selected",)], ids=["unscoped", "scoped"])
+async def test_multihop_frontier_budget_is_not_spent_on_case_aliases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scope: tuple[str, ...] | None
+) -> None:
+    store = SQLiteGraphStore(tmp_path / "graph.sqlite3")
+    for index, name in enumerate(["ALPHA", "Alpha", "Beta"]):
+        chunk = Chunk(
+            chunk_id=f"c{index}",
+            document_id="selected",
+            title=name,
+            text=f"Seed {name}",
+            source="fixture",
+        )
+        store.add_mentions(chunk, [Entity(name="Seed"), Entity(name=name)])
+        store.add_edges([EntityEdge(source="Seed", target=name, chunk_id=chunk.chunk_id)])
+    tail = Chunk(
+        chunk_id="tail",
+        document_id="selected",
+        title="Beta",
+        text="Beta evidence reachable only at the second hop.",
+        source="fixture",
+    )
+    store.add_mentions(tail, [Entity(name="Beta")])
+    frontiers: list[list[str]] = []
+    requested_limits: list[int] = []
+    neighbours = store.neighbours
+
+    def bounded_neighbours(
+        entities: list[str],
+        limit: int = 20,
+        *,
+        document_ids: DocumentIdsInput | None = None,
+    ) -> list[str]:
+        """Cap real SQL fan-out while leaving room for all fixture chunks."""
+        frontiers.append(list(entities))
+        requested_limits.append(limit)
+        return neighbours(entities, limit=min(limit, 2), document_ids=document_ids)
+
+    monkeypatch.setattr(store, "neighbours", bounded_neighbours)
+
+    results = await MultiHopRetriever(store).retrieve(
+        "Seed", ["sEeD"], depth=2, limit=10, document_ids=scope
+    )
+
+    assert frontiers == [["seed"], ["alpha", "beta"]]
+    assert requested_limits == [40, 40]
+    assert {result.chunk.chunk_id: result.score for result in results} == {
+        "c0": 1.0,
+        "c1": 1.0,
+        "c2": 1.0,
+        "tail": 0.5,
+    }
+    assert results[-1].chunk == tail
+    assert results[-1].path == ["alpha", "beta"]
