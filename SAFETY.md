@@ -97,6 +97,13 @@ no more than 5. Co-mention traversal is bounded retrieval, not proof of a
 multi-step scientific argument. Effective bounds and phase timeouts are copied
 at run start and retained in evidence exports.
 
+Graph-neighbour limits count distinct stored lowercase entity keys, not display
+aliases. Both edge directions are filtered by document ownership before grouping
+and limiting; excluded edges cannot consume eligible slots or supply display
+representatives. The smallest eligible spelling in binary order represents each
+key, and neighbours are ordered by key. This deterministic order is not a relevance
+score and does not increase hop or result limits.
+
 ## Document Selection
 
 Optional `document_ids` restricts all query retrieval paths to selected ingested
