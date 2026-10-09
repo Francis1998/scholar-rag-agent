@@ -11,7 +11,7 @@ class CitationGrounder:
     def ground(
         self, answer_text: str, claims: list[Claim], retrieved_chunks: list[Chunk]
     ) -> AgentAnswer:
-        """Return an answer with citations and ungrounded claims flagged."""
+        """Return citations and flag unsupported claims or an empty claim list."""
         chunk_by_id = {chunk.chunk_id: chunk for chunk in retrieved_chunks}
         grounded_claims: list[Claim] = []
         citations: dict[str, Citation] = {}
@@ -33,9 +33,13 @@ class CitationGrounder:
             grounded_claims.append(
                 Claim(text=claim.text, chunk_ids=grounded_ids, grounded=bool(grounded_ids))
             )
-        ungrounded = any(not claim.grounded for claim in grounded_claims)
+        ungrounded = not grounded_claims or any(not claim.grounded for claim in grounded_claims)
         final_answer = answer_text if not ungrounded else f"[UNGROUNDED] {answer_text}"
-        warnings = ["One or more claims lacked retrieved chunk support."] if ungrounded else []
+        warnings = []
+        if not grounded_claims:
+            warnings.append("No claims were available for grounding.")
+        elif ungrounded:
+            warnings.append("One or more claims lacked retrieved chunk support.")
         return AgentAnswer(
             answer=final_answer,
             citations=list(citations.values()),
