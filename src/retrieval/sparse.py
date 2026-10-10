@@ -159,8 +159,9 @@ class BM25Retriever:
             idf = math.log(
                 1 + (corpus_size - document_frequency + 0.5) / (document_frequency + 0.5)
             )
+            # A matching term guarantees a positive corpus average.
             denominator = term_frequency + self._k1 * (
-                1 - self._b + self._b * document_length / max(self._average_length, 1.0)
+                1 - self._b + self._b * document_length / self._average_length
             )
             score += idf * (term_frequency * (self._k1 + 1)) / denominator
         return score
