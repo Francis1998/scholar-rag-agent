@@ -82,5 +82,5 @@ def test_does_not_mutate_inputs() -> None:
     assert original[0].retriever == "bm25"
 
 
-def test_docstring_mentions_frontier_models() -> None:
-    assert "GPT-5.5" in (ReciprocalRankFusionGate.__doc__ or "")
+def test_docstring_references_provider_guide() -> None:
+    assert "PROVIDER_MODELS_GUIDE.md" in (ReciprocalRankFusionGate.__doc__ or "")

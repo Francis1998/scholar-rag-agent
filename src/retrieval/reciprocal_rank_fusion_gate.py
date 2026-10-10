@@ -1,19 +1,21 @@
 """Gate that fuses multiple ranked result lists via Reciprocal Rank Fusion."""
 
 from retrieval.models import SearchResult
+from retrieval.rrf import reciprocal_rank_fusion
 
 
 class ReciprocalRankFusionGate:
     """Merge rankings from multiple retrieval sources using RRF.
 
     Each result's fused score is ``sum(1 / (k + rank_i))`` across all lists
-    it appears in.  Results are sorted descending by fused score and
-    optionally capped by *top_k*.
+    it appears in, using its first original 1-based rank in each list.
+    Results are sorted descending by fused score and optionally capped
+    by *top_k*.
 
     Inspired by Cormack, Clarke & Buettcher (2009) reciprocal rank fusion
     and LlamaIndex/Haystack RRF postprocessors.  Inputs are not mutated.
-    Local postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines (not a DOI connector).
+    Provider-independent local postprocessor (not a DOI connector); see
+    ``docs/guides/PROVIDER_MODELS_GUIDE.md`` for supported model adapters.
     """
 
     def __init__(self, k: int = 60) -> None:
@@ -38,7 +40,7 @@ class ReciprocalRankFusionGate:
 
         Args:
             result_sets: One list of ``SearchResult`` per retrieval source.
-            top_k: Optional cap on returned results.
+            top_k: Optional cap; ``None`` returns all, non-positive values return none.
 
         Returns:
             Fused results sorted by descending RRF score.
@@ -46,28 +48,12 @@ class ReciprocalRankFusionGate:
         if not result_sets:
             return []
 
-        scores: dict[str, float] = {}
-        best: dict[str, SearchResult] = {}
-        sources: dict[str, list[str]] = {}
-
-        for results in result_sets:
-            for rank, result in enumerate(results, start=1):
-                cid = result.chunk.chunk_id
-                scores[cid] = scores.get(cid, 0.0) + 1.0 / (self._k + rank)
-                best.setdefault(cid, result)
-                sources.setdefault(cid, []).append(result.retriever)
-
-        fused = [
-            SearchResult(
-                chunk=best[cid].chunk,
-                score=score,
-                retriever="reciprocal_rank_fusion_gate",
-                path=sources[cid],
-            )
-            for cid, score in scores.items()
+        fused = reciprocal_rank_fusion(
+            result_sets,
+            limit=None if top_k is None else max(top_k, 0),
+            rank_constant=self._k,
+        )
+        return [
+            result.model_copy(update={"retriever": "reciprocal_rank_fusion_gate"})
+            for result in fused
         ]
-        fused.sort(key=lambda r: r.score, reverse=True)
-
-        if top_k is not None:
-            fused = fused[: max(top_k, 0)]
-        return fused
