@@ -263,26 +263,32 @@ with TemporaryDirectory(prefix="scholar-browser-search-guide-") as temporary:
     app = create_app(offline_settings(path))
     collection = seed_demo(app.state.container)
     before = path.read_bytes()
-    request = LiteralSearchRequest(
-        query=PHRASE, collection_id=collection.collection_id, limit=1
-    )
+    request = LiteralSearchRequest(query=PHRASE, collection_id=collection.collection_id, limit=1)
     with TestClient(app) as client, browsing_guards(app.state.container):
         result = SQLiteLiteralSearch(path).search(request)
         response = client.post("/research/search", json=request.model_dump(exclude_unset=True))
         response.raise_for_status()
         assert response.content == result.to_json().encode()
-        html = client.get("/explore/search", params={
-            "query": PHRASE, "scope": "collection",
-            "scope_id": collection.collection_id, "limit": 1,
-        })
+        html = client.get(
+            "/explore/search",
+            params={
+                "query": PHRASE,
+                "scope": "collection",
+                "scope_id": collection.collection_id,
+                "limit": 1,
+            },
+        )
         html.raise_for_status()
         browser = SearchPage(html.text)
         match = result.matches[0]
         assert browser.highlights == [PHRASE]
         assert browser.match_offsets == [(match.match_start, match.match_end)]
-        assert match.excerpt[
-            match.match_start - match.excerpt_start:match.match_end - match.excerpt_start
-        ] == PHRASE
+        assert (
+            match.excerpt[
+                match.match_start - match.excerpt_start : match.match_end - match.excerpt_start
+            ]
+            == PHRASE
+        )
         context_html = client.get(browser.links["source-context-1"])
         context_html.raise_for_status()
         context = SQLiteSourceContext(path).read(match.document_id, match.chunk_id)
