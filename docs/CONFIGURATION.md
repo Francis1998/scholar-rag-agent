@@ -76,6 +76,17 @@ budgets. Reducing the window does not bypass source-order validation.
 Standalone Python reading avoids normal app startup/index initialization.
 See [the complete API/Python/browser guide](guides/SOURCE_CONTEXT_GUIDE.md).
 
+## Browser passage-search bounds
+
+`GET /explore/search` uses the existing corpus and `SQLiteLiteralSearch` with
+no new environment setting or provider dependency. Phrases are 1-200 Unicode
+characters; page size is 1-50 (default 20); exact paper and saved collection
+scopes are mutually exclusive. Shared 4-MiB stored-text, 256-KiB serialized
+search and five-second scan bounds apply, plus the explorer's 1-MiB escaped
+HTML cap. Catalog-return page size remains independently 1-100. Native GET
+phrases appear in URLs/history/logs; configure your own access/logging boundary.
+See [browser/API/Python linkage and error recovery](guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
@@ -112,7 +123,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-09 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-10 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Haiku 5.5 is an additional current Anthropic
 catalog option, not a new adapter-compatibility claim. Defaults, endpoints,

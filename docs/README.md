@@ -14,6 +14,7 @@ accumulated feature list in the project README.
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Read bounded passages from a stored paper before choosing query scope | [Stored chunk reader and offline demo](guides/DOCUMENT_CHUNKS_GUIDE.md) |
 | Read neighboring passages around an exact current chunk in validated source order | [Source-context reader, API/Python/browser guide and reproducible GIF](guides/SOURCE_CONTEXT_GUIDE.md) |
+| Search exact wording in a browser, inspect Unicode highlights and return from source context | [Native passage search, API/Python linkage and actual-output GIF](guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |

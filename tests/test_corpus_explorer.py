@@ -145,6 +145,27 @@ def identities(root: Node, css_class: str = "document-id") -> list[str]:
     return [json.loads(value) for value in values(root, css_class)]
 
 
+def test_mounted_explorer_preserves_root_path_in_forms_links_and_errors(api: ExplorerAPI) -> None:
+    api.seed()
+    with TestClient(api.app, root_path="/library") as client:
+        response = client.get("/library/explore", params={"limit": 1})
+        assert response.status_code == 200
+        catalog = ExplorerDOM(response.text).root
+        assert catalog.by_tag("form")[0].attrs["action"] == "/library/explore"
+        document = ExplorerDOM(client.get(href(catalog, "inspect-document-1")).text).root
+        context = ExplorerDOM(client.get(href(document, "source-context-1")).text).root
+        for root in (catalog, document, context):
+            for anchor in root.by_tag("a"):
+                path = urlsplit(anchor.attrs["href"]).path
+                assert path == "" or path.startswith("/library/explore")
+            for form in root.by_tag("form"):
+                assert form.attrs["action"].startswith("/library/explore")
+        invalid = client.get("/library/explore/context")
+        assert invalid.status_code == 422
+        assert "Invalid source context request" in invalid.text
+        assert '/library/explore"' in invalid.text
+
+
 def test_catalog_filters_and_pagination_preserve_browser_state(api: ExplorerAPI) -> None:
     for document_id, title, source in (
         ("a", "100%_Graph excluded source", "wrong"),
@@ -231,7 +252,13 @@ def test_query_document_identity_survives_links_and_cursor_exactly(
         for anchor in root.by_tag("a"):
             parts = urlsplit(anchor.attrs["href"])
             assert not parts.scheme and not parts.netloc
-            assert parts.path in {"", "/explore", "/explore/document", "/explore/context"}
+            assert parts.path in {
+                "",
+                "/explore",
+                "/explore/document",
+                "/explore/context",
+                "/explore/search",
+            }
 
 
 def test_empty_form_filters_are_omitted_but_nonempty_values_are_not_changed(
@@ -634,13 +661,18 @@ def test_explorer_routes_are_sync_get_only_and_described_as_html(api: ExplorerAP
         for route in router.routes
         if isinstance(route, APIRoute) and route.path.startswith("/explore")
     ]
-    assert {route.path for route in routes} == {"/explore", "/explore/document", "/explore/context"}
+    assert {route.path for route in routes} == {
+        "/explore",
+        "/explore/document",
+        "/explore/context",
+        "/explore/search",
+    }
     for route in routes:
         assert route.methods == {"GET"}
         assert not inspect.iscoroutinefunction(route.endpoint)
         assert api.client.post(route.path).status_code == 405
     schema = api.client.get("/openapi.json").json()
-    for path in ("/explore", "/explore/document", "/explore/context"):
+    for path in ("/explore", "/explore/document", "/explore/context", "/explore/search"):
         responses = schema["paths"][path]["get"]["responses"]
         assert "text/html" in responses["200"]["content"]
         assert {"409", "413", "422", "503"} <= set(responses)

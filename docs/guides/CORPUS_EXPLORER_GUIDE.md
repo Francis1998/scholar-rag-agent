@@ -30,6 +30,14 @@ continuous screen recording or scientific validation.
    the catalog page you came from, including its cursor. Choosing a document
    always reads that exact ID; the catalog filters are only back-link context.
 
+**Search passages** opens a native phrase-search form; **Search this paper**
+preselects an exact document. The shared literal reader finds first occurrences,
+highlights escaped excerpts and reports Unicode offsets, with optional saved
+collection scope. Search pagination and source-context return links retain the
+original catalog state. Catalog filters are return context, not search scope.
+See the [complete browser/API/Python search guide](BROWSER_PASSAGE_SEARCH_GUIDE.md)
+for strict scope selection, query privacy, errors and an actual-output GIF.
+
 Each displayed passage now also has **Read surrounding source context**.
 This opens `/explore/context` with that exact document/chunk pair, highlights the
 anchor, and shows a bounded neighborhood in validated numeric source order.
@@ -63,6 +71,7 @@ not these current-corpus pages.
 | `GET /explore` | `limit=20`, optional `source`, `title`, document-ID `cursor` |
 | `GET /explore/document` | Required exact `document_id`; `limit=20`; optional document-bound chunk `cursor`; optional `source`, `title`, `catalog_cursor` for the back link |
 | `GET /explore/context` | Required exact `document_id` and `chunk_id`; `before=2`, `after=2` (0-5 each); optional existing navigation fields for back links |
+| `GET /explore/search` | Optional `query` (omit for form only), `scope=all`, conditional exact `scope_id`, `limit=20` (1-50), query/scope-bound `cursor`, and bounded original catalog return fields |
 
 All return `text/html; charset=utf-8`. They are GET-only; unsupported methods
 return the framework's 405 response. The existing JSON
@@ -94,6 +103,8 @@ Unicode, quotes, percent signs, `?`, `#`, `&`, and `+` stay inside the identity
 rather than becoming normalized path components. URL encoding and HTML escaping
 are separate steps. Navigation paths are fixed same-origin routes; user-provided
 return URLs and external source links are not accepted as navigation targets.
+Configured ASGI `root_path` prefixes are retained in all explorer forms, links
+and error-reset navigation.
 
 ### Filtering without accidental normalization
 
@@ -184,7 +195,8 @@ Existing stale rows are not migrated until the document is reingested through th
 [complete replacement boundary](../EXAMPLES.md#replace-a-complete-document-in-python).
 Browsing is not a document-version reconstruction or an audit log.
 Filtering/counting can scan many rows: bounded response size is not a fixed
-latency guarantee, and the UI adds no scan deadline.
+latency guarantee. Catalog/chunk/context pages add no scan deadline; the
+separate literal search page retains its shared reader's five-second deadline.
 
 Every successful page and handled explorer error has `Cache-Control: no-store`,
 `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and

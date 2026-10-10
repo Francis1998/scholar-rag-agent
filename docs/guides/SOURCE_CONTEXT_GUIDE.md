@@ -17,6 +17,7 @@ and executable demo below expose the measurements.
 | Need | Use |
 | --- | --- |
 | Discover stored document IDs | `GET /documents` or the [corpus explorer](CORPUS_EXPLORER_GUIDE.md) |
+| Find an exact phrase and follow its matching chunk | [Native browser passage search](BROWSER_PASSAGE_SEARCH_GUIDE.md), using the existing literal API/Python reader |
 | Traverse all chunks in stable ID order | Existing `GET /documents/{document_id}/chunks` or `/explore/document` |
 | Read around one exact current chunk in source order | **`GET /documents/context`**, **`GET /explore/context`**, or **`SQLiteSourceContext.read`** |
 | Inspect prepared query evidence without generation | [Retrieval preview](RETRIEVAL_PREVIEW_GUIDE.md), a separate operation |
@@ -42,6 +43,15 @@ lexical similarity.
 5. **Back to passage page** returns to the original ID-ordered page, not a guessed
    source-order page. **Back to filtered catalog** restores its filters, size and
    cursor. Recentering keeps both return paths.
+
+When arriving from [browser passage search](BROWSER_PASSAGE_SEARCH_GUIDE.md),
+**Back to search results** instead restores the original phrase, exact scope,
+size and cursor, including after recentering/window changes. Search-return
+state requires explicit `search_query`, `search_scope` and `search_limit`,
+plus the conditional scope ID; incomplete state fails before source reading,
+not with a widened return selection. Search state is navigation only, not a
+second filter on the exact context read. A long passage's matched location may
+be beyond this reader's 4,000-character prefix; the exact chunk still anchors.
 
 There is no JavaScript, UI framework, external resource, browser storage, or
 new dependency. Native links and forms work with keyboard navigation and narrow

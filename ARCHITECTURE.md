@@ -278,6 +278,29 @@ a snapshot, not a series of pages. Existing app startup still initializes its
 ordinary stores/indexes; standalone search avoids that startup path.
 See [literal search semantics, errors, and offline demo](docs/guides/LITERAL_SEARCH_GUIDE.md).
 
+### Native browser search-to-source path
+
+`GET /explore/search` in `api.explorer` maps one validated native GET form to
+`LiteralSearchRequest` and calls the existing `AppContainer.literal_search`
+reader once. An omitted query opens only the form. The browser offers a single
+exact paper or saved collection, while preserving the API's existing multi-ID
+contract. Neither SQL/ranking nor cursor fingerprints are duplicated.
+
+The renderer splits the returned excerpt at its exact Unicode first-match
+offsets and escapes each segment before wrapping the match in `<mark>`.
+Native pagination retains query/scope-bound cursors and separate catalog return
+state. Exact result links enter the existing `/explore/context` reader; its
+window/recenter links carry validated `search_*` state back to the original
+search page. Incomplete search return state fails before source reading.
+ASGI root paths are retained throughout native explorer navigation.
+
+Shared read/response/deadline bounds and the existing complete-HTML cap, CSP,
+escaping and error boundary remain enforced. Invalid UTF-8, unknown/duplicate
+form fields and invalid/empty scopes fail instead of being normalized or
+widened. This path makes no writes, model calls, ingestion or agent events.
+The API search payload/result and existing catalog/chunk/context readers
+are unchanged. See the [complete guide and measured showcase](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
+
 ## Model-Free Research Worksheets
 
 `ResearchWorksheetService`, wired through `AppContainer.worksheets` and
