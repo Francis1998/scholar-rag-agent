@@ -9,6 +9,13 @@ and a phrase split across chunk boundaries may not match.
 It returns the first occurrence in each matching chunk, not a relevance score,
 generated answer, or scientific-support judgment.
 
+For a script-free native browser workflow, choose **Search passages** or
+**Search this paper** at `/explore`. `GET /explore/search` uses this same reader,
+adds escaped first-match highlights, and links exact results to source context
+with a return to the original search page. See the
+[browser/API/Python guide and reproducible GIF](BROWSER_PASSAGE_SEARCH_GUIDE.md).
+The API request, response and cursor contracts below are unchanged.
+
 The standalone Python reader is `storage.literal_search.SQLiteLiteralSearch`.
 Both interfaces read the existing SQLite corpus directly with parameterized
 `instr`/`substr`; neither calls hash/BM25 retrieval, reranking, live/fake
@@ -26,6 +33,7 @@ display measured API/Python results from synthetic local fixtures.
 | Need | Interface |
 | --- | --- |
 | Find exact wording in current stored chunks across papers | `POST /research/search` |
+| Search and follow an exact result without writing API code | [`GET /explore/search`](BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Discover document IDs by title/source and inspect counts | [`GET /documents`](DOCUMENT_CATALOG_GUIDE.md) |
 | Browse a known paper's current stored chunk prefixes | [`GET /documents/{document_id:path}/chunks`](DOCUMENT_CHUNKS_GUIDE.md) |
 | See ranked context that an agent would prepare | [`POST /retrieve`](RETRIEVAL_PREVIEW_GUIDE.md) |

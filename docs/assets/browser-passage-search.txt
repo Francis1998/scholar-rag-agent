@@ -1,0 +1,28 @@
+1. From the catalog to an exact phrase
+Catalog -> native GET form -> paper search: HTTP 200
+Whole corpus: 4 matches; selected paper: 3.
+Saved collection revision: 1; no other paper returned.
+Exact phrase (JSON): "\ud83d\udd2c cafe\u0301"
+GET queries appear in URLs/history/logs; no scripts or external resources.
+
+2. Inspect the first literal match
+First result: chunk-10; next page: chunk-2.
+First Unicode match: [1140, 1147); phrase length: 7 code points.
+Excerpt: [1020, 1231); characters: 211.
+HTML mark equals exact phrase: True
+The later repeated occurrence is not highlighted; IDs are not relevance ranks.
+
+3. Read its exact source and return
+Exact context anchor: chunk-2; source indices: [0, 1, 2]
+Native recenter -> original search page restored: True
+Case-changed phrase: 0 results, no widened scope.
+Cursor with changed phrase: HTTP 422, no partial result.
+Current corpus, not frozen evidence; context requires valid source order.
+
+4. Restart without generation or writes
+Python/API parity: True; restart identical: True
+Database bytes unchanged: True
+Events before/after: 0/0
+Forbidden model/retrieval/network/write attempts: 0
+Original synthetic fixtures, not research findings or a quality benchmark.
+Actual HTML, JSON and checks saved; temporary corpus removed.

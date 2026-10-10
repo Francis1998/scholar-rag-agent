@@ -130,6 +130,11 @@ then follow bounded passage pages or return to the same filtered catalog.
 No model, retrieval, ingestion, or event write runs while browsing. The
 [explorer guide](docs/guides/CORPUS_EXPLORER_GUIDE.md) covers exact-ID copying,
 limits, current-corpus privacy, and a reproducible synthetic browser GIF.
+Choose **Search passages** or **Search this paper** to find a case-sensitive
+literal phrase, optionally scoped to one paper or saved collection. Highlighted
+first matches link to exact source context with a return to the same search page.
+These native GET queries appear in URLs/history/logs; see the
+[complete browser/API/Python search guide](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
 The existing JSON discovery workflow remains available:
 
 ```bash

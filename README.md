@@ -30,7 +30,8 @@ placeholder answer. Its temporary database is removed on exit.
 Next, use the [Quickstart](QUICKSTART.md) to start the API with an isolated
 database and empty provider keys. The interactive API documentation is at
 `http://127.0.0.1:8000/docs`. For read-only paper and passage browsing, open
-`http://127.0.0.1:8000/explore`; neither is a paper-chat or PDF-upload UI.
+`http://127.0.0.1:8000/explore`, including native literal passage search;
+neither is a paper-chat or PDF-upload UI.
 
 ## Choose a workflow
 
@@ -40,7 +41,7 @@ database and empty provider keys. The interactive API documentation is at
 | Browse stored papers in a normal browser | Filter the current catalog, copy exact IDs, and follow bounded passage pages without models or writes | [Local corpus explorer](docs/guides/CORPUS_EXPLORER_GUIDE.md) |
 | Read around an exact stored passage | Follow a displayed chunk into a bounded, validated source-order window in the same paper; recenter without generation | [Source-context API/Python/browser reader](docs/guides/SOURCE_CONTEXT_GUIDE.md) |
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
-| Find exact wording across stored papers | `POST /research/search` returns literal matches, Unicode offsets, and bounded excerpts without retrieval, generation, or run writes | [Literal passage search](docs/guides/LITERAL_SEARCH_GUIDE.md) |
+| Find exact wording and read its source in a browser | Search from `/explore`, inspect highlighted Unicode spans, page within an exact paper/collection, and return from source context without generation | [Browser/API/Python passage search](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
@@ -133,14 +134,20 @@ equivalence claim. Omission leaves existing behavior unchanged.
 
 ## Find exact wording without ranking
 
-![Measured synthetic offline literal passage search](docs/assets/literal-search.gif)
+![Browser passage search illustrated from actual synthetic offline output](docs/assets/browser-passage-search.gif)
 
-`POST /research/search` finds literal phrases in current persisted chunks,
-including text beyond the normal chunk prefix. Inspect exact Unicode match
-offsets and bounded excerpts, narrow scope by paper or collection, and page in
-stable ID order without retrieval, generation, or run writes. The
-[complete API/Python guide](docs/guides/LITERAL_SEARCH_GUIDE.md) covers limits,
-privacy, current-corpus semantics, and reproduction of this measured illustration.
+Choose **Search passages** or **Search this paper** in `/explore`. Native GET
+forms reuse `SQLiteLiteralSearch` and `POST /research/search`, showing escaped
+first-match highlights, exact Unicode offsets and bounded excerpts in stable
+ID order. Narrow to one paper or saved collection, follow the exact result
+into source context, and return to the same search page without losing scope.
+Invalid/empty scopes never become whole-corpus searches.
+
+No scripts, retrieval, generation, events or corpus writes occur. GET queries
+appear in URLs/history/logs. The [complete browser/API/Python guide](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md)
+covers limits, errors, privacy and reproducible offline output. This generated
+actual-output illustration is not a recording or quality benchmark; the
+[existing literal API contract](docs/guides/LITERAL_SEARCH_GUIDE.md) is unchanged.
 
 ## Compare selected papers before generating
 

@@ -210,6 +210,29 @@ No-store/nosniff headers and scope do not provide authentication or tenant
 isolation. Exact wording is not scientific support. See the
 [complete literal-search guide](docs/guides/LITERAL_SEARCH_GUIDE.md).
 
+The native `/explore/search` page reuses that exact reader, scope validators,
+cursor and bounds. It adds no SQL, ranking, model call, write or index.
+Only an omitted phrase opens a form without scanning; present empty phrases,
+unknown/duplicate form fields, malformed UTF-8 and invalid/empty selected scopes
+fail. Whole-corpus mode rejects a supplied nonblank scope ID rather than
+discarding it. Exact browser paper IDs are never whitespace-normalized.
+
+Highlights split the returned excerpt at code-point offsets and escape all
+three segments separately; only the first occurrence gets a `<mark>`.
+Existing CSP, no-store/nosniff/no-referrer and the 1-MiB escaped-HTML cap apply.
+Control-bearing values that native inputs cannot preserve disable the form,
+not exact encoded links. Context links reuse the exact document/chunk reader;
+partial `search_*` return state fails before source reading rather than
+widening a back link. A current context prefix need not contain a late match.
+
+Native GET phrases, scopes and cursors appear in URLs/history/bookmarks/logs.
+Unlike invalid inputs or exception internals, **validated** query/scope values
+are deliberately retained in escaped error-recovery links; those error pages
+may therefore also contain accepted search state. Application diagnostics log
+codes, not text. These are rendering and data-integrity controls, not
+authentication, erasure or tenant isolation. See the
+[browser workflow, limitations and guarded offline demo](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
+
 ## Saved Paper Collections
 
 `/collections` manages metadata only. Named selections are local/trusted, not
