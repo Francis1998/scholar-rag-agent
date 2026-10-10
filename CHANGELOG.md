@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `SpectrumBiasCueExtractor` (`src/retrieval/spectrum_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE spectrum-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `VolunteerBiasCueExtractor` (`src/retrieval/volunteer_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE volunteer-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/VOLUNTEER_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `BerksonBiasCueExtractor` (`src/retrieval/berkson_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE Berkson-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/BERKSON_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `LeadTimeBiasCueExtractor` (`src/retrieval/lead_time_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE lead-time-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md`.
