@@ -4,8 +4,8 @@
 
 `MultiHydeFusion` searches several hypothetical scientific abstracts instead of
 depending on one synthetic answer. The default path is local and deterministic;
-an optional provider adapter can generate the abstracts with GPT-5.5, Claude
-Sonnet 4.6, Gemini 3.x, or Kimi K2.
+an optional provider adapter can generate the abstracts. See the
+[provider guide](PROVIDER_MODELS_GUIDE.md) for supported models.
 
 ## Pipeline
 
@@ -16,8 +16,9 @@ Sonnet 4.6, Gemini 3.x, or Kimi K2.
    asynchronous retriever. Dense retrievers embed each expanded query normally;
    sparse or hybrid retrievers can use the same contract.
 4. Label each ranked list with its hypothesis number.
-5. Fuse duplicate chunk ids with the shared reciprocal-rank-fusion
-   implementation.
+5. Fuse rankings with the shared reciprocal-rank-fusion implementation. Each
+   exact chunk ID contributes at most one vote per hypothesis, using its first
+   original 1-based rank; duplicates do not renumber later hits.
 
 Repeated perspectives remain distinct when more than four hypotheses are
 requested because each abstract includes its stable variant number.
@@ -44,7 +45,9 @@ results = await fusion.retrieve(
 
 The returned results use `retriever="rrf"`. Their `path` lists the
 `multi_hyde:N` variants that retrieved each chunk, which makes cross-hypothesis
-support auditable.
+support auditable. Repeated hits within a variant do not duplicate its path
+entry, but separate variants still contribute separate votes. Identical text
+with different chunk IDs remains distinct.
 
 ## Optional LLM generation
 

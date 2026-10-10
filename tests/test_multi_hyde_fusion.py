@@ -1,5 +1,7 @@
 """Tests for deterministic Multi-HyDE retrieval fusion."""
 
+from copy import deepcopy
+
 import pytest
 
 from llm.base import BaseLLMAdapter
@@ -84,6 +86,48 @@ async def test_retrieves_each_expansion_and_promotes_shared_results_with_rrf() -
     assert fused[0].retriever == "rrf"
     assert fused[0].score == pytest.approx(1 / 11 + 1 / 12 + 1 / 11)
     assert fused[0].path == ["multi_hyde:1", "multi_hyde:2", "multi_hyde:3"]
+
+
+async def test_duplicate_returning_retriever_cannot_inflate_hypothesis_support() -> None:
+    repeated = _result("repeated", score=100)
+    first_shared = _result("shared", score=0.1)
+    first_shared.chunk.metadata["origin"] = "first-hypothesis"
+    later_shared = _result("shared", score=99)
+    later_shared.chunk.metadata["origin"] = "later-hypothesis"
+    rankings = [
+        [repeated, repeated, repeated, first_shared, _result("background-tail")],
+        [_result("methods"), later_shared, later_shared],
+    ]
+    before = deepcopy(rankings)
+    retriever = RecordingRetriever(rankings)
+    fusion = MultiHydeFusion(retriever, num_hypotheses=2)
+
+    fused = await fusion.retrieve("retrieval evaluation", limit=5)
+
+    assert rankings == before
+    assert len(retriever.queries) == 2
+    assert all(
+        query.startswith("retrieval evaluation\nHypothetical abstract:")
+        for query in retriever.queries
+    )
+    assert [result.chunk.chunk_id for result in fused] == [
+        "shared",
+        "repeated",
+        "methods",
+        "background-tail",
+    ]
+    assert [result.score for result in fused] == pytest.approx(
+        [1 / 64 + 1 / 62, 1 / 61, 1 / 61, 1 / 65]
+    )
+    assert [result.path for result in fused] == [
+        ["multi_hyde:1", "multi_hyde:2"],
+        ["multi_hyde:1"],
+        ["multi_hyde:2"],
+        ["multi_hyde:1"],
+    ]
+    assert all(result.retriever == "rrf" for result in fused)
+    assert fused[0].chunk == first_shared.chunk
+    assert fused[0].chunk is not first_shared.chunk
 
 
 async def test_uses_optional_llm_and_falls_back_when_a_completion_is_blank() -> None:
