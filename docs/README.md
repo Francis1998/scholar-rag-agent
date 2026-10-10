@@ -362,3 +362,6 @@ instructions or evidence of current scientific performance.
 | Extract offline ConfoundingByIndication cues | [ConfoundingByIndicationCueExtractor](guides/CONFOUNDING_BY_INDICATION_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthBias cues | [LengthBiasCueExtractor](guides/LENGTH_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline LeadTimeBias cues | [LeadTimeBiasCueExtractor](guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline BerksonBias cues | [BerksonBiasCueExtractor](guides/BERKSON_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline VolunteerBias cues | [VolunteerBiasCueExtractor](guides/VOLUNTEER_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline SpectrumBias cues | [SpectrumBiasCueExtractor](guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md) |
