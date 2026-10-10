@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `BerksonBiasCueExtractor` (`src/retrieval/berkson_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE Berkson-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/BERKSON_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `LeadTimeBiasCueExtractor` (`src/retrieval/lead_time_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE lead-time-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `LengthBiasCueExtractor` (`src/retrieval/length_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE length-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LENGTH_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `ConfoundingByIndicationCueExtractor` (`src/retrieval/confounding_by_indication_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE confounding-by-indication cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/CONFOUNDING_BY_INDICATION_CUE_EXTRACTOR_GUIDE.md`.
