@@ -170,6 +170,23 @@ and current, officially sourced GPT/Claude/Gemini/Kimi model choices, see
 No provider is loaded by this command even when keys or invalid application
 settings are present in the environment.
 
+### BM25 score normalization
+
+The BM25 defaults are `k1=1.5` and `b=0.75`. Length normalization uses the
+true mean token count across all indexed chunks, including zero-token chunks;
+positive means below one are not rounded up. For the two chunks `alpha` and
+`!!!`, querying `alpha` scores about `0.4780325383` for the match and `0.0`
+for the other chunk. Scores for corpora whose mean is at least one are unchanged.
+These raw lexical scores are not probabilities or the hybrid retriever's RRF
+scores. Document scopes restrict candidates, not the global BM25 statistics.
+
+The library retains zero-token chunks and can return zero-score hits. All-empty
+corpora and queries with no matching terms produce finite zero scores without
+division by zero; an empty index returns no hits. The benchmark schema rejects
+empty or whitespace-only passage text, but accepts nonblank text such as `!!!`
+that tokenizes to nothing. Small valid `TextChunker` windows can also produce
+whitespace-only chunks. A document that produces no chunks adds no corpus entry.
+
 ## Python API
 
 ```python
