@@ -23,7 +23,9 @@ class AdaptiveReranker:
                 self._model = None
 
     async def rerank(self, query: str, results: list[SearchResult]) -> list[SearchResult]:
-        """Return reranked results with adaptive scores."""
+        """Return reranked results with adaptive scores, skipping inference for empty input."""
+        if not results:
+            return []
         if self._model is not None:
             pairs = [(query, result.chunk.text) for result in results]
             raw_scores = self._model.predict(pairs)
