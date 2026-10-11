@@ -12,12 +12,7 @@ Optional later narrative via **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K
 from retrieval.verification_bias_cues import VerificationBiasCueExtractor
 
 cues = VerificationBiasCueExtractor().extract(
-    [
-        {
-            "paper_id": "p1",
-            "abstract": "Diagnostic accuracy may be distorted by verification bias when only positives are imaged.",
-        }
-    ]
+    [{"paper_id": "p1", "abstract": "Results may reflect verification bias in tertiary clinics."}]
 )
 print(cues[0].flagged, cues[0].cue_kind)
 ```

@@ -27,21 +27,21 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "verification_bias",
         re.compile(
-            r"verification bias",
+            r"\bverification bias\b",
             re.IGNORECASE,
         ),
     ),
     (
         "workup_bias",
         re.compile(
-            r"work[- ]?up bias",
+            r"\bwork[- ]?up bias\b",
             re.IGNORECASE,
         ),
     ),
     (
         "referral_bias",
         re.compile(
-            r"referral bias",
+            r"\breferral bias\b",
             re.IGNORECASE,
         ),
     ),
@@ -63,7 +63,7 @@ class VerificationBiasCueExtractor:
     """Extract offline advisory cues."""
 
     def extract(self, papers: Sequence[dict[str, object]]) -> tuple[VerificationBiasCue, ...]:
-        """Return cues for papers."""
+        """Return cues for ``papers``."""
 
         if not papers:
             return ()
