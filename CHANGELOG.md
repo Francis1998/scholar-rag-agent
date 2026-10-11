@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `AscertainmentBiasCueExtractor` (`src/retrieval/ascertainment_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE ascertainment-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ASCERTAINMENT_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `AttritionInformativeCensoringCueExtractor` (`src/retrieval/attrition_informative_censoring_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE attrition informative-censoring cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ATTRITION_INFORMATIVE_CENSORING_CUE_EXTRACTOR_GUIDE.md`.
 - `VerificationBiasCueExtractor` (`src/retrieval/verification_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE verification-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/VERIFICATION_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `SpectrumBiasCueExtractor` (`src/retrieval/spectrum_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE spectrum-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md`.
