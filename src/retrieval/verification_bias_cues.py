@@ -27,21 +27,21 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "verification_bias",
         re.compile(
-            r"\\bverification bias\\b",
+            r"verification bias",
             re.IGNORECASE,
         ),
     ),
     (
         "workup_bias",
         re.compile(
-            r"\\bwork[- ]?up bias\\b",
+            r"work[- ]?up bias",
             re.IGNORECASE,
         ),
     ),
     (
         "referral_bias",
         re.compile(
-            r"\\breferral bias\\b",
+            r"referral bias",
             re.IGNORECASE,
         ),
     ),

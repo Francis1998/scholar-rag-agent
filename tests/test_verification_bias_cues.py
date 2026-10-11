@@ -12,9 +12,7 @@ def test_flags_matched_abstract() -> None:
         [
             {
                 "paper_id": "p1",
-                "abstract": (
-                    "Diagnostic accuracy may be distorted by verification bias when only positives are imaged."
-                ),
+                "abstract": ("Results may reflect verification bias in tertiary clinics."),
             }
         ]
     )
