@@ -157,6 +157,22 @@ _FOOTER = (
     "Quotes and escapes are part of that representation. Unicode visual order alone "
     "is not an identity check.</p></footer></body></html>"
 )
+_RUN_FOOTER = (
+    "</main><footer><h2>Saved records, not a job dashboard</h2>"
+    "<p>Recorded states do not imply a live worker. Interrupted and legacy traces stay visible; "
+    "DONE alone does not guarantee a complete evidence capture. Opening evidence validates "
+    "saved events without reading today's corpus or reconstructing missing data.</p>"
+    "<p>No models, retrieval, corpus edits, or event writes run during these reads. "
+    "Normal app startup still initializes stores and loads indexes. No scripts, external "
+    "resources, analytics, or browser storage are used.</p>"
+    "<p>This service has no built-in authentication. Keep it on loopback or behind access "
+    "controls. Queries, IDs, answers and sources may be sensitive; URLs can remain in "
+    "browser history and server logs. No-store does not prevent saving or screenshots. "
+    "Review frozen artifacts before sharing.</p>"
+    "<p>Exact IDs are shown as JSON strings. Decode their quotes/escapes before using a raw ID; "
+    "visual Unicode order is not an identity check. Neither a saved state nor a citation "
+    "establishes scientific validity.</p></footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -194,20 +210,28 @@ def _link(identifier: str, url: str, label: str) -> str:
     return f'<a id="{identifier}" href="{_escaped(url)}">{label}</a>'
 
 
-def _page(title: str, fragments: Iterator[str], *, status: int = 200) -> HTMLResponse:
+def _page(
+    title: str, fragments: Iterator[str], *, status: int = 200, saved_runs: bool = False
+) -> HTMLResponse:
+    subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
+    description = (
+        "Find persisted research runs. Open their exact frozen evidence without rerunning."
+        if saved_runs
+        else "Discover stored papers. Inspect passages before choosing evidence."
+    )
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<meta name="theme-color" content="#f4f7fa">'
         f"<title>{title} | Scholar RAG</title><style>{_STYLE}</style></head><body>"
         '<a class="skip-link" href="#main">Skip to main content</a>'
-        '<header><p class="eyebrow" translate="no">SCHOLAR RAG / READ-ONLY / CURRENT CORPUS</p>'
+        f'<header><p class="eyebrow" translate="no">SCHOLAR RAG / READ-ONLY / {subject}</p>'
         f"<h1>{title}</h1>"
-        '<p class="muted">Discover stored papers. Inspect passages before choosing evidence.</p>'
+        f'<p class="muted">{description}</p>'
         '</header><main id="main" tabindex="-1">'
     )
     content = bytearray()
-    for fragment in chain((prefix,), fragments, (_FOOTER,)):
+    for fragment in chain((prefix,), fragments, (_RUN_FOOTER if saved_runs else _FOOTER,)):
         encoded = fragment.encode("utf-8")
         if len(content) + len(encoded) > MAX_HTML_BYTES:
             raise _PageTooLargeError()
@@ -223,8 +247,9 @@ def _error(
     *,
     root_path: str = "",
     navigation: str | None = None,
+    saved_runs: bool = False,
 ) -> HTMLResponse:
-    logger.warning("Local corpus explorer failed: %s", code)
+    logger.warning("Local explorer failed: %s", code)
     return _page(
         title,
         iter(
@@ -236,6 +261,7 @@ def _error(
             )
         ),
         status=status,
+        saved_runs=saved_runs,
     )
 
 
@@ -864,6 +890,11 @@ def _catalog(
         "search-passages",
         _url(root_path + "/explore/search", search_params),
         "Search passages",
+    )
+    yield _link(
+        "saved-runs",
+        _url(root_path + "/explore/runs", search_params),
+        "Browse saved runs",
     )
     yield "</nav>"
     yield from _filters(limit, source, title, root_path)

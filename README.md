@@ -30,8 +30,9 @@ placeholder answer. Its temporary database is removed on exit.
 Next, use the [Quickstart](QUICKSTART.md) to start the API with an isolated
 database and empty provider keys. The interactive API documentation is at
 `http://127.0.0.1:8000/docs`. For read-only paper and passage browsing, open
-`http://127.0.0.1:8000/explore`, including native literal passage search;
-neither is a paper-chat or PDF-upload UI.
+`http://127.0.0.1:8000/explore`, including native literal passage search and
+saved-run discovery with frozen-evidence reading. This is not a paper-chat or
+PDF-upload UI.
 
 ## Choose a workflow
 
@@ -59,6 +60,7 @@ neither is a paper-chat or PDF-upload UI.
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
+| Find a saved answer in a normal browser | Preserve state/cursor selection, validate a complete capture, follow frozen sources and download existing artifacts without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
 | Check whether saved source chunks still match the local corpus | Read unchanged/changed/missing findings in frozen rank order, without regenerating or rewriting evidence | [Corpus drift and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md) |
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
@@ -92,6 +94,23 @@ reads. The [complete guide](docs/guides/SOURCE_CONTEXT_GUIDE.md) covers bounds,
 errors, restart/edits, privacy, and reproducing this actual-output illustration
 with an isolated synthetic database. It is not a screen recording or a quality
 benchmark.
+
+## Find a saved answer and its frozen sources
+
+[![Static preview of the actual synthetic saved-run browser](docs/assets/saved-run-browser.png)](docs/assets/saved-run-browser.gif)
+
+Choose **Browse saved runs** in `/explore`, filter exact recorded states and
+follow stable first-event-ID pagination. **Inspect saved evidence** opens a
+bounded validated capture, with native citation links and JSON/Markdown/offline
+HTML downloads. `DONE` is not a promise of exportability; incomplete and legacy
+traces have honest errors. History return filters and mount prefixes survive
+navigation; frozen passages stay readable after current-corpus deletion.
+
+No scripts, models, retrieval, corpus reads or event writes run while opening
+frozen evidence. The [complete browser/API/Python and portfolio guide](docs/guides/SAVED_RUN_BROWSER_GUIDE.md)
+reproduces the measured offline workflow and the [four actual browser frames](docs/assets/saved-run-browser.gif).
+The still preview makes animation opt-in; the GIF is a screenshot sequence,
+not a continuous recording, benchmark or scientific result.
 
 ## Read saved evidence without the server
 
@@ -278,9 +297,11 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-09 America/Los_Angeles** catalog-only recheck includes Haiku 5.5
-as an additional Anthropic option; selected defaults and separately dated
-migration contracts remain unchanged. It is not a live compatibility check.
+The **2026-10-11 America/Los_Angeles** catalog-only recheck retains Astra,
+Sonnet 5.5, Gemini 3.8 Flash and Kimi K3, with OpenAI 6.1 Sol and Anthropic
+Haiku 5.5 among the alternatives. Selected defaults, endpoints, budgets and
+separately dated migration contracts remain unchanged. No live account or
+inference verification was performed.
 `/query` requests the reasoning route; the default-provider setting is not a
 universal override. Provider availability depends on your account and credentials.
 

@@ -2,7 +2,7 @@
 
 The official OpenAI/Anthropic catalogs, Gemini latest-model guide and
 [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
-**2026-10-10 America/Los_Angeles**, repeating the 2026-10-09 catalog check.
+**2026-10-11 America/Los_Angeles**, repeating the 2026-10-10 catalog check.
 This catalog-only check leaves the selected
 defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
 Anthropic lists Sonnet 5.5, Opus 5.5, Fable 5.1, and the additional Haiku 5.5
@@ -12,8 +12,8 @@ does not replace this repository's selected Sonnet 5.5 text-adapter default.
 Current Anthropic IDs include `claude-fable-5-1`, `claude-opus-5-5`,
 `claude-sonnet-5-5` and `claude-haiku-5-5`. Haiku's catalog presence is not a
 new payload-compatibility test or a default change. This daily documentation
-recheck accompanies the [no-model browser search workflow](BROWSER_PASSAGE_SEARCH_GUIDE.md);
-that workflow does not use provider settings.
+recheck accompanies the [saved-run browser workflow](SAVED_RUN_BROWSER_GUIDE.md);
+frozen-evidence reading does not use provider settings or current corpus data.
 
 The separate Anthropic Sonnet 5.5 migration-contract check remains
 **2026-10-01 America/Los_Angeles** (2026-10-01 UTC), earlier default-model
@@ -40,6 +40,13 @@ catalog descriptions
 ([6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)),
 not measured tradeoffs or additional adapter-contract tests in this repository;
 the selected flagship and routing remain unchanged.
+
+The same-day [6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+explicitly supports Chat Completions **without tool calling**; use Responses
+for tools. Its supported reasoning efforts are `low`, `medium`, `high`, `xhigh`
+and `max`, not `none` or `minimal`. This is documentation for an optional
+alternative, not an endpoint, effort, budget or default migration. No live
+account or inference verification was performed.
 
 The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
 available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro

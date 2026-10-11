@@ -6,6 +6,11 @@ without the API, network, model credentials, or the original corpus. Follow a
 claim or final citation to its **exact frozen passage**, inspect the recorded
 configuration and trace, and use browser-native Find, details, and Print.
 
+To discover and read a saved run while the API is running, start with
+**Browse saved runs** in `/explore`. The [native saved-run browser](SAVED_RUN_BROWSER_GUIDE.md)
+validates a bounded capture before presenting inline source links and these
+existing downloads. The downloadable reader's default output is unchanged.
+
 This adds a presentation format to the existing validated `EvidenceExporter` /
 `EvidenceBundle` path, not a frontend application or another retrieval pipeline.
 JSON is still the default; existing JSON and Markdown content is unchanged.
@@ -154,6 +159,13 @@ exporter's cross-record validation. Handle `EvidenceExportError.code` and
 The optional `BoundedRunEvents` example additionally enforces its existing
 100-event, 1 MiB per-event and 8 MiB total saved-read limits; those are distinct
 from the HTML rendered-byte limit, and are not newly imposed on other exports.
+
+`SQLiteEvidenceReader(database).export(run_id)` now wraps that same bounded
+read-only transaction for standalone Python and the native browser. Default
+`render_html(bundle)` output still has only local fragment links. Its optional
+`BrowserNavigation` argument is used only for application-local navigation in
+the inline browser, with all additional markup counted inside the same 4 MiB
+limit. It does not add application links to the existing HTML download.
 
 ## 4. What the reader preserves
 

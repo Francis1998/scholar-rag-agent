@@ -64,6 +64,13 @@ completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
 See [the BibTeX/JSON contract](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
 
+The [saved-run browser](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) uses the same
+event database without new settings. History has 1-100-row pages and a 1-MiB
+escaped HTML cap. Opening frozen evidence uses bounded read-only events
+(100 events, 1 MiB per payload, 8 MiB total UTF-8 text) and the existing 4-MiB
+HTML limit. The 16-KiB native query-string cap is independent of provider
+budgets. These reads do not consult models or the current corpus.
+
 Exact frozen-evidence annotations also add no environment setting or provider
 requirement. They use an additive table in the existing database, fixed
 1000-character note/quote limits, 1-100-row pages, and a 256-KiB UTF-8 response
@@ -100,8 +107,9 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-10 America/Los_Angeles**;
-Anthropic also lists Haiku 5.5 (`claude-haiku-5-5`). This catalog-only check leaves selected
+All four official model catalogs were checked again on **2026-10-11 America/Los_Angeles**;
+OpenAI 6.1 Sol and Anthropic Haiku 5.5 are additional catalog alternatives.
+This catalog-only check leaves selected
 defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.

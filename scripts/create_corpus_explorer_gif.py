@@ -1,6 +1,7 @@
 """Assemble actual browser screenshots of the synthetic explorer, not a mock UI."""
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
 
 from PIL import Image
@@ -10,17 +11,19 @@ from scripts.demo_corpus_explorer import FRAME_PAGES
 FRAME_SIZE = (1280, 960)
 
 
-def create_gif(frames_dir: Path, output_path: Path) -> None:
+def render_browser_frames(frame_paths: Sequence[Path], output_path: Path) -> None:
     """Validate full-size, distinct browser frames and preserve their actual pixels."""
     if output_path.exists() or output_path.is_symlink():
         raise FileExistsError(f"Refusing to overwrite {output_path}; choose a new filename.")
+    if len(frame_paths) != 4:
+        raise ValueError("Expected four browser screenshots.")
     frames = []
-    for name in FRAME_PAGES:
-        with Image.open(frames_dir / f"{name}.png") as image:
+    for path in frame_paths:
+        with Image.open(path) as image:
             if image.size != FRAME_SIZE or image.format != "PNG":
                 raise ValueError("Expected four 1280x960 PNG browser screenshots.")
             frames.append(image.convert("RGB"))
-    if len({frame.tobytes() for frame in frames}) != len(FRAME_PAGES):
+    if len({frame.tobytes() for frame in frames}) != len(frame_paths):
         raise ValueError("Browser screenshots must show four distinct workflow states.")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(
@@ -32,6 +35,11 @@ def create_gif(frames_dir: Path, output_path: Path) -> None:
         loop=0,
         disposal=2,
     )
+
+
+def create_gif(frames_dir: Path, output_path: Path) -> None:
+    """Assemble the existing corpus demo's named browser screenshots."""
+    render_browser_frames([frames_dir / f"{name}.png" for name in FRAME_PAGES], output_path)
 
 
 def main() -> None:

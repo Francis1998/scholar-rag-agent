@@ -28,7 +28,7 @@ from storage.document_chunks import SQLiteDocumentChunks
 from storage.document_store import SQLiteDocumentStore
 from storage.event_log import SQLiteEventLog
 from storage.evidence_annotations import SQLiteEvidenceAnnotations
-from storage.evidence_export import EvidenceExporter
+from storage.evidence_export import EvidenceExporter, SQLiteEvidenceReader
 from storage.graph_store import SQLiteGraphStore
 from storage.literal_search import SQLiteLiteralSearch
 from storage.paper_collections import SQLitePaperCollections
@@ -47,6 +47,7 @@ class AppContainer:
         database_path = Path(settings.database_path)
         self.event_log = SQLiteEventLog(database_path)
         self.evidence_exporter = EvidenceExporter(self.event_log)
+        self.saved_run_evidence = SQLiteEvidenceReader(database_path)
         self.saved_bibliography = SQLiteSavedBibliography(database_path)
         self.run_comparator = SavedRunComparator(self.evidence_exporter)
         self.corpus_drift = SQLiteCorpusDrift(database_path)

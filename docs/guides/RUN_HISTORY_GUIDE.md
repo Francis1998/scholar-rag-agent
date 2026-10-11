@@ -5,6 +5,11 @@ query previews and recorded states, then follow the existing events and evidence
 export routes. You do not have to keep an ID from a terminal session or rerun a
 model to find a previous answer.
 
+For a native browser workflow, choose **Browse saved runs** in `/explore`.
+The [saved-run browser guide](SAVED_RUN_BROWSER_GUIDE.md) connects these same
+summaries to a bounded inline frozen-evidence reader, preserving filters and
+pagination without scripts, model calls or per-row export checks.
+
 This is **persisted run discovery**, not a background-job dashboard. A saved
 `REASONING` record can belong to an interrupted process; it does not mean a worker
 is currently running. There is no checkpoint resume, replay, conversation memory,
@@ -203,6 +208,11 @@ Legacy IDs containing `/`, or equal to `.` or `..`, remain visible but have null
 navigation URLs because the existing HTTP routes cannot address them reliably.
 Use the exact ID with the Python event/export interfaces when needed. The
 catalog does not change those routes or silently rewrite IDs.
+
+The native `/explore/run?run_id=...` reader can address these IDs exactly through
+query encoding when their evidence is valid. It omits incompatible path-based
+download links and explains the Python alternative; JSON history URLs remain
+unchanged. See the [browser ID contract](SAVED_RUN_BROWSER_GUIDE.md#exact-ids-and-mount-prefixes).
 
 ## Pagination and concurrent changes
 
