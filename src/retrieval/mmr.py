@@ -13,6 +13,8 @@ Similarity here is a dependency-free lexical Jaccard overlap over the shared
 tokenizer, so the re-ranking is deterministic and requires no embedding model.
 """
 
+import math
+
 from retrieval.models import SearchResult
 from retrieval.sparse import tokenize
 
@@ -39,13 +41,21 @@ class MMRDiversifier:
     ) -> list[SearchResult]:
         """Return results re-ordered by Maximal Marginal Relevance.
 
+        The first selection uses the highest raw score. With ``lambda_param=1.0``,
+        all selections follow raw score order, even if normalization would round
+        distinct scores to the same value.
+
         Args:
-            results: Candidate results, assumed already scored for relevance.
+            results: Candidate results with finite relevance scores.
             top_k: Maximum number of results to return; defaults to all.
+                Non-positive values return no results without validating scores.
 
         Returns:
-            Results ordered greedily by the MMR objective. Ties preserve the
-            input order for determinism.
+            Original result objects ordered greedily by the MMR objective,
+            without modifying scores or provenance. Ties preserve input order.
+
+        Raises:
+            ValueError: If a score is non-finite and results are requested.
         """
         if not results:
             return []
@@ -53,7 +63,13 @@ class MMRDiversifier:
         if limit <= 0:
             return []
 
-        relevance = self._normalized_relevance([result.score for result in results])
+        scores = [result.score for result in results]
+        if any(not math.isfinite(score) for score in scores):
+            raise ValueError("MMR relevance scores must be finite")
+        if self._lambda == 1.0:
+            return sorted(results, key=lambda result: result.score, reverse=True)[:limit]
+
+        relevance = self._normalized_relevance(scores)
         token_sets = [set(tokenize(result.chunk.text)) for result in results]
 
         selected_indices: list[int] = []
@@ -63,7 +79,7 @@ class MMRDiversifier:
             best_mmr: float | None = None
             for index in candidate_indices:
                 if not selected_indices:
-                    mmr = relevance[index]
+                    mmr = scores[index]
                 else:
                     max_similarity = max(
                         self._jaccard(token_sets[index], token_sets[selected])
@@ -86,8 +102,11 @@ class MMRDiversifier:
         candidates, so all relevances are treated as ``1.0`` and diversity alone
         drives selection.
 
+        An overflowing span is normalized after halving the scores and bounds.
+        Finite spans retain the ordinary min-max calculation.
+
         Args:
-            scores: Raw relevance scores.
+            scores: Finite raw relevance scores.
 
         Returns:
             Normalized relevance values aligned with ``scores``.
@@ -97,6 +116,10 @@ class MMRDiversifier:
         span = highest - lowest
         if span == 0:
             return [1.0 for _ in scores]
+        if not math.isfinite(span):
+            scaled_lowest = lowest / 2.0
+            scaled_span = highest / 2.0 - scaled_lowest
+            return [(score / 2.0 - scaled_lowest) / scaled_span for score in scores]
         return [(score - lowest) / span for score in scores]
 
     @staticmethod
