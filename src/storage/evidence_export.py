@@ -2,10 +2,12 @@
 
 import json
 import sqlite3
+from contextlib import closing
 from json import JSONDecodeError
+from pathlib import Path
 from typing import Any, Protocol
 
-from pydantic import BaseModel, JsonValue, ValidationError
+from pydantic import BaseModel, JsonValue, TypeAdapter, ValidationError
 
 from agent.evidence import (
     CaptureLimits,
@@ -24,10 +26,12 @@ from retrieval.evidence_policy import (
     ensure_evidence_requirement,
 )
 from retrieval.scope import DocumentIds, documents_within_scope
+from storage.run_history import Identity
 
 MAX_RUN_EVENTS = 100
 MAX_EVENT_BYTES = CaptureLimits().max_snapshot_bytes
 MAX_RUN_BYTES = 8 * MAX_EVENT_BYTES
+_RUN_ID = TypeAdapter(Identity)
 
 EXPECTED_EVENTS = [
     "state_transition",
@@ -158,7 +162,12 @@ class BoundedRunEvents:
             total += sum(len(value.encode("utf-8")) for value in record.values())
             if len(record["payload"].encode("utf-8")) > MAX_EVENT_BYTES or total > MAX_RUN_BYTES:
                 raise _read_limit_exceeded()
-            events.append({**record, "id": row["id"], "payload": json.loads(record["payload"])})
+            try:
+                payload = json.loads(record["payload"])
+            except ValueError as exc:
+                # The JSON decoder also raises plain ValueError for overlong integer literals.
+                raise _invalid_record() from exc
+            events.append({**record, "id": row["id"], "payload": payload})
         return events
 
 
@@ -328,3 +337,34 @@ class EvidenceExporter:
             events=safe_events,
             warnings=warnings,
         )
+
+
+class SQLiteEvidenceReader:
+    """Validate frozen evidence in one bounded, read-only transaction on an existing database."""
+
+    def __init__(self, database_path: Path | str) -> None:
+        self._database_uri = Path(database_path).resolve().as_uri() + "?mode=ro"
+
+    def export(self, run_id: str) -> EvidenceBundle:
+        """Keep exact IDs, including legacy query-addressable IDs; never repair from the corpus."""
+        try:
+            _RUN_ID.validate_python(run_id)
+            run_id.encode("utf-8")
+        except (ValidationError, UnicodeError) as exc:
+            raise EvidenceExportError(
+                "invalid_evidence_request",
+                "Use an exact run ID containing 1 to 256 valid Unicode characters.",
+                422,
+            ) from exc
+        try:
+            with closing(sqlite3.connect(self._database_uri, uri=True, timeout=5)) as connection:
+                connection.row_factory = sqlite3.Row
+                connection.execute("BEGIN")
+                encoding: str = connection.execute("PRAGMA encoding").fetchone()[0]
+                return EvidenceExporter(BoundedRunEvents(connection, encoding)).export(run_id)
+        except sqlite3.Error as exc:
+            raise EvidenceExportError(
+                "evidence_storage_unavailable", "Saved evidence storage is unavailable.", 503
+            ) from exc
+        except (ValidationError, UnicodeError, JSONDecodeError, RecursionError) as exc:
+            raise _invalid_record() from exc

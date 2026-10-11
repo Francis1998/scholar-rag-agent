@@ -38,6 +38,12 @@ original catalog state. Catalog filters are return context, not search scope.
 See the [complete browser/API/Python search guide](BROWSER_PASSAGE_SEARCH_GUIDE.md)
 for strict scope selection, query privacy, errors and an actual-output GIF.
 
+**Browse saved runs** crosses a clearly labeled boundary to historical records.
+The [native saved-run browser](SAVED_RUN_BROWSER_GUIDE.md) preserves catalog
+return state, filters latest recorded states, and opens only validated frozen
+captures. Its source links stay inside the capture, not today's corpus.
+Recorded `DONE` alone does not guarantee that legacy evidence can be exported.
+
 Each displayed passage now also has **Read surrounding source context**.
 This opens `/explore/context` with that exact document/chunk pair, highlights the
 anchor, and shows a bounded neighborhood in validated numeric source order.

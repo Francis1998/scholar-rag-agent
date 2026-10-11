@@ -1,5 +1,21 @@
 # Demo
 
+## Saved-run browser and frozen evidence
+
+[![Still frame of the actual synthetic saved-run browser](assets/saved-run-browser.png)](assets/saved-run-browser.gif)
+
+The [complete guide](guides/SAVED_RUN_BROWSER_GUIDE.md#reproduce-the-offline-demo-and-real-browser-gif)
+reproduces actual native state filtering, first-event-ID pagination, frozen-source
+navigation, legacy/incomplete errors and downloads. Two fake-adapter queries
+and clearly inserted fixtures demonstrate the workflow; guarded reads make no
+generation, retrieval or write calls. The current corpus is changed, deleted,
+then the app is restarted; frozen evidence and downloads stay byte-identical.
+
+The opt-in GIF contains four actual browser screenshots, not a recording,
+generated UI or benchmark. Its still preview avoids autoplay in this guide.
+The synthetic database persists only in the explicitly chosen output directory
+for optional loopback inspection. No live model keys or real papers are needed.
+
 ## Source context around a displayed passage
 
 The [source-context guide](guides/SOURCE_CONTEXT_GUIDE.md#reproduce-the-measured-demo-and-gif)

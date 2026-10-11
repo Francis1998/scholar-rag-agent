@@ -87,6 +87,18 @@ HTML cap. Catalog-return page size remains independently 1-100. Native GET
 phrases appear in URLs/history/logs; configure your own access/logging boundary.
 See [browser/API/Python linkage and error recovery](guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
 
+## Saved-run browser bounds
+
+`GET /explore/runs` reuses `SQLiteRunHistory`: default 20, maximum 100 summaries,
+exact recorded-state filtering and an exclusive positive first-event-ID cursor.
+It does not infer worker liveness or exportability. Complete escaped history
+HTML is capped at 1 MiB; native query strings at 16 KiB.
+`GET /explore/run` reads only frozen events through `SQLiteEvidenceReader`,
+reusing the 100-event, 1-MiB-per-payload and 8-MiB-total UTF-8 read bounds.
+The existing 4-MiB evidence HTML cap includes inline navigation. No dependency,
+provider setting, database table or environment variable is added. See
+[the complete browser/API/Python guide](guides/SAVED_RUN_BROWSER_GUIDE.md).
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
@@ -123,10 +135,10 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-10 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-11 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
-and model-specific limitations. Haiku 5.5 is an additional current Anthropic
-catalog option, not a new adapter-compatibility claim. Defaults, endpoints,
+and model-specific limitations. OpenAI 6.1 Sol and Anthropic Haiku 5.5 are
+additional catalog options, not new adapter-compatibility claims. Defaults, endpoints,
 routing, and budgets remain unchanged.
 
 Retrieval-policy comparison does not use provider settings or add environment

@@ -32,6 +32,7 @@ accumulated feature list in the project README.
 | Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
 | Save immutable human notes on exact character spans in frozen run evidence | [Exact quote annotations and measured offline demo](guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
+| Discover saved runs in a browser and follow their validated frozen evidence without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |
 | Check saved source chunks against today's persisted corpus without regeneration | [Corpus drift and measured offline demo](guides/CORPUS_DRIFT_GUIDE.md) |
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |

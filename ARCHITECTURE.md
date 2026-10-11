@@ -559,6 +559,31 @@ or resumability. Export links are navigation, not proof of export availability.
 See [Run history](docs/guides/RUN_HISTORY_GUIDE.md) for errors, privacy, restart
 behavior, and the reproducible synthetic demo.
 
+### Native saved-run browser
+
+`GET /explore/runs` reuses `SQLiteRunHistory` without per-row evidence reads.
+`api.run_explorer` validates bounded exact state/cursor/ID and catalog-return
+parameters, rejects duplicate/unknown fields and malformed UTF-8, and reuses
+the explorer's static HTML shell with a distinct saved-record footer.
+The current corpus links to this workflow; saved source links never silently
+switch to current source context.
+
+`GET /explore/run?run_id=...` uses `container.saved_run_evidence`, a
+`SQLiteEvidenceReader` around `BoundedRunEvents` and `EvidenceExporter`.
+It opens an existing `mode=ro` connection and one read transaction, enforcing
+100-event, 1-MiB-per-payload and 8-MiB-total UTF-8 text limits before rendering.
+The existing static `evidence_html` renderer opts into validated local
+history/catalog/download links, counted within its 4-MiB full-render cap.
+Its default offline download output remains unchanged.
+
+History stays creation-ordered and reports the latest transition; evidence
+keeps first-terminal-event semantics. A `DONE` row receives an inspection link,
+not a guarantee of exportability. Exact query-encoded legacy IDs are readable
+when valid, without inventing incompatible download paths. Mount prefixes and
+valid return selections are preserved; errors stay sanitized, no-store and
+script-free. No schema, retrieval, generation, writes or current-corpus
+hydration is added. See the [browser guide and real-frame demo](docs/guides/SAVED_RUN_BROWSER_GUIDE.md).
+
 ## Persistent Evidence Exports
 
 Completed exports also feed a pure, typed saved-run comparison through

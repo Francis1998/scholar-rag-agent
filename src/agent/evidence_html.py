@@ -4,7 +4,9 @@ import base64
 import hashlib
 import json
 from collections.abc import Iterator
+from dataclasses import dataclass
 from html import escape
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, JsonValue
 
@@ -51,6 +53,58 @@ _STYLE_HASH = base64.b64encode(hashlib.sha256(_STYLE.encode("utf-8")).digest()).
 HTML_CSP = (
     f"default-src 'none'; style-src 'sha256-{_STYLE_HASH}'; base-uri 'none'; form-action 'none'"
 )
+
+
+@dataclass(frozen=True)
+class BrowserNavigation:
+    """Opt-in application navigation; offline downloads still have only fragment links."""
+
+    history_url: str
+    catalog_url: str
+    export_url: str | None = None
+
+
+def _navigation(links: BrowserNavigation) -> Iterator[str]:
+    destinations = [
+        ("back-to-runs", "Back to saved runs", links.history_url),
+        ("back-to-catalog", "Back to current corpus", links.catalog_url),
+    ]
+    if links.export_url is not None:
+        if urlsplit(links.export_url).query or urlsplit(links.export_url).fragment:
+            raise ValueError("Evidence download navigation requires a path without a query.")
+        destinations.extend(
+            (f"download-{fmt}", f"Download {label}", links.export_url + f"?format={fmt}")
+            for fmt, label in (("json", "JSON"), ("markdown", "Markdown"), ("html", "offline HTML"))
+        )
+    yield '<nav aria-label="Saved run navigation">'
+    for identifier, label, url in destinations:
+        parts = urlsplit(url)
+        if (
+            not url.startswith("/")
+            or url.startswith("//")
+            or parts.scheme
+            or parts.netloc
+            or "\\" in url
+            or any(ord(character) < 32 or ord(character) == 127 for character in url)
+        ):
+            raise ValueError("Evidence reader navigation must use application-local paths.")
+        yield f'<a id="{identifier}" href="{escape(url)}">{label}</a>'
+    yield "</nav>"
+    if links.export_url is None:
+        yield (
+            "<p>This exact legacy run ID cannot use the existing path-based download routes. "
+            "Its frozen evidence is readable here; use the read-only Python exporter for files. "
+            "The ID has not been rewritten.</p>"
+        )
+    yield (
+        "<p>FROZEN SAVED EVIDENCE, not today's corpus. Only a validated complete capture is "
+        "shown; nothing is retrieved, regenerated or written. History's latest recorded state "
+        "may differ from this first-terminal-event snapshot.</p>"
+        "<p>Keep this unauthenticated service local or behind access controls. IDs and return "
+        "filters can remain in browser history and server logs. No-store cannot prevent saving "
+        "or screenshots. Application links make ordinary GET requests; source links stay "
+        "inside this frozen record.</p>"
+    )
 
 
 def _unrepresentable_text() -> EvidenceExportError:
@@ -103,16 +157,23 @@ def _warnings(warnings: list[str], empty_message: str) -> Iterator[str]:
         yield f"<p>{empty_message}</p>"
 
 
-def _fragments(bundle: EvidenceBundle) -> Iterator[str]:
+def _fragments(
+    bundle: EvidenceBundle, navigation: BrowserNavigation | None = None
+) -> Iterator[str]:
+    title = "Offline evidence reader" if navigation is None else "Saved run evidence"
     yield (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f'<meta http-equiv="Content-Security-Policy" content="{escape(HTML_CSP)}">'
-        "<title>Offline evidence reader</title>"
+        f"<title>{title}</title>"
         f"<style>{_STYLE}</style></head><body>"
         '<a class="skip-link" href="#main">Skip to main content</a>'
-        "<header><h1>Offline evidence reader</h1>"
+        f"<header><h1>{title}</h1>"
         "<p>A completed saved run, not scientific validation or a live research application.</p>"
+    )
+    if navigation is not None:
+        yield from _navigation(navigation)
+    yield (
         '<nav aria-label="Reader sections">'
         '<a href="#summary">Summary</a><a href="#question">Question</a>'
         '<a href="#answer">Answer</a><a href="#claims">Claims</a>'
@@ -253,18 +314,24 @@ def _fragments(bundle: EvidenceBundle) -> Iterator[str]:
     yield (
         "</details></main><footer><p>Use your browser's Find and Print commands. Expand details "
         "before printing if your browser keeps them closed in print preview.</p>"
+    )
+    yield (
         "<p>This file makes no network requests and has no scripts, forms, editable annotations "
+        if navigation is None
+        else "<p>This reader has no scripts, forms, editable annotations "
+    )
+    yield (
         "or retrieval/generation controls. It does not provide authentication, signed evidence, "
         "automatic redaction or scientific validation. Review sensitive content before sharing."
         "</p></footer></body></html>\n"
     )
 
 
-def render_html(bundle: EvidenceBundle) -> str:
+def render_html(bundle: EvidenceBundle, *, navigation: BrowserNavigation | None = None) -> str:
     """Render a validated saved bundle, checking the full escaped UTF-8 size before delivery."""
     fragments: list[str] = []
     size = 0
-    for fragment in _fragments(bundle):
+    for fragment in _fragments(bundle, navigation):
         try:
             size += len(fragment.encode("utf-8"))
         except UnicodeEncodeError as exc:
