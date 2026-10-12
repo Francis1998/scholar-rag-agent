@@ -6,6 +6,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- `OverdiagnosisBiasCueExtractor` (`src/retrieval/overdiagnosis_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE overdiagnosis-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/OVERDIAGNOSIS_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `IndicationBiasCueExtractor` (`src/retrieval/indication_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE indication-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INDICATION_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `ReportingBiasCueExtractor` (`src/retrieval/reporting_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE reporting-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/REPORTING_BIAS_CUE_EXTRACTOR_GUIDE.md`.
 - `AscertainmentBiasCueExtractor` (`src/retrieval/ascertainment_bias_cues.py`): offline deterministic cue extractor (never network I/O). Gap vs Elicit/Consensus/AJE ascertainment-bias cue extractors. Optional later narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ASCERTAINMENT_BIAS_CUE_EXTRACTOR_GUIDE.md`.
