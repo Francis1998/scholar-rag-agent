@@ -139,6 +139,19 @@ are retained. Repeated IDs in that batch use the **last complete value** in
 first-ID-appearance order; earlier versions do not contribute chunks. IDs are
 exact and case-sensitive, with no new normalization.
 
+Treat chunk IDs as opaque identifiers rather than parsing or constructing them.
+For document IDs containing `:`, the chunker hashes a JSON array of the exact
+document ID, integer chunk index, and normalized chunk text in the disjoint
+`chunk-v2-*` namespace. This prevents field-boundary ambiguity such as
+`paper:1`, index `0`, text `abc` versus `paper`, index `1`, text `0:abc`.
+Document IDs without `:` retain their existing `chunk-*` identities, including
+normal API/PDF-generated IDs. Document identity generation itself is unchanged.
+Existing stored chunks are not rewritten at startup: reingesting a complete
+colon-bearing document replaces its legacy chunks through the same replacement
+contract. Saved events, frozen evidence, annotations, and reviews are not migrated;
+old chunk references may consequently be reported as missing by corpus-drift
+inspection.
+
 Chunking, extraction, and index preparation happen before destructive writes.
 With the default shared database, document/chunk/graph SQL commits together,
 then the already prepared dense/BM25 states are published. Preparation, SQL, and

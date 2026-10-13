@@ -1,6 +1,7 @@
 """Document chunking utilities."""
 
 import hashlib
+import json
 
 from retrieval.models import Chunk, Document
 
@@ -43,7 +44,16 @@ class TextChunker:
         while start < len(text):
             end = min(start + self._chunk_size, len(text))
             chunk_text = text[start:end]
-            chunk_id = stable_id(f"{document.document_id}:{index}:{chunk_text}", "chunk")
+            if ":" in document.document_id:
+                identity = json.dumps(
+                    [document.document_id, index, chunk_text],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                # Keep structured identities disjoint from legacy chunk-* identities.
+                chunk_id = stable_id(identity, "chunk-v2")
+            else:
+                chunk_id = stable_id(f"{document.document_id}:{index}:{chunk_text}", "chunk")
             chunks.append(
                 Chunk(
                     chunk_id=chunk_id,

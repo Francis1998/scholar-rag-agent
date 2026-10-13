@@ -1,5 +1,6 @@
 """Tests for hybrid retrieval components."""
 
+import json
 import math
 
 import pytest
@@ -115,6 +116,62 @@ def test_text_chunker_preserves_default_windows_and_ids() -> None:
         "chunk-c13d04c8bdbf0d0a",
     ]
     assert chunks[0].text + "".join(chunk.text[120:] for chunk in chunks[1:]) == text
+
+
+@pytest.mark.parametrize(
+    "document_id", ["paper", "paper:section", 'paper:["\\', "paper:\u7814\u7a76\U0001f52c"]
+)
+def test_text_chunker_keeps_delimiter_boundaries_distinct(document_id: str) -> None:
+    chunker = TextChunker(chunk_size=5, overlap=0)
+    first = Document(document_id=f"{document_id}:1", title="First", text="abc", source="fixture")
+    second = Document(document_id=document_id, title="Second", text="zzzzz0:abc", source="fixture")
+    first_chunks = chunker.chunk(first)
+    second_chunks = chunker.chunk(second)
+
+    assert [chunk.text for chunk in first_chunks] == ["abc"]
+    assert [chunk.text for chunk in second_chunks] == ["zzzzz", "0:abc"]
+    assert {chunk.chunk_id for chunk in first_chunks}.isdisjoint(
+        chunk.chunk_id for chunk in second_chunks
+    )
+    assert chunker.chunk(first) == first_chunks
+    assert chunker.chunk(second) == second_chunks
+
+
+@pytest.mark.parametrize(
+    "document_id",
+    [
+        "paper",
+        "doc-api-v2-0123456789abcdef",
+        "doc-0123456789abcdef",
+        "paper:Note",
+        "paper:note",
+        " paper:\t",
+        "paper:\u00e9",
+        "paper:e\u0301",
+    ],
+)
+def test_text_chunker_preserves_exact_identity_fields_and_legacy_ids(document_id: str) -> None:
+    document = Document(
+        document_id=document_id,
+        title="Paper",
+        text=' \u7814\u7a76:\u00e9  "\\value"\n',
+        source="fixture",
+    )
+    chunks = TextChunker(chunk_size=5, overlap=0).chunk(document)
+
+    assert "".join(chunk.text for chunk in chunks) == '\u7814\u7a76:\u00e9 "\\value"'
+    for index, chunk in enumerate(chunks):
+        assert chunk.document_id == document_id
+        assert chunk.metadata["chunk_index"] == str(index)
+        if ":" in document_id:
+            identity = json.dumps(
+                [document_id, index, chunk.text], ensure_ascii=False, separators=(",", ":")
+            )
+            assert chunk.chunk_id == stable_id(identity, "chunk-v2")
+            assert chunk.chunk_id != stable_id(identity, "chunk")
+        else:
+            assert chunk.chunk_id == stable_id(f"{document_id}:{index}:{chunk.text}", "chunk")
+    assert TextChunker(chunk_size=5, overlap=0).chunk(document) == chunks
 
 
 @pytest.mark.parametrize("text", ["", " \t\n "])
