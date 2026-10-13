@@ -25,6 +25,7 @@ from api.run_explorer import router as run_explorer_router
 from api.runs import router as runs_router
 from api.screening import router as screening_router
 from api.search import router as search_router
+from api.worksheet_explorer import router as worksheet_explorer_router
 from config import Settings
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(documents_router)
     application.include_router(explorer_router)
     application.include_router(run_explorer_router)
+    application.include_router(worksheet_explorer_router)
     application.include_router(collections_router)
     application.include_router(screening_router)
     application.include_router(evidence_router)

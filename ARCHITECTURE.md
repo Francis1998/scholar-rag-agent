@@ -322,6 +322,16 @@ inspection links read current chunks. Existence is rechecked before completion.
 See the [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) for schemas,
 errors, privacy, limitations, and the measured offline demonstration.
 
+`api.worksheet_explorer` adds native GET/POST `/explore/worksheet` over this
+same service, not another retrieval or generation path. GET renders controls;
+POST strictly decodes a bounded URL-encoded form, validates the shared request,
+and builds exactly one worksheet. HTML exposes a question-by-paper grid and
+exact local source links; JSON/Markdown reuse the service's serializers.
+Validated catalog return fields and mount prefixes survive native navigation.
+The browser adds a 64-KiB streaming body bound, 16-KiB URL bound, six-field
+maximum and the shared 1-MiB HTML limit. Each submission is a new inspection;
+no worksheet table, run ID, browser storage or scripts are introduced.
+
 ## Data Flow
 
 1. `POST /ingest/text` accepts a title, text, and source. `TextChunker` normalizes

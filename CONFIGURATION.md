@@ -59,6 +59,13 @@ are request-only: default two neighbors per side, maximum five. The fixed
 ordering validation even for an anchor-only read. Existing query, retrieval,
 pagination and generation defaults are unchanged.
 
+The [native worksheet browser](docs/guides/RESEARCH_WORKSHEET_GUIDE.md#native-browser-workflow)
+also adds no settings. It reuses the existing five-question, ten-paper,
+three-passage-per-cell and 30-second worksheet bounds. Browser requests have a
+65,536-byte body, 16,384-byte URL and six-field limit; escaped HTML must fit
+1 MiB. JSON/Markdown keep their existing 256-KiB limits. These are fixed request
+and output bounds, not provider budgets, and separate submissions rerun retrieval.
+
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
@@ -107,7 +114,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Anthropic catalog
 and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-11 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-12 America/Los_Angeles**;
 OpenAI 6.1 Sol and Anthropic Haiku 5.5 are additional catalog alternatives.
 This catalog-only check leaves selected
 defaults and separately dated migration contracts unchanged.

@@ -194,10 +194,15 @@ context bytes; save `?format=markdown` for review. The
 Python/curl workflows, the 256 KiB all-or-nothing cap, and the measured GIF.
 This inspects the current corpus, not a frozen experiment or retrieval quality.
 
-To inspect the same questions against each selected paper, use
-`POST /research/worksheet` with explicit document IDs or a saved collection.
-The [worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) provides a complete
-offline example and JSON/Markdown downloads without generation or new run events.
+To inspect the same questions against each selected paper, choose **Build
+research worksheet** in `/explore` or open `/explore/worksheet`. Enter one question
+per line and either a JSON array of exact document IDs or one saved collection
+ID. A document page can prefill its ID. Submit for browser inspection or
+JSON/Markdown; each submission reads the current corpus again, without generation,
+new run events or saved worksheets. An empty selection fails instead of searching
+everything. `POST /research/worksheet` remains the JSON API.
+The [complete worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) explains
+the question-by-paper grid, exact source links, bounds and offline demonstrations.
 
 ## 6. Recover run IDs after restart
 

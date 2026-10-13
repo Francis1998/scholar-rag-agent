@@ -52,7 +52,7 @@ PDF-upload UI.
 | Collapse overlapping evidence before generating | Opt in to `near_duplicate_threshold` on `/query` or `/retrieve`; preserve exact survivors and reviewable transformation paths | [Near-duplicate evidence collapse](docs/guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
 | Limit how many passages one paper contributes | Opt in to `max_chunks_per_document` on `/query` or `/retrieve`; retain the quota and gate provenance in saved evidence | [Per-paper evidence limits](docs/guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
 | Require a minimum number of evidence documents before generating | Opt in to `min_evidence_documents`; inspect count diagnostics with `/retrieve`, or retain exact evidence in an `ERROR` run without generation | [Minimum evidence documents](docs/guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
-| Inspect the same questions against each selected paper | Build a bounded, model-free question-by-paper worksheet and save JSON/Markdown with passage provenance | [Research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
+| Inspect the same questions against each selected paper | Submit a native browser form, inspect a question-by-paper grid and exact sources, or export JSON/Markdown without generation | [Browser/API/Python research worksheets](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Compare methods or explore a hypothesis | Inspect comparison or supporting/counter-evidence retrieval tasks, then review the merged evidence | [Research workflow](docs/guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Preserve a reviewable answer and its context | Export a completed run as JSON or Markdown with its exact recorded source chunks | [Evidence export](docs/guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Read a completed answer offline | Download one static HTML file with proposed/accepted citation links to frozen passages, recorded provenance and expandable trace; no scripts or network | [Offline evidence reader and measured demo](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
@@ -170,13 +170,21 @@ actual-output illustration is not a recording or quality benchmark; the
 
 ## Compare selected papers before generating
 
-![Measured synthetic offline research worksheet](docs/assets/research-worksheet.gif)
+[![Executed synthetic browser-worksheet output illustration](docs/assets/browser-worksheet.png)](docs/assets/browser-worksheet.gif)
 
-`POST /research/worksheet` inspects each question against each selected paper,
-so one paper's global ranking does not crowd another out of the worksheet.
-It returns retrieved passages, not generated answers or scientific judgments.
-The [complete guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) includes API/Python
-examples, fixed bounds, privacy, and reproduction of this measured illustration.
+Choose **Build research worksheet** in `/explore`, or start with **Inspect this
+paper in a worksheet** on a document page. A script-free native form inspects
+up to five questions against each of up to ten selected papers. Follow the
+question-by-paper grid into excerpts, provenance and exact current-source links,
+or submit for the existing JSON/Markdown downloads. No model calls, saved runs,
+or corpus writes occur.
+
+This extends `POST /research/worksheet`, not its retrieval algorithm. Passages
+are not answers or scientific judgments; each submission reruns retrieval
+against the current corpus, not a frozen result. The [complete browser/API/Python
+and portfolio guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) covers bounds,
+errors, privacy and reproduction. The linked GIF illustrates measured synthetic
+output, not browser screenshots, a recording or a quality benchmark.
 
 ## Screen papers before retrieving evidence
 
@@ -297,7 +305,7 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-11 America/Los_Angeles** catalog-only recheck retains Astra,
+The **2026-10-12 America/Los_Angeles** catalog-only recheck retains Astra,
 Sonnet 5.5, Gemini 3.8 Flash and Kimi K3, with OpenAI 6.1 Sol and Anthropic
 Haiku 5.5 among the alternatives. Selected defaults, endpoints, budgets and
 separately dated migration contracts remain unchanged. No live account or
