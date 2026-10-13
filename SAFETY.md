@@ -328,6 +328,21 @@ Downloads contain sensitive questions, identifiers, labels, and source excerpts;
 no-store/nosniff headers and literal Markdown are not access control or redaction.
 See [worksheet contracts and privacy](docs/guides/RESEARCH_WORKSHEET_GUIDE.md).
 
+The native `/explore/worksheet` form shares these controls and never calls a
+fake/live generator or writes corpus, collections or events. GET only opens
+controls; read-only POST permits UTF-8 URL-encoded forms up to 65,536 bytes and
+six fields. URLs are capped at 16,384 bytes. Unknown/duplicate fields, malformed
+encoding, ambiguous or empty selection, and invalid return state fail explicitly.
+Escaped HTML is capped at 1 MiB without partial success. Error pages clear
+submitted values rather than echoing private input; static source text cannot
+execute markup. CSP, no-store, nosniff and no-referrer are not access controls.
+
+Questions stay out of the form's address bar, but POST bodies can remain in
+browser resubmission state or infrastructure logs. Source and return filters
+still appear in URLs. Saving/printing/screenshots retain data despite no-store.
+Source links read current stored passages, not frozen evidence. Choosing another
+output format and submitting again reruns retrieval; no worksheet is persisted.
+
 ## Cancellation
 
 Python callers can pass a `CancellationToken` to `AgentRunner.run`. It is checked

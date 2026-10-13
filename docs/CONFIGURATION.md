@@ -135,7 +135,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-11 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-12 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. OpenAI 6.1 Sol and Anthropic Haiku 5.5 are
 additional catalog options, not new adapter-compatibility claims. Defaults, endpoints,

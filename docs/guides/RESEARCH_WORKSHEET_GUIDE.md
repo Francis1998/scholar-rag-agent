@@ -1,9 +1,10 @@
 # Research evidence worksheets
 
 Inspect the same questions against each selected ingested paper, without
-generating answers. `POST /research/worksheet` runs the existing retrieval
-preview separately for each question/paper pair and returns a portable JSON or
-Markdown worksheet. This prevents a global top-k result list from leaving a
+generating answers. The native `/explore/worksheet` browser form and
+`POST /research/worksheet` JSON API run the existing retrieval preview separately
+for each question/paper pair. Inspect the browser grid and exact source links or
+download JSON/Markdown. This prevents a global top-k result list from leaving a
 selected paper unrepresented merely because another paper ranks higher.
 
 **A cell contains retrieved passages, not a scientific conclusion.** Lexical
@@ -34,6 +35,96 @@ connector, retrieval algorithm, model dependency, or disconnected scoring helper
 Useful cases include inspecting methods and limitations across a small reading
 list, checking whether selected papers appear in a comparison, and preparing
 an auditable portfolio demonstration with synthetic notes.
+
+The browser extension addresses the remaining usability gap: researchers no
+longer need to construct a JSON API request just to inspect an existing reading
+list. [RAGFlow](https://github.com/infiniflow/ragflow) emphasizes human chunk
+inspection and traceable citations; its README and PaperQA2's evidence-gathering
+workflow were reviewed on **2026-10-12**. They inform the use case, not a claim
+that those projects implement this exact worksheet. No peer code was copied,
+and this local lexical workflow does not claim their model quality or feature
+parity.
+
+## Native browser workflow
+
+Start the isolated loopback service from the [Quickstart](../../QUICKSTART.md)
+and ingest permitted papers. Open `/explore` and choose **Build research
+worksheet**, or choose **Inspect this paper in a worksheet** on a document page
+to prefill its exact ID. Opening `/explore/worksheet` only renders controls;
+it does not read the corpus or run retrieval.
+
+1. Enter 1-5 questions, one nonblank line each, up to 500 characters per line.
+   Spaces are retained; CRLF separates lines. Blank lines, including a trailing
+   blank line, fail. Use the API/Python interface for a single multiline question.
+2. Supply either a JSON array such as `["FIRST_DOCUMENT_ID", "SECOND_DOCUMENT_ID"]`
+   or one saved collection ID, not both. Leave the unused selection entirely
+   blank. The shared scope validator trims outer ID whitespace and retains
+   first-seen order. Empty, unknown or invalid selections never mean all papers.
+3. Choose 1-3 passages per cell (default 2), select **Browser HTML**, and submit.
+   The grid links to every question/paper cell. Read status, shown/omitted counts,
+   exact IDs, rank, score, path, full-text digest and explicit truncation flags.
+4. Follow **Read current source context** or the paper link to inspect the exact
+   stored IDs. These links read today's corpus; they do not freeze old passages.
+   The catalog return selection and application mount prefix remain intact.
+5. Select JSON or Markdown and submit to download using the existing serializers.
+   **Every submission reruns retrieval.** A later export is not guaranteed to
+   equal an earlier HTML result if corpus/index contents change. No worksheet,
+   run ID, answer, collection edit or event is saved.
+
+No JavaScript, external assets, provider request, browser storage or new
+retrieval algorithm is needed. Source labels are literal text, not external
+links. `no_passages` is not a finding of no evidence, and a zero score or
+`passages_returned` is not scientific support. Error pages clear inputs rather
+than echoing private values; use the blank reset link to start again.
+
+The native POST endpoint accepts `application/x-www-form-urlencoded`, optionally
+with UTF-8 charset, and no content encoding or query fields. JSON clients should
+continue using `POST /research/worksheet`. The six form fields are `questions`,
+`document_ids`, `collection_id`, `passages_per_cell`, `format` and the generated
+`navigation` JSON object containing validated catalog fields, never an arbitrary
+return URL. Duplicate/unknown fields and malformed percent/UTF-8 encoding fail.
+The streaming body limit is 65,536 bytes, URL limit 16,384 bytes and decoded
+field limit 16,384 characters. Browser HTML must fit 1,048,576 UTF-8 bytes;
+JSON/Markdown retain the existing 262,144-byte limits. No partial cells are
+returned to fit a limit.
+
+The error table below also applies to the browser. Additionally, an unsupported
+method is 405, an unsupported form media type/encoding is 415, and unrepresentable
+HTML text such as embedded NUL is 409; JSON remains available for exact text.
+The browser returns sanitized HTML errors, not downloads or raw diagnostics.
+
+### Reproduce the native-form demonstration
+
+[![Executed synthetic native-form output illustration](../assets/browser-worksheet.png)](../assets/browser-worksheet.gif)
+
+The still preview links to four panels rendered from executed output. This is an
+original synthetic-output illustration, **not browser screenshots, a recording
+or a scientific result**.
+
+```bash
+BROWSER_WORKSHEET_DIR="$(mktemp -d)/native-worksheet"
+uv run python -m scripts.demo_browser_worksheet --output-dir "$BROWSER_WORKSHEET_DIR"
+uv run python -m scripts.create_browser_worksheet_gif \
+  --transcript "$BROWSER_WORKSHEET_DIR/transcript.txt" \
+  --output "$BROWSER_WORKSHEET_DIR/browser-worksheet.gif"
+```
+
+The demo opens actual native controls, follows catalog/document prefill and
+exact Unicode/slash source IDs, submits two questions against two selected
+papers, and saves `catalog.html`, `form.html`, `worksheet.html`, `source.html`,
+`worksheet.json`, `worksheet.md`, `checks.json` and `transcript.txt`. The renderer
+adds a GIF and same-name PNG. Opening the saved HTML shows the captured page,
+but its local links/forms require the original service and are not a portable
+offline evidence reader.
+
+Measured checks require four cells, visible excerpt truncation, API/Python/browser
+export parity on unchanged data, identical HTML after restart, collection
+parity, and rejection of empty scope. Generation, event, mutation and external
+connection guards must remain at zero; database bytes must stay unchanged.
+Explicit offline settings ignore ambient environment/dotenv keys, no public
+listener is started, and the temporary synthetic corpus is removed. The demo
+refuses an existing output directory; the renderer refuses existing GIF/PNG
+destinations. These are correctness checks, not a retrieval-quality benchmark.
 
 ## Reproduce the offline demonstration
 
@@ -105,7 +196,8 @@ The default format is `json`; the only alternative is `markdown`. Successful
 responses are attachments named `worksheet.json` or `worksheet.md`, with
 `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Save only a
 successful response; HTTP error bodies are diagnostics, not partial worksheets.
-There is no new browser UI, worksheet database table, run ID, or `DONE` event.
+The native browser described above is an alternative front end to the same
+service; there is still no worksheet database table, run ID or `DONE` event.
 
 ### Read the result
 
@@ -242,16 +334,23 @@ Observe-Decide-Act planner/preview path, FastAPI, Pydantic, HTTPX, and SQLite,
 with deterministic lexical hash vectors, BM25, and co-mention traversal.
 It does not require LangGraph, a learned embedding model, or a new provider SDK.
 
-Official catalogs were rechecked on **2026-09-26 America/Los_Angeles**:
-GPT-6 Astra, Claude Opus 5.5/Fable 5.1 alongside the compatible Sonnet 5 default,
-Gemini 3.8 Flash GA, and Kimi K3. These models concern optional subsequent
+Official catalogs were rechecked on **2026-10-12 America/Los_Angeles**:
+GPT-6 Astra with 6.1 Sol/Luna alternatives, Claude Opus 5.5/Fable 5.1/Haiku 5.5
+alongside the selected Sonnet 5.5 default, Gemini 3.8 Flash GA, and Kimi K3.
+These models concern optional subsequent
 generation, not worksheet execution. See the source-linked
 [provider guide](PROVIDER_MODELS_GUIDE.md) for configured defaults, endpoint and
 thinking-budget limits, and the difference between catalog checks and live API
 entitlement.
 
-For a portfolio demonstration, retain the synthetic JSON, Markdown, checks,
-transcript, and reproduced GIF together. Explain the global-top-1 versus
-per-paper result, identify an exact source chunk, and state what a human must
-verify next. Do not present the illustration as a product UI or report these
-synthetic checks as research-quality evidence.
+Browser POST keeps questions out of the address bar, not out of browser
+resubmission state or infrastructure logs. Source/return URLs may retain filters
+and identifiers. CSP, no-store, nosniff and no-referrer cannot prevent saving,
+printing, screenshots or unauthorized access to an exposed local service.
+
+For a portfolio demonstration, retain the synthetic HTML, JSON, Markdown,
+checks, transcript and reproduced GIF together. Show the actual form and grid,
+follow an exact source, and explain why separate export submissions may differ.
+The original API demo also illustrates global-top-1 versus per-paper retrieval.
+State what a human must verify next; do not present the generated illustration
+as a screenshot or report synthetic correctness checks as research-quality evidence.

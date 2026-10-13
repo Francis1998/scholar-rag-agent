@@ -25,7 +25,7 @@ accumulated feature list in the project README.
 | Collapse near-duplicate passages in query/preview with preserved survivor provenance | [Near-duplicate evidence collapse and zero-model demo](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
 | Apply a per-request passage quota to each paper in query and preview evidence | [Per-paper evidence limits and measured demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |
 | Stop generation below a final-context document minimum while retaining inspectable evidence | [Minimum evidence documents and measured demo](guides/MINIMUM_EVIDENCE_DOCUMENTS_GUIDE.md) |
-| Inspect questions against each selected paper and save a model-free worksheet | [Research worksheets and measured demo](guides/RESEARCH_WORKSHEET_GUIDE.md) |
+| Inspect a question-by-paper grid in a native browser form, follow exact sources, and export without generation | [Browser/API/Python research worksheets and measured demos](guides/RESEARCH_WORKSHEET_GUIDE.md) |
 | Save and review the exact evidence from a recorded run | [Evidence export](guides/EVIDENCE_EXPORT_GUIDE.md) |
 | Read a completed saved answer offline with local links to exact frozen passages | [Offline HTML evidence reader and measured demo](guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
 | Export only a completed saved answer's cited references as BibTeX with provenance | [Saved bibliography and measured offline demo](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |

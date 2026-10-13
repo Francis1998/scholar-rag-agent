@@ -104,6 +104,29 @@ examples, provenance, errors, privacy, and limitations.
 
 ## Per-paper research evidence worksheets
 
+For the native form workflow, open `/explore/worksheet` from the corpus explorer.
+This still-preview link opens a four-frame illustration of executed synthetic
+output, not browser screenshots or a recording:
+
+[![Measured native worksheet workflow](assets/browser-worksheet.png)](assets/browser-worksheet.gif)
+
+```bash
+BROWSER_WORKSHEET_DIR="$(mktemp -d)/native-worksheet"
+uv run python -m scripts.demo_browser_worksheet --output-dir "$BROWSER_WORKSHEET_DIR"
+uv run python -m scripts.create_browser_worksheet_gif \
+  --transcript "$BROWSER_WORKSHEET_DIR/transcript.txt" \
+  --output "$BROWSER_WORKSHEET_DIR/browser-worksheet.gif"
+```
+
+Inspect the actual form/result/source HTML, JSON/Markdown, checks and transcript.
+The demo measures exact-ID navigation, API/Python/browser parity, no
+model/event/write/network calls, and unchanged-corpus restart. Each export
+submission reruns retrieval; no frozen worksheet or server is created.
+Existing output directories are refused. See the
+[complete browser guide](guides/RESEARCH_WORKSHEET_GUIDE.md#native-browser-workflow).
+
+The original API/Python-only demonstration remains available:
+
 ![Measured synthetic offline research worksheet](assets/research-worksheet.gif)
 
 This generated illustration uses executed API/Python output: two questions,

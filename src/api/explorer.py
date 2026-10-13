@@ -86,7 +86,8 @@ h2 { font-size: 1.35rem; }
 h3 { font-size: 1.15rem; margin-top: 0; }
 a { color: #164e82; text-decoration: underline; text-underline-offset: .18em; }
 a:hover { color: #0c355a; text-decoration-thickness: .15em; }
-a, button, input, select { touch-action: manipulation; -webkit-tap-highlight-color: #c7e1f4; }
+a, button, input, select, textarea {
+  touch-action: manipulation; -webkit-tap-highlight-color: #c7e1f4; }
 :focus-visible { outline: 3px solid #125d9c; outline-offset: 4px; }
 .skip-link { position: absolute; top: -5rem; left: 1rem; background: white; padding: .6rem; }
 .skip-link:focus { top: .5rem; z-index: 1; }
@@ -97,8 +98,16 @@ form, article { background: #fff; border: 1px solid #c4d3df; border-radius: .6re
 form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 9rem; gap: 1rem; }
 form > div { min-width: 0; }
 label { display: block; font-weight: 650; margin-bottom: .3rem; }
-input, select { width: 100%; min-height: 2.75rem; font: inherit; border: 1px solid #647d91;
-  border-radius: .3rem; padding: .5rem; background: #fff; color: #182b3a; }
+input, select, textarea { width: 100%; min-height: 2.75rem; font: inherit;
+  border: 1px solid #647d91; border-radius: .3rem; padding: .5rem;
+  background: #fff; color: #182b3a; }
+textarea { min-height: 7rem; resize: vertical; }
+.worksheet-input { grid-column: 1 / -1; }
+.worksheet-grid { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { border: 1px solid #c4d3df; padding: .65rem; text-align: left; vertical-align: top; }
+caption { text-align: left; font-weight: 650; padding: .5rem 0; }
+summary { cursor: pointer; font-weight: 650; }
 form p { font-size: .9rem; margin: .4rem 0; }
 button { font: inherit; font-weight: 650; min-height: 2.75rem; padding: .5rem 1rem;
   border: 1px solid #164e82; border-radius: .3rem; background: #164e82;
@@ -173,6 +182,24 @@ _RUN_FOOTER = (
     "visual Unicode order is not an identity check. Neither a saved state nor a citation "
     "establishes scientific validity.</p></footer></body></html>"
 )
+_WORKSHEET_FOOTER = (
+    "</main><footer><h2>Inspection, not synthesis or a saved run</h2>"
+    "<p>Each submission builds a new worksheet from the current corpus. Choosing JSON or "
+    "Markdown and submitting again reruns retrieval; separate submissions are not one frozen "
+    "result. No worksheet, run, answer, collection edit or agent event is saved.</p>"
+    "<p>Local retrieval and reranking run for each question/paper cell, but no live or fake "
+    "generation runs. Generative retrieval is rejected, not replaced. Normal application "
+    "startup still initializes stores and loads indexes.</p>"
+    "<p>There is no built-in authentication or tenant isolation. Use loopback or your own "
+    "access controls. Questions, IDs, source labels and excerpts can be sensitive. POST keeps "
+    "questions out of the address bar, not out of browser resubmission state or infrastructure "
+    "logs. Source/return URLs can remain in history. No-store cannot prevent saving, printing "
+    "or screenshots. Review downloads before sharing.</p>"
+    "<p>No JavaScript, external resources, analytics or browser storage are used. Source "
+    "labels remain literal text, never automatic external links. IDs are JSON strings: decode "
+    "quotes/escapes when a raw ID is needed; visual Unicode order is not an identity check."
+    "</p></footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -211,7 +238,12 @@ def _link(identifier: str, url: str, label: str) -> str:
 
 
 def _page(
-    title: str, fragments: Iterator[str], *, status: int = 200, saved_runs: bool = False
+    title: str,
+    fragments: Iterator[str],
+    *,
+    status: int = 200,
+    saved_runs: bool = False,
+    worksheet: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -219,6 +251,11 @@ def _page(
         if saved_runs
         else "Discover stored papers. Inspect passages before choosing evidence."
     )
+    footer = _RUN_FOOTER if saved_runs else _FOOTER
+    if worksheet:
+        subject = "RESEARCH WORKSHEET"
+        description = "Inspect literal questions against each selected paper, without generation."
+        footer = _WORKSHEET_FOOTER
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -231,7 +268,7 @@ def _page(
         '</header><main id="main" tabindex="-1">'
     )
     content = bytearray()
-    for fragment in chain((prefix,), fragments, (_RUN_FOOTER if saved_runs else _FOOTER,)):
+    for fragment in chain((prefix,), fragments, (footer,)):
         encoded = fragment.encode("utf-8")
         if len(content) + len(encoded) > MAX_HTML_BYTES:
             raise _PageTooLargeError()
@@ -248,6 +285,7 @@ def _error(
     root_path: str = "",
     navigation: str | None = None,
     saved_runs: bool = False,
+    worksheet: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -262,6 +300,7 @@ def _error(
         ),
         status=status,
         saved_runs=saved_runs,
+        worksheet=worksheet,
     )
 
 
@@ -896,6 +935,11 @@ def _catalog(
         _url(root_path + "/explore/runs", search_params),
         "Browse saved runs",
     )
+    yield _link(
+        "research-worksheet",
+        _url(root_path + "/explore/worksheet", search_params),
+        "Build research worksheet",
+    )
     yield "</nav>"
     yield from _filters(limit, source, title, root_path)
     yield (
@@ -977,6 +1021,20 @@ def _document(
     )
     yield '<nav aria-label="Corpus navigation">'
     yield _link("back-to-catalog", back, "Back to filtered catalog")
+    yield _link(
+        "worksheet-document",
+        _url(
+            root_path + "/explore/worksheet",
+            {
+                "document_id": page.document_id,
+                "catalog_limit": limit,
+                "source": source,
+                "title": title,
+                "catalog_cursor": catalog_cursor,
+            },
+        ),
+        "Inspect this paper in a worksheet",
+    )
     yield f'<a href="{_escaped(root_path + "/explore")}">Reset to all papers</a></nav>'
     yield "<dl><dt>Document ID (JSON)</dt><dd>"
     yield _identity(page.document_id, "document-id")
