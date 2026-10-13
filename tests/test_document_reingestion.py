@@ -18,7 +18,7 @@ from scripts.demo_evidence_export import offline_settings
 
 from api.application import create_app
 from api.dependencies import AppContainer
-from ingestion.chunking import TextChunker
+from ingestion.chunking import TextChunker, stable_id
 from ingestion.pipeline import IngestionPipeline
 from retrieval.dense import DenseRetriever
 from retrieval.embeddings import HashEmbeddingModel
@@ -88,6 +88,46 @@ async def assert_current(container: AppContainer, expected: list[Chunk]) -> None
                     assert await actual.retrieve(
                         query, limit=limit, document_ids=scope
                     ) == await reference.retrieve(query, limit=limit, document_ids=scope)
+
+
+@pytest.mark.parametrize("same_batch", [True, False], ids=["same-batch", "sequential"])
+async def test_delimiter_chunk_identities_retain_both_papers_across_replay_and_restart(
+    tmp_path: Path, same_batch: bool
+) -> None:
+    database = tmp_path / "corpus.sqlite3"
+    container = make_container(database)
+    chunker = TextChunker(chunk_size=5, overlap=0)
+    pipeline = IngestionPipeline(
+        container.document_store, container.hybrid_retriever, container.graph_builder, chunker
+    )
+    papers = [document("paper:1", "abc"), document("paper", "zzzzz0:abc")]
+    expected = [chunk for paper in papers for chunk in chunker.chunk(paper)]
+    batches = [papers] if same_batch else [[paper] for paper in papers]
+    assert [chunk for batch in batches for chunk in pipeline.ingest_documents(batch)] == expected
+    assert len({chunk.chunk_id for chunk in expected}) == 3
+    before = graph_rows(database)
+    assert {row[0]: (row[1], row[3]) for row in before["chunks"]} == {
+        chunk.chunk_id: (chunk.document_id, chunk.text) for chunk in expected
+    }
+
+    for runtime in (container, make_container(database)):
+        replay = IngestionPipeline(
+            runtime.document_store, runtime.hybrid_retriever, runtime.graph_builder, chunker
+        )
+        assert replay.ingest_documents([papers[0]]) == expected[:1]
+        assert runtime.document_store.list_chunks() == sorted(expected, key=lambda c: c.chunk_id)
+        assert graph_rows(database) == before
+        assert {
+            row.document_id: row.chunk_count
+            for row in runtime.document_catalog.list_documents().documents
+        } == {"paper:1": 1, "paper": 2}
+        for retriever in components(runtime.hybrid_retriever):
+            for scope in (None, ["paper:1"], ["paper"]):
+                hits = await retriever.retrieve("abc", limit=10, document_ids=scope)
+                assert sorted((hit.chunk for hit in hits), key=lambda c: c.chunk_id) == sorted(
+                    [chunk for chunk in expected if scope is None or chunk.document_id in scope],
+                    key=lambda c: c.chunk_id,
+                )
 
 
 @pytest.mark.parametrize("surface", ["documents", "dense", "bm25", "hybrid", "graph", "multihop"])
@@ -697,17 +737,38 @@ def test_concurrent_replacements_finish_with_one_complete_current_revision(
     }
 
 
-@pytest.mark.parametrize("revision_text", [NEW_TEXT, ""])
+@pytest.mark.parametrize(
+    ("document_id", "revision_text"),
+    [
+        pytest.param("same-paper", NEW_TEXT, id="revised"),
+        pytest.param("same-paper", "", id="blank"),
+        pytest.param("paper:1", OLD_TEXT, id="legacy-colon-identity-upgrade"),
+    ],
+)
 def test_current_readers_change_but_frozen_exports_reviews_and_annotations_do_not(
-    tmp_path: Path, revision_text: str
+    tmp_path: Path, document_id: str, revision_text: str
 ) -> None:
     database = tmp_path / "corpus.sqlite3"
     app = create_app(offline_settings(database))
     container: AppContainer = app.state.container
-    [original] = container.ingestion_pipeline.ingest_documents([document()])
+    value = document(document_id)
+    if ":" in document_id:
+        [current] = TextChunker().chunk(value)
+        original = current.model_copy(
+            update={"chunk_id": stable_id(f"{document_id}:0:{current.text}", "chunk")}
+        )
+        assert original.chunk_id != current.chunk_id
+        container.document_store.add_documents([value], [original])
+        container.graph_builder.index_chunks([original])
+        container.hybrid_retriever.add_chunks([original])
+        before = dump(database)
+        assert make_container(database).document_store.list_chunks() == [original]
+        assert dump(database) == before
+    else:
+        [original] = container.ingestion_pipeline.ingest_documents([value])
     with TestClient(app) as client:
         created = client.post(
-            "/collections", json={"name": "Synthetic revisions", "document_ids": ["same-paper"]}
+            "/collections", json={"name": "Synthetic revisions", "document_ids": [document_id]}
         )
         assert created.status_code == 201, created.text
         collection = created.json()
@@ -753,21 +814,24 @@ def test_current_readers_change_but_frozen_exports_reviews_and_annotations_do_no
             path: client.get(path).content
             for path in (f"{run}/reviews", f"{run}/annotations", f"{run}/events", "/runs")
         }
-        expected = container.ingestion_pipeline.ingest_documents([document(text=revision_text)])
+        expected = container.ingestion_pipeline.ingest_documents(
+            [document(document_id, revision_text)]
+        )
         for runtime in (container, make_container(database)):
             app.state.container = runtime
             catalog = client.get("/documents").json()["documents"]
             assert [(row["document_id"], row["chunk_count"]) for row in catalog] == [
-                ("same-paper", len(expected))
+                (document_id, len(expected))
             ]
-            page = client.get("/documents/same-paper/chunks")
+            page = client.get(f"/documents/{document_id}/chunks")
             assert page.status_code == 200, page.text
             assert [row["chunk_id"] for row in page.json()["chunks"]] == [
                 chunk.chunk_id for chunk in expected
             ]
-            explorer = client.get("/explore/document", params={"document_id": "same-paper"})
+            explorer = client.get("/explore/document", params={"document_id": document_id})
             assert explorer.status_code == 200
-            assert OLD_TEXT not in explorer.text
+            if revision_text != OLD_TEXT:
+                assert OLD_TEXT not in explorer.text
             if revision_text:
                 assert revision_text in explorer.text
             preview = client.post(
