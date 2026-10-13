@@ -368,6 +368,7 @@ instructions or evidence of current scientific performance.
 | Extract offline VolunteerBias cues | [VolunteerBiasCueExtractor](guides/VOLUNTEER_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ReportingBias cues | [ReportingBiasCueExtractor](guides/REPORTING_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline IndicationBias cues | [IndicationBiasCueExtractor](guides/INDICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline DepletionOfSusceptibles cues | [DepletionOfSusceptiblesCueExtractor](guides/DEPLETION_OF_SUSCEPTIBLES_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline OverdiagnosisBias cues | [OverdiagnosisBiasCueExtractor](guides/OVERDIAGNOSIS_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline AscertainmentBias cues | [AscertainmentBiasCueExtractor](guides/ASCERTAINMENT_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline AttritionInformativeCensoring cues | [AttritionInformativeCensoringCueExtractor](guides/ATTRITION_INFORMATIVE_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
