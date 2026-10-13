@@ -31,3 +31,14 @@ use `--dataset` and independently reviewed labels for a meaningful baseline.
 ## Storage
 
 SQLite is adequate for local and small-team workflows. If write contention becomes the bottleneck, keep the storage interfaces and move document/vector/graph persistence behind a dedicated service.
+
+`storage.vector_store.InMemoryVectorStore` is an optional, process-local library
+primitive, not the default API index. `upsert(chunk, vector)` owns a deep chunk
+snapshot (including metadata) and a separate vector list; both copies finish
+before an existing entry is replaced. Copy failures propagate without replacing
+either value. Search returns detached chunks, so later edits to inputs or results
+cannot change indexed evidence or scores. Call `upsert` again with the same chunk
+ID to replace both snapshots; equal-score results retain original insertion order.
+Vectors and queries must already be normalized; the store does not normalize
+them. Results use the existing `[:limit]` slicing semantics, including zero and
+negative limits. This primitive does not provide persistence or thread safety.
