@@ -371,6 +371,7 @@ instructions or evidence of current scientific performance.
 | Extract offline IndicationBias cues | [IndicationBiasCueExtractor](guides/INDICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ReverseCausation cues | [ReverseCausationCueExtractor](guides/REVERSE_CAUSATION_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline SurvivorBias cues | [SurvivorBiasCueExtractor](guides/SURVIVOR_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline SimpsonParadox cues | [SimpsonParadoxCueExtractor](guides/SIMPSON_PARADOX_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ProtopathicBias cues | [ProtopathicBiasCueExtractor](guides/PROTOPATHIC_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline DepletionOfSusceptibles cues | [DepletionOfSusceptiblesCueExtractor](guides/DEPLETION_OF_SUSCEPTIBLES_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline OverdiagnosisBias cues | [OverdiagnosisBiasCueExtractor](guides/OVERDIAGNOSIS_BIAS_CUE_EXTRACTOR_GUIDE.md) |
