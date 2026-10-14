@@ -1,12 +1,9 @@
-"""Paper-level duplicate clustering by DOI/document_id or fuzzy title match.
+"""Local candidate duplicate grouping by DOI, document ID, or fuzzy title.
 
-Fills a PaperQA / LocalGPT gap: those tools often collapse retrieval hits or
-chat context, but do not expose inspectable paper-level duplicate clusters
-across a local corpus. Distinct from
+These heuristic groups are not proof of scientific work identity. Distinct from
 :class:`~retrieval.near_duplicate_collapse.NearDuplicateCollapser` and
 :class:`~retrieval.paraphrase_collapse.ParaphraseCollapser`, which collapse
-chunk-level retrieval hits. Optional later synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+chunk-level retrieval hits. Clustering does not call a model or DOI service.
 """
 
 from __future__ import annotations
@@ -38,7 +35,7 @@ def _normalize_title(title: str) -> str:
 
 @dataclass(frozen=True)
 class PaperRef:
-    """One paper identity used for duplicate clustering."""
+    """One paper reference used for candidate duplicate grouping."""
 
     document_id: str
     title: str
@@ -48,7 +45,7 @@ class PaperRef:
 
 @dataclass(frozen=True)
 class PaperCluster:
-    """One cluster of papers judged to be the same work."""
+    """One candidate group linked by local duplicate heuristics."""
 
     cluster_id: str
     papers: tuple[PaperRef, ...]
@@ -61,14 +58,15 @@ class PaperCluster:
 
 
 class DuplicatePaperClusterer:
-    """Cluster papers by exact DOI/document_id or fuzzy title similarity.
+    """Group candidate duplicates by normalized DOI, exact ID, or fuzzy title.
 
-    Exact DOI matches and exact ``document_id`` matches always merge. Titles
-    that reach ``title_threshold`` via :class:`difflib.SequenceMatcher` also
-    merge. Uses union-find so transitive duplicates share one cluster.
-    Paper-level only — does not collapse retrieval hits. Local clustering for
-    GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (PaperQA /
-    LocalGPT paper-level dedup gap).
+    Nonblank ``document_id`` values match only identical raw strings; case and
+    surrounding whitespace are significant. Empty or whitespace-only IDs never
+    create an ID match. Normalized DOI matches and titles that reach
+    ``title_threshold`` via :class:`difflib.SequenceMatcher` also merge, even
+    with distinct IDs. Uses union-find so transitive matches share one candidate
+    cluster. Paper-level only; does not collapse retrieval hits or prove work
+    identity.
     """
 
     def __init__(self, title_threshold: float = 0.92) -> None:
@@ -90,7 +88,7 @@ class DuplicatePaperClusterer:
         self,
         papers: Sequence[PaperRef | Document | Chunk | SearchResult],
     ) -> list[PaperCluster]:
-        """Return duplicate clusters sorted by descending size then id.
+        """Return candidate duplicate clusters sorted by descending size then id.
 
         Singleton papers are included so callers can inspect the full
         partitioning. Inputs are not mutated.
@@ -131,8 +129,8 @@ class DuplicatePaperClusterer:
                     doi_index[doi] = index
                 else:
                     union(prior, index, "doi")
-            doc_id = ref.document_id.strip().lower()
-            if doc_id:
+            doc_id = ref.document_id
+            if doc_id.strip():
                 prior = doc_index.get(doc_id)
                 if prior is None:
                     doc_index[doc_id] = index
