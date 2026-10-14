@@ -387,6 +387,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | ConfoundingAdjustmentCueExtractor | [GIF](docs/assets/confounding-adjustment-cue-extractor.gif) |
 | MissingDataMechanismCueExtractor | [GIF](docs/assets/missing-data-mechanism-cue-extractor.gif) |
 | EstimandIchE9CueExtractor | [GIF](docs/assets/estimand-ich-e9-cue-extractor.gif) |
+| SimpsonParadoxCueExtractor | [GIF](docs/assets/simpson-paradox-cues.gif) |
 
 ## Documentation
 
