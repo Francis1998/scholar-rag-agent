@@ -33,25 +33,34 @@ base = "http://127.0.0.1:8000"
 with httpx.Client(base_url=base, timeout=30) as client:
     ids = []
     for title in ("Synthetic GraphRAG method note", "Synthetic GraphRAG method notes"):
-        response = client.post("/ingest/text", json={
-            "title": title,
-            "text": "Synthetic data only. GraphRAG connects evidence; review it yourself.",
-            "source": "synthetic:duplicate-walkthrough",
-        })
+        response = client.post(
+            "/ingest/text",
+            json={
+                "title": title,
+                "text": "Synthetic data only. GraphRAG connects evidence; review it yourself.",
+                "source": "synthetic:duplicate-walkthrough",
+            },
+        )
         response.raise_for_status()
         ids.append(response.json()["document_id"])
-    response = client.post("/collections", json={
-        "name": "Synthetic candidate review",
-        "document_ids": ids,
-    })
+    response = client.post(
+        "/collections",
+        json={
+            "name": "Synthetic candidate review",
+            "document_ids": ids,
+        },
+    )
     response.raise_for_status()
     saved = response.json()
     print(saved)  # Copy the actual collection_id and revision, not the name.
-    response = client.get(f"/collections/{saved['collection_id']}/duplicates", params={
-        "collection_revision": saved["revision"],
-        "title_threshold": 0.92,
-        "format": "json",
-    })
+    response = client.get(
+        f"/collections/{saved['collection_id']}/duplicates",
+        params={
+            "collection_revision": saved["revision"],
+            "title_threshold": 0.92,
+            "format": "json",
+        },
+    )
     response.raise_for_status()
     print(response.text)
 ```
@@ -212,9 +221,13 @@ with httpx.Client(base_url="http://127.0.0.1:8000", timeout=30) as client:
     saved = client.get(f"/collections/{collection_id}")
     saved.raise_for_status()
     revision = saved.json()["revision"]
-    queue = client.get(f"/collections/{collection_id}/screening", params={
-        "collection_revision": revision, "limit": 100,
-    })
+    queue = client.get(
+        f"/collections/{collection_id}/screening",
+        params={
+            "collection_revision": revision,
+            "limit": 100,
+        },
+    )
     queue.raise_for_status()
     item = next(item for item in queue.json()["items"] if item["document_id"] == document_id)
     response = client.put(
