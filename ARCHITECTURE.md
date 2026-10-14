@@ -522,6 +522,27 @@ collection replacement/deletion. No evidence schema or runner signature changes
 are needed. See [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) for
 schema, paging, conditional writes, errors, privacy, and the offline demo.
 
+## Read-only Collection Duplicate Inspection
+
+`AppContainer.collection_duplicates` and
+`GET /collections/{collection_id}/duplicates` expose
+`SQLiteCollectionDuplicates.inspect`. A standalone reader opens existing SQLite
+storage with `mode=ro`, `sqlite3.Row` and one `BEGIN` transaction. It reuses
+`SQLitePaperCollections.resolve_in_snapshot`, verifies the explicitly supplied
+revision and probes type/byte sizes before decoding at most 100 selected
+document metadata rows. It never reads document bodies or chunks. No schema
+initialization, settings, network, retrieval or model calls belong to this reader.
+
+Exact document-ID-sorted input goes to the existing `DuplicatePaperClusterer`,
+with full bounded title/source and first nonblank raw DOI alias. Immutable
+validated models partition every input into candidate groups or singletons;
+cluster reasons remain the helper's non-exhaustive successful-link summaries.
+JSON and dynamically fenced literal Markdown must each fit 262,144 UTF-8 bytes
+before either format is returned. Invalid/oversized data fails explicitly.
+No paper loss, selection, label or event mutation occurs. Collection revisions
+do not version document contents; only the individual read uses one snapshot.
+See the [complete contract and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md).
+
 ## Human Paper Screening
 
 `SQLitePaperScreening`, wired through `AppContainer.paper_screening` and the

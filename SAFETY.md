@@ -255,6 +255,27 @@ responses and operational errors carry no-store/nosniff headers; default
 validation handling is unchanged. See the complete
 [collection contracts](docs/guides/PAPER_COLLECTIONS_GUIDE.md).
 
+## Collection Duplicate Candidates
+
+Revision-required duplicate inspection is bounded to 100 saved members, full
+512-character titles/source labels/DOI strings, 16,384 stored metadata bytes per
+paper, and 262,144 UTF-8 bytes for **each** complete JSON/Markdown report.
+SQL size checks precede decoding/JSON parsing; invalid data fails with 409 and
+oversized selected fields or complete output with 413, never clipped matches or
+partial partitions. Markdown keeps all untrusted labels in a literal block.
+
+The reader uses one read-only snapshot for collection resolution and selected
+metadata, no bodies/chunks, network, generation, retrieval or mutations.
+Raw case-sensitive IDs are preserved. Similar titles, DOI aliases and transitive
+links are not scientific same-work proof, exhaustive recall, or instructions to
+delete/hide/relabel papers. Missing/blank/normalization-empty DOI strings are
+absent signals; malformed metadata is an error, not a missing signal. Later
+requests may see changed document metadata despite an unchanged collection
+revision. Explicit human-selected IDs are required to hand a subset to preview.
+All responses/errors use sanitized diagnostics and no-store/nosniff, not access
+control. Protect exported IDs, labels and DOI strings. See the
+[inspection limits and privacy contract](docs/guides/COLLECTION_DUPLICATES_GUIDE.md).
+
 ## Human Paper Screening
 
 Collection screening records human opinions, not authenticated approvals,

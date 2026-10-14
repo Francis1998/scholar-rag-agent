@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
+from api.collection_duplicates import router as collection_duplicates_router
 from api.collections import router as collections_router
 from api.comparisons import router as comparisons_router
 from api.corpus_drift import router as corpus_drift_router
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(run_explorer_router)
     application.include_router(worksheet_explorer_router)
     application.include_router(collections_router)
+    application.include_router(collection_duplicates_router)
     application.include_router(screening_router)
     application.include_router(evidence_router)
     application.include_router(bibliography_router)

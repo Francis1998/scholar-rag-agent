@@ -17,6 +17,7 @@ accumulated feature list in the project README.
 | Search exact wording in a browser, inspect Unicode highlights and return from source context | [Native passage search, API/Python linkage and actual-output GIF](guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Inspect complete duplicate candidates and singletons in a revision-checked saved selection, without paper loss | [Collection duplicate API/Python guide and measured offline GIF](guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
 | Download all current screening results as atomic, bounded JSON or spreadsheet-safe CSV | [Screening exports and measured offline demo](guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |

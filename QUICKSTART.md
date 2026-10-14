@@ -151,6 +151,16 @@ includes a complete offline example, privacy limits, and a measured animation.
 
 ### Preview before generating
 
+Before screening a saved selection, read
+`GET /collections/{collection_id}/duplicates?collection_revision=N&format=json`
+using the actual ID and revision from `GET /collections/{collection_id}`.
+This bounded read-only workflow returns duplicate **candidates** and all
+singletons, not automatic decisions or canonical survivors. JSON and literal
+Markdown preserve full bounded metadata; neither format silently drops rows.
+Choose exact document IDs yourself before preview/screening. The
+[complete API/Python guide and offline demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md)
+include collection creation, restart, limits, errors and GIF reproduction.
+
 For a saved collection, use
 `GET /collections/{collection_id}/screening?collection_revision=1` to inspect
 human labels and `PUT /collections/{collection_id}/screening/{document_id}` to

@@ -44,6 +44,7 @@ PDF-upload UI.
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Find exact wording and read its source in a browser | Search from `/explore`, inspect highlighted Unicode spans, page within an exact paper/collection, and return from source context without generation | [Browser/API/Python passage search](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Inspect duplicate candidates before screening | Read a revision-checked selection in one bounded snapshot; review exact IDs, raw metadata, reasons and singletons without hiding or deleting papers | [Collection duplicate inspection and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
@@ -185,6 +186,24 @@ against the current corpus, not a frozen result. The [complete browser/API/Pytho
 and portfolio guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) covers bounds,
 errors, privacy and reproduction. The linked GIF illustrates measured synthetic
 output, not browser screenshots, a recording or a quality benchmark.
+
+## Inspect duplicate candidates without losing papers
+
+![Measured synthetic offline collection duplicate inspection](docs/assets/collection-duplicates.gif)
+
+`GET /collections/{collection_id}/duplicates?collection_revision=N` and
+`SQLiteCollectionDuplicates.inspect` inspect at most 100 saved members using
+existing DOI/title heuristics. Complete JSON and literal-safe Markdown preserve
+exact IDs, raw title/source/DOI, cluster-building reasons and every singleton.
+Both formats must fit 256 KiB; oversized evidence fails rather than being clipped
+into a match. One read-only snapshot ties membership and metadata together.
+
+No papers are deleted, hidden, relabeled or automatically selected; no model,
+network, retrieval or event writes occur during inspection. Transitive groups
+and conflicting metadata are candidates, not proof of the same scientific work.
+The [API/Python and portfolio guide](docs/guides/COLLECTION_DUPLICATES_GUIDE.md)
+reproduces this actual-output illustration, not a browser recording or benchmark,
+and hands explicit human-chosen IDs to preview or screening.
 
 ## Screen papers before retrieving evidence
 
