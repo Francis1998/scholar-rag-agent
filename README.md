@@ -305,11 +305,15 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-12 America/Los_Angeles** catalog-only recheck retains Astra,
-Sonnet 5.5, Gemini 3.8 Flash and Kimi K3, with OpenAI 6.1 Sol and Anthropic
-Haiku 5.5 among the alternatives. Selected defaults, endpoints, budgets and
-separately dated migration contracts remain unchanged. No live account or
-inference verification was performed.
+The **2026-10-13 America/Los_Angeles** catalog-only recheck identifies
+`gemini-4-argon` as Google's latest flagship while retaining the selected
+Astra, Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 defaults. OpenAI 6.1 Sol and
+Anthropic Haiku 5.5 are additional catalog alternatives, not new compatibility
+claims. Selected defaults, endpoints, budgets and separately dated migration
+contracts remain unchanged. No live account or inference verification was performed.
+Gemini `CONTINUATION` hops now fail explicitly instead of becoming completed
+answers; there is no long-decode loop or increase to the current 60-second
+HTTPX timeouts and default reasoning deadline.
 `/query` requests the reasoning route; the default-provider setting is not a
 universal override. Provider availability depends on your account and credentials.
 

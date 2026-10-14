@@ -3,7 +3,7 @@
 import json
 from copy import deepcopy
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from agent.evidence import EvidenceSnapshot
 from api.application import create_app
 from config import Settings
+from llm.fake import FakeLLMAdapter
 from llm.providers import (
     AnthropicAdapter,
     GeminiAdapter,
@@ -28,6 +29,7 @@ from storage.event_log import SQLiteEventLog
 PREAMBLE = "Synthetic private preamble before an unfinished tool call."
 TOOL_ARGUMENT = "synthetic-private-tool-argument"
 THINKING = "synthetic-private-thinking"
+CONTINUATION_MARKER = "synthetic-private-continuation-token"
 DUMMY_KEY = "offline-dummy-key"
 MODEL = "configured-provider-model"
 REQUEST = LLMRequest(
@@ -60,12 +62,26 @@ def claude_body(*, reason: object = None, **block: object) -> dict[str, object]:
     return body
 
 
-def gemini_body(*, reason: object = None, **part: object) -> dict[str, object]:
+def gemini_body(
+    *,
+    reason: object = None,
+    parts: list[dict[str, object]] | None = None,
+    continuation_token: str | None = None,
+    **part: object,
+) -> dict[str, object]:
     candidate: dict[str, object] = {
-        "content": {"parts": [{"thought": True, "text": THINKING}, {"text": PREAMBLE}, part]}
+        "content": {
+            "parts": (
+                [{"thought": True, "text": THINKING}, {"text": PREAMBLE}, part]
+                if parts is None
+                else parts
+            )
+        }
     }
     if reason is not None:
         candidate["finishReason"] = reason
+    if continuation_token is not None:
+        candidate["continuationToken"] = continuation_token
     return {"modelVersion": "server-alias", "candidates": [candidate]}
 
 
@@ -157,6 +173,19 @@ NONFINAL_CASES = [
     *[
         pytest.param(
             GeminiAdapter,
+            gemini_body(reason="CONTINUATION", parts=parts, continuation_token=token),
+            id=f"gemini-CONTINUATION-{content}-{token_label}",
+        )
+        for content, parts in (
+            ("nonblank", [{"thought": True, "text": THINKING}, {"text": PREAMBLE}]),
+            ("empty", [{"text": ""}]),
+            ("thought-only", [{"thought": True, "text": THINKING}]),
+        )
+        for token_label, token in (("with-token", CONTINUATION_MARKER), ("without-token", None))
+    ],
+    *[
+        pytest.param(
+            GeminiAdapter,
             gemini_body(reason=reason, **{field: call}),
             id=f"gemini-{field}-{reason}",
         )
@@ -210,12 +239,28 @@ def nonfinal_error(provider: type[HTTPProviderAdapter]) -> str:
 async def test_nonfinal_text_is_sanitized_and_not_retried_or_replaced(
     provider: type[HTTPProviderAdapter],
     provider_http: tuple[list[httpx.Request], AsyncMock],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     requests, sleep = provider_http
     adapter = provider(api_key=DUMMY_KEY, model=MODEL)
+    fallback = AsyncMock(side_effect=AssertionError("Unexpected provider fallback."))
+    alternatives = [
+        FakeLLMAdapter(),
+        *(
+            other(api_key=DUMMY_KEY)
+            for other in (OpenAIAdapter, KimiAdapter, AnthropicAdapter, GeminiAdapter)
+            if other is not provider
+        ),
+    ]
+    for alternative in alternatives:
+        monkeypatch.setattr(alternative, "generate", fallback)
     router = RoutingLLMAdapter(
         ModelRouter(
-            adapters={provider.provider_name: adapter}, default_provider=provider.provider_name
+            adapters={
+                **{alternative.provider_name: alternative for alternative in alternatives},
+                provider.provider_name: adapter,
+            },
+            default_provider=provider.provider_name,
         )
     )
 
@@ -223,13 +268,14 @@ async def test_nonfinal_text_is_sanitized_and_not_retried_or_replaced(
         await router.generate(REQUEST)
 
     assert str(caught.value) == nonfinal_error(provider)
-    for private in (PREAMBLE, TOOL_ARGUMENT, THINKING, DUMMY_KEY):
+    for private in (PREAMBLE, TOOL_ARGUMENT, THINKING, CONTINUATION_MARKER, DUMMY_KEY):
         assert private not in str(caught.value)
     assert len(requests) == 1
     assert requests[0].url == adapter.endpoint
     assert json.loads(requests[0].content) == adapter.payload(REQUEST)
     assert "tools" not in json.loads(requests[0].content)
     assert len(adapter._limiter._timestamps) == 1
+    fallback.assert_not_awaited()
     sleep.assert_not_awaited()
 
 
@@ -267,6 +313,7 @@ def test_only_first_candidate_controls_nonfinal_rejection(
 def test_nonfinal_run_preserves_frozen_input_but_never_a_completed_answer(
     provider: type[HTTPProviderAdapter],
     provider_http: tuple[list[httpx.Request], AsyncMock],
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     credentials = {
@@ -287,6 +334,9 @@ def test_nonfinal_run_preserves_frozen_input_but_never_a_completed_answer(
     )
     app = create_app(settings)
     container = app.state.container
+    grounder = container.runner._executor._grounder
+    ground = Mock(wraps=grounder.ground)
+    monkeypatch.setattr(grounder, "ground", ground)
     chunk = Chunk(
         chunk_id="c1",
         document_id="synthetic-document",
@@ -321,6 +371,7 @@ def test_nonfinal_run_preserves_frozen_input_but_never_a_completed_answer(
         assert result["state"] == "ERROR"
         assert result["answer"] is None
         assert result["error"] == nonfinal_error(provider)
+        ground.assert_not_called()
         assert [event["event_type"] for event in events] == [
             "state_transition",
             "decision_log",
@@ -335,7 +386,14 @@ def test_nonfinal_run_preserves_frozen_input_but_never_a_completed_answer(
             "payload": {"error": nonfinal_error(provider)},
         }
         assert not any(event["payload"].get("to_state") == "DONE" for event in events)
-        for private in (PREAMBLE, TOOL_ARGUMENT, THINKING, DUMMY_KEY, "server-alias"):
+        for private in (
+            PREAMBLE,
+            TOOL_ARGUMENT,
+            THINKING,
+            CONTINUATION_MARKER,
+            DUMMY_KEY,
+            "server-alias",
+        ):
             assert private not in json.dumps(events)
             assert private not in response.text
 
@@ -345,15 +403,30 @@ def test_nonfinal_run_preserves_frozen_input_but_never_a_completed_answer(
     )
     with TestClient(create_app(settings)) as restarted:
         assert restarted.get(f"/runs/{result['run_id']}/events").json() == events
-        assert restarted.get(f"/runs/{result['run_id']}/export").status_code == 409
+        for export_format in ("json", "markdown", "html"):
+            assert (
+                restarted.get(
+                    f"/runs/{result['run_id']}/export", params={"format": export_format}
+                ).status_code
+                == 409
+            )
     assert len(requests) == 1
     sleep.assert_not_awaited()
 
 
-@pytest.mark.parametrize("reason", [None, "custom-reason", [], {}])
-@pytest.mark.parametrize("provider", [OpenAIAdapter, KimiAdapter, AnthropicAdapter, GeminiAdapter])
+@pytest.mark.parametrize("reason", [None, "STOP", "custom-reason", [], {}])
+@pytest.mark.parametrize(
+    ("provider", "continuation_token"),
+    [
+        (OpenAIAdapter, None),
+        (KimiAdapter, None),
+        (AnthropicAdapter, None),
+        (GeminiAdapter, None),
+        pytest.param(GeminiAdapter, CONTINUATION_MARKER, id="gemini-token-without-continuation"),
+    ],
+)
 def test_non_tool_text_keeps_legacy_multipart_and_provenance_contract(
-    provider: type[HTTPProviderAdapter], reason: object
+    provider: type[HTTPProviderAdapter], reason: object, continuation_token: str | None
 ) -> None:
     text = "  Grounded answer [c1].\n"
     if provider is AnthropicAdapter:
@@ -365,22 +438,16 @@ def test_non_tool_text_keeps_legacy_multipart_and_provenance_contract(
             {"type": "text", "text": "answer [c1].\n"},
         ]
     elif provider is GeminiAdapter:
-        body = {
-            "modelVersion": "server-alias",
-            "candidates": [
-                {
-                    "finishReason": reason,
-                    "content": {
-                        "parts": [
-                            {"thought": True, "text": THINKING},
-                            {"text": "  Grounded ", "functionCall": None, "toolCall": None},
-                            {"inlineData": {"mimeType": "image/png", "data": ""}},
-                            {"text": "answer [c1].\n"},
-                        ]
-                    },
-                }
+        body = gemini_body(
+            reason=reason,
+            continuation_token=continuation_token,
+            parts=[
+                {"thought": True, "text": THINKING},
+                {"text": "  Grounded ", "functionCall": None, "toolCall": None},
+                {"inlineData": {"mimeType": "image/png", "data": ""}},
+                {"text": "answer [c1].\n"},
             ],
-        }
+        )
     else:
         body = chat_body(
             reason=reason,

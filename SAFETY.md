@@ -529,6 +529,14 @@ answer text after excluding non-answer blocks. This includes thinking-only and
 tool-only responses. Explicit output/context-limit truncation also fails, even
 with nonblank partial text: OpenAI/Kimi `length`, Anthropic `max_tokens` or
 `model_context_window_exceeded`, and Gemini `MAX_TOKENS`.
+Explicit nonfinal tool/continuation output also fails. In particular, the
+selected Gemini candidate's `finishReason: "CONTINUATION"` is an unfinished
+long-decode hop, not a completed answer, even if its text is nonblank.
+Empty/thinking-only hops and hops without a `continuationToken` receive the
+same fixed `nonfinal tool or continuation output` diagnostic before extraction.
+A token alone is not a nonfinal signal: `MAX_TOKENS` can carry one and still
+reports `answer was truncated`. See the
+[continuation contract checked on 2026-10-13 America/Los_Angeles](docs/guides/PROVIDER_MODELS_GUIDE.md#nonfinal-tool-and-continuation-output).
 Explicit content-filter/refusal signals also fail before text extraction:
 OpenAI/Kimi `content_filter`, nonempty message refusal strings or typed refusal
 parts; Anthropic `refusal`; and Gemini's documented blocked finish reasons,
@@ -540,14 +548,14 @@ prompt feedback applies to the whole response. See the
 The diagnostic contains a provider name and fixed failure
 category, not raw provider output. These errors are not retried or failed over;
 the runner records `ERROR` rather than persisting an empty or explicitly
-truncated/blocked completed answer. Blocked text is never grounded or promoted
+truncated/nonfinal/blocked completed answer. Rejected text is never grounded or promoted
 to a generation record or completed export, and there is no alternate candidate,
 automatic continuation, or budget increase.
 Existing captured input evidence remains subject to the privacy rules above.
 Unknown or missing finish reasons retain the existing text contract when no
 explicit block/refusal signal is present; ordinary prose is not classified as
 a refusal. Raw refusal text, filter details, hidden thinking, headers, and
-credentials are not included in the fixed diagnostic. This check
+credentials or continuation tokens are not included in the fixed diagnostic. This check
 does not establish factual correctness or completeness of other nonblank answers.
 See [provider response validation](docs/guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses).
 
@@ -618,6 +626,11 @@ Direct `adapter.generate()` calls have no overall generation deadline:
 HTTPX's 60-second network-operation timeouts do not bound backoff or admission
 waits. Direct callers needing a total deadline must wrap the call in an async
 timeout. Cancellation always stops the wait rather than forcing an early retry.
+The default reasoning-phase deadline is also 60 seconds. These limits have not
+been raised to Google's longer Argon latency/long-decode recommendations;
+selecting `gemini-4-argon` does not add continuation, streaming, or background
+execution. Slow or unfinished Argon responses can fail within the current
+runtime. See the [dated Gemini limitations](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 This per-instance attempt limit is not a token/spend budget or an account-wide
 provider quota.
 

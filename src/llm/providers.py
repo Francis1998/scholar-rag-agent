@@ -444,6 +444,7 @@ class GeminiAdapter(HTTPProviderAdapter):
                 "MALFORMED_FUNCTION_CALL",
                 "UNEXPECTED_TOOL_CALL",
                 "TOO_MANY_TOOL_CALLS",
+                "CONTINUATION",
             ):
                 raise ProviderResponseError(
                     f"{self.provider_name} returned an invalid response: "

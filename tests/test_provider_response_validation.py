@@ -60,40 +60,65 @@ def answer_payload(text: object) -> dict[str, object]:
     }
 
 
-def finished_answer_payload(text: str, reason: object) -> dict[str, object]:
+def finished_answer_payload(
+    text: str, reason: object, *, continuation_token: str | None = None
+) -> dict[str, object]:
+    candidate: dict[str, object] = {
+        "content": {"parts": [{"text": text}]},
+        "finishReason": reason,
+    }
+    if continuation_token is not None:
+        candidate["continuationToken"] = continuation_token
     return {
         "choices": [{"message": {"content": text}, "finish_reason": reason}],
         "content": [{"type": "text", "text": text}],
         "stop_reason": reason,
-        "candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": reason}],
+        "candidates": [candidate],
     }
 
 
 TRUNCATED_RESPONSES = [
-    (OpenAIAdapter, "length"),
-    (KimiAdapter, "length"),
-    (AnthropicAdapter, "max_tokens"),
-    (AnthropicAdapter, "model_context_window_exceeded"),
-    (GeminiAdapter, "MAX_TOKENS"),
+    (OpenAIAdapter, "length", None),
+    (KimiAdapter, "length", None),
+    (AnthropicAdapter, "max_tokens", None),
+    (AnthropicAdapter, "model_context_window_exceeded", None),
+    (GeminiAdapter, "MAX_TOKENS", None),
+    pytest.param(
+        GeminiAdapter,
+        "MAX_TOKENS",
+        f"{PRIVATE_MARKER}-continuation-token",
+        id="gemini-MAX_TOKENS-continuation-token",
+    ),
 ]
 
 
-@pytest.mark.parametrize(("provider", "reason"), TRUNCATED_RESPONSES)
+@pytest.mark.parametrize(("provider", "reason", "continuation_token"), TRUNCATED_RESPONSES)
 def test_explicit_truncation_rejects_nonblank_partial_answer(
-    provider: type[HTTPProviderAdapter], reason: str
+    provider: type[HTTPProviderAdapter], reason: str, continuation_token: str | None
 ) -> None:
     adapter = provider(api_key="dummy-offline-key")
     with pytest.raises(ProviderResponseError, match="answer was truncated"):
-        adapter.parse_response(finished_answer_payload(PRIVATE_MARKER, reason), REQUEST)
+        adapter.parse_response(
+            finished_answer_payload(PRIVATE_MARKER, reason, continuation_token=continuation_token),
+            REQUEST,
+        )
 
 
-@pytest.mark.parametrize(("provider", "reason"), TRUNCATED_RESPONSES)
+@pytest.mark.parametrize(("provider", "reason", "continuation_token"), TRUNCATED_RESPONSES)
 async def test_truncation_is_sanitized_and_never_retried(
-    provider: type[HTTPProviderAdapter], reason: str, monkeypatch: pytest.MonkeyPatch
+    provider: type[HTTPProviderAdapter],
+    reason: str,
+    continuation_token: str | None,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     requests, sleep = mock_http(
         monkeypatch,
-        httpx.Response(200, json=finished_answer_payload(PRIVATE_MARKER, reason)),
+        httpx.Response(
+            200,
+            json=finished_answer_payload(
+                PRIVATE_MARKER, reason, continuation_token=continuation_token
+            ),
+        ),
     )
     with pytest.raises(ProviderResponseError) as caught:
         await provider(api_key="dummy-offline-key").generate(REQUEST)
