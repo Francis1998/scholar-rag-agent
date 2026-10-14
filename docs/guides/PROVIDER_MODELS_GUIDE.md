@@ -1,19 +1,23 @@
 # Provider Models and Compatibility
 
-The official OpenAI/Anthropic catalogs, Gemini latest-model guide and
+The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
+[Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
+[Gemini latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model), and
 [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
-**2026-10-12 America/Los_Angeles**, repeating the 2026-10-11 catalog check.
-This catalog-only check leaves the selected
-defaults unchanged: OpenAI lists `gpt-6-astra`, `gpt-6.1-sol`, and `gpt-6-luna`;
-Anthropic lists Sonnet 5.5, Opus 5.5, Fable 5.1, and the additional Haiku 5.5
-option in its current table; Gemini 3.8 Flash is GA;
-Kimi K3 remains the Kimi default. Anthropic's general Opus 5.5 recommendation
+**2026-10-13 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
+flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
+for cost-sensitive, high-volume work. Anthropic lists `claude-fable-5-1`,
+`claude-opus-5-5`, `claude-sonnet-5-5`, and `claude-haiku-5-5`.
+Google now identifies **Gemini 4 Argon (`gemini-4-argon`)** as its latest,
+most capable model, not Gemini 3.8 Flash. Kimi identifies `kimi-k3` as its
+flagship.
+
+This catalog-only check leaves all selected defaults unchanged, including
+`gemini-3.8-flash` for the existing SPEED route. Anthropic's general Opus 5.5 recommendation
 does not replace this repository's selected Sonnet 5.5 text-adapter default.
-Current Anthropic IDs include `claude-fable-5-1`, `claude-opus-5-5`,
-`claude-sonnet-5-5` and `claude-haiku-5-5`. Haiku's catalog presence is not a
-new payload-compatibility test or a default change. This daily documentation
-recheck accompanies the [native research worksheet workflow](RESEARCH_WORKSHEET_GUIDE.md);
-worksheet inspection uses current corpus retrieval, not generation or provider settings.
+Catalog alternatives are not new payload-compatibility tests or default
+migrations. In particular, Argon's long-decode and latency recommendations
+are not implemented by selecting its model ID; see [Gemini limitations](#google-gemini).
 
 The separate Anthropic Sonnet 5.5 migration-contract check remains
 **2026-10-01 America/Los_Angeles** (2026-10-01 UTC), earlier default-model
@@ -30,8 +34,8 @@ account and workload.
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
-| Google | `gemini-3.8-flash` | The [latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) lists this Flash model as generally available. This deliberately changes the default from a Pro preview to Flash, not to a newer Pro. |
-| Moonshot | `kimi-k3` | Current flagship in the [Kimi model list](https://platform.kimi.com/docs/models), replacing the discontinued K2 default. |
+| Google | `gemini-3.8-flash` | Retained [Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) for the existing SPEED route, not Google's latest overall model. The Argon catalog update does not change this selection. |
+| Moonshot | `kimi-k3` | Current flagship in the [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart), replacing the discontinued K2 default. |
 
 The current [OpenAI catalog](https://developers.openai.com/api/docs/models.md)
 also positions `gpt-6.1-sol` for balancing intelligence and cost, and
@@ -50,7 +54,7 @@ account or inference verification was performed.
 
 The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
 available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro
-preview rather than the current GA Flash choice. Moonshot explicitly lists the
+preview rather than the retained Flash choice. Moonshot explicitly lists the
 `kimi-k2` series as discontinued on **2026-05-25**; the old local default was
 `kimi-k2`, not a preview-suffixed ID. The same Kimi model list also records
 `kimi-k2.5` and the `moonshot-v1` series as discontinued on **2026-08-31**;
@@ -137,24 +141,35 @@ does not invalidate an otherwise accepted first candidate.
 Visible, nonblank text can be a preamble rather than a completed answer. The
 following documented signals are rejected before extracting answer text,
 because these adapters send no tools and cannot execute tools or resume a turn.
-This response-contract check was performed **2026-10-03 America/Los_Angeles**,
-separately from the catalog and migration checks above.
+The tool-call and Anthropic continuation contracts were checked
+**2026-10-03 America/Los_Angeles**. The Gemini `CONTINUATION` contract was checked
+**2026-10-13 America/Los_Angeles**, separately from model migration contracts.
 
 | Provider | Rejected signal | Official contract |
 | --- | --- | --- |
 | OpenAI | `choices[0].finish_reason` is `tool_calls` or `function_call`; or the selected message has a nonempty `tool_calls` list or a `function_call` object. | [Chat Completions](https://developers.openai.com/api/reference/resources/chat) defines tool calls and the deprecated function-call form. |
 | Kimi | The same checks, inherited from the OpenAI-compatible parser. | [Kimi Chat Completions](https://platform.kimi.ai/docs/api/chat) documents `tool_calls` and submitting tool results. The deprecated `function_call` guard is inherited compatibility handling, not a claim that current Kimi models emit it. |
 | Anthropic | `stop_reason` is `tool_use` or `pause_turn`; or a content block has `type: "tool_use"`. | [Claude stop reasons](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons) require tool results or a continuation request, respectively. |
-| Gemini | `candidates[0].finishReason` is `MALFORMED_FUNCTION_CALL`, `UNEXPECTED_TOOL_CALL`, or `TOO_MANY_TOOL_CALLS`; or a selected candidate part contains a `functionCall` or `toolCall` object. | [Finish reasons](https://ai.google.dev/api/generate-content#FinishReason), [function calls](https://ai.google.dev/api/generate-content#FunctionCall), and [server tool calls](https://ai.google.dev/api/generate-content#ToolCall). |
+| Gemini | `candidates[0].finishReason` is `CONTINUATION`, `MALFORMED_FUNCTION_CALL`, `UNEXPECTED_TOOL_CALL`, or `TOO_MANY_TOOL_CALLS`; or a selected candidate part contains a `functionCall` or `toolCall` object. | [Long-decode continuation](https://ai.google.dev/gemini-api/docs/generate-content/long-decode), [finish reasons](https://ai.google.dev/api/generate-content#FinishReason), [function calls](https://ai.google.dev/api/generate-content#FunctionCall), and [server tool calls](https://ai.google.dev/api/generate-content#ToolCall). |
 
 These responses raise `ProviderResponseError` with the fixed, provider-labelled
-`nonfinal tool or continuation output` diagnostic, never the preamble, tool
-name/arguments, or raw stop details. A structural call still fails when a
+`nonfinal tool or continuation output` diagnostic, never the preamble, continuation
+token, hidden thinking, tool name/arguments, or raw stop details. A structural call still fails when a
 gateway omits the finish reason or reports a normal stop. Gemini's documented
 server `toolCall` requires replay in a subsequent turn, not client execution;
 neither continuation path is implemented here. Thought filtering cannot hide
 a call. Only the first OpenAI/Kimi choice or Gemini candidate is inspected:
 there is no alternate-candidate selection or retry to obtain a final answer.
+
+For Gemini long decode, `CONTINUATION` marks an unfinished hop; a client must
+replay the original request with the candidate's `continuationToken` until a
+terminal finish reason. A hop may contain partial answer text, empty text, or
+only thinking. This adapter rejects the selected candidate's `CONTINUATION`
+before text extraction, with or without a token, rather than returning that
+hop as an answer. **Token presence alone is not a rejection signal**:
+`MAX_TOKENS` can also carry a token and retains the distinct `answer was truncated`
+diagnostic; streaming checkpoints can carry tokens too. This adapter implements
+neither streaming nor automatic continuation.
 
 Normal responses and legacy gateways that omit a finish reason retain their
 existing text contract when no explicit truncation, nonfinal, or blocked/refusal
@@ -203,13 +218,13 @@ citation mapping, and configured-model provenance.
 
 The existing `/query` contract still uses HTTP 200 with `result.state: "ERROR"`
 for a failed run. Inspect `state` and `error`, not just the HTTP status. The
-runner journals the failure without grounding the blocked text or recording a
+runner journals the failure without grounding the rejected text or recording a
 generation or `DONE` event;
 the captured input evidence can remain, but the failed run cannot be exported
 as a completed answer. Review the provider/model/output-budget configuration
 before explicitly starting another run; do not treat empty, explicitly
 truncated, nonfinal tool/continuation, or blocked/refused output as evidence.
-No blocked/refused output, raw reasons/details, hidden thinking, headers, or
+No partial/blocked/refused output, continuation tokens, raw reasons/details, hidden thinking, headers, or
 credentials are included in the diagnostic. No retry, provider/fake failover,
 alternate candidate, continuation, or budget increase is attempted.
 The Anthropic adapter's fixed `max_tokens=1024`
@@ -280,19 +295,31 @@ configuration precedence and provider routing do not change.
 ### Google Gemini
 
 The adapter keeps the `v1beta/models/{model}:generateContent` endpoint and a
-`contents`/`parts` text request. The
-[Gemini 3.8 Flash migration guidance](https://ai.google.dev/gemini-api/docs/latest-model)
-removes sampling overrides; this adapter already omits generation configuration.
-The provider's default thinking level is `medium`. Answer parsing concatenates
-all answer-text parts and excludes parts marked `thought: true`.
+stateless, non-streaming `contents`/`parts` text request. Generation configuration
+and sampling overrides remain omitted. Accepted answer parsing concatenates all
+answer-text parts and excludes parts marked `thought: true`.
 
-The current latest-model REST example sends `model`/`input` to
+The **2026-10-13 America/Los_Angeles**
+[latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model) now covers
+`gemini-4-argon`, with `medium` thinking by default. Its REST quickstart sends `model`/`input` to
 `POST /v1beta/interactions`, not `generateContent`. This repository has not
 migrated to that API/SDK: it still sends `contents`/`parts` and reads
 `candidates` from `generateContent`. The Interactions example is not proof of
-this endpoint/model combination's compatibility. The guide's migration checklist
-still mentions `generateContent` callers, but the offline tests here only verify
-our wire contract, not service availability for the selected model and account.
+this endpoint/model combination's compatibility. The separate
+[generateContent long-decode guide](https://ai.google.dev/gemini-api/docs/generate-content/long-decode)
+documents Argon REST calls and a client-side continuation loop. That loop,
+streaming, and Interactions background execution are not implemented here.
+The new finish-reason guard rejects unfinished hops; it does not enable long decode.
+
+Google's Argon migration checklist recommends client timeouts of at least
+15 minutes for hard prompts; the generateContent long-decode guide recommends a
+20-minute HTTP read timeout. This repository instead retains **60-second HTTPX
+network-operation timeouts** and a **60-second reasoning-phase deadline by
+default**, including retries and waits. Slow Argon overrides can therefore time
+out or return an explicit response error rather than a completed answer.
+No timeout, output-budget, thinking-level, endpoint, SDK, or selected-default
+change is made. Catalog presence and offline HTTPX regressions do not establish
+account entitlement, live compatibility, or workload suitability.
 
 Credential guidance rechecked **2026-09-26 America/Los_Angeles**: the
 [official API-key guide](https://ai.google.dev/gemini-api/docs/api-key) and

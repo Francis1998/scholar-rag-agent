@@ -112,10 +112,12 @@ configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
-source-linked defaults and payload compatibility limits. The Anthropic catalog
-and Sonnet 5.5 migration contract were rechecked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-12 America/Los_Angeles**;
-OpenAI 6.1 Sol and Anthropic Haiku 5.5 are additional catalog alternatives.
+source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
+contract was checked on **2026-10-01 America/Los_Angeles**.
+All four official model catalogs were checked again on **2026-10-13 America/Los_Angeles**;
+Google now names `gemini-4-argon` as its latest flagship, while this repository
+retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
+Haiku 5.5 are additional catalog alternatives.
 This catalog-only check leaves selected
 defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
@@ -125,17 +127,26 @@ Gemini still uses `generateContent`, not the current Interactions quickstart.
 Google rejects unrestricted standard keys; auth keys and appropriately restricted
 standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 Setting an API key header does not migrate the endpoint or the key's permissions.
+An Argon model override does not add long-decode continuation or adopt Google's
+longer timeout recommendations. HTTPX network-operation timeouts remain 60 seconds;
+the reasoning-phase deadline remains 60 seconds by default, including retries
+and waits. See the same compatibility notes before choosing an alternative.
 
 Live adapters reject invalid JSON, absent/blank final answer text, and explicit
 output/context-limit truncation with a nonretryable provider-response error.
+The selected Gemini candidate's `CONTINUATION` reason also fails with the existing
+`nonfinal tool or continuation output` diagnostic, even for empty/thinking-only
+hops or absent tokens. A continuation token alone is not nonfinal; `MAX_TOKENS`
+still reports `answer was truncated`.
 Explicit provider content filtering, refusal fields, and Gemini prompt/candidate
 blocks likewise fail with a fixed `response was blocked or refused` diagnostic,
 without retry, alternate-candidate selection, or provider/fake failover.
 `/query` records an `ERROR` run rather than a completed empty or known-partial
-answer; blocked text is not grounded, journaled as a generation, or exportable
+answer; rejected text is not grounded, journaled as a generation, or exportable
 as a completed answer. Captured input evidence can remain. Existing payload
 budgets and routing are unchanged; see
 [finish-reason handling](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-truncated-answers)
+and [nonfinal responses](docs/guides/PROVIDER_MODELS_GUIDE.md#nonfinal-tool-and-continuation-output)
 and [blocked/refused responses](docs/guides/PROVIDER_MODELS_GUIDE.md#explicitly-blocked-or-refused-responses).
 
 Live rate admission counts every HTTP attempt, including failed requests and

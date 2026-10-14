@@ -135,11 +135,18 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-12 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-13 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
-and model-specific limitations. OpenAI 6.1 Sol and Anthropic Haiku 5.5 are
-additional catalog options, not new adapter-compatibility claims. Defaults, endpoints,
-routing, and budgets remain unchanged.
+and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
+the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol
+and Anthropic Haiku 5.5 are additional catalog options, not new
+adapter-compatibility claims. Defaults, endpoints, routing, and budgets remain unchanged.
+
+Selecting Argon does not implement its long-decode loop or background execution.
+Google recommends longer client timeouts for that workload; this repository
+keeps 60-second HTTPX network-operation timeouts and a 60-second reasoning-phase
+deadline by default, including retries and waits. A slow or unfinished response
+can still fail. No new effort, output-budget, or continuation setting is added.
 
 Retrieval-policy comparison does not use provider settings or add environment
 variables. It uses two ordinary previews, retaining each one's actual copied
@@ -237,10 +244,16 @@ in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 
 HTTP-success bodies must be JSON objects with nonblank final answer text and
-must not explicitly signal output/context-limit truncation.
+must not explicitly signal output/context-limit truncation, nonfinal tool or
+continuation output, or a block/refusal. Selected Gemini `CONTINUATION` hops
+fail before text extraction, with or without `continuationToken`, including
+empty/thinking-only hops. Token presence alone is not a nonfinal signal, and
+`MAX_TOKENS` retains its distinct truncation diagnostic.
 `ProviderResponseError` reports unusable output without raw body or credential
 content; it is not retried or replaced with an empty/fake answer. `/query`
 preserves its existing HTTP-200 `ERROR` result contract, so check `result.state`.
+Rejected text is not grounded or persisted as a generation or `DONE` answer,
+and the failed run cannot be exported as a completed answer.
 See [response validation](guides/PROVIDER_MODELS_GUIDE.md#unusable-http-success-responses)
 for reasoning-only output, rejected finish reasons, unchanged output budgets,
 and persistence behavior. Unknown or omitted finish reasons retain the existing
