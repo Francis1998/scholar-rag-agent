@@ -22,6 +22,7 @@ from retrieval.multihop import MultiHopRetriever
 from retrieval.rerank import AdaptiveReranker
 from retrieval.sparse import BM25Retriever
 from storage.answer_reviews import SQLiteAnswerReviews
+from storage.collection_duplicates import SQLiteCollectionDuplicates
 from storage.corpus_drift import SQLiteCorpusDrift
 from storage.document_catalog import SQLiteDocumentCatalog
 from storage.document_chunks import SQLiteDocumentChunks
@@ -62,6 +63,7 @@ class AppContainer:
         self.source_context = SQLiteSourceContext(database_path)
         self.literal_search = SQLiteLiteralSearch(database_path)
         self.paper_collections = SQLitePaperCollections(database_path)
+        self.collection_duplicates = SQLiteCollectionDuplicates(database_path)
         self.paper_screening = SQLitePaperScreening(database_path)
         self.graph_store = SQLiteGraphStore(database_path)
         self.llm = RoutingLLMAdapter(build_model_router(settings))

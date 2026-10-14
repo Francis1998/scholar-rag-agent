@@ -71,6 +71,15 @@ completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.
 See [the BibTeX/JSON contract](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md).
 
+Collection duplicate inspection also needs no new setting or provider.
+The collection revision is required per request; `title_threshold` defaults to
+`0.92` and must be finite in `[0, 1]`. Its fixed limits are 100 saved members,
+512 characters per title/source/DOI string, 16,384 stored metadata bytes per
+document, and 256 KiB for each complete JSON/Markdown body. Both formats must fit;
+there is no clipping, paging or unscoped fallback. No model defaults or retrieval
+behavior change. See the
+[read-only API/Python contract](docs/guides/COLLECTION_DUPLICATES_GUIDE.md).
+
 The [saved-run browser](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) uses the same
 event database without new settings. History has 1-100-row pages and a 1-MiB
 escaped HTML cap. Opening frozen evidence uses bounded read-only events

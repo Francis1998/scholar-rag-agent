@@ -1,0 +1,34 @@
+1. Save an explicit synthetic selection
+POST /collections -> 201; revision=1
+Selected: 7 of 8 synthetic documents
+The actual returned ID and revision are saved in collection.json.
+Outside-collection document absent: True
+No body or chunk reads in inspection; no whole-corpus scan.
+Ambient settings ignored; no scientific data or model credentials.
+
+2. Inspect candidates without losing papers
+GET /collections/<id>/duplicates?collection_revision=1 -> 200
+Candidate groups: 2; singletons: 3
+doi-a, doi-b: doi
+title-a, title-b: title:0.984
+Every selected identity accounted for: True
+Raw DOI strings retained; aliases normalized only for matching.
+Candidates can be transitive or conflicting, not proof of same work.
+
+3. Compare Python, HTTP, and restart output
+Paper and paper remain separate blank-title singletons.
+JSON bytes: 3373; literal Markdown bytes: 3502
+Both complete formats fit the 262144-byte cap; no clipped evidence.
+Python equals HTTP: True
+Unchanged corpus after restart: byte-identical JSON and Markdown.
+Inspection database unchanged: True
+One read snapshot per call, not a frozen report across later edits.
+
+4. Choose IDs explicitly before preview
+Explicit synthetic human choice: doi-a, title-a
+POST /retrieve -> 200; papers: doi-a, title-a
+Selection was not inferred from the candidate groups.
+Forbidden inspection/preview calls: 0
+Network calls: 0; agent events: 0
+Temporary synthetic database removed: True
+Measured fixture output, not a browser recording or quality benchmark.
