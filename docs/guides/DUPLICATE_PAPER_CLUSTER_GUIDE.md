@@ -2,14 +2,36 @@
 
 ![Duplicate paper cluster demo](../assets/duplicate-paper-cluster.gif)
 
-`DuplicatePaperClusterer` groups papers that are the same work using exact DOI
-or `document_id` matches, plus fuzzy title similarity via `difflib.SequenceMatcher`.
-It fills a PaperQA / LocalGPT gap: those stacks often collapse retrieval hits or
-chat context, but do not expose inspectable **paper-level** duplicate clusters.
+`DuplicatePaperClusterer` creates inspectable **paper-level candidate duplicate
+groups** using normalized DOI matches, literal `document_id` matches, and fuzzy
+title similarity via `difflib.SequenceMatcher`. These are local heuristics, not
+proof that references identify the same scientific work. Review candidates before
+making identity or deduplication decisions.
 
 Distinct from `NearDuplicateCollapser` and `ParaphraseCollapser`, which collapse
-chunk-level retrieval hits. Local clustering for GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+chunk-level retrieval hits. Clustering does not call a model or DOI service.
+For optional downstream synthesis configuration, see the central
+[provider models and compatibility guide](PROVIDER_MODELS_GUIDE.md).
+
+## Matching and identity
+
+- Nonblank document IDs match only the same raw string. Case and surrounding
+  whitespace are significant: `"Study-A"`, `"study-a"`, and `" Study-A "` are
+  distinct IDs. Repeated identical IDs, including identical padding, still match.
+- Empty and whitespace-only IDs never create a document-ID match. A reference
+  with a blank ID can still participate through its DOI or title. References with
+  only blank IDs/titles and no DOI are omitted, as before.
+- DOI normalization and fuzzy title matching remain independent heuristics.
+  Distinct document IDs can still belong to one candidate group through these
+  signals. Titles are lowercased and whitespace-normalized before comparison;
+  `title_threshold` is inclusive.
+- Grouping is transitive: an ID match linking two references and a DOI or title
+  match linking one of them to a third yields one candidate group. Not every
+  pair in that group necessarily matches directly.
+
+Inputs are not mutated or merged into a canonical paper. Member order follows
+input order; cluster IDs derive from the earliest retained input index, and
+clusters are sorted by descending size, then cluster ID.
 
 ## Usage
 
