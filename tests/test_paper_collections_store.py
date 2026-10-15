@@ -10,7 +10,13 @@ from pydantic import ValidationError
 
 from retrieval.models import Document
 from storage.document_store import SQLiteDocumentStore
-from storage.paper_collections import MAX_REVISION, CollectionError, SQLitePaperCollections
+from storage.paper_collections import (
+    MAX_REVISION,
+    CollectionError,
+    CollectionReplacement,
+    CollectionSelection,
+    SQLitePaperCollections,
+)
 
 
 @pytest.fixture
@@ -46,6 +52,43 @@ def test_python_immutable_normalization_and_restart(
     assert restarted.resolve(collection.collection_id) == ("b",)
     store.delete(collection.collection_id, expected_revision=2)
     assert snapshot == ("a", "b")
+
+
+@pytest.mark.parametrize("model", [CollectionSelection, CollectionReplacement])
+@pytest.mark.parametrize("name", ["\ud800", "\udfff", "PRIVATE_COLLECTION_\ud800_NAME"])
+def test_python_collection_models_reject_surrogate_names(
+    store: SQLitePaperCollections, model: type[CollectionSelection], name: str
+) -> None:
+    saved = store.create(name="Existing", document_ids=["a"])
+    body: dict[str, object] = {"name": name, "document_ids": saved.document_ids}
+    if model is CollectionReplacement:
+        body["expected_revision"] = saved.revision
+    with pytest.raises(ValidationError) as error:
+        model.model_validate(body)
+    assert error.value.errors()[0]["loc"] == ("name",)
+
+
+@pytest.mark.parametrize("operation", ["create", "replace"])
+@pytest.mark.parametrize("name", ["\ud800", "\udfff", "PRIVATE_COLLECTION_\ud800_NAME"])
+def test_python_surrogate_names_never_create_or_replace(
+    store: SQLitePaperCollections, tmp_path: Path, operation: str, name: str
+) -> None:
+    saved = store.create(name="Existing", document_ids=["a"])
+    path = tmp_path / "corpus.sqlite3"
+    before = path.read_bytes()
+    with pytest.raises(ValidationError):
+        if operation == "create":
+            store.create(name=name, document_ids=["b"])
+        else:
+            store.replace(
+                saved.collection_id,
+                name=name,
+                document_ids=["b"],
+                expected_revision=saved.revision,
+            )
+    assert path.read_bytes() == before
+    assert store.get(saved.collection_id) == saved
+    assert len(store.list_collections().collections) == 1
 
 
 @pytest.mark.parametrize("limit", [0, 101, True, 1.5, "2"])
