@@ -1,6 +1,7 @@
 """Saved selections must be durable, atomic, and fail closed at both API boundaries."""
 
 import asyncio
+import json
 import sqlite3
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from scripts.demo_evidence_export import offline_settings
 
@@ -395,6 +397,291 @@ def test_invalid_selections_do_not_create_or_replace(
     assert response.status_code == 422, response.text
     assert api.client.get(path).json() == saved
     assert len(api.client.get("/collections").json()["collections"]) == 1
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT"])
+@pytest.mark.parametrize("mounted", [False, True])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "\ud800",
+        "\udfff",
+        "PRIVATE_COLLECTION_\ud800_NAME",
+        ["PRIVATE_COLLECTION_\ud800_NAME"],
+        {"nested": ["PRIVATE_COLLECTION_\udfff_NAME"]},
+        {"\ud800": "PRIVATE_COLLECTION_NAME"},
+    ],
+)
+def test_escaped_surrogate_names_return_422_without_writes(
+    collection_api: CollectionAPI,
+    caplog: pytest.LogCaptureFixture,
+    method: str,
+    mounted: bool,
+    name: object,
+) -> None:
+    api = collection_api
+    saved = api.create()
+    path = f"/collections/{saved['collection_id']}"
+    body: dict[str, object] = {"name": name, "document_ids": [api.second]}
+    if method == "PUT":
+        body["expected_revision"] = saved["revision"]
+    application = api.application
+    prefix = ""
+    if mounted:
+        application = FastAPI()
+        application.mount("/library", api.application)
+        prefix = "/library"
+    before = api.path.read_bytes()
+    with TestClient(application, raise_server_exceptions=False) as client:
+        response = client.request(
+            method,
+            prefix + ("/collections" if method == "POST" else path),
+            content=json.dumps(body, ensure_ascii=True).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+    assert api.path.read_bytes() == before
+    assert api.client.get(path).json() == saved
+    assert len(api.client.get("/collections").json()["collections"]) == 1
+    assert response.status_code == 422, response.text
+    assert response.json() == {
+        "detail": [
+            {
+                "loc": ["body", "name"],
+                "type": "string_unicode" if isinstance(name, str) else "string_type",
+                "msg": (
+                    "Input should be a valid string, unable to parse raw data as a unicode string"
+                    if isinstance(name, str)
+                    else "Input should be a valid string"
+                ),
+            }
+        ]
+    }
+    assert_private(response)
+    assert "PRIVATE_COLLECTION" not in response.text
+    assert "PRIVATE_COLLECTION" not in caplog.text
+    assert "unserializable_diagnostic" in caplog.text
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT"])
+def test_mixed_validation_errors_preserve_encodable_input_and_context(
+    collection_api: CollectionAPI, method: str
+) -> None:
+    api = collection_api
+    saved = api.create()
+    path = "/collections" if method == "POST" else f"/collections/{saved['collection_id']}"
+    body: dict[str, object] = {
+        "name": None,
+        "document_ids": [],
+        "unexpected": "ordinary diagnostic input",
+    }
+    if method == "PUT":
+        body["expected_revision"] = "1"
+    baseline = api.client.request(method, path, json=body)
+    assert baseline.status_code == 422
+    ordinary = [error for error in baseline.json()["detail"] if error["loc"] != ["body", "name"]]
+    assert any("input" in error and "ctx" in error for error in ordinary)
+    body["name"] = "PRIVATE_COLLECTION_\ud800_NAME"
+    response = api.client.request(
+        method,
+        path,
+        content=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
+    errors = response.json()["detail"]
+    assert [error for error in errors if error["loc"] != ["body", "name"]] == ordinary
+    assert set(errors[0]) == {"loc", "type", "msg"}
+    assert "PRIVATE_COLLECTION" not in response.text
+    assert api.client.get(f"/collections/{saved['collection_id']}").json() == saved
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+@pytest.mark.parametrize("surrogate_name", [False, True])
+def test_nonfinite_validation_inputs_return_422_without_writes(
+    collection_api: CollectionAPI,
+    caplog: pytest.LogCaptureFixture,
+    method: str,
+    value: float,
+    surrogate_name: bool,
+) -> None:
+    api = collection_api
+    saved = api.create()
+    path = f"/collections/{saved['collection_id']}"
+    body: dict[str, object] = {
+        "name": "PRIVATE_COLLECTION_\ud800_NAME" if surrogate_name else "Valid",
+        "document_ids": [value],
+    }
+    if method == "PUT":
+        body["expected_revision"] = saved["revision"]
+    before = api.path.read_bytes()
+    with TestClient(api.application, raise_server_exceptions=False) as client:
+        response = client.request(
+            method,
+            "/collections" if method == "POST" else path,
+            content=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+    assert api.path.read_bytes() == before
+    assert api.client.get(path).json() == saved
+    assert len(api.client.get("/collections").json()["collections"]) == 1
+    assert response.status_code == 422, response.text
+    expected = [
+        {
+            "loc": ["body", "document_ids", 0],
+            "type": "string_type",
+            "msg": "Input should be a valid string",
+        },
+        {
+            "loc": ["body", "document_ids"],
+            "type": "too_short",
+            "msg": "Tuple should have at least 1 item after validation, not 0",
+        },
+    ]
+    if surrogate_name:
+        expected.insert(
+            0,
+            {
+                "loc": ["body", "name"],
+                "type": "string_unicode",
+                "msg": (
+                    "Input should be a valid string, unable to parse raw data as a unicode string"
+                ),
+            },
+        )
+    assert response.json() == {"detail": expected}
+    assert_private(response)
+    assert "PRIVATE_COLLECTION" not in response.text
+    assert "PRIVATE_COLLECTION" not in caplog.text
+    assert "unserializable_diagnostic" in caplog.text
+
+
+@pytest.mark.parametrize("location", [("body", "name"), ("body", "\ud800")])
+@pytest.mark.parametrize("context", ["PRIVATE_COLLECTION_\ud800_CONTEXT", float("nan")])
+def test_unserializable_validation_context_is_not_echoed(
+    collection_api: CollectionAPI,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    location: tuple[str, ...],
+    context: object,
+) -> None:
+    error = {
+        "loc": location,
+        "type": "value_error",
+        "msg": "Invalid name.",
+        "input": "PRIVATE_COLLECTION_INPUT",
+        "ctx": {"nested": [context]},
+    }
+
+    def reject(**kwargs: object) -> NoReturn:
+        raise RequestValidationError([error])
+
+    monkeypatch.setattr(collection_api.container.paper_collections, "create", reject)
+    response = collection_api.client.post(
+        "/collections", json={"name": "Valid", "document_ids": [collection_api.first]}
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [{"loc": list(location), "type": "value_error", "msg": "Invalid name."}]
+    }
+    assert "PRIVATE_COLLECTION" not in response.text
+    assert "PRIVATE_COLLECTION" not in caplog.text
+
+
+def test_unencodable_object_keys_return_sanitized_422(collection_api: CollectionAPI) -> None:
+    response = collection_api.client.post(
+        "/collections",
+        content=json.dumps(
+            {"name": "Valid", "document_ids": [collection_api.first], "\ud800": "PRIVATE_VALUE"}
+        ).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [
+            {
+                "loc": ["body"],
+                "type": "string_unicode",
+                "msg": (
+                    "Input should be a valid string, unable to parse raw data as a unicode string"
+                ),
+            }
+        ]
+    }
+    assert "PRIVATE_VALUE" not in response.text
+    response.content.decode("utf-8")
+
+
+@pytest.mark.parametrize("name", [None, 42, ["\U0001f9ea"], {"nested": ["e\u0301"]}])
+def test_encodable_validation_details_are_unchanged(
+    collection_api: CollectionAPI, name: object
+) -> None:
+    response = collection_api.client.post(
+        "/collections", json={"name": name, "document_ids": [collection_api.first]}
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": [
+            {
+                "loc": ["body", "name"],
+                "type": "string_type",
+                "msg": "Input should be a valid string",
+                "input": name,
+            }
+        ]
+    }
+    assert "cache-control" not in response.headers
+
+
+def test_valid_unicode_names_keep_identity_membership_and_revision(
+    collection_api: CollectionAPI,
+) -> None:
+    api = collection_api
+    composed = api.create(" \u00e9 ", [api.first, api.second, api.first])
+    decomposed = api.create(" e\u0301 ", [api.second])
+    assert composed["name"] == "\u00e9" and composed["document_ids"] == [api.first, api.second]
+    assert decomposed["name"] == "e\u0301"
+    assert composed["collection_id"] != decomposed["collection_id"]
+    path = f"/collections/{composed['collection_id']}"
+    name = "\U0001f9ea" * 120
+    body = {"name": f" {name} ", "document_ids": [api.second], "expected_revision": 1}
+    response = api.client.put(path, json=body)
+    assert response.status_code == 200
+    revised = {**composed, "name": name, "document_ids": [api.second], "revision": 2}
+    assert response.json() == revised
+    duplicate = api.client.post("/collections", json={"name": name, "document_ids": [api.first]})
+    assert duplicate.status_code == 409
+    assert duplicate.json()["detail"]["code"] == "collection_name_conflict"
+    noop = api.client.put(path, json={**body, "expected_revision": 2})
+    assert noop.status_code == 200
+    assert noop.json() == {**revised, "revision": 3}
+    stale = api.client.put(path, json=body)
+    assert stale.status_code == 409
+    assert stale.json()["detail"]["code"] == "collection_revision_conflict"
+    api.application.state.container = AppContainer(offline_settings(api.path))
+    assert api.client.get(path).json() == noop.json()
+    assert api.client.get(f"/collections/{decomposed['collection_id']}").json() == decomposed
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        UnicodeEncodeError("utf-8", "\ud800", 0, 1, "runtime failure"),
+        ValueError("runtime failure"),
+        TypeError("runtime failure"),
+    ],
+)
+def test_runtime_errors_are_not_reclassified_as_validation(
+    collection_api: CollectionAPI, monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    def fail(**kwargs: object) -> NoReturn:
+        raise error
+
+    monkeypatch.setattr(collection_api.container.paper_collections, "create", fail)
+    with pytest.raises(type(error), match="runtime failure"):
+        collection_api.client.post(
+            "/collections", json={"name": "Valid", "document_ids": [collection_api.first]}
+        )
 
 
 @pytest.mark.parametrize("revision", [None, True, "1", 0, -1, 1.5, 2**63])

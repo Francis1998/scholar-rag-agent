@@ -279,10 +279,17 @@ array of missing normalized request IDs; the entire write is rejected.
 | 503 | `collection_storage_error` | SQLite unavailable, locked past its five-second wait, or transaction failure |
 
 Other invalid fields/IDs/pagination/preconditions use FastAPI's standard **422
-validation-detail array**, not the above code object. Existing `/retrieve`
-operational codes remain unchanged. Collection resolution errors happen before
-starting a run; later `/query` failures retain the existing `result.state=ERROR`
-contract even under HTTP 200. Inspect the body, not just the HTTP status.
+validation-detail array**, not the above code object. If a validation diagnostic
+cannot be serialized as strict UTF-8 JSON (including escaped lone surrogates or
+nonfinite numeric inputs), that error keeps only `loc`, `type`, and `msg`,
+omitting its input/context rather than failing to serialize the 422 response.
+Other errors retain their ordinary details; sanitized responses use `no-store`
+and `nosniff`. Pydantic rejects these invalid names or memberships before storage
+access; valid Unicode names are unchanged.
+Existing `/retrieve` operational codes remain unchanged. Collection resolution
+errors happen before starting a run; later `/query` failures retain the existing
+`result.state=ERROR` contract even under HTTP 200. Inspect the body, not just the
+HTTP status.
 
 ## Persistence, concurrency, and privacy
 
