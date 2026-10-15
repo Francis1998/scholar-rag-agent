@@ -574,6 +574,23 @@ does not alter opaque document IDs or catalog/queue behavior. See
 [Screening exports](docs/guides/SCREENING_EXPORT_GUIDE.md) for format and privacy
 limits; this snapshot does not version paper contents or authenticate reviewers.
 
+`api.collection_explorer` adds GET `/explore/collections` and `/explore/collection`
+without a storage implementation or schema change. Discovery uses
+`SQLitePaperCollections.list_collections`; detail decodes the existing bounded
+JSON from `SQLitePaperScreening.export_results`, then pages/filters its complete
+typed snapshot in memory. It never combines separate membership, count and label
+reads into a claimed snapshot. Whole-collection counts and current include IDs
+remain distinct from the visible member page.
+
+The existing explorer renderer supplies literal escaping, privacy headers,
+hash-only CSS CSP and a 1-MiB complete HTML bound. Validated structured return
+state carries list/member pagination, status and catalog filters through the
+existing paper/context/search/worksheet tools, including mounted paths. Those
+return URLs have a finite 64-KiB query budget for maximum Unicode encoding;
+collection list/detail retain 16 KiB. Downloads link directly to the existing
+revision-checked APIs. No retrieval or generation runs while browsing collections.
+See [the collection-browser guide](docs/guides/COLLECTION_BROWSER_GUIDE.md).
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,

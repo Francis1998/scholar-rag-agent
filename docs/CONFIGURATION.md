@@ -99,6 +99,18 @@ The existing 4-MiB evidence HTML cap includes inline navigation. No dependency,
 provider setting, database table or environment variable is added. See
 [the complete browser/API/Python guide](guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+## Collection-browser bounds
+
+The [native collection browser](guides/COLLECTION_BROWSER_GUIDE.md) needs no new
+setting, provider or table. Its 1-100-row pages (default 20) project existing
+summaries or a complete screening JSON snapshot, capped at 524,288 UTF-8 bytes
+even for filtered pages. Complete escaped HTML is capped at 1 MiB.
+List/detail queries are at most 16,384 bytes; downstream document/context/search/
+worksheet requests carrying validated collection return state allow 65,536 bytes
+for percent-encoded Unicode. Ordinary worksheet GET queries remain limited to
+16,384 bytes and POST bodies to 65,536. Return state is bounded JSON data, not
+an external URL or access token. Existing download bounds are unchanged.
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model
@@ -135,7 +147,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-13 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-14 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
 the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol

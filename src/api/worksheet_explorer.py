@@ -16,7 +16,10 @@ from agent.research_worksheet import ResearchWorksheet, WorksheetError, Workshee
 from api.dependencies import AppContainer
 from api.explorer import (
     _HEADERS,
+    MAX_COLLECTION_QUERY_BYTES,
     _CatalogLimit,
+    _collection_link,
+    _CollectionReturnToken,
     _error,
     _escaped,
     _identity,
@@ -49,6 +52,7 @@ class _CatalogReturn(BaseModel):
     source: _OptionalSource = None
     title: _OptionalTitle = None
     catalog_cursor: ContextDocumentIdentity | None = None
+    collection_return: _CollectionReturnToken | None = None
 
     @model_validator(mode="after")
     def valid_unicode(self) -> Self:
@@ -142,7 +146,10 @@ async def _body(request: Request) -> bytes:
 
 _FAILURES = {
     "worksheet_form_too_large": (413, "Form exceeds 65,536 bytes. No inspection was started."),
-    "worksheet_query_too_large": (422, "The form URL exceeds 16,384 bytes."),
+    "worksheet_query_too_large": (
+        422,
+        "The form URL exceeds 16,384 bytes, or 65,536 bytes with collection return state.",
+    ),
     "worksheet_form_encoding": (
         415,
         "Submit application/x-www-form-urlencoded with UTF-8, without content encoding.",
@@ -194,7 +201,7 @@ _FAILURES = {
 }
 
 
-def _failure(code: str, root_path: str) -> HTMLResponse:
+def _failure(code: str, root_path: str, navigation: _CatalogReturn | None = None) -> HTMLResponse:
     status, message = _FAILURES.get(code, _FAILURES["worksheet_failed"])
     safe_code = code if code in _FAILURES else "worksheet_failed"
     return _error(
@@ -205,6 +212,7 @@ def _failure(code: str, root_path: str) -> HTMLResponse:
         navigation=(
             '<nav aria-label="Worksheet recovery">'
             + _link("reset-worksheet", root_path + "/explore/worksheet", "Start a blank worksheet")
+            + _collection_link(navigation.collection_return if navigation else None, root_path)
             + _link("back-to-catalog", root_path + "/explore", "Back to current corpus")
             + "</nav>"
         ),
@@ -232,6 +240,7 @@ def _form(fields: _Form, navigation: _CatalogReturn, root_path: str) -> Iterator
             _url(root_path + "/explore", navigation.parameters()),
             "Back to filtered current corpus",
         )
+        + _collection_link(navigation.collection_return, root_path)
         + _link("reset-worksheet", root_path + "/explore/worksheet", "Start a blank worksheet")
         + "</nav>"
     )
@@ -241,7 +250,7 @@ def _form(fields: _Form, navigation: _CatalogReturn, root_path: str) -> Iterator
         'accept-charset="UTF-8" autocomplete="off">'
     )
     # JSON escapes keep CR/LF in return-only filters intact through native hidden inputs.
-    encoded_navigation = json.dumps(navigation.model_dump(), ensure_ascii=True)
+    encoded_navigation = json.dumps(navigation.model_dump(), ensure_ascii=False)
     yield f'<input type="hidden" name="navigation" value="{_escaped(encoded_navigation)}">'
     for name, label, value, limit, help_text in (
         (
@@ -324,6 +333,7 @@ def _results(
                     "source": navigation.source,
                     "title": navigation.title,
                     "catalog_cursor": navigation.catalog_cursor,
+                    "collection_return": navigation.collection_return,
                 },
             ),
             "Inspect this exact paper in the current corpus",
@@ -400,6 +410,7 @@ def _results(
                                 "source": navigation.source,
                                 "title": navigation.title,
                                 "catalog_cursor": navigation.catalog_cursor,
+                                "collection_return": navigation.collection_return,
                             },
                         ),
                         "Read current source context (exact IDs, not frozen text)",
@@ -436,9 +447,12 @@ router = APIRouter(route_class=_WorksheetRoute, tags=["Research worksheet browse
 async def explore_worksheet(request: Request) -> Response:
     """GET opens controls only; POST reuses one complete build without saving anything."""
     root_path = request.scope.get("root_path", "").rstrip("/")
+    navigation = _CatalogReturn()
     try:
         raw_query = request.scope.get("query_string", b"")
-        if len(raw_query) > MAX_QUERY_BYTES:
+        if len(raw_query) > MAX_COLLECTION_QUERY_BYTES or (
+            len(raw_query) > MAX_QUERY_BYTES and "collection_return" not in request.query_params
+        ):
             raise WorksheetError("worksheet_query_too_large", "", 422)
         body = await _body(request)
         if request.method == "GET":
@@ -475,11 +489,11 @@ async def explore_worksheet(request: Request) -> Response:
         )
         payload = fields.worksheet_request()
     except (WorksheetError, CollectionError) as exc:
-        return _failure(exc.code, root_path)
+        return _failure(exc.code, root_path, navigation)
     except _PageTooLargeError:
-        return _failure("worksheet_html_too_large", root_path)
+        return _failure("worksheet_html_too_large", root_path, navigation)
     except (ValueError, RecursionError):
-        return _failure("invalid_worksheet_form", root_path)
+        return _failure("invalid_worksheet_form", root_path, navigation)
     try:
         container: AppContainer = request.app.state.container
         result = await container.worksheets.build(payload)
@@ -502,8 +516,8 @@ async def explore_worksheet(request: Request) -> Response:
 
         return _page("Research evidence worksheet", fragments(), worksheet=True)
     except (WorksheetError, CollectionError) as exc:
-        return _failure(exc.code, root_path)
+        return _failure(exc.code, root_path, navigation)
     except _PageTooLargeError:
-        return _failure("worksheet_html_too_large", root_path)
+        return _failure("worksheet_html_too_large", root_path, navigation)
     except (_UnrepresentableTextError, UnicodeError):
-        return _failure("worksheet_html_unrepresentable", root_path)
+        return _failure("worksheet_html_unrepresentable", root_path, navigation)
