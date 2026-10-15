@@ -73,6 +73,13 @@ implement provider tool loops, streaming, multimodal inputs, or multi-turn
 reasoning-state replay. The local application uses FastAPI, SQLite, Pydantic, and
 a custom agent state machine; it is not a LangGraph integration.
 
+Each live `generate()` call takes an owned deep snapshot of `LLMRequest` when
+its coroutine starts, before its first suspension. Every HTTP attempt and the
+returned citation IDs use that same snapshot, so caller edits to prompt,
+context, or the citation-ID list during admission, HTTP I/O, or backoff cannot
+change an in-flight invocation. The public request remains mutable and can be
+reused for later invocations; creating an unawaited coroutine does not snapshot it.
+
 All four adapters admit each HTTP attempt, including retries and failed requests,
 against the per-instance sliding-minute rate limit (default 60). Transient
 failures retain the same three-retry cap; exponential delays of 0.25, 0.5, and
