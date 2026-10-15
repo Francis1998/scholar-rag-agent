@@ -1,0 +1,21 @@
+1. Discover a saved collection
+Executed /explore -> saved collections -> exact collection revision.
+Current revision: 2; members: 5.
+Membership counts are not screening decisions.
+
+2. Inspect human status, not automatic inclusion
+unscreened: 1; include: 1; exclude: 1; unsure: 1; stale: 1.
+Filtered stale row retained its earlier include reason.
+Only 1 current human include; no automatic screening or selection.
+
+3. Follow exact readers and revision-bound downloads
+Executed paper -> exact source -> return; scope forms retained the collection.
+Downloaded actual screening JSON / CSV and duplicate JSON / Markdown.
+Python / HTTP bytes equal; mismatched revision: HTTP 409.
+Separate reads are not frozen together; duplicate groups are candidates.
+
+4. Restart and measure the read-only boundary
+Restart HTML identical: True.
+Database unchanged: True; events: 0; forbidden calls: 0.
+Temporary fixture removed. No live or fake generation; no external network.
+Executed synthetic output illustration, not a recording or benchmark.

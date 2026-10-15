@@ -135,6 +135,15 @@ literal phrase, optionally scoped to one paper or saved collection. Highlighted
 first matches link to exact source context with a return to the same search page.
 These native GET queries appear in URLs/history/logs; see the
 [complete browser/API/Python search guide](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md).
+Choose **Browse saved collections** to inspect saved membership and human
+screening counts, statuses and reasons. Detail links retain exact revisions for
+screening JSON/CSV and duplicate JSON/Markdown downloads; stale/missing selections
+fail rather than being replaced. Paper/source readers retain the collection
+return state. Search and worksheet links use all current members, not screened
+includes. The [complete collection-browser guide and executed
+demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) covers API/Python use, bounds,
+restart and privacy. These reads do not create or edit collections.
+
 The existing JSON discovery workflow remains available:
 
 ```bash

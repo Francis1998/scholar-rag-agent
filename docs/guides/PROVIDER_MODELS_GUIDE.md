@@ -4,7 +4,7 @@ The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
 [Gemini latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model), and
 [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
-**2026-10-13 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
+**2026-10-14 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
 flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
 for cost-sensitive, high-volume work. Anthropic lists `claude-fable-5-1`,
 `claude-opus-5-5`, `claude-sonnet-5-5`, and `claude-haiku-5-5`.
@@ -45,8 +45,9 @@ catalog descriptions
 not measured tradeoffs or additional adapter-contract tests in this repository;
 the selected flagship and routing remain unchanged.
 
-The same-day [6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
-explicitly supports Chat Completions **without tool calling**; use Responses
+The [6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+separately reviewed **2026-10-13 America/Los_Angeles**, explicitly supports
+Chat Completions **without tool calling**; use Responses
 for tools. Its supported reasoning efforts are `low`, `medium`, `high`, `xhigh`
 and `max`, not `none` or `minimal`. This is documentation for an optional
 alternative, not an endpoint, effort, budget or default migration. No live

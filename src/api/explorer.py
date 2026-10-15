@@ -16,6 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
 from pydantic import (
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -61,7 +62,8 @@ from storage.literal_search import (
     SearchCursor,
     SearchQuery,
 )
-from storage.paper_collections import CollectionError, CollectionId
+from storage.paper_collections import CollectionError, CollectionId, Revision
+from storage.paper_screening import ScreeningStatus
 from storage.source_context import (
     DEFAULT_CONTEXT_NEIGHBORS,
     MAX_CONTEXT_NEIGHBORS,
@@ -73,6 +75,7 @@ from storage.source_context import (
 
 logger = logging.getLogger(__name__)
 MAX_HTML_BYTES = 1_048_576
+MAX_COLLECTION_QUERY_BYTES = 65_536
 _STYLE = """
 :root { color-scheme: light; font-family: system-ui, sans-serif; line-height: 1.55; }
 * { box-sizing: border-box; }
@@ -200,6 +203,24 @@ _WORKSHEET_FOOTER = (
     "quotes/escapes when a raw ID is needed; visual Unicode order is not an identity check."
     "</p></footer></body></html>"
 )
+_COLLECTION_FOOTER = (
+    "</main><footer><h2>Saved selections and human opinions</h2>"
+    "<p>Membership counts are not screening decisions. Includes are current human opinions, "
+    "not scientific validation. Stale decisions retain their earlier reason and revision "
+    "but are not current includes. Separate requests are not one snapshot: decisions and "
+    "corpus labels can change without changing the collection revision.</p>"
+    "<p>These GET pages do not retrieve, rerank, generate, ingest, change collections or "
+    "screening, or write events. Normal startup still initializes stores and loads indexes. "
+    "Search and worksheet links open existing tools for all current members, not a screened "
+    "subset; worksheet submission performs local retrieval separately.</p>"
+    "<p>No scripts, external resources, analytics or browser storage are used. There is no "
+    "built-in authentication. Use loopback or your own access controls. IDs, filters and "
+    "reasons may be sensitive; URLs can remain in history or server logs. No-store does not "
+    "prevent saving or screenshots. Review downloads before sharing.</p>"
+    "<p>IDs are JSON strings: decode quotes and escapes before using a raw ID. Source labels "
+    "are literal text, never external links. Browsing cannot repair invalid stored data."
+    "</p></footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -244,6 +265,7 @@ def _page(
     status: int = 200,
     saved_runs: bool = False,
     worksheet: bool = False,
+    collections: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -256,6 +278,12 @@ def _page(
         subject = "RESEARCH WORKSHEET"
         description = "Inspect literal questions against each selected paper, without generation."
         footer = _WORKSHEET_FOOTER
+    if collections:
+        subject = "SAVED COLLECTIONS"
+        description = (
+            "Inspect saved membership and current human screening, without changing either."
+        )
+        footer = _COLLECTION_FOOTER
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -286,6 +314,7 @@ def _error(
     navigation: str | None = None,
     saved_runs: bool = False,
     worksheet: bool = False,
+    collections: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -301,6 +330,7 @@ def _error(
         status=status,
         saved_runs=saved_runs,
         worksheet=worksheet,
+        collections=collections,
     )
 
 
@@ -327,12 +357,22 @@ class _ExplorerRoute(APIRoute):
                     )
                 elif search_view:
                     navigation = _search_navigation(_SearchParameters(), root_path)
+                collection_link = getattr(request.state, "collection_return_link", "")
+                if collection_link and not isinstance(options, _SearchParameters):
+                    navigation = (navigation or "") + (
+                        '<nav aria-label="Collection return">' + collection_link + "</nav>"
+                    )
                 return _error(
                     status, code, title, message, root_path=root_path, navigation=navigation
                 )
 
             try:
-                if search_view:
+                if search_view or "collection_return" in request.query_params:
+                    if (
+                        "collection_return" in request.query_params
+                        and len(request.scope.get("query_string", b"")) > MAX_COLLECTION_QUERY_BYTES
+                    ):
+                        raise RequestValidationError([])
                     try:
                         unquote_to_bytes(request.scope.get("query_string", b"")).decode("utf-8")
                     except UnicodeDecodeError as exc:
@@ -493,6 +533,73 @@ _SearchScope = Literal["all", "document", "collection"]
 _ScopeId = Annotated[str, Field(strict=True, max_length=MAX_DOCUMENT_ID_LENGTH)]
 _DOCUMENT_ID = TypeAdapter(ContextDocumentIdentity)
 _COLLECTION_ID = TypeAdapter(CollectionId)
+_CollectionRevision = Annotated[Revision, BeforeValidator(_query_integer)]
+_ScreeningFilter = Annotated[ScreeningStatus | None, BeforeValidator(_empty_filter)]
+
+
+class _CollectionReturn(BaseModel):
+    """Structured local navigation, never an arbitrary redirect or a storage snapshot."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    collection_id: CollectionId
+    collection_revision: _CollectionRevision
+    limit: _CatalogLimit = DEFAULT_PAGE_SIZE
+    cursor: ContextDocumentIdentity | None = None
+    status: _ScreeningFilter = None
+    collections_limit: _CatalogLimit = DEFAULT_PAGE_SIZE
+    collections_cursor: CollectionId | None = None
+    catalog_limit: _CatalogLimit = DEFAULT_PAGE_SIZE
+    source: _OptionalSource = None
+    title: _OptionalTitle = None
+    catalog_cursor: ContextDocumentIdentity | None = None
+
+    @model_validator(mode="after")
+    def valid_unicode(self) -> Self:
+        json.dumps(self.model_dump(), ensure_ascii=False).encode("utf-8")
+        return self
+
+    def parameters(self) -> dict[str, str | int | None]:
+        return self.model_dump()
+
+    def token(self) -> str:
+        return json.dumps(self.model_dump(), ensure_ascii=False, separators=(",", ":"))
+
+
+def _return_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result = dict(pairs)
+    if len(result) != len(pairs):
+        raise ValueError("Duplicate return fields are ambiguous.")
+    return result
+
+
+def _decode_collection_return(value: str) -> _CollectionReturn:
+    try:
+        return _CollectionReturn.model_validate(json.loads(value, object_pairs_hook=_return_pairs))
+    except RecursionError as exc:
+        raise ValueError("Invalid collection return state.") from exc
+
+
+def _validate_collection_return(value: str) -> str:
+    token = _decode_collection_return(value).token()
+    if len(token) > 16_384:
+        raise ValueError("Collection return state exceeds its bound.")
+    return token
+
+
+_CollectionReturnToken = Annotated[
+    str, Field(strict=True, max_length=16_384), AfterValidator(_validate_collection_return)
+]
+
+
+def _collection_link(value: str | None, root_path: str) -> str:
+    if value is None:
+        return ""
+    return _link(
+        "back-to-collection",
+        _url(root_path + "/explore/collection", _decode_collection_return(value).parameters()),
+        "Back to collection inspection",
+    )
 
 
 class _SearchParameters(BaseModel):
@@ -509,6 +616,7 @@ class _SearchParameters(BaseModel):
     source: _OptionalSource = None
     title: _OptionalTitle = None
     catalog_cursor: ContextDocumentIdentity | None = None
+    collection_return: _CollectionReturnToken | None = None
 
     @model_validator(mode="after")
     def validate_selection(self) -> Self:
@@ -543,6 +651,7 @@ class _SearchParameters(BaseModel):
             "source": self.source,
             "title": self.title,
             "catalog_cursor": self.catalog_cursor,
+            "collection_return": self.collection_return,
         }
 
     def catalog_parameters(self) -> dict[str, str | int | None]:
@@ -564,6 +673,7 @@ class _SearchParameters(BaseModel):
             "search_scope_id": self.scope_id if self.scope != "all" else None,
             "search_limit": self.limit,
             "search_cursor": self.cursor,
+            "collection_return": self.collection_return,
         }
 
 
@@ -709,6 +819,7 @@ def _search_navigation(
             ),
             "New whole-corpus search",
         )
+    links += _collection_link(options.collection_return, root_path)
     return f'<nav aria-label="Search navigation">{links}</nav>'
 
 
@@ -759,7 +870,7 @@ def _search_form(options: _SearchParameters, root_path: str) -> Iterator[str]:
         "whole corpus. Paste the raw ID, not its JSON quotes. Empty or invalid selections "
         "never become whole-corpus searches.</p></div>"
     )
-    for name in ("catalog_limit", "source", "title", "catalog_cursor"):
+    for name in ("catalog_limit", "source", "title", "catalog_cursor", "collection_return"):
         navigation_value = options.parameters()[name]
         if navigation_value is not None:
             yield f'<input type="hidden" name="{name}" value="{_escaped(str(navigation_value))}">'
@@ -940,6 +1051,11 @@ def _catalog(
         _url(root_path + "/explore/worksheet", search_params),
         "Build research worksheet",
     )
+    yield _link(
+        "saved-collections",
+        _url(root_path + "/explore/collections", {"limit": DEFAULT_PAGE_SIZE, **search_params}),
+        "Browse saved collections",
+    )
     yield "</nav>"
     yield from _filters(limit, source, title, root_path)
     yield (
@@ -1009,6 +1125,7 @@ def _document(
     title: str | None,
     catalog_cursor: str | None,
     root_path: str,
+    collection_return: str | None = None,
 ) -> Iterator[str]:
     back = _url(
         root_path + "/explore",
@@ -1021,6 +1138,7 @@ def _document(
     )
     yield '<nav aria-label="Corpus navigation">'
     yield _link("back-to-catalog", back, "Back to filtered catalog")
+    yield _collection_link(collection_return, root_path)
     yield _link(
         "worksheet-document",
         _url(
@@ -1031,6 +1149,7 @@ def _document(
                 "source": source,
                 "title": title,
                 "catalog_cursor": catalog_cursor,
+                "collection_return": collection_return,
             },
         ),
         "Inspect this paper in a worksheet",
@@ -1058,6 +1177,7 @@ def _document(
         "source": source,
         "title": title,
         "catalog_cursor": catalog_cursor,
+        "collection_return": collection_return,
     }
     for number, chunk in enumerate(page.chunks, 1):
         yield f"<article><h3>Passage {number} on this page</h3>"
@@ -1140,6 +1260,7 @@ def _context(
     catalog_cursor: str | None,
     root_path: str,
     search: _SearchParameters | None = None,
+    collection_return: str | None = None,
 ) -> Iterator[str]:
     params: dict[str, str | int | None] = {
         "document_id": page.document_id,
@@ -1148,6 +1269,7 @@ def _context(
         "title": title,
         "catalog_cursor": catalog_cursor,
         "cursor": cursor,
+        "collection_return": collection_return,
     }
     if search is not None:
         params.update(search.context_parameters())
@@ -1167,6 +1289,7 @@ def _context(
             ),
             "Back to filtered catalog",
         )
+        yield _collection_link(collection_return, root_path)
         yield "</nav>"
     yield "<dl><dt>Document ID (JSON)</dt><dd>"
     yield _identity(page.document_id, "document-id")
@@ -1262,9 +1385,12 @@ def explore_document(
     source: Annotated[_OptionalSource, Query()] = None,
     title: Annotated[_OptionalTitle, Query()] = None,
     catalog_cursor: Annotated[Identity | None, Query()] = None,
+    collection_return: Annotated[_CollectionReturnToken | None, Query()] = None,
 ) -> HTMLResponse:
     """Inspect exactly one document; query encoding keeps slashes and dot segments intact."""
     container: AppContainer = request.app.state.container
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    request.state.collection_return_link = _collection_link(collection_return, root_path)
     page = container.document_chunks.list_chunks(document_id, limit=limit, cursor=cursor)
     return _page(
         "Stored passages",
@@ -1275,7 +1401,8 @@ def explore_document(
             source=source,
             title=title,
             catalog_cursor=catalog_cursor,
-            root_path=request.scope.get("root_path", "").rstrip("/"),
+            root_path=root_path,
+            collection_return=collection_return,
         ),
     )
 
@@ -1326,9 +1453,12 @@ def explore_context(
     search_scope_id: Annotated[_ScopeId | None, Query()] = None,
     search_limit: Annotated[_SearchLimit | None, Query()] = None,
     search_cursor: Annotated[SearchCursor | None, Query()] = None,
+    collection_return: Annotated[_CollectionReturnToken | None, Query()] = None,
 ) -> HTMLResponse:
     """Read exact source context, preserving native navigation back to the original page."""
     search = None
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    request.state.collection_return_link = _collection_link(collection_return, root_path)
     if any(key.startswith("search_") for key in request.query_params):
         allowed = {
             "document_id",
@@ -1345,6 +1475,7 @@ def explore_context(
             "search_scope_id",
             "search_limit",
             "search_cursor",
+            "collection_return",
         }
         if (
             set(request.query_params) - allowed
@@ -1364,6 +1495,7 @@ def explore_context(
                 source=source,
                 title=title,
                 catalog_cursor=catalog_cursor,
+                collection_return=collection_return,
             )
         except ValidationError as exc:
             raise RequestValidationError(exc.errors()) from exc
@@ -1379,7 +1511,8 @@ def explore_context(
             source=source,
             title=title,
             catalog_cursor=catalog_cursor,
-            root_path=request.scope.get("root_path", "").rstrip("/"),
+            root_path=root_path,
             search=search,
+            collection_return=collection_return,
         ),
     )

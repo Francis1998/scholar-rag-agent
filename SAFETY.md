@@ -294,6 +294,29 @@ does not erase its stored decisions or papers. Reasons and IDs can contain
 sensitive information, and no-store headers are not authorization. See the
 [screening guide](docs/guides/PAPER_SCREENING_GUIDE.md) for exact errors and limits.
 
+## Read-only collection browser
+
+`/explore/collections` and `/explore/collection` expose existing metadata, not
+screening approvals. Membership counts never imply included evidence. Detail
+uses one complete, byte-bounded screening export snapshot before filtering its
+visible page; stale decisions retain their reason without becoming includes.
+Separate requests can see changed decisions/corpus at the same collection
+revision. Revision-bound downloads fail on collection edits instead of silently
+refreshing or changing scope.
+
+These GET reads perform no model, retrieval, network, mutation or event work.
+Normal startup still initializes stores and loads indexes. Existing worksheet
+POST retrieval is a separate explicit action. Script-free HTML reuses literal
+escaping, hash-only CSS CSP, no-store/nosniff/no-referrer and frame denial.
+The 512-KiB full JSON and 1-MiB HTML bounds reject partial success. List/detail
+queries are capped at 16 KiB; downstream structured collection-return queries
+have a dedicated 64-KiB limit to preserve maximum Unicode filters/IDs. Return
+state accepts no arbitrary redirect URL, and unknown/duplicate selection fields
+fail explicitly. Raw NUL native worksheet fields retain their existing rejection.
+There is no authentication or tenant isolation: use loopback/access controls,
+avoid secrets in URLs/reasons, and review artifacts before sharing. See the
+[complete browser boundaries and demo](docs/guides/COLLECTION_BROWSER_GUIDE.md).
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the
