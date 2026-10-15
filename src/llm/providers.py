@@ -118,7 +118,8 @@ class HTTPProviderAdapter(BaseLLMAdapter):
         self._limiter = AsyncRateLimiter(requests_per_minute=requests_per_minute)
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
-        """Generate a validated response, admitting each provider attempt."""
+        """Generate from an owned request snapshot, admitting each provider attempt."""
+        request = request.model_copy(deep=True)
 
         async def admitted_attempt() -> LLMResponse:
             await self._limiter.acquire()
