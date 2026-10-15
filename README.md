@@ -407,6 +407,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | ResidualConfoundingCueExtractor | [GIF](docs/assets/residual-confounding-cues.gif) |
 | IntervalCensoringCueExtractor | [GIF](docs/assets/interval-censoring-cues.gif) |
 | EcologicalFallacyCueExtractor | [GIF](docs/assets/ecological-fallacy-cues.gif) |
+| DetectionBiasCueExtractor | [GIF](docs/assets/detection-bias-cues.gif) |
 
 ## Documentation
 
