@@ -405,6 +405,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | SimpsonParadoxCueExtractor | [GIF](docs/assets/simpson-paradox-cues.gif) |
 
 | ResidualConfoundingCueExtractor | [GIF](docs/assets/residual-confounding-cues.gif) |
+| IntervalCensoringCueExtractor | [GIF](docs/assets/interval-censoring-cues.gif) |
 
 ## Documentation
 
