@@ -373,6 +373,7 @@ instructions or evidence of current scientific performance.
 | Extract offline ReverseCausation cues | [ReverseCausationCueExtractor](guides/REVERSE_CAUSATION_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline SurvivorBias cues | [SurvivorBiasCueExtractor](guides/SURVIVOR_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline IntervalCensoring cues | [IntervalCensoringCueExtractor](guides/INTERVAL_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline EcologicalFallacy cues | [EcologicalFallacyCueExtractor](guides/ECOLOGICAL_FALLACY_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ResidualConfounding cues | [ResidualConfoundingCueExtractor](guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline SimpsonParadox cues | [SimpsonParadoxCueExtractor](guides/SIMPSON_PARADOX_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ProtopathicBias cues | [ProtopathicBiasCueExtractor](guides/PROTOPATHIC_BIAS_CUE_EXTRACTOR_GUIDE.md) |
