@@ -60,6 +60,100 @@ def answer_payload(text: object) -> dict[str, object]:
     }
 
 
+def multipart_answer_payload(text: object) -> dict[str, object]:
+    return {
+        "choices": [
+            {
+                "message": {
+                    "content": [
+                        {"type": "text", "text": PRIVATE_MARKER},
+                        {"type": "text", "text": text},
+                    ]
+                }
+            }
+        ],
+        "content": [
+            {"type": "text", "text": PRIVATE_MARKER},
+            {"type": "text", "text": text},
+        ],
+        "candidates": [{"content": {"parts": [{"text": PRIVATE_MARKER}, {"text": text}]}}],
+    }
+
+
+@pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
+@pytest.mark.parametrize("text", [None, 42, False, [], {"private": PRIVATE_MARKER}])
+def test_malformed_declared_text_cannot_be_dropped_from_a_partial_answer(
+    provider: type[HTTPProviderAdapter], text: object
+) -> None:
+    with pytest.raises(ProviderResponseError, match="malformed answer text") as caught:
+        provider(api_key="dummy-offline-key").parse_response(
+            multipart_answer_payload(text), REQUEST
+        )
+    assert PRIVATE_MARKER not in str(caught.value)
+
+
+@pytest.mark.parametrize("provider", [OpenAIAdapter, KimiAdapter, AnthropicAdapter])
+def test_explicit_text_block_requires_text_even_beside_valid_answer(
+    provider: type[HTTPProviderAdapter],
+) -> None:
+    parts = [{"type": "text", "text": PRIVATE_MARKER}, {"type": "text"}]
+    body = {"choices": [{"message": {"content": parts}}], "content": parts}
+    with pytest.raises(ProviderResponseError, match="malformed answer text"):
+        provider(api_key="dummy-offline-key").parse_response(body, REQUEST)
+
+
+@pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
+async def test_malformed_text_http_success_is_sanitized_and_never_retried(
+    provider: type[HTTPProviderAdapter], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    requests, sleep = mock_http(
+        monkeypatch, httpx.Response(200, json=multipart_answer_payload({"private": PRIVATE_MARKER}))
+    )
+    with pytest.raises(ProviderResponseError) as caught:
+        await provider(api_key="dummy-offline-key").generate(REQUEST)
+    assert str(caught.value) == (
+        f"{provider.provider_name} returned an invalid response: malformed answer text."
+    )
+    assert len(requests) == 1
+    sleep.assert_not_awaited()
+
+
+@pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
+def test_empty_text_segments_and_nonanswer_blocks_keep_exact_valid_text(
+    provider: type[HTTPProviderAdapter],
+) -> None:
+    parts: list[dict[str, object]] = [
+        {"type": "text", "text": ""},
+        {"type": "text", "text": "  Valid "},
+        {"type": "thinking", "text": None},
+        {"type": "image", "text": {"private": PRIVATE_MARKER}},
+        {"type": "text", "text": "answer [c1].\n"},
+    ]
+    body = {
+        "choices": [{"message": {"content": parts}}],
+        "content": parts,
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {"text": ""},
+                        {"text": "  Valid "},
+                        {"thought": True, "text": None},
+                        {"inlineData": {"mimeType": "image/png", "data": ""}},
+                        {"text": "answer [c1].\n"},
+                    ]
+                }
+            }
+        ],
+    }
+    response = provider(api_key="dummy-offline-key", model="configured-model").parse_response(
+        body, REQUEST
+    )
+    assert response.text == "  Valid answer [c1].\n"
+    assert response.citation_chunk_ids == REQUEST.citation_chunk_ids
+    assert response.model_name == "configured-model"
+
+
 def finished_answer_payload(
     text: str, reason: object, *, continuation_token: str | None = None
 ) -> dict[str, object]:
@@ -240,7 +334,7 @@ async def test_valid_answer_keeps_text_citations_and_provenance(
 
 
 @pytest.mark.parametrize("provider", PROVIDERS, ids=lambda provider: provider.provider_name)
-@pytest.mark.parametrize("failure", ["unusable", "truncated"])
+@pytest.mark.parametrize("failure", ["unusable", "truncated", "malformed_text"])
 def test_invalid_response_fails_the_run_without_persisting_a_completed_answer(
     provider: type[HTTPProviderAdapter],
     failure: str,
@@ -262,11 +356,12 @@ def test_invalid_response_fails_the_run_without_persisting_a_completed_answer(
     reason = {"anthropic": "max_tokens", "gemini": "MAX_TOKENS"}.get(
         provider.provider_name, "length"
     )
-    body = (
-        finished_answer_payload(PRIVATE_MARKER, reason)
-        if failure == "truncated"
-        else {"error": {"message": PRIVATE_MARKER}}
-    )
+    bodies = {
+        "truncated": finished_answer_payload(PRIVATE_MARKER, reason),
+        "unusable": {"error": {"message": PRIVATE_MARKER}},
+        "malformed_text": multipart_answer_payload(None),
+    }
+    body = bodies[failure]
     requests, sleep = mock_http(monkeypatch, httpx.Response(200, json=body))
     with TestClient(app) as client:
         response = client.post("/query", json={"query": REQUEST.prompt})
