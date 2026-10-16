@@ -111,6 +111,19 @@ for percent-encoded Unicode. Ordinary worksheet GET queries remain limited to
 16,384 bytes and POST bodies to 65,536. Return state is bounded JSON data, not
 an external URL or access token. Existing download bounds are unchanged.
 
+## Screening-history bounds
+
+[Human decision history](guides/SCREENING_HISTORY_GUIDE.md) needs no new dependency,
+environment variable, provider or model default. Startup adds a separate table,
+never copying legacy latest-only decisions into it. `list_history` and its GET
+readers require the current collection revision and exact current member ID.
+Pages contain 1-100 decisions (default 20), newest revision first with an exclusive
+revision cursor. Complete JSON is at most 524,288 UTF-8 bytes; escaped HTML at most
+1 MiB. API queries allow 16,384 bytes and native history navigation 65,536 bytes.
+Each stored JSON record retains the 16,384-character bound; reasons remain at
+most 1000 characters without truncation. No maximum history age/count or purge
+setting is added; per-read bounds are not a disk-retention policy.
+
 ## Provider Model IDs
 
 The [saved bibliography](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) endpoint has no model

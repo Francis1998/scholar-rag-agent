@@ -88,6 +88,14 @@ carrying validated collection return state; ordinary worksheet URLs retain
 16 KiB and form bodies retain 64 KiB. These are finite serialization/navigation
 bounds, not model budgets or a promise of frozen output across requests.
 
+The [screening decision history](docs/guides/SCREENING_HISTORY_GUIDE.md) adds only
+an additive SQLite table, initialized at startup without backfill. No setting,
+dependency or model default changes. Reads require exact member/collection
+selectors and the current collection revision, with 1-100-row pages (default
+20), a 512-KiB UTF-8 response limit, 16-KiB API query limit, and 64-KiB native
+history query/1-MiB escaped HTML limits. The stored history grows with accepted
+submissions; bounded reads do not constitute a storage-retention policy.
+
 The [saved-run browser](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) uses the same
 event database without new settings. History has 1-100-row pages and a 1-MiB
 escaped HTML cap. Opening frozen evidence uses bounded read-only events
@@ -131,7 +139,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-15 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-16 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
 retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
 Haiku 5.5 are additional catalog alternatives.

@@ -30,6 +30,10 @@ No key, new setting, migration, browser package, or front-end framework is neede
    membership order. Counts and current include IDs always cover all members.
    Each decision shows its reason, decision revision, reviewed collection
    revision, and timestamp. Stale includes remain stale, not current includes.
+   Choose **Inspect human decision history** for a bounded newest-first view
+   of retained decisions, with exact reasons/timestamps and an explicit legacy
+   boundary. The [history guide](SCREENING_HISTORY_GUIDE.md) covers the separate
+   query-selected API/Python reader; there is no editing control or backfill.
 3. Choose **Read this exact paper / choose source context**. The existing passage
    reader selects an exact document; its source links select exact stored chunks.
    Back links preserve collection status, member/list pagination and catalog
@@ -52,8 +56,9 @@ membership, labels, statuses and counts share **one read transaction**.
 **Separate requests are not one snapshot.** A rename or membership replacement
 changes the collection revision and makes old links fail. Decision edits and
 corpus changes can occur **at the same collection revision**, changing a later
-page, search, worksheet or download. There is no frozen view, review-history
-archive, authenticated approval or scientific-support claim.
+page, search, worksheet or download. There is no frozen multi-request view,
+authenticated approval or scientific-support claim. The separate append-only
+history reader retains new decisions, not old paper contents or legacy backfill.
 
 If only current includes should be previewed, inspect and deliberately pass the
 nonempty `included_document_ids` as `document_ids` to `/retrieve`. Do not replace

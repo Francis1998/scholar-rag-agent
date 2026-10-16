@@ -289,10 +289,23 @@ The queue and decision writes validate current membership and revisions
 transactionally. Reasons are bounded to 1000 nonblank valid-Unicode characters;
 pages to 100 members; queue responses to 524,288 UTF-8 bytes. Malformed records,
 conflicts and unavailable storage fail explicitly. Screening never generates or
-writes agent events. Only the latest opinion is retained; deleting a collection
-does not erase its stored decisions or papers. Reasons and IDs can contain
+writes agent events. Latest-only queue/export shapes are unchanged; new successful
+submissions also append history in the same transaction. Deleting a collection
+does not erase its stored decisions, history or papers. Reasons and IDs can contain
 sensitive information, and no-store headers are not authorization. See the
 [screening guide](docs/guides/PAPER_SCREENING_GUIDE.md) for exact errors and limits.
+
+The [history readers](docs/guides/SCREENING_HISTORY_GUIDE.md) expose original
+reasons/timestamps and an explicit first-retained boundary, never fabricated old
+events. Legacy latest-only values remain readable/updatable without backfill.
+Removed members fail exact membership checks; re-added members' old opinions
+remain stale, not current includes. History reads require the current collection
+revision and use one read-only snapshot, 1-100-row pages and a 512-KiB JSON cap.
+Native history reuses script-free escaped HTML, CSP/privacy headers and a 1-MiB
+cap, with query selectors preserving exact IDs and validated local return state.
+Historical reasons now survive latest-decision edits: do not assume an update
+erases sensitive text. This is application append-only behavior, not authenticated
+reviewer identity, tamper evidence, a retention/purge policy, or scientific proof.
 
 ## Read-only collection browser
 

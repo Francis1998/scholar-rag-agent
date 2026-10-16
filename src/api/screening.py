@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
+from urllib.parse import unquote_to_bytes
 
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -12,15 +13,17 @@ from fastapi.routing import APIRoute
 from api.collections import COLLECTION_HEADERS, collection_errors
 from api.dependencies import AppContainer
 from storage.document_catalog import Identity
-from storage.paper_collections import MAX_REVISION, CollectionId
+from storage.paper_collections import MAX_PAGE_SIZE, MAX_REVISION, CollectionId
 from storage.paper_screening import (
     ScreeningExport,
     ScreeningExportFormat,
+    ScreeningHistory,
     ScreeningQueue,
     ScreeningReview,
     ScreeningStatus,
     ScreeningSubmission,
 )
+from storage.source_context import ContextDocumentIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +48,26 @@ class _ScreeningRoute(APIRoute):
 
         async def handler(request: Request) -> Response:
             try:
+                if self.path.endswith("/history"):
+                    raw = request.scope.get("query_string", b"")
+                    if len(raw) > 16_384:
+                        return _invalid_request()
+                    try:
+                        unquote_to_bytes(raw).decode("utf-8")
+                    except UnicodeDecodeError:
+                        return _invalid_request()
+                    if any(
+                        key not in {"document_id", "collection_revision", "limit", "cursor"}
+                        or len(request.query_params.getlist(key)) != 1
+                        for key in request.query_params
+                    ):
+                        return _invalid_request()
+                    for key in ("collection_revision", "limit", "cursor"):
+                        value = request.query_params.get(key)
+                        if value is not None and (
+                            not value.isascii() or not value.isdecimal() or len(value) > 19
+                        ):
+                            return _invalid_request()
                 return await original(request)
             except RequestValidationError:
                 return _invalid_request()
@@ -141,5 +164,41 @@ def submit_screening(
     container: AppContainer = request.app.state.container
     with collection_errors():
         result = container.paper_screening.submit(collection_id, document_id, payload)
+    response.headers.update(COLLECTION_HEADERS)
+    return result
+
+
+@router.get(
+    "/history",
+    response_model=ScreeningHistory,
+    responses={
+        404: {"description": "Exact collection missing"},
+        409: {
+            "description": "Collection revision changed, missing member, or invalid saved history"
+        },
+        413: {"description": "History page exceeds its UTF-8 byte bound; no partial result"},
+        422: {"description": "Invalid exact member, revision, page, cursor, or query fields"},
+        503: {"description": "Screening or collection storage unavailable"},
+    },
+)
+def screening_history(
+    request: Request,
+    response: Response,
+    collection_id: CollectionId,
+    document_id: Annotated[ContextDocumentIdentity, Query()],
+    collection_revision: Annotated[int, Query(ge=1, le=MAX_REVISION)],
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = 20,
+    cursor: Annotated[int | None, Query(ge=1, le=MAX_REVISION)] = None,
+) -> ScreeningHistory:
+    """Exact query selectors avoid ambiguous document-ID path suffixes."""
+    container: AppContainer = request.app.state.container
+    with collection_errors():
+        result = container.paper_screening.list_history(
+            collection_id,
+            document_id,
+            collection_revision=collection_revision,
+            limit=limit,
+            cursor=cursor,
+        )
     response.headers.update(COLLECTION_HEADERS)
     return result

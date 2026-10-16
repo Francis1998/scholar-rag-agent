@@ -2,20 +2,25 @@
 
 import sqlite3
 from collections.abc import Callable, Coroutine, Iterator
-from typing import Annotated
+from typing import Annotated, Self
 from urllib.parse import unquote_to_bytes
 
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict, model_validator
 from starlette.types import Receive, Scope, Send
 
 from api.dependencies import AppContainer
 from api.explorer import (
+    MAX_COLLECTION_QUERY_BYTES,
     _CatalogLimit,
+    _collection_link,
     _CollectionReturn,
+    _CollectionReturnToken,
+    _CollectionRevision,
+    _decode_collection_return,
     _error,
     _escaped,
     _identity,
@@ -26,13 +31,19 @@ from api.explorer import (
     _page,
     _PageTooLargeError,
     _pagination,
+    _query_integer,
     _truncation,
     _UnrepresentableTextError,
     _url,
 )
 from storage.document_catalog import DEFAULT_PAGE_SIZE, MAX_SOURCE_CHARACTERS, MAX_TITLE_CHARACTERS
-from storage.paper_collections import CollectionError, CollectionId, CollectionPage
-from storage.paper_screening import ScreeningExport, ScreeningExportItem
+from storage.paper_collections import CollectionError, CollectionId, CollectionPage, Revision
+from storage.paper_screening import (
+    ScreeningExport,
+    ScreeningExportItem,
+    ScreeningHistory,
+    ScreeningReview,
+)
 from storage.source_context import ContextDocumentIdentity
 
 MAX_QUERY_BYTES = 16_384
@@ -48,6 +59,40 @@ class _ListParameters(BaseModel):
     source: _OptionalSource = None
     title: _OptionalTitle = None
     catalog_cursor: ContextDocumentIdentity | None = None
+
+    def parameters(self) -> dict[str, str | int | None]:
+        return self.model_dump()
+
+
+class _HistoryParameters(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    collection_id: CollectionId
+    collection_revision: _CollectionRevision
+    document_id: ContextDocumentIdentity
+    limit: _CatalogLimit = DEFAULT_PAGE_SIZE
+    cursor: Annotated[Revision | None, BeforeValidator(_query_integer)] = None
+    collection_return: _CollectionReturnToken | None = None
+
+    @model_validator(mode="after")
+    def matching_return(self) -> Self:
+        if self.collection_return is not None:
+            selection = _decode_collection_return(self.collection_return)
+            if (
+                selection.collection_id != self.collection_id
+                or selection.collection_revision != self.collection_revision
+            ):
+                raise ValueError("Return state must match the inspected collection revision.")
+        return self
+
+    def navigation(self) -> _CollectionReturn:
+        return (
+            _decode_collection_return(self.collection_return)
+            if self.collection_return is not None
+            else _CollectionReturn(
+                collection_id=self.collection_id, collection_revision=self.collection_revision
+            )
+        )
 
     def parameters(self) -> dict[str, str | int | None]:
         return self.model_dump()
@@ -112,6 +157,20 @@ _ERRORS = {
         "Collection storage is unavailable; this is not an empty selection."
     ),
     "screening_storage_unavailable": "Screening storage is unavailable, not an unscreened result.",
+    "screening_document_not_member": (
+        "This exact document is not a current member. Removed members are not silently "
+        "re-included; return to the collection's current membership."
+    ),
+    "invalid_screening_history_record": (
+        "Saved decision history is invalid or inconsistent. No history was repaired or invented."
+    ),
+    "screening_history_cursor_invalid": (
+        "The cursor does not identify a retained decision for this exact member."
+    ),
+    "screening_history_response_too_large": (
+        "The history page exceeds 524288 UTF-8 bytes. Request a smaller page; "
+        "no reason or decision was truncated."
+    ),
 }
 
 
@@ -133,25 +192,33 @@ class _CollectionExplorerRoute(APIRoute):
 
     def get_route_handler(self) -> Callable[[Request], Coroutine[None, None, Response]]:
         handler = super().get_route_handler()
+        history_view = self.path == "/explore/screening-history"
 
         async def read(request: Request) -> Response:
             root_path = request.scope.get("root_path", "").rstrip("/")
 
             def error(status: int, code: str, title: str, message: str) -> HTMLResponse:
+                options = getattr(request.state, "collection_browser_options", None)
+                navigation = _navigation(options, root_path)
+                if history_view and isinstance(options, _CollectionReturn):
+                    navigation += (
+                        '<nav aria-label="Collection return">'
+                        + _collection_link(options.token(), root_path)
+                        + "</nav>"
+                    )
                 return _error(
                     status,
                     code,
                     title,
                     message,
-                    navigation=_navigation(
-                        getattr(request.state, "collection_browser_options", None), root_path
-                    ),
+                    navigation=navigation,
                     collections=True,
                 )
 
             try:
                 raw = request.scope.get("query_string", b"")
-                if len(raw) > MAX_QUERY_BYTES:
+                bound = MAX_COLLECTION_QUERY_BYTES if history_view else MAX_QUERY_BYTES
+                if len(raw) > bound:
                     raise RequestValidationError([])
                 try:
                     unquote_to_bytes(raw).decode("utf-8")
@@ -161,6 +228,17 @@ class _CollectionExplorerRoute(APIRoute):
                     raise RequestValidationError([])
                 return await handler(request)
             except RequestValidationError:
+                if history_view:
+                    return error(
+                        422,
+                        "invalid_screening_history_request",
+                        "Invalid screening history request",
+                        "Use exact collection_id and document_id, a required positive integer "
+                        "collection_revision, limit 1-100 and a returned decision-revision cursor. "
+                        "Return state must match this collection revision. Unknown or duplicate "
+                        "fields, invalid UTF-8 and queries over 65536 bytes fail; nothing is "
+                        "silently discarded.",
+                    )
                 return error(
                     422,
                     "invalid_collection_browser_request",
@@ -337,6 +415,19 @@ def _member(
         )
         yield _literal(review.reason, "review-reason")
     yield _link(
+        f"screening-history-{index}",
+        _url(
+            root_path + "/explore/screening-history",
+            {
+                "collection_id": options.collection_id,
+                "collection_revision": options.collection_revision,
+                "document_id": item.document_id,
+                "collection_return": options.token(),
+            },
+        ),
+        "Inspect human decision history",
+    )
+    yield _link(
         f"inspect-member-{index}",
         _url(
             root_path + "/explore/document",
@@ -498,5 +589,116 @@ def explore_collection(
     return _page(
         "Collection membership and screening",
         _detail(snapshot, options, request.scope.get("root_path", "").rstrip("/")),
+        collections=True,
+    )
+
+
+def _history_review(review: ScreeningReview, css_class: str) -> Iterator[str]:
+    yield (
+        f'<p>Decision: <strong class="{css_class}-decision">{review.decision}</strong>; '
+        f'decision revision: <span class="{css_class}-revision">{review.revision}</span>; '
+        f"reviewed collection revision: {review.collection_revision}; originally recorded at "
+        f'<time datetime="{review.updated_at.isoformat()}">{review.updated_at.isoformat()}</time>.'
+        "</p>"
+    )
+    yield _literal(review.reason, f"{css_class}-reason")
+
+
+def _history(page: ScreeningHistory, options: _HistoryParameters, root_path: str) -> Iterator[str]:
+    navigation = options.navigation()
+    yield _navigation(navigation, root_path)
+    yield (
+        '<nav aria-label="Collection return">'
+        + _collection_link(navigation.token(), root_path)
+        + "</nav>"
+    )
+    yield _literal(page.collection_name, "collection-name")
+    yield _identity(page.document_id, "document-id")
+    yield (
+        f"<p>Current collection revision: {page.collection_revision}; human screening status: "
+        f'<strong class="current-status">{page.current_status}</strong>.</p>'
+        '<p class="notice">Historical includes are not current inclusion. These are human '
+        "opinions, not authenticated approvals or scientific validation. Each page is one "
+        "read-only snapshot; later decisions may change the latest status between pages.</p>"
+        "<h2>Retained history boundary</h2>"
+    )
+    if page.first_retained_revision is None:
+        yield (
+            "<p>No retained history yet. Any latest decision below is a legacy latest-only "
+            "record, not a recovered history event.</p>"
+        )
+    else:
+        yield (
+            f"<p>Retained history begins at decision revision "
+            f'<span id="first-retained-revision">{page.first_retained_revision}</span>, '
+            f"originally recorded at <time>{page.first_retained_at.isoformat()}</time>.</p>"
+            if page.first_retained_at is not None
+            else ""
+        )
+    yield (
+        f'<p>Decision revisions not retained in history: <span id="unretained-revisions">'
+        f"{page.unretained_decision_revisions}</span>. No old decisions were backfilled. "
+        "The boundary is not an installation date or a claim about unrecorded judgments.</p>"
+        "<h2>Latest decision in this read</h2>"
+    )
+    if page.latest_review is None:
+        yield "<p>No human decision is recorded for this current member.</p>"
+    else:
+        yield from _history_review(page.latest_review, "latest-review")
+        if page.current_status == "stale":
+            yield (
+                '<p class="notice">This latest opinion refers to an earlier collection revision. '
+                "It is stale, even after removal and re-addition, and is not a current include.</p>"
+            )
+    yield "<h2>Retained decisions, newest revision first</h2>"
+    yield (
+        "<p>Original timestamps and reasons are preserved. Ordering uses decision revisions, "
+        "not wall-clock time. Next page selects older revisions; new decisions require "
+        "starting again. This page cannot submit or edit decisions.</p>"
+    )
+    for review in page.items:
+        yield f"<article><h3>Decision revision {review.revision}</h3>"
+        yield from _history_review(review, "history")
+        yield "</article>"
+    if not page.items:
+        yield "<p>No retained decisions on this page. No history was fabricated.</p>"
+    parameters = options.parameters()
+    yield _pagination(
+        _url(root_path + "/explore/screening-history", {**parameters, "cursor": None}),
+        _url(root_path + "/explore/screening-history", {**parameters, "cursor": page.next_cursor})
+        if page.next_cursor is not None
+        else None,
+    )
+    yield _link(
+        "history-json",
+        _url(
+            f"{root_path}/collections/{page.collection_id}/screening/history",
+            {
+                "document_id": page.document_id,
+                "collection_revision": page.collection_revision,
+                "limit": options.limit,
+                "cursor": options.cursor,
+            },
+        ),
+        "Read this history selection as JSON (a separate read)",
+    )
+
+
+@router.get("/explore/screening-history", response_class=HTMLResponse, responses=_RESPONSES)
+def explore_screening_history(
+    request: Request, options: Annotated[_HistoryParameters, Query()]
+) -> HTMLResponse:
+    request.state.collection_browser_options = options.navigation()
+    container: AppContainer = request.app.state.container
+    page = container.paper_screening.list_history(
+        options.collection_id,
+        options.document_id,
+        collection_revision=options.collection_revision,
+        limit=options.limit,
+        cursor=options.cursor,
+    )
+    return _page(
+        "Human screening decision history",
+        _history(page, options, request.scope.get("root_path", "").rstrip("/")),
         collections=True,
     )
