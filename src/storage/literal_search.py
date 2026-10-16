@@ -201,6 +201,7 @@ def _decode_cursor(value: str, fingerprint: str) -> _Cursor:
     return cursor
 
 
+# SQLite substr on an empty BLOB may return NULL; empty TEXT labels are valid.
 _SEARCH_SQL = """
 WITH candidates AS (
     SELECT c.document_id, c.chunk_id, c.title, c.source, c.text,
@@ -229,8 +230,10 @@ WITH candidates AS (
 )
 SELECT substr(CAST(document_id AS BLOB), 1, :document_bytes) AS document_id,
        substr(CAST(chunk_id AS BLOB), 1, :chunk_bytes) AS chunk_id,
-       substr(CAST(title AS BLOB), 1, :title_bytes) AS title,
-       substr(CAST(source AS BLOB), 1, :source_bytes) AS source,
+       CASE WHEN title = '' THEN X''
+            ELSE substr(CAST(title AS BLOB), 1, :title_bytes) END AS title,
+       CASE WHEN source = '' THEN X''
+            ELSE substr(CAST(source AS BLOB), 1, :source_bytes) END AS source,
        invalid_record, too_large, position - 1 AS match_start,
        CASE WHEN invalid_record OR too_large THEN 0 ELSE length(text) END AS text_characters,
        max(0, position - 1 - :context_before) AS excerpt_start,

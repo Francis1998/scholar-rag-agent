@@ -61,6 +61,11 @@ The list omits document/chunk bodies, arbitrary metadata, vectors, and run data.
 A zero chunk count is valid: the document exists but has no searchable chunks.
 This count is not a guarantee of retrieval relevance or scientific coverage.
 
+Empty stored titles and sources are valid: Python and JSON return `""` with the
+corresponding truncation flag `false`, without inventing metadata. This is
+distinct from actual SQL NULL, non-text values, or invalid encoded prefixes,
+which remain invalid records. Empty request filters are still rejected.
+
 ### Filter before paging
 
 ```bash
