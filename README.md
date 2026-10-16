@@ -47,6 +47,7 @@ PDF-upload UI.
 | Browse saved collections and human screening | Discover collections from `/explore`, inspect membership/status/reasons, follow exact readers and download revision-bound screening/duplicate outputs | [Native collection browser and executed demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) |
 | Inspect duplicate candidates before screening | Read a revision-checked selection in one bounded snapshot; review exact IDs, raw metadata, reasons and singletons without hiding or deleting papers | [Collection duplicate inspection and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
+| Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
@@ -229,6 +230,23 @@ events. Resume after restart, inspect stale decisions after a collection edit,
 and explicitly pass current included IDs to retrieval. It is not automated
 screening or scientific validation. The [complete guide](docs/guides/PAPER_SCREENING_GUIDE.md)
 includes API/Python usage, revision conflicts, privacy limits, and GIF reproduction.
+
+## Inspect human screening decision history
+
+![Executed synthetic screening-history output illustration](docs/assets/screening-history.gif)
+
+Choose **Inspect human decision history** on a collection member. Each new
+successful submission appends its original reason, timestamp and revisions in
+the same transaction as the latest decision. Bounded query-selected JSON,
+Python and script-free browser readers expose the first retained revision
+without backfilling legacy decisions. Historical includes never imply current
+inclusion; removed/re-added members retain stale semantics. Existing queue and
+export shapes remain unchanged.
+
+The [complete user/API/Python and portfolio guide](docs/guides/SCREENING_HISTORY_GUIDE.md)
+covers legacy boundaries, concurrency, pagination, errors, privacy and reproduction.
+The GIF illustrates executed synthetic offline output, not browser frames or a
+scientific benchmark. Reads run no model, network, retrieval or storage writes.
 
 ## Export complete human screening results
 

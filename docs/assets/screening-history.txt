@@ -1,0 +1,22 @@
+1. Keep a legacy boundary, not invented history
+Legacy latest-only fixture: 0 history rows before update.
+First retained revision: 2; unretained prior revisions: 1.
+The earlier reason remains latest-only until updated; no old event was backfilled.
+
+2. Retain each successful human decision
+Executed include -> exclude -> unsure through the existing PUT API.
+Retained records equal submissions: True.
+Original reasons/timestamps preserved; stale retry: HTTP 409.
+Each successful revision is appended in the latest-decision transaction.
+
+3. Browse older revisions without selecting evidence
+Native history first page: [3, 2]; older page: [1].
+After collection edit, current status: stale; old link: HTTP 409.
+Python / HTTP equal: True; exact identity and return preserved.
+Historical includes are opinions, not current evidence selection.
+
+4. Restart and measure read-only behavior
+Restart HTML identical: True.
+Database unchanged during reads: True.
+Events: 0; forbidden calls: 0; fixture removed.
+Executed synthetic output illustration, not browser frames or a scientific benchmark.

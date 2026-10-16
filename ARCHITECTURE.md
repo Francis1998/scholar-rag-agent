@@ -547,7 +547,7 @@ See the [complete contract and measured demo](docs/guides/COLLECTION_DUPLICATES_
 
 `SQLitePaperScreening`, wired through `AppContainer.paper_screening` and the
 collection screening router, stores the latest include/exclude/unsure opinion per
-collection/document in one additive table. It reuses
+collection/document in the existing latest-decision table. It reuses
 `SQLitePaperCollections.resolved_collection` to validate membership/existence
 and the expected collection revision in the same transaction as dependent reads
 or writes. Decision writes reserve the transaction and require the previous
@@ -557,9 +557,28 @@ Queue reads derive status, global counts and exact included IDs from current
 collection members in one snapshot. Old collection-revision decisions are
 visible as stale, never included. Bounded member-order pages and a UTF-8 response
 cap prevent unbounded queue downloads. Invalid records fail, not disappear.
-This does not version corpus contents, retain decision history, or alter the
+This queue does not version corpus contents, expose decision history, or alter the
 runner's inputs automatically. Existing query/preview scope and evidence schemas
 are unchanged. See [Paper screening](docs/guides/PAPER_SCREENING_GUIDE.md).
+
+Each successful `submit` also inserts the identical serialized `ScreeningReview`
+into `paper_screening_history`, keyed by collection/document/decision revision,
+inside that same reserved transaction. Failed inserts roll back the latest
+decision; failed/stale submissions append nothing. Startup creates only this
+additive table, with no backfill of legacy latest decisions.
+
+`SQLitePaperScreening.list_history` and query-selected
+`GET /collections/{collection_id}/screening/history` read current validated
+membership, latest opinion, retained boundary and a descending revision page
+in one `mode=ro` transaction. Indexed keyset reads load at most limit+1 history
+rows plus bounded boundary/newest/cursor checks; responses are capped at 512 KiB.
+Explicit first-retained metadata distinguishes legacy gaps from an unscreened
+member. Removal/re-addition never makes old decisions current includes.
+`GET /explore/screening-history` reuses this reader and the existing
+escaping/CSP/root-path/navigation helpers; collection-member cards link to it.
+Native HTML is capped at 1 MiB and history URLs at 64 KiB; API URLs at 16 KiB.
+No model, network, retrieval, corpus/event write or full-history scan occurs.
+See [the complete history contract](docs/guides/SCREENING_HISTORY_GUIDE.md).
 
 `SQLitePaperScreening.export_results` and
 `GET /collections/{collection_id}/screening/export` reuse the queue's complete

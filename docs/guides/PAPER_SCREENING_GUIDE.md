@@ -92,7 +92,9 @@ NUL characters. Human reason-text restrictions do not redefine document identity
 exclusive `next_cursor`, and `included_document_ids`. Each item has its exact
 document ID, current status, and latest review or `null`. The review contains
 the human reason, collection revision, decision revision, and server UTC update
-time. It is the latest opinion, **not an append-only history**.
+time. This queue remains latest-only. Each new successful submission also appends
+the identical record transactionally to the separate
+[decision-history reader](SCREENING_HISTORY_GUIDE.md), with no legacy backfill.
 
 Queue order is saved collection-member order, not relevance ranking. Use
 `status=unscreened` or another status to filter items and send `next_cursor` as
@@ -158,7 +160,7 @@ if not current.included_document_ids:
 # preview = await container.runner.preview("Which methods?", document_ids=current.included_document_ids)
 ```
 
-Initialization adds the decision table and reuses the collection store, but does
+Initialization adds latest-decision and history tables and reuses the collection store, but does
 not ingest papers. Direct Python calls enforce the same strict revision, reason,
 selection and page bounds. Python model copies are revalidated at submission.
 
@@ -190,7 +192,7 @@ Passing included IDs freezes a selection, not text or future human opinion.
 | Revisions | Strict integers; collection/record 1 through SQLite's signed 64-bit maximum, expected decision may also be 0 |
 | Stored record read | At most 16,385 characters per selected member; oversized or malformed records fail |
 | Queue response | At most 524,288 UTF-8 bytes; request a smaller page on 413 |
-| Storage | Latest decision per collection/document; no history, model call, or agent-event write |
+| Storage | Latest decision per collection/document plus additive history for new successful writes; no model call or agent-event write |
 
 HTTP 404 means unknown/deleted collection; 409 means a revision conflict,
 missing corpus member, invalid saved data, or exhausted decision revision.

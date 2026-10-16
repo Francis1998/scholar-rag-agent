@@ -31,6 +31,8 @@ from storage.document_catalog import (
     _prefix,
 )
 from storage.paper_collections import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
     MAX_REVISION,
     CollectionError,
     CollectionId,
@@ -39,11 +41,13 @@ from storage.paper_collections import (
     Revision,
     SQLitePaperCollections,
 )
+from storage.source_context import ContextDocumentIdentity
 
 MAX_REASON_CHARACTERS = 1000
 MAX_RECORD_CHARACTERS = 16384
 MAX_RESPONSE_BYTES = 524288
 MAX_EXPORT_BYTES = 524288
+MAX_HISTORY_RESPONSE_BYTES = 524288
 Decision = Literal["include", "exclude", "unsure"]
 ScreeningStatus = Literal["unscreened", "include", "exclude", "unsure", "stale"]
 ScreeningExportFormat = Literal["json", "csv"]
@@ -79,7 +83,7 @@ class ScreeningSubmission(BaseModel):
 
 
 class ScreeningReview(BaseModel):
-    """Latest human opinion only; older decisions are replaced, not an audit history."""
+    """A human opinion; the latest view and additive history share this unchanged shape."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
 
@@ -119,6 +123,33 @@ class ScreeningQueue(BaseModel):
     items: list[ScreeningItem] = Field(max_length=MAX_DOCUMENT_IDS)
     next_cursor: Identity | None
     included_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
+
+
+class ScreeningHistory(BaseModel):
+    """One member's retained decisions, newest first; never an inclusion selection."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["1.0"] = "1.0"
+    collection_id: CollectionId
+    collection_name: CollectionName
+    collection_revision: Revision
+    document_id: Identity
+    current_status: ScreeningStatus
+    latest_review: ScreeningReview | None
+    first_retained_revision: Revision | None
+    first_retained_at: AwareDatetime | None
+    unretained_decision_revisions: int = Field(strict=True, ge=0, le=MAX_REVISION)
+    items: list[ScreeningReview] = Field(max_length=MAX_PAGE_SIZE)
+    next_cursor: Revision | None
+
+
+class _HistoryOptions(BaseModel):
+    collection_id: CollectionId
+    document_id: ContextDocumentIdentity
+    collection_revision: Revision
+    limit: int = Field(default=DEFAULT_PAGE_SIZE, strict=True, ge=1, le=MAX_PAGE_SIZE)
+    cursor: Revision | None = None
 
 
 class ScreeningExportItem(ScreeningItem):
@@ -241,10 +272,72 @@ def _invalid_record() -> CollectionError:
     )
 
 
+def _invalid_history() -> CollectionError:
+    return CollectionError(
+        "invalid_screening_history_record",
+        "Saved screening history is invalid or inconsistent; nothing was repaired.",
+        409,
+    )
+
+
+_HISTORY_SELECT = """
+SELECT revision, substr(record, 1, :record_limit + 1) AS record,
+       typeof(record) != 'text' OR length(record) > :record_limit
+           OR instr(record, char(0)) > 0 OR typeof(revision) != 'integer' AS invalid
+FROM paper_screening_history
+WHERE collection_id = :collection_id AND document_id = :document_id
+  AND revision <= :last_revision
+"""
+
+
+def _history_records(
+    connection: sqlite3.Connection,
+    collection: PaperCollection,
+    document_id: str,
+    *,
+    last_revision: int = MAX_REVISION,
+    limit: int = 1,
+    oldest: bool = False,
+) -> list[ScreeningReview]:
+    order = (
+        " ORDER BY revision ASC LIMIT :fetch_limit"
+        if oldest
+        else (" ORDER BY revision DESC LIMIT :fetch_limit")
+    )
+    rows = connection.execute(
+        _HISTORY_SELECT + order,
+        {
+            "collection_id": collection.collection_id,
+            "document_id": document_id,
+            "record_limit": MAX_RECORD_CHARACTERS,
+            "last_revision": last_revision,
+            "fetch_limit": limit,
+        },
+    ).fetchall()
+    records = []
+    for row in rows:
+        if row["invalid"]:
+            raise _invalid_history()
+        try:
+            review = ScreeningReview.model_validate_json(row["record"])
+        except ValidationError as exc:
+            raise _invalid_history() from exc
+        if (
+            review.collection_id != collection.collection_id
+            or review.document_id != document_id
+            or review.revision != row["revision"]
+            or review.collection_revision > collection.revision
+        ):
+            raise _invalid_history()
+        records.append(review)
+    return records
+
+
 class SQLitePaperScreening:
     """Own each connection; reserve collection and review revisions before any write."""
 
     def __init__(self, database_path: Path | str) -> None:
+        self._history_uri = Path(database_path).resolve().as_uri() + "?mode=ro"
         self.collections = SQLitePaperCollections(database_path)
         try:
             with closing(sqlite3.connect(database_path)) as connection, connection:
@@ -254,6 +347,15 @@ class SQLitePaperScreening:
                         document_id TEXT NOT NULL,
                         record TEXT NOT NULL,
                         PRIMARY KEY (collection_id, document_id)
+                    )"""
+                )
+                connection.execute(
+                    """CREATE TABLE IF NOT EXISTS paper_screening_history (
+                        collection_id TEXT NOT NULL,
+                        document_id TEXT NOT NULL,
+                        revision INTEGER NOT NULL CHECK(revision >= 1),
+                        record TEXT NOT NULL,
+                        PRIMARY KEY (collection_id, document_id, revision)
                     )"""
                 )
         except sqlite3.Error as exc:
@@ -344,7 +446,127 @@ class SQLitePaperScreening:
                    DO UPDATE SET record = excluded.record""",
                 (collection.collection_id, identifier, record),
             )
+            connection.execute(
+                """INSERT INTO paper_screening_history
+                   (collection_id, document_id, revision, record) VALUES (?, ?, ?, ?)""",
+                (collection.collection_id, identifier, review.revision, record),
+            )
             return review
+
+    def list_history(
+        self,
+        collection_id: str,
+        document_id: str,
+        *,
+        collection_revision: int,
+        limit: int = DEFAULT_PAGE_SIZE,
+        cursor: int | None = None,
+    ) -> ScreeningHistory:
+        """Read one bounded page and its boundary in a single existing-database snapshot."""
+        try:
+            options = _HistoryOptions(
+                collection_id=collection_id,
+                document_id=document_id,
+                collection_revision=collection_revision,
+                limit=limit,
+                cursor=cursor,
+            )
+        except ValidationError as exc:
+            raise CollectionError(
+                "invalid_screening_history_request",
+                "Invalid history selection, revision, or page bounds.",
+                422,
+            ) from exc
+        try:
+            with closing(sqlite3.connect(self._history_uri, uri=True, timeout=5)) as connection:
+                connection.row_factory = sqlite3.Row
+                connection.execute("BEGIN")
+                collection = SQLitePaperCollections.resolve_in_snapshot(
+                    connection, options.collection_id
+                )
+                if collection.revision != options.collection_revision:
+                    raise CollectionError(
+                        "collection_revision_conflict",
+                        "Collection changed; read it again before inspecting history.",
+                        409,
+                    )
+                if options.document_id not in collection.document_ids:
+                    raise CollectionError(
+                        "screening_document_not_member", "Document is not a collection member.", 422
+                    )
+                latest = self._reviews(connection, collection).get(options.document_id)
+                first = _history_records(connection, collection, options.document_id, oldest=True)
+                newest = _history_records(connection, collection, options.document_id)
+                if newest and (latest is None or newest[0] != latest):
+                    raise _invalid_history()
+                if options.cursor is not None:
+                    anchor = _history_records(
+                        connection,
+                        collection,
+                        options.document_id,
+                        last_revision=options.cursor,
+                    )
+                    if not anchor or anchor[0].revision != options.cursor:
+                        raise CollectionError(
+                            "screening_history_cursor_invalid",
+                            "Cursor must identify a retained decision for this exact member.",
+                            422,
+                        )
+                records = _history_records(
+                    connection,
+                    collection,
+                    options.document_id,
+                    last_revision=MAX_REVISION if options.cursor is None else options.cursor - 1,
+                    limit=options.limit + 1,
+                )
+                expected = (
+                    options.cursor - 1
+                    if options.cursor is not None
+                    else newest[0].revision
+                    if newest
+                    else 0
+                )
+                for review in records:
+                    if review.revision != expected:
+                        raise _invalid_history()
+                    expected -= 1
+                if first and len(records) <= options.limit and expected != first[0].revision - 1:
+                    raise _invalid_history()
+                status: ScreeningStatus = "unscreened"
+                if latest is not None:
+                    status = (
+                        latest.decision
+                        if latest.collection_revision == collection.revision
+                        else "stale"
+                    )
+                result = ScreeningHistory(
+                    collection_id=collection.collection_id,
+                    collection_name=collection.name,
+                    collection_revision=collection.revision,
+                    document_id=options.document_id,
+                    current_status=status,
+                    latest_review=latest,
+                    first_retained_revision=first[0].revision if first else None,
+                    first_retained_at=first[0].updated_at if first else None,
+                    unretained_decision_revisions=(
+                        first[0].revision - 1 if first else latest.revision if latest else 0
+                    ),
+                    items=records[: options.limit],
+                    next_cursor=records[options.limit - 1].revision
+                    if len(records) > options.limit
+                    else None,
+                )
+                if len(result.model_dump_json().encode("utf-8")) > MAX_HISTORY_RESPONSE_BYTES:
+                    raise CollectionError(
+                        "screening_history_response_too_large",
+                        "History response exceeds its byte limit; request a smaller page.",
+                        413,
+                    )
+                return result
+        except sqlite3.Error as exc:
+            raise CollectionError(
+                "screening_storage_unavailable", "Screening storage is unavailable.", 503
+            ) from exc
 
     def _snapshot(
         self, connection: sqlite3.Connection, collection: PaperCollection

@@ -179,6 +179,15 @@ ordinary `collection_id` scope still includes every member. The complete
 [paper-screening guide and offline GIF](docs/guides/PAPER_SCREENING_GUIDE.md)
 cover setup, reasons, restart, stale decisions, and explicit selection.
 
+To inspect changes to a member's judgment, choose **Inspect human decision
+history** in the collection browser, or call
+`GET /collections/{collection_id}/screening/history` with query parameters
+`document_id`, the current `collection_revision`, and optional `limit`/`cursor`.
+Each new successful submission is retained atomically; legacy decisions are
+not backfilled. History is newest revision first and never chooses evidence.
+The [complete history guide and offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md)
+cover exact IDs, retained-history boundaries, Python use and read-only browsing.
+
 ```bash
 curl --fail-with-body --silent --show-error http://127.0.0.1:8000/retrieve \
   -H 'Content-Type: application/json' \
