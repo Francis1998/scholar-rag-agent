@@ -426,6 +426,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | IntervalCensoringCueExtractor | [GIF](docs/assets/interval-censoring-cues.gif) |
 | EcologicalFallacyCueExtractor | [GIF](docs/assets/ecological-fallacy-cues.gif) |
 | DetectionBiasCueExtractor | [GIF](docs/assets/detection-bias-cues.gif) |
+| HealthyUserBiasCueExtractor | [GIF](docs/assets/healthy-user-bias-cues.gif) |
 
 ## Documentation
 
