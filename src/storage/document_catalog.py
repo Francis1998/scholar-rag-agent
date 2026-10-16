@@ -67,10 +67,13 @@ class DocumentCatalogError(ValueError):
         super().__init__("Saved document summary data is invalid or not selectable.")
 
 
+# SQLite substr on an empty BLOB may return NULL; empty TEXT labels are valid.
 _CATALOG_SQL = """
 SELECT substr(CAST(d.document_id AS BLOB), 1, :identity_bytes) AS document_id,
-       substr(CAST(d.title AS BLOB), 1, :title_bytes) AS title,
-       substr(CAST(d.source AS BLOB), 1, :source_bytes) AS source,
+       CASE WHEN d.title = '' THEN X''
+            ELSE substr(CAST(d.title AS BLOB), 1, :title_bytes) END AS title,
+       CASE WHEN d.source = '' THEN X''
+            ELSE substr(CAST(d.source AS BLOB), 1, :source_bytes) END AS source,
        typeof(d.document_id) != 'text' OR typeof(d.title) != 'text'
            OR typeof(d.source) != 'text' AS invalid_record,
        (SELECT count(*) FROM chunks AS c WHERE c.document_id = d.document_id) AS chunk_count

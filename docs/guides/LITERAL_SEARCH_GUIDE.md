@@ -225,6 +225,12 @@ UTF-16BE SQLite databases are supported; returned JSON is always UTF-8.
 Collections are read from that same database in the same transaction, without
 constructing the schema-initializing collection store.
 
+Empty stored titles and sources remain `""` with their truncation flags `false`,
+just as in catalog, chunk and source-context inspection. They do not exclude a
+matching passage or change its text, offsets, scope or cursor. Actual SQL NULL,
+non-text labels and invalid encoded prefixes still fail rather than becoming
+empty or fabricated labels.
+
 ## Request, response, and fixed bounds
 
 HTTP bodies must be UTF-8 JSON, with an optional UTF-8 byte-order mark.
