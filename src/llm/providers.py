@@ -164,6 +164,13 @@ class HTTPProviderAdapter(BaseLLMAdapter):
             model_name=self._model,
         )
 
+    def _text_part(self, value: object) -> str:
+        if not isinstance(value, str):
+            raise ProviderResponseError(
+                f"{self.provider_name} returned an invalid response: malformed answer text."
+            )
+        return value
+
     @property
     def endpoint(self) -> str:
         """Return provider endpoint URL."""
@@ -266,8 +273,7 @@ class OpenAIAdapter(HTTPProviderAdapter):
                 text = self._message_text(content)
         return self._text_response(text, request)
 
-    @staticmethod
-    def _message_text(content: object) -> str:
+    def _message_text(self, content: object) -> str:
         """Extract assistant text from an OpenAI-compatible message content.
 
         Args:
@@ -282,11 +288,10 @@ class OpenAIAdapter(HTTPProviderAdapter):
             return content
         if isinstance(content, list):
             return "".join(
-                str(part["text"])
+                self._text_part(part.get("text"))
                 for part in content
                 if isinstance(part, dict)
-                and part.get("type", "text") == "text"
-                and isinstance(part.get("text"), str)
+                and (part.get("type") == "text" or ("type" not in part and "text" in part))
             )
         return ""
 
@@ -366,11 +371,9 @@ class AnthropicAdapter(HTTPProviderAdapter):
                     "nonfinal tool or continuation output."
                 )
             text = "".join(
-                str(block["text"])
+                self._text_part(block.get("text"))
                 for block in content
-                if isinstance(block, dict)
-                and block.get("type") == "text"
-                and isinstance(block.get("text"), str)
+                if isinstance(block, dict) and block.get("type") == "text"
             )
         return self._text_response(text, request)
 
@@ -467,11 +470,9 @@ class GeminiAdapter(HTTPProviderAdapter):
                         "nonfinal tool or continuation output."
                     )
                 text = "".join(
-                    str(part["text"])
+                    self._text_part(part["text"])
                     for part in parts
-                    if isinstance(part, dict)
-                    and not part.get("thought", False)
-                    and isinstance(part.get("text"), str)
+                    if isinstance(part, dict) and not part.get("thought", False) and "text" in part
                 )
         return self._text_response(text, request)
 

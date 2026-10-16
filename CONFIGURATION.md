@@ -131,7 +131,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-14 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-15 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
 retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
 Haiku 5.5 are additional catalog alternatives.
@@ -151,6 +151,9 @@ and waits. See the same compatibility notes before choosing an alternative.
 
 Live adapters reject invalid JSON, absent/blank final answer text, and explicit
 output/context-limit truncation with a nonretryable provider-response error.
+Malformed declared answer-text blocks also reject the entire selected multipart
+answer, rather than silently returning only its valid segments. Known non-answer
+blocks and valid empty text segments retain their existing behavior.
 The selected Gemini candidate's `CONTINUATION` reason also fails with the existing
 `nonfinal tool or continuation output` diagnostic, even for empty/thinking-only
 hops or absent tokens. A continuation token alone is not nonfinal; `MAX_TOKENS`

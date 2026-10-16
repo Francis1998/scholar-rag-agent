@@ -4,7 +4,7 @@ The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
 [Gemini latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model), and
 [Kimi K3 quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) were checked
-**2026-10-14 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
+**2026-10-15 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
 flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
 for cost-sensitive, high-volume work. Anthropic lists `claude-fable-5-1`,
 `claude-opus-5-5`, `claude-sonnet-5-5`, and `claude-haiku-5-5`.
@@ -125,6 +125,25 @@ Transport/HTTP retries remain unchanged. Explicit output/context-limit
 truncation and explicit provider blocks/refusals are also rejected, even when
 partial answer text is nonblank.
 This does not validate factual correctness or interpret every provider stop reason.
+
+### Malformed answer-text blocks
+
+A selected multipart answer is rejected in full if any declared answer-text
+block has missing or non-string text. OpenAI/Kimi and Claude explicitly typed
+`text` blocks require a string; OpenAI-compatible implicit blocks with a `text`
+field and Gemini non-thinking parts with a `text` field also require a string.
+`null`, numbers, booleans, arrays, and objects are not skipped or stringified.
+Otherwise a valid first block could become a misleading completed answer after
+the malformed remainder was silently discarded.
+
+The fixed diagnostic is `malformed answer text`, without provider content.
+It is nonretryable and results in a durable `ERROR` run rather than grounding,
+recording, or exporting a completed partial answer. Explicit block/refusal,
+truncation, and nonfinal-turn diagnostics retain their precedence. Only the
+selected candidate is inspected. Non-answer blocks remain ignored, valid
+implicit OpenAI text stays supported, and empty string segments remain valid
+when the complete answer is nonblank. This is structural validation, not a
+guarantee that a well-formed response is factually correct or complete.
 
 ### Explicitly truncated answers
 
