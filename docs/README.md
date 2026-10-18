@@ -380,6 +380,7 @@ instructions or evidence of current scientific performance.
 | Extract offline InformationBias cues | [InformationBiasCueExtractor](guides/INFORMATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline NoveltyBias cues | [NoveltyBiasCueExtractor](guides/NOVELTY_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ChannelingBias cues | [ChannelingBiasCueExtractor](guides/CHANNELING_BIAS_CUE_EXTRACTOR_GUIDE.md) |
+| Extract offline PrevalenceIncidenceBias cues | [PrevalenceIncidenceBiasCueExtractor](guides/PREVALENCE_INCIDENCE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline HawthorneEffect cues | [HawthorneEffectCueExtractor](guides/HAWTHORNE_EFFECT_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline RightCensoring cues | [RightCensoringCueExtractor](guides/RIGHT_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ResidualConfounding cues | [ResidualConfoundingCueExtractor](guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) |
