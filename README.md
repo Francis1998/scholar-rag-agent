@@ -430,6 +430,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | InformationBiasCueExtractor | [GIF](docs/assets/information-bias-cues.gif) |
 | NoveltyBiasCueExtractor | [GIF](docs/assets/novelty-bias-cues.gif) |
 | ChannelingBiasCueExtractor | [GIF](docs/assets/channeling-bias-cues.gif) |
+| PrevalenceIncidenceBiasCueExtractor | [GIF](docs/assets/prevalence-incidence-bias-cues.gif) |
 | HawthorneEffectCueExtractor | [GIF](docs/assets/hawthorne-effect-cues.gif) |
 | RightCensoringCueExtractor | [GIF](docs/assets/right-censoring-cues.gif) |
 
