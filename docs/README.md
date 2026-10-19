@@ -383,6 +383,7 @@ instructions or evidence of current scientific performance.
 | Extract offline PrevalenceIncidenceBias cues | [PrevalenceIncidenceBiasCueExtractor](guides/PREVALENCE_INCIDENCE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline IncorporationBias cues | [IncorporationBiasCueExtractor](guides/INCORPORATION_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline WillRogersPhenomenon cues | [WillRogersPhenomenonCueExtractor](guides/WILL_ROGERS_PHENOMENON_CUES_EXTRACTOR_GUIDE.md) |
+| Extract offline ReferralBias cues | [ReferralBiasCueExtractor](guides/REFERRAL_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline HawthorneEffect cues | [HawthorneEffectCueExtractor](guides/HAWTHORNE_EFFECT_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline RightCensoring cues | [RightCensoringCueExtractor](guides/RIGHT_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline ResidualConfounding cues | [ResidualConfoundingCueExtractor](guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) |
