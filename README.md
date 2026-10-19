@@ -461,6 +461,8 @@ uv run pytest tests/ -v --cov=src --cov-fail-under=70
 [Security Scan](.github/workflows/security.yml) also audits dependencies and runs
 Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
+| DiagnosticAccessBiasCueExtractor | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
+
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
