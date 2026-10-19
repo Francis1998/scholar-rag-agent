@@ -433,6 +433,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | PrevalenceIncidenceBiasCueExtractor | [GIF](docs/assets/prevalence-incidence-bias-cues.gif) |
 | IncorporationBiasCueExtractor | [GIF](docs/assets/incorporation-bias-cues.gif) |
 | WillRogersPhenomenonCueExtractor | [GIF](docs/assets/will-rogers-phenomenon-cues.gif) |
+| ReferralBiasCueExtractor | [GIF](docs/assets/referral-bias-cues.gif) |
 | HawthorneEffectCueExtractor | [GIF](docs/assets/hawthorne-effect-cues.gif) |
 | RightCensoringCueExtractor | [GIF](docs/assets/right-censoring-cues.gif) |
 
