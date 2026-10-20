@@ -170,6 +170,24 @@ and current, officially sourced GPT/Claude/Gemini/Kimi model choices, see
 No provider is loaded by this command even when keys or invalid application
 settings are present in the environment.
 
+### BM25 tuning
+
+Direct library construction with `BM25Retriever(k1=1.5, b=0.75)` accepts finite
+`numbers.Real` values, including integers, floats, and `fractions.Fraction`:
+`k1 >= 0` and `0 <= b <= 1`. Booleans, strings (including numeric strings),
+`None`, complex numbers, and `decimal.Decimal` (not a `numbers.Real`) raise
+`TypeError`. Non-finite values, out-of-range values, and numbers whose float
+conversion overflows raise `ValueError`. Errors identify `k1` or `b` without
+including the supplied value and occur during construction, before indexing
+or retrieval. Values are not clamped or parsed from strings.
+
+With `k1=0`, each matching query term contributes its inverse-document-frequency
+weight regardless of frequency or chunk length. `b=0` disables length
+normalization; `b=1` applies it fully. There is no arbitrary upper cap on `k1`,
+but constructor validation does not make extreme finite values overflow-safe
+in the existing scoring arithmetic. The benchmark command still uses the
+defaults; these are library parameters, not new CLI options.
+
 ### BM25 score normalization
 
 The BM25 defaults are `k1=1.5` and `b=0.75`. Length normalization uses the

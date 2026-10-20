@@ -239,7 +239,11 @@ any cross-corpus mapping; matching uses only this application's ingested chunks.
    through `graph_chunks.document_id` before `LIMIT`. An excluded paper cannot
    bridge to another selected paper. Entity names remain shared; edges must be
    supported by selected chunks. Values, including IDs and entity names, are
-   bound SQL parameters.
+   bound SQL parameters. Scoped and unscoped chunk lookups deduplicate eligible
+   chunks and order by exact, case-sensitive `chunk_id` before `LIMIT`, independent
+   of insertion order or query plan. This is deterministic candidate selection,
+   not relevance ranking or numeric source order; direct graph scores and
+   multi-hop depth scores are unchanged.
 4. Scoped results are checked after retrieval and reranking. Before persisting
    an evidence snapshot, the runner's capture callback validates both the plan
    and captured source IDs against the original request, regardless of optional

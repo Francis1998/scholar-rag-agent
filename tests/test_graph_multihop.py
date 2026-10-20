@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from retrieval.graph import GraphRAGBuilder
+from retrieval.graph import GraphRAGBuilder, GraphRetriever
 from retrieval.models import Chunk, Entity, EntityEdge
 from retrieval.multihop import MultiHopRetriever
 from retrieval.scope import DocumentIdsInput
@@ -147,3 +147,47 @@ async def test_multihop_frontier_budget_is_not_spent_on_case_aliases(
     }
     assert results[-1].chunk == tail
     assert results[-1].path == ["alpha", "beta"]
+
+
+@pytest.mark.parametrize("reverse_insertion", [False, True])
+@pytest.mark.parametrize("scope", [None, ("selected",)], ids=["unscoped", "scoped"])
+async def test_graph_chunk_order_preserves_scores_paths_and_hop_priority(
+    tmp_path: Path, reverse_insertion: bool, scope: tuple[str, ...] | None
+) -> None:
+    store = SQLiteGraphStore(tmp_path / "graph.sqlite3")
+    root = Chunk(
+        chunk_id="z:root",
+        document_id="selected",
+        title="Root",
+        text="Seed Bridge",
+        source="fixture",
+    )
+    tails = [
+        Chunk(
+            chunk_id=chunk_id,
+            document_id="selected",
+            title="Tail",
+            text="Bridge",
+            source="fixture",
+        )
+        for chunk_id in ["a:tail", "b:tail", "c:tail", "d:tail"]
+    ]
+    chunks = [root, *tails]
+    for chunk in reversed(chunks) if reverse_insertion else chunks:
+        names = ["Seed", "Bridge"] if chunk == root else ["Bridge"]
+        store.add_mentions(chunk, [Entity(name=name) for name in names])
+    store.add_edges([EntityEdge(source="Seed", target="Bridge", chunk_id=root.chunk_id)])
+
+    direct_seeds = ["bRiDgE", "BRIDGE"]
+    direct = await GraphRetriever(store).retrieve(direct_seeds, limit=2, document_ids=scope)
+    assert [result.chunk for result in direct] == tails[:2]
+    assert [result.score for result in direct] == [1.0, 1.0]
+    assert all(result.retriever == "graph" and result.path == direct_seeds for result in direct)
+
+    multihop = await MultiHopRetriever(store).retrieve(
+        "Seed", ["sEeD"], depth=2, limit=3, document_ids=scope
+    )
+    assert [result.chunk for result in multihop] == [root, *tails[:2]]
+    assert [result.score for result in multihop] == [1.0, 0.5, 0.5]
+    assert [result.path for result in multihop] == [["seed"], ["bridge"], ["bridge"]]
+    assert all(result.retriever == "multihop" for result in multihop)

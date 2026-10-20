@@ -120,7 +120,7 @@ class SQLiteGraphStore:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[Chunk]:
-        """Return chunks mentioning any provided entities."""
+        """Return distinct eligible chunks in exact chunk-ID order before LIMIT."""
         scope = normalize_document_ids(document_ids)
         scope_parameters = () if scope is None else scope
         if not entities:
@@ -134,6 +134,7 @@ class SQLiteGraphStore:
             FROM graph_chunks c
             JOIN entity_mentions m ON c.chunk_id = m.chunk_id
             WHERE m.entity_key IN ({placeholders}) {_document_filter(scope)}
+            ORDER BY c.chunk_id
             LIMIT ?
         """  # nosec B608
         with closing(sqlite3.connect(self._database_path)) as connection, connection:

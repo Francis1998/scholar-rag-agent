@@ -4,6 +4,7 @@ import math
 from collections import Counter
 from collections.abc import Iterator
 from contextlib import contextmanager
+from numbers import Real
 from threading import RLock
 
 from retrieval.models import Chunk, SearchResult
@@ -61,7 +62,27 @@ class BM25Retriever:
     """Minimal BM25 retriever for scientific text chunks."""
 
     def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
-        """Create an empty BM25 index."""
+        """Create an empty BM25 index with finite k1 >= 0 and b within [0, 1].
+
+        Raises:
+            TypeError: If either parameter is not a real number or is a boolean.
+            ValueError: If either parameter is non-finite, overflows float
+                conversion, or falls outside its supported range.
+        """
+        for name, value in (("k1", k1), ("b", b)):
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise TypeError(f"{name} must be a real number (excluding booleans)")
+            finite_error = f"{name} must be finite and representable as a float"
+            try:
+                finite = math.isfinite(value)
+            except OverflowError:
+                raise ValueError(finite_error) from None
+            if not finite:
+                raise ValueError(finite_error)
+        if k1 < 0:
+            raise ValueError("k1 must be >= 0")
+        if not 0 <= b <= 1:
+            raise ValueError("b must be within [0, 1]")
         self._k1 = k1
         self._b = b
         self._chunks: dict[str, Chunk] = {}
