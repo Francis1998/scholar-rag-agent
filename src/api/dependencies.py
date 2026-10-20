@@ -53,9 +53,9 @@ class AppContainer:
         self.run_comparator = SavedRunComparator(self.evidence_exporter)
         self.corpus_drift = SQLiteCorpusDrift(database_path)
         self.run_history = SQLiteRunHistory(database_path)
-        self.answer_reviews = AnswerReviewService(
-            self.evidence_exporter, SQLiteAnswerReviews(database_path)
-        )
+        review_store = SQLiteAnswerReviews(database_path)
+        self.answer_reviews = AnswerReviewService(self.evidence_exporter, review_store)
+        self.notebook_reviews = AnswerReviewService(self.saved_run_evidence, review_store)
         self.evidence_annotations = SQLiteEvidenceAnnotations(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)

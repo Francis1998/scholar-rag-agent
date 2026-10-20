@@ -47,6 +47,7 @@ def _note(value: str) -> str:
 AnnotationIdentity = Annotated[ChunkIdentity, AfterValidator(_unicode)]
 SpanOffset = Annotated[int, Field(strict=True, ge=0, le=CaptureLimits().max_context_bytes)]
 _IDENTITY = TypeAdapter(AnnotationIdentity)
+_ANNOTATION_ID = TypeAdapter(UUID)
 
 
 class AnnotationSubmission(BaseModel):
@@ -401,5 +402,39 @@ class SQLiteEvidenceAnnotations:
                 )
                 _bounded_response(page)
                 return page
+        except sqlite3.Error as exc:
+            raise _unavailable() from exc
+
+    def get_annotation(
+        self, run_id: str, annotation_id: UUID
+    ) -> tuple[SavedEvidenceAnnotation, EvidenceSource]:
+        """Read one exact annotation and its validated frozen source in the same snapshot."""
+        try:
+            run_id = _IDENTITY.validate_python(run_id)
+            annotation_id = _ANNOTATION_ID.validate_python(annotation_id)
+        except ValidationError as exc:
+            raise _invalid_request() from exc
+        try:
+            with closing(self._connect()) as connection, connection:
+                connection.execute("BEGIN")
+                encoding: str = connection.execute("PRAGMA encoding").fetchone()[0]
+                sources = self._sources(connection, encoding, run_id)
+                records = self._read(
+                    connection,
+                    encoding,
+                    run_id,
+                    sources,
+                    annotation_id=annotation_id,
+                    fetch_limit=1,
+                )
+                if not records:
+                    raise AnnotationError(
+                        "annotation_not_found",
+                        "No annotation with this exact ID exists in this saved run.",
+                        404,
+                    )
+                saved = records[0]
+                _bounded_response(saved)
+                return saved, sources[saved.chunk_id]
         except sqlite3.Error as exc:
             raise _unavailable() from exc

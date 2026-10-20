@@ -11,13 +11,15 @@ from agent.review_models import (
     review_storage_unavailable,
 )
 from storage.answer_reviews import SQLiteAnswerReviews
-from storage.evidence_export import EvidenceExporter, EvidenceExportError
+from storage.evidence_export import EvidenceExporter, EvidenceExportError, SQLiteEvidenceReader
 
 
 class AnswerReviewService:
     """Only completed, exportable evidence can receive or expose review history."""
 
-    def __init__(self, exporter: EvidenceExporter, store: SQLiteAnswerReviews) -> None:
+    def __init__(
+        self, exporter: EvidenceExporter | SQLiteEvidenceReader, store: SQLiteAnswerReviews
+    ) -> None:
         self._exporter = exporter
         self._store = store
 

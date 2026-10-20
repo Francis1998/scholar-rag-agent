@@ -246,6 +246,18 @@ is still executing, and a legacy `DONE` record may not have exportable evidence.
 The [run-history guide](docs/guides/RUN_HISTORY_GUIDE.md) includes a complete
 offline restart demonstration, filtering, pagination, and Python contracts.
 
+### Read recorded human opinions in the browser
+
+Open `http://127.0.0.1:8000/explore/runs`, select a completed run's
+**Human-review notebook**, and inspect exact review decisions/comments and
+evidence annotations. Each history has independent 1-100/default-20 pagination.
+**Follow exact quote in frozen source** highlights only the recorded occurrence
+and retains a return to both history selections, even after corpus deletion and
+restart. These pages never write opinions, run retrieval or call models.
+An empty history is not endorsement; human decisions are not scientific truth.
+The [full guide and reproducible actual-browser demo](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md)
+cover setup, existing submission APIs, bounds, failures and privacy.
+
 ### Export the saved answer's cited references
 
 ```bash

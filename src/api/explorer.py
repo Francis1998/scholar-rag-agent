@@ -771,16 +771,18 @@ def _truncation(label: str, truncated: bool, limit: int) -> str:
     )
 
 
-def _pagination(first: str, next_url: str | None) -> str:
-    links = _link("first-page", first, "Start again with the same selection")
+def _pagination(
+    first: str, next_url: str | None, *, prefix: str = "", label: str = "Pagination"
+) -> str:
+    links = _link(prefix + "first-page", first, "Start again with the same selection")
     if next_url is not None:
         links += (
-            f'<a class="next-page" id="next-page" rel="next" href="{_escaped(next_url)}">'
+            f'<a class="next-page" id="{prefix}next-page" rel="next" href="{_escaped(next_url)}">'
             "Next page</a>"
         )
     else:
         links += "<span>End of this result set.</span>"
-    return f'<nav aria-label="Pagination">{links}</nav>'
+    return f'<nav aria-label="{label}">{links}</nav>'
 
 
 def _search_navigation(

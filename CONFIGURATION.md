@@ -110,6 +110,14 @@ cap. IDs and quote selectors come from a completed saved snapshot, not current
 model settings or corpus contents. See
 [the annotation contract and isolated demo](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
 
+The [human-review notebook](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) adds no
+settings, dependencies or tables. Each opinion history uses 1-100 rows (default
+20), independently; complete escaped HTML is limited to 1 MiB and native
+queries to 16 KiB. Existing annotation JSON and bounded frozen-event limits
+also apply. The notebook-only review reader shares the existing store; the
+original review APIs retain their first-terminal-event behavior. No provider
+defaults or model budgets change, and no model is needed for these page reads.
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive

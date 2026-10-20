@@ -561,6 +561,19 @@ does not erase annotations, saved evidence, or backups. Digests detect an
 inconsistent anchor, not a database owner's coherent rewrite of all records.
 See [exact selectors, bounds, and errors](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
 
+The [native human-review notebook](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md)
+reads both histories without adding browser writes, reviewer identities,
+consensus or scientific validation. Comments, notes and quotes render as exact
+escaped text under the existing script-free CSP. Generated links stay native;
+untrusted source URLs never activate. A selected annotation/source pair shares
+one validated frozen read snapshot, while the combined notebook explicitly does
+not. Bounded events, validated lookahead, a 16-KiB query cap and a 1-MiB escaped
+HTML cap fail explicitly, with sanitized logged errors and no partial page.
+No generation, retrieval, network, current-corpus reads or event/opinion writes
+occur on these GET routes. Normal startup still initializes existing stores.
+IDs/return selections remain visible in URLs/history/logs; no-store and
+anti-framing headers do not add authentication, retention or erasure.
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,
