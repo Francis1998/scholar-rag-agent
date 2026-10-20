@@ -463,6 +463,7 @@ Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
 | DiagnosticAccessBiasCueExtractor | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
 
+| NonDifferentialMisclassificationCueExtractor | [GIF](docs/assets/non-differential-misclassification-cues.gif) |
 | CompetingEventBiasCueExtractor | [GIF](docs/assets/competing-event-bias-cues.gif) |
 
 ## License
