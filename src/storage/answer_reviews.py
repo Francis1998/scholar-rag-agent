@@ -5,8 +5,6 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from pydantic import ValidationError
-
 from agent.review_models import (
     DEFAULT_REVIEW_LIMIT,
     AnswerReviewError,
@@ -33,7 +31,7 @@ def _read_record(row: sqlite3.Row) -> SavedAnswerReview:
     try:
         record["cited_chunk_ids"] = json.loads(encoded_ids)
         review = SavedAnswerReview.model_validate(record)
-    except (ValidationError, json.JSONDecodeError, RecursionError) as exc:
+    except (ValueError, RecursionError) as exc:
         raise invalid_review_record() from exc
     if record["review_id"] != str(review.review_id):
         raise invalid_review_record()

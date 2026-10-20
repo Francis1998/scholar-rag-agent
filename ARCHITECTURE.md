@@ -651,6 +651,27 @@ valid return selections are preserved; errors stay sanitized, no-store and
 script-free. No schema, retrieval, generation, writes or current-corpus
 hydration is added. See the [browser guide and real-frame demo](docs/guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+### Native human-review notebook
+
+`api.review_notebook` exposes GET `/explore/run/notebook` and
+`/explore/run/annotation`, discoverable from history and the frozen reader.
+The notebook independently reads `saved_run_evidence`, `notebook_reviews` and
+`evidence_annotations`; it does not claim a shared snapshot or consensus.
+`notebook_reviews` is another `AnswerReviewService` using the bounded evidence
+reader and the same initialized `SQLiteAnswerReviews` store as `answer_reviews`.
+The original review APIs keep their original exporter semantics; no constructor
+or schema write runs per GET.
+
+`SQLiteEvidenceAnnotations.get_annotation` reuses `_sources`, `_read` and the
+existing exact anchor validator in one `mode=ro` transaction, returning the
+record and frozen source together. Run-scoped UUID links remain stable as new
+opinions arrive. Highlighting escapes the source before/inside/after the
+validated code-point slice; it never searches today's corpus. Native helpers
+retain independent sequence cursors, saved-run/catalog return state and mount
+prefixes, with 16-KiB query and 1-MiB full escaped HTML caps. No new persistence,
+export shape, provider, dependency or model work is added. See the
+[notebook contract and real-browser demo](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md).
+
 ## Persistent Evidence Exports
 
 Completed exports also feed a pure, typed saved-run comparison through

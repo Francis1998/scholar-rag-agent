@@ -6,6 +6,12 @@ its recorded question and state, follow citations to captured passages, and
 download the existing JSON, Markdown or offline HTML artifact. No model,
 retrieval, current-corpus read or event write is needed to open saved evidence.
 
+Choose **Human-review notebook** on a run entry or its evidence reader to read
+recorded decisions/comments and exact annotations. The
+[notebook guide](HUMAN_REVIEW_NOTEBOOK_GUIDE.md) covers its independent histories
+and native exact-quote highlighting. Opinions stay separate from grounding;
+the existing offline downloads do not acquire live notebook data.
+
 [![Static preview of the actual synthetic saved-run browser](../assets/saved-run-browser.png)](../assets/saved-run-browser.gif)
 
 [Play the four-frame browser GIF](../assets/saved-run-browser.gif).

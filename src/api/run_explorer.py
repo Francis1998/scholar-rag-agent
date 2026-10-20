@@ -14,6 +14,7 @@ from starlette.types import Receive, Scope, Send
 
 from agent.evidence_html import HTML_CSP, BrowserNavigation, render_html
 from agent.models import AgentState
+from agent.review_models import AnswerReviewError
 from api.dependencies import AppContainer
 from api.explorer import (
     _CatalogLimit,
@@ -139,6 +140,27 @@ _EVIDENCE_ERRORS = {
     "evidence_storage_unavailable": (
         "Saved evidence storage is unavailable; this is not an empty run."
     ),
+    "invalid_review_record": (
+        "Saved answer reviews are invalid, inconsistent, or unsupported. No partial page is shown."
+    ),
+    "review_storage_unavailable": (
+        "Saved review or evidence storage is unavailable; this is not an empty notebook."
+    ),
+    "invalid_annotation_record": (
+        "Saved annotations are invalid or inconsistent with frozen evidence. No partial page "
+        "is shown and no quote is guessed."
+    ),
+    "annotation_storage_unavailable": (
+        "Saved annotation or evidence storage is unavailable; this is not an empty notebook."
+    ),
+    "annotation_response_too_large": (
+        "The annotation page exceeds 262144 UTF-8 JSON bytes. Request a smaller annotation_limit; "
+        "nothing was truncated or skipped."
+    ),
+    "annotation_not_found": (
+        "No annotation with this exact ID exists in this saved run. No replacement was guessed."
+    ),
+    "invalid_annotation_request": "Use an exact run ID and a valid annotation UUID.",
 }
 
 
@@ -171,7 +193,8 @@ class _RunExplorerRoute(APIRoute):
                     code,
                     title,
                     message,
-                    navigation=_navigation(options, root_path),
+                    navigation=_navigation(options, root_path)
+                    + getattr(request.state, "saved_run_detail_navigation", ""),
                     saved_runs=True,
                 )
 
@@ -187,6 +210,18 @@ class _RunExplorerRoute(APIRoute):
                     raise RequestValidationError([])
                 return await handler(request)
             except RequestValidationError:
+                if self.path in {"/explore/run/notebook", "/explore/run/annotation"}:
+                    return error(
+                        422,
+                        "invalid_notebook_request",
+                        "Invalid human-review notebook request",
+                        "Use an exact run_id (1-256 Unicode characters), review_limit and "
+                        "annotation_limit from 1-100 (default 20), and positive sequence cursors "
+                        "up to 9223372036854775807. An annotated source requires annotation_id "
+                        "as a UUID. Saved-run and catalog return filters keep their existing "
+                        "bounds. Unknown or duplicate fields, empty cursors, malformed UTF-8 "
+                        "and queries over 16384 bytes fail. No invalid selection was ignored.",
+                    )
                 return error(
                     422,
                     "invalid_saved_run_request",
@@ -206,7 +241,7 @@ class _RunExplorerRoute(APIRoute):
                     "A projected summary or its lookahead is invalid. No partial page is shown. "
                     "Inspect saved records with trusted local tools; browsing cannot repair them.",
                 )
-            except EvidenceExportError as exc:
+            except (EvidenceExportError, AnswerReviewError) as exc:
                 message = _EVIDENCE_ERRORS.get(exc.code)
                 return error(
                     exc.status_code if message is not None else 409,
@@ -227,17 +262,17 @@ class _RunExplorerRoute(APIRoute):
                 return error(
                     413,
                     "html_page_too_large",
-                    "History exceeds the HTML limit",
-                    "The complete escaped history page exceeds 1 MiB. Nothing was truncated "
+                    "Saved page exceeds the HTML limit",
+                    "The complete escaped browser page exceeds 1 MiB. Nothing was truncated "
                     "or skipped; request a smaller page size.",
                 )
             except (_UnrepresentableTextError, UnicodeError):
                 return error(
                     409,
                     "html_text_not_representable",
-                    "History text cannot be displayed faithfully",
-                    "A saved preview cannot be represented faithfully as UTF-8 HTML. "
-                    "Use the read-only JSON/Python history interface; no partial page is shown.",
+                    "Saved text cannot be displayed faithfully",
+                    "Saved text cannot be represented faithfully as UTF-8 HTML. "
+                    "Use the read-only JSON/Python interfaces; no partial page is shown.",
                 )
 
         return read
@@ -356,6 +391,14 @@ def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) 
             _url(root_path + "/explore/run", {"run_id": run.run_id, **options.parameters()}),
             "Inspect saved evidence",
         )
+        yield " " + _link(
+            f"review-notebook-{number}",
+            _url(
+                root_path + "/explore/run/notebook",
+                {"run_id": run.run_id, **options.parameters()},
+            ),
+            "Human-review notebook",
+        )
         yield "</article>"
     yield _pagination(
         _url(root_path + "/explore/runs", {**options.parameters(), "cursor": None}),
@@ -399,6 +442,10 @@ def explore_run(request: Request, options: Annotated[_RunParameters, Query()]) -
             history_url=_url(root_path + "/explore/runs", options.parameters()),
             catalog_url=_url(root_path + "/explore", options.catalog_parameters()),
             export_url=export_url,
+            notebook_url=_url(
+                root_path + "/explore/run/notebook",
+                {"run_id": options.run_id, **options.parameters()},
+            ),
         ),
     )
     return HTMLResponse(

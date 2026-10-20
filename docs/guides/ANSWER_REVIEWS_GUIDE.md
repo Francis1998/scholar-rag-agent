@@ -4,6 +4,12 @@ A researcher can inspect a [saved evidence export](EVIDENCE_EXPORT_GUIDE.md),
 record a judgment with a comment, and recover the ordered review history after
 restart. This is an integrated local API feature, not an opt-in ranking helper.
 
+To read recorded opinions without API tooling, choose **Human-review notebook**
+from a saved-run entry or its evidence reader. The
+[native notebook guide](HUMAN_REVIEW_NOTEBOOK_GUIDE.md) covers independent review
+and annotation pagination, exact frozen-quote highlighting and a real-browser
+demo. The browser is read-only; the submission contracts below are unchanged.
+
 **A human judgment is an opinion, not factual verification.** `accepted` does not
 prove a claim, remove grounding warnings, approve clinical use, or establish the
 identity of a reviewer. All three decisions leave the original answer, evidence,

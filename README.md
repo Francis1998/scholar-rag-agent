@@ -62,6 +62,7 @@ PDF-upload UI.
 | Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
+| Read saved human feedback in a normal browser | Open a completed run's notebook, page independent review/annotation histories, and highlight an annotation's exact occurrence in its frozen source | [Human-review notebook and actual browser GIF](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Find a saved answer in a normal browser | Preserve state/cursor selection, validate a complete capture, follow frozen sources and download existing artifacts without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
@@ -114,6 +115,18 @@ frozen evidence. The [complete browser/API/Python and portfolio guide](docs/guid
 reproduces the measured offline workflow and the [four actual browser frames](docs/assets/saved-run-browser.gif).
 The still preview makes animation opt-in; the GIF is a screenshot sequence,
 not a continuous recording, benchmark or scientific result.
+
+### Inspect human feedback beside that answer
+
+[![Actual synthetic human-review notebook preview](docs/assets/human-review-notebook.png)](docs/assets/human-review-notebook.gif)
+
+Choose **Human-review notebook** from a saved-run entry or its evidence reader.
+Read exact append-only decisions/comments and annotations, page each history
+independently, then follow a stable annotation into its full frozen source with
+only the recorded occurrence highlighted. Human opinions remain separate from
+model grounding and scientific truth; no browser writes or model calls occur.
+The [user/portfolio guide](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) reproduces
+this actual screenshot sequence, including corpus deletion/restart checks.
 
 ## Read saved evidence without the server
 

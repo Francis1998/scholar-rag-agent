@@ -62,6 +62,7 @@ class BrowserNavigation:
     history_url: str
     catalog_url: str
     export_url: str | None = None
+    notebook_url: str | None = None
 
 
 def _navigation(links: BrowserNavigation) -> Iterator[str]:
@@ -69,6 +70,8 @@ def _navigation(links: BrowserNavigation) -> Iterator[str]:
         ("back-to-runs", "Back to saved runs", links.history_url),
         ("back-to-catalog", "Back to current corpus", links.catalog_url),
     ]
+    if links.notebook_url is not None:
+        destinations.append(("review-notebook", "Human-review notebook", links.notebook_url))
     if links.export_url is not None:
         if urlsplit(links.export_url).query or urlsplit(links.export_url).fragment:
             raise ValueError("Evidence download navigation requires a path without a query.")

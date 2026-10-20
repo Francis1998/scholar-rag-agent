@@ -13,7 +13,9 @@ text's SHA-256, half-open offsets, and the exact quote. It never searches for a
 replacement occurrence, normalizes text, or consults the current corpus.
 
 **A note is a human opinion. A quote is provenance, not scientific entailment.**
-There is no authenticated reviewer identity, highlighting UI, semantic
+The [native human-review notebook](HUMAN_REVIEW_NOTEBOOK_GUIDE.md) now provides
+read-only history and exact frozen-source highlighting from the saved-run
+browser. There is still no authenticated reviewer identity, semantic
 validation, active learning, or signed audit-proof claim. Whole-answer
 [reviews](ANSWER_REVIEWS_GUIDE.md), collection [screening](PAPER_SCREENING_GUIDE.md),
 and the opt-in [term-matching span aligner](EVIDENCE_SPAN_ALIGN_GUIDE.md) retain
