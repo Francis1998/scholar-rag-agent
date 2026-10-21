@@ -63,6 +63,7 @@ PDF-upload UI.
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Read saved human feedback in a normal browser | Open a completed run's notebook, page independent review/annotation histories, and highlight an annotation's exact occurrence in its frozen source | [Human-review notebook and actual browser GIF](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
+| Take the complete human-review notebook offline | Download JSON/literal Markdown with frozen evidence and both entire opinion histories in one bounded read-only snapshot, not just visible pages | [Portable notebook: API/Python/browser/portfolio guide and executed illustration](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Find a saved answer in a normal browser | Preserve state/cursor selection, validate a complete capture, follow frozen sources and download existing artifacts without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
@@ -127,6 +128,25 @@ only the recorded occurrence highlighted. Human opinions remain separate from
 model grounding and scientific truth; no browser writes or model calls occur.
 The [user/portfolio guide](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) reproduces
 this actual screenshot sequence, including corpus deletion/restart checks.
+
+### Take the complete review notebook offline
+
+[![Executed synthetic notebook export: 23 human reviews and 23 annotations remain separate from model grounding](docs/assets/portable-review-notebook.png)](docs/assets/portable-review-notebook.gif)
+
+Choose **Download complete notebook (JSON/Markdown)** on that notebook.
+`GET /runs/{run_id}/notebook` reads frozen evidence and both whole histories
+in one read-only snapshot, retaining original sequences, UUIDs, decisions,
+timestamps, exact quotes/offsets/digests and source provenance. The query-addressed
+native links preserve opaque IDs and mount prefixes. Fixed record/UTF-8 limits
+return 413 rather than a partial notebook; ordinary paginated APIs are unchanged.
+
+The [complete guide and portfolio walkthrough](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md)
+reproduces an offline demo with 23 reviews/23 annotations versus 20 on each
+default page, unchanged exports after corpus deletion/restart, and JSON that
+reproduces Markdown after removing the database. Human opinions are not
+scientific validation or authenticated peer review. The opt-in GIF is an
+executed-output Pillow illustration, not browser footage; a
+[text transcript](docs/assets/portable-review-notebook.txt) is also available.
 
 ## Read saved evidence without the server
 
@@ -370,7 +390,7 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-14 America/Los_Angeles** catalog-only recheck identifies
+The **2026-10-21 America/Los_Angeles** catalog-only recheck identifies
 `gemini-4-argon` as Google's latest flagship while retaining the selected
 Astra, Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 defaults. OpenAI 6.1 Sol and
 Anthropic Haiku 5.5 are additional catalog alternatives, not new compatibility

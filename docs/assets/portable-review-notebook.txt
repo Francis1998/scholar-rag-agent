@@ -1,0 +1,27 @@
+1. Save one answer and separate human opinions
+Setup: provider=fake; state=DONE; saved events=8.
+Recorded human reviews=23; annotations=23.
+Decisions: accepted, needs_revision, rejected.
+Human opinions are separate from model grounding and scientific truth.
+
+2. Download the whole notebook, not a page
+Default JSON pages: 20 reviews / 20 annotations.
+Complete export: 23 reviews / 23 annotations.
+Original sequences: 23 down to 1.
+JSON: 35684 UTF-8 bytes; Markdown: 41117 UTF-8 bytes.
+One read-only SQLite snapshot; no page cursors or partial success.
+
+3. Keep the exact quoted occurrence
+First occurrence starts at 62; selected span [155, 191).
+Exact quote: GraphRAG connects synthetic evidence
+Annotation UUID: 4f7a3794-7425-41cb-925d-86b999269b4b
+Offsets are Unicode code points, not bytes or fuzzy text matches.
+The JSON retains source text, metadata and the full SHA-256.
+
+4. Read the same artifact after deletion and restart
+Current corpus chunks after deletion: 0.
+JSON and Markdown: byte-identical after corpus changes and app restarts.
+Saved events before/after: 8/8.
+Forbidden read-path calls: 0; socket calls: 0.
+Temporary database removed; portable JSON still reproduces Markdown.
+Synthetic execution illustration, not a recording or scientific result.

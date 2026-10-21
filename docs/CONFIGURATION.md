@@ -99,6 +99,19 @@ The existing 4-MiB evidence HTML cap includes inline navigation. No dependency,
 provider setting, database table or environment variable is added. See
 [the complete browser/API/Python guide](guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+## Portable human-review notebook bounds
+
+`GET /runs/{run_id}/notebook` and the exact-ID query-addressed native download
+read completed frozen events plus both complete opinion histories in one
+read-only SQLite transaction. Fixed maxima: 1,000 reviews, 1,000 annotations,
+262,144/16,384 UTF-8 text bytes per review/annotation row, 4,194,304 combined
+history text bytes, and 8,388,608 bytes per complete JSON/Markdown artifact.
+Both formats must fit before either succeeds; every count/byte overflow is 413.
+The existing 100-event, 1-MiB payload and 8-MiB event-text limits also apply.
+There are no new environment variables, tables, providers or retention jobs.
+The original JSON page APIs and independently paginated browser remain unchanged.
+See [the complete notebook contract](guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md).
+
 ## Collection-browser bounds
 
 The [native collection browser](guides/COLLECTION_BROWSER_GUIDE.md) needs no new
@@ -160,7 +173,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-14 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-21 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
 the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol

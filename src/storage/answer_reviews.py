@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from collections.abc import Mapping
 from contextlib import closing
 from pathlib import Path
 
@@ -23,7 +24,7 @@ FROM answer_reviews
 """
 
 
-def _read_record(row: sqlite3.Row) -> SavedAnswerReview:
+def _read_record(row: sqlite3.Row | Mapping[str, object]) -> SavedAnswerReview:
     record = dict(row)
     encoded_ids = record["cited_chunk_ids"]
     if not isinstance(encoded_ids, str):

@@ -35,6 +35,7 @@ accumulated feature list in the project README.
 | Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
 | Save immutable human notes on exact character spans in frozen run evidence | [Exact quote annotations and measured offline demo](guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Read independent human-review histories and follow exact frozen quote highlights from a saved run | [Native human-review notebook: user/API/Python/portfolio guide and actual browser GIF](guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
+| Download a whole frozen answer plus complete human-review and annotation histories in one bounded read snapshot | [Portable notebook: API/Python/browser/portfolio guide and executed-output GIF/still](guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Discover saved runs in a browser and follow their validated frozen evidence without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |

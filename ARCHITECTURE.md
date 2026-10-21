@@ -668,9 +668,31 @@ record and frozen source together. Run-scoped UUID links remain stable as new
 opinions arrive. Highlighting escapes the source before/inside/after the
 validated code-point slice; it never searches today's corpus. Native helpers
 retain independent sequence cursors, saved-run/catalog return state and mount
-prefixes, with 16-KiB query and 1-MiB full escaped HTML caps. No new persistence,
-export shape, provider, dependency or model work is added. See the
+prefixes, with 16-KiB query and 1-MiB full escaped HTML caps. These pages add no
+new persistence, provider, dependency or model work. See the
 [notebook contract and real-browser demo](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md).
+
+### Portable human-review notebook export
+
+`api.notebook_export` adds GET `/runs/{run_id}/notebook` and the exact-ID
+query alias `/explore/run/notebook/export`, linked natively from the notebook.
+`AppContainer.review_notebook` / `SQLiteReviewNotebook.export` uses
+`SQLiteEvidenceReader.snapshot` for one existing-database `mode=ro` connection
+and `BEGIN`. `BoundedRunEvents` feeds the unchanged `EvidenceExporter`, then
+bounded metadata preflights and exact UTF-8 accounting cover both whole opinion
+tables for that run. Existing review/reference and annotation/anchor validators
+are reused. Concurrent appends cannot mix different evidence/history snapshots.
+
+The returned `ReviewNotebook` nests the existing three record schemas, preserves
+each history's original descending sequences and does not infer people,
+consensus or a cross-table ordering. After closing the connection, both complete
+serializations are checked: JSON and literal-safe Markdown, each at most 8 MiB.
+Read caps are 1,000 records per history, 256-KiB/16-KiB per review/annotation text,
+4-MiB combined history text, and the existing bounded event limits. All export
+count/byte overflow is 413, never truncated success. No schema writes, runtime
+index/provider construction, live corpus reads or new configuration occur in
+the standalone exporter. Ordinary paginated APIs and evidence exports are unchanged.
+See [portable notebook semantics, exact bounds and executed demo](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md).
 
 ## Persistent Evidence Exports
 

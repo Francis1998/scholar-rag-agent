@@ -574,6 +574,33 @@ occur on these GET routes. Normal startup still initializes existing stores.
 IDs/return selections remain visible in URLs/history/logs; no-store and
 anti-framing headers do not add authentication, retention or erasure.
 
+### Portable complete notebooks
+
+[Notebook JSON/Markdown exports](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md)
+read saved events, all retained answer reviews and all retained quote annotations
+in one existing-database read-only snapshot. They preserve human decisions
+separately from model grounding; no consensus, latest verdict or reviewer identity
+is inferred. Source IDs/digests and exact code-point slices are validated using
+the existing opinion validators, never a live corpus or a guessed occurrence.
+
+Fixed limits bound each history to 1,000 records, per-row review/annotation text
+to 256 KiB/16 KiB, and combined history text to 4 MiB of exact UTF-8. Existing
+event read limits apply, including later events. Both complete JSON and literal
+Markdown must fit 8 MiB each before any success; every count/byte overflow
+returns sanitized 413 without discarding records. Stored-data corruption and
+missing tables remain explicit errors. Private headers cover successful and
+handled error responses, including 405; filenames hash rather than embed IDs.
+
+Markdown uses the existing variable-length literal fences for every untrusted
+value, never active source URLs or instructions. JSON is the exact machine
+artifact; a Markdown viewer can still visually normalize controls/whitespace.
+Comments, full captured text, queries and metadata can be sensitive. Saving a
+download makes a lasting copy; corpus deletion cannot erase it. No-store,
+nosniff and no-referrer are not authentication, encryption or redaction. Caps
+do not bound history retention, authenticate database authors or promise hard
+scan-time deadlines. No new provider, mutation, event write or configuration
+knob is introduced, and paginated opinion API contracts remain unchanged.
+
 ## Provider Credentials
 
 Gemini sends `GEMINI_API_KEY` in the provider-supported `x-goog-api-key` header,

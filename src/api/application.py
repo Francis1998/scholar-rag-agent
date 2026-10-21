@@ -19,6 +19,7 @@ from api.dependencies import create_container
 from api.documents import router as documents_router
 from api.evidence import router as evidence_router
 from api.explorer import router as explorer_router
+from api.notebook_export import router as notebook_export_router
 from api.research import router as research_router
 from api.retrieval import router as retrieval_router
 from api.review_notebook import router as review_notebook_router
@@ -78,6 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(explorer_router)
     application.include_router(run_explorer_router)
     application.include_router(review_notebook_router)
+    application.include_router(notebook_export_router)
     application.include_router(worksheet_explorer_router)
     application.include_router(collection_explorer_router)
     application.include_router(collections_router)

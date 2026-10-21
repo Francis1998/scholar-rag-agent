@@ -2,7 +2,8 @@
 
 import json
 import sqlite3
-from contextlib import closing
+from collections.abc import Iterator
+from contextlib import closing, contextmanager
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Protocol
@@ -345,6 +346,15 @@ class SQLiteEvidenceReader:
     def __init__(self, database_path: Path | str) -> None:
         self._database_uri = Path(database_path).resolve().as_uri() + "?mode=ro"
 
+    @contextmanager
+    def snapshot(self) -> Iterator[tuple[sqlite3.Connection, str]]:
+        """Share one existing-database read transaction with related frozen-record readers."""
+        with closing(sqlite3.connect(self._database_uri, uri=True, timeout=5)) as connection:
+            connection.row_factory = sqlite3.Row
+            connection.execute("BEGIN")
+            encoding: str = connection.execute("PRAGMA encoding").fetchone()[0]
+            yield connection, encoding
+
     def export(self, run_id: str) -> EvidenceBundle:
         """Keep exact IDs, including legacy query-addressable IDs; never repair from the corpus."""
         try:
@@ -357,10 +367,7 @@ class SQLiteEvidenceReader:
                 422,
             ) from exc
         try:
-            with closing(sqlite3.connect(self._database_uri, uri=True, timeout=5)) as connection:
-                connection.row_factory = sqlite3.Row
-                connection.execute("BEGIN")
-                encoding: str = connection.execute("PRAGMA encoding").fetchone()[0]
+            with self.snapshot() as (connection, encoding):
                 return EvidenceExporter(BoundedRunEvents(connection, encoding)).export(run_id)
         except sqlite3.Error as exc:
             raise EvidenceExportError(
