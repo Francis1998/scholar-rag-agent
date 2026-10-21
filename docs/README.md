@@ -385,6 +385,7 @@ instructions or evidence of current scientific performance.
 | Extract offline IncorporationBias cues | [IncorporationBiasCueExtractor](guides/INCORPORATION_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline WillRogersPhenomenon cues | [WillRogersPhenomenonCueExtractor](guides/WILL_ROGERS_PHENOMENON_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline NonDifferentialMisclassification cues | [NonDifferentialMisclassificationCueExtractor](guides/NON_DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) |
+| Extract offline SpinPHacking cues | [SpinPHackingCueExtractor](guides/SPIN_P_HACKING_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline DifferentialMisclassification cues | [DifferentialMisclassificationCueExtractor](guides/DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline ConfoundingByContraindication cues | [ConfoundingByContraindicationCueExtractor](guides/CONFOUNDING_BY_CONTRAINDICATION_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline SocialDesirabilityBias cues | [SocialDesirabilityBiasCueExtractor](guides/SOCIAL_DESIRABILITY_BIAS_CUES_EXTRACTOR_GUIDE.md) |
