@@ -10,8 +10,24 @@ class HashEmbeddingModel:
     """Small deterministic embedding model for local demos and tests."""
 
     def __init__(self, dimensions: int = 64) -> None:
-        """Create a hashing embedder with a fixed dimensionality."""
+        """Create a hashing embedder with positive integer dimensionality.
+
+        Raises:
+            ValueError: If dimensions is not a positive integer, excluding booleans.
+        """
         self.dimensions = dimensions
+
+    @property
+    def dimensions(self) -> int:
+        """Return the embedding vector size."""
+        return self._dimensions
+
+    @dimensions.setter
+    def dimensions(self, dimensions: int) -> None:
+        """Set a positive integer vector size, excluding booleans."""
+        if not isinstance(dimensions, int) or isinstance(dimensions, bool) or dimensions <= 0:
+            raise ValueError("dimensions must be a positive integer")
+        self._dimensions = dimensions
 
     def embed(self, text: str) -> list[float]:
         """Embed text into a normalized hashing vector.

@@ -83,9 +83,13 @@ flowchart LR
 `DenseRetriever` defaults to deterministic `HashEmbeddingModel` vectors, not
 learned semantic embeddings. `HyDEExpander` has no LLM in the API wiring: it adds
 a fixed hypothetical-abstract template. `AdaptiveReranker()` uses lexical
-overlap by default. Enabling its optional cross-encoder requires explicit Python
-wiring and suitable model dependencies; installing the `all` extra alone does
-not enable it.
+overlap by default without importing or downloading a model. Enabling its
+optional cross-encoder requires explicit Python wiring with
+`AdaptiveReranker(use_cross_encoder=True)` and suitable model dependencies/weights;
+installing the `all` extra alone does not enable it. Explicit opt-in propagates
+dependency-import and model-construction errors unchanged rather than silently
+falling back to lexical scores. The default API wiring remains unchanged; see
+[performance tuning](docs/PERFORMANCE.md) for diagnosis and deliberate lexical use.
 
 MMR, multi-HyDE, synonym rewriting, contextual compression, screening gates,
 and most other retrieval helpers are opt-in library components. Their names or
