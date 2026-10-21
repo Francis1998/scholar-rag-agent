@@ -13,7 +13,12 @@ Optional polish via **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2**.
 from retrieval.confounding_by_contraindication_cues import ConfoundingByContraindicationCueExtractor
 
 rows = ConfoundingByContraindicationCueExtractor().extract(
-    [{"paper_id": "p1", "abstract": "Analysis discusses confounding by contraindication carefully."}],
+    [
+        {
+            "paper_id": "p1",
+            "abstract": "Analysis discusses confounding by contraindication carefully.",
+        }
+    ],
 )
 print(rows[0].flagged, rows[0].cues)
 ```
