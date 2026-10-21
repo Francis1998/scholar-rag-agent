@@ -100,13 +100,34 @@ def test_preview_refuses_unrelated_or_oversized_transcripts(tmp_path: Path, text
     assert not (tmp_path / "preview.png").exists()
 
 
-def test_committed_previews_match_the_measured_transcript(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "png_compression", [None, 0], ids=["default-png", "lossless-reencoded-png"]
+)
+def test_committed_previews_match_the_measured_transcript(
+    tmp_path: Path, png_compression: int | None
+) -> None:
     root = Path(__file__).resolve().parents[1]
     assets = root / "docs/assets"
     gif, still = tmp_path / "reproduced.gif", tmp_path / "reproduced.png"
     create_preview(assets / "portable-review-notebook.txt", gif, still)
+    if png_compression is not None:
+        encoded = still.read_bytes()
+        with Image.open(still) as image:
+            pixels = image.copy()
+        pixels.save(still, compress_level=png_compression)
+        assert still.read_bytes() != encoded
+        with Image.open(still) as reencoded:
+            assert reencoded.size == pixels.size
+            assert reencoded.mode == pixels.mode
+            assert reencoded.tobytes() == pixels.tobytes()
     assert gif.read_bytes() == (assets / "portable-review-notebook.gif").read_bytes()
-    assert still.read_bytes() == (assets / "portable-review-notebook.png").read_bytes()
+    with (
+        Image.open(still) as reproduced,
+        Image.open(assets / "portable-review-notebook.png") as committed,
+    ):
+        assert reproduced.size == committed.size
+        assert reproduced.mode == committed.mode == "RGB"
+        assert reproduced.tobytes() == committed.tobytes()
     for document in (root / "README.md", root / "docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md"):
         text = document.read_text()
         assert "portable-review-notebook.png" in text
