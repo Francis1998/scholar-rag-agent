@@ -13,7 +13,12 @@ Optional polish via **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2**.
 from retrieval.spin_p_hacking_cues import SpinPHackingCueExtractor
 
 rows = SpinPHackingCueExtractor().extract(
-    [{"paper_id": "p1", "abstract": "Authors show spin reporting and possible p-hacking concerns."}],
+    [
+        {
+            "paper_id": "p1",
+            "abstract": "Authors show spin reporting and possible p-hacking concerns.",
+        }
+    ],
 )
 print(rows[0].flagged, rows[0].cues)
 ```
