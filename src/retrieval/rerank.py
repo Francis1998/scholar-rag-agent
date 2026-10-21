@@ -5,22 +5,19 @@ from retrieval.sparse import tokenize
 
 
 class AdaptiveReranker:
-    """Rerank chunks using a cross-encoder when available and lexical fallback otherwise."""
+    """Rerank chunks lexically by default or with an explicitly requested cross-encoder."""
 
     def __init__(
         self,
         use_cross_encoder: bool = False,
         model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
     ) -> None:
-        """Create an adaptive reranker."""
+        """Create a reranker; opt-in dependency or model initialization errors propagate."""
         self._model = None
         if use_cross_encoder:
-            try:
-                from sentence_transformers import CrossEncoder
+            from sentence_transformers import CrossEncoder
 
-                self._model = CrossEncoder(model_name)
-            except Exception:
-                self._model = None
+            self._model = CrossEncoder(model_name)
 
     async def rerank(self, query: str, results: list[SearchResult]) -> list[SearchResult]:
         """Return reranked results with adaptive scores, skipping inference for empty input."""

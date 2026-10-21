@@ -1,5 +1,6 @@
 """Offline regression coverage for adaptive reranking and empty evidence previews."""
 
+import builtins
 import hashlib
 import sys
 from pathlib import Path
@@ -69,6 +70,70 @@ def search_results() -> list[SearchResult]:
             ]
         )
     ]
+
+
+def test_cross_encoder_missing_dependency_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "sentence_transformers", None)
+
+    with pytest.raises(ModuleNotFoundError, match="sentence_transformers") as caught:
+        AdaptiveReranker(use_cross_encoder=True)
+
+    assert caught.value.name == "sentence_transformers"
+
+
+@pytest.mark.parametrize(
+    "error",
+    [OSError("model weights unavailable"), ValueError("invalid model configuration")],
+    ids=["weights-unavailable", "invalid-model"],
+)
+def test_cross_encoder_constructor_errors_propagate(
+    monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    module = ModuleType("sentence_transformers")
+    calls: list[str] = []
+
+    def cross_encoder(model_name: str) -> NoReturn:
+        calls.append(model_name)
+        raise error
+
+    monkeypatch.setattr(module, "CrossEncoder", cross_encoder, raising=False)
+    monkeypatch.setitem(sys.modules, "sentence_transformers", module)
+
+    with pytest.raises(type(error), match=str(error)) as caught:
+        AdaptiveReranker(use_cross_encoder=True, model_name="synthetic:broken-model")
+
+    assert caught.value is error
+    assert calls == ["synthetic:broken-model"]
+
+
+@pytest.mark.parametrize("use_default", [True, False], ids=["default", "explicit-false"])
+async def test_lexical_reranking_does_not_import_cross_encoder(
+    monkeypatch: pytest.MonkeyPatch, search_results: list[SearchResult], use_default: bool
+) -> None:
+    original_import = builtins.__import__
+    import_attempts: list[str] = []
+
+    def guarded_import(
+        name: str,
+        globals: dict[str, object] | None = None,
+        locals: dict[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "sentence_transformers" or name.startswith("sentence_transformers."):
+            import_attempts.append(name)
+            raise AssertionError("Lexical reranking must not import cross-encoder dependencies")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    reranker = AdaptiveReranker() if use_default else AdaptiveReranker(use_cross_encoder=False)
+
+    reranked = await reranker.rerank("GraphRAG retrieval", search_results)
+
+    assert reranker._model is None
+    assert [result.score for result in reranked] == [1.25, 1.25, 0.5]
+    assert all(result.retriever == "lexical_rerank" for result in reranked)
+    assert import_attempts == []
 
 
 @pytest.mark.parametrize("use_cross_encoder", [False, True], ids=["lexical", "cross-encoder"])

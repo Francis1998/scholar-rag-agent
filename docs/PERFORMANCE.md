@@ -16,6 +16,15 @@ use `--dataset` and independently reviewed labels for a meaningful baseline.
 - Keep multi-hop retrieval at depth `3` for research questions; higher values increase graph fan-out.
 - The API uses lexical reranking. A cross-encoder requires explicit Python wiring with `AdaptiveReranker(use_cross_encoder=True)`, its optional dependency, and access to model weights; installing extras alone does not enable it.
 
+Explicit cross-encoder initialization is fail-closed: dependency-import and
+model-construction errors propagate unchanged, including missing dependencies
+and unavailable or corrupt weights. Previously, these failures could silently
+substitute lexical scores despite `use_cross_encoder=True`. Diagnose and repair
+the dependency, model, or weight-access problem before retrying. To deliberately
+choose lexical reranking instead, construct `AdaptiveReranker()` or
+`AdaptiveReranker(use_cross_encoder=False)`; neither imports nor downloads a
+model. The default API wiring remains lexical and unchanged.
+
 ## Ingestion
 
 - Chunk size and overlap are controlled in `ingestion.chunking.TextChunker`.
