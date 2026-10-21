@@ -34,6 +34,7 @@ from storage.graph_store import SQLiteGraphStore
 from storage.literal_search import SQLiteLiteralSearch
 from storage.paper_collections import SQLitePaperCollections
 from storage.paper_screening import SQLitePaperScreening
+from storage.review_notebook import SQLiteReviewNotebook
 from storage.run_comparison import SavedRunComparator
 from storage.run_history import SQLiteRunHistory
 from storage.saved_bibliography import SQLiteSavedBibliography
@@ -57,6 +58,7 @@ class AppContainer:
         self.answer_reviews = AnswerReviewService(self.evidence_exporter, review_store)
         self.notebook_reviews = AnswerReviewService(self.saved_run_evidence, review_store)
         self.evidence_annotations = SQLiteEvidenceAnnotations(database_path)
+        self.review_notebook = SQLiteReviewNotebook(database_path)
         self.document_store = SQLiteDocumentStore(database_path)
         self.document_catalog = SQLiteDocumentCatalog(database_path)
         self.document_chunks = SQLiteDocumentChunks(database_path)

@@ -118,6 +118,14 @@ also apply. The notebook-only review reader shares the existing store; the
 original review APIs retain their first-terminal-event behavior. No provider
 defaults or model budgets change, and no model is needed for these page reads.
 
+The [portable notebook export](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md)
+also adds no settings, tables or providers. One read-only snapshot includes
+at most 1,000 reviews and 1,000 annotations, with 256-KiB/16-KiB per-row text
+limits respectively and 4 MiB of total UTF-8 history text. Existing bounded
+event reads apply. Both complete JSON and Markdown must fit 8 MiB each;
+overflow returns 413 without truncation. These caps are not storage retention
+policies and do not change the original paginated opinion APIs.
+
 Invalid timeouts, including `NaN`, infinities, and overflow such as `1e999`, fail
 settings validation at startup; they are not clamped or replaced with defaults.
 Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
@@ -147,7 +155,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-16 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-21 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
 retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
 Haiku 5.5 are additional catalog alternatives.

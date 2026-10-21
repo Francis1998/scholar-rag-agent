@@ -199,6 +199,20 @@ def _anchor(
         )
 
 
+def read_annotation_record(
+    record: dict[str, object], run_id: str, sources: dict[str, EvidenceSource]
+) -> SavedEvidenceAnnotation:
+    """Validate a decoded saved row and its exact frozen source, never a guessed occurrence."""
+    try:
+        annotation = SavedEvidenceAnnotation.model_validate(record)
+    except (ValidationError, UnicodeError) as exc:
+        raise _invalid_record() from exc
+    if annotation.run_id != run_id or record["annotation_id"] != str(annotation.annotation_id):
+        raise _invalid_record()
+    _anchor(annotation, sources, saved=True)
+    return annotation
+
+
 class SQLiteEvidenceAnnotations:
     """Initialize only an additive table in an existing database; never initialize run events."""
 
@@ -298,15 +312,9 @@ class SQLiteEvidenceAnnotations:
                     > MAX_RECORD_TEXT_BYTES
                 ):
                     raise _invalid_record()
-                annotation = SavedEvidenceAnnotation.model_validate(record)
             except (ValidationError, UnicodeError) as exc:
                 raise _invalid_record() from exc
-            if annotation.run_id != run_id or record["annotation_id"] != str(
-                annotation.annotation_id
-            ):
-                raise _invalid_record()
-            _anchor(annotation, sources, saved=True)
-            result.append(annotation)
+            result.append(read_annotation_record(record, run_id, sources))
         return result
 
     def create(

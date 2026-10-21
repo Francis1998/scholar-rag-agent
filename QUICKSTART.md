@@ -258,6 +258,22 @@ An empty history is not endorsement; human decisions are not scientific truth.
 The [full guide and reproducible actual-browser demo](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md)
 cover setup, existing submission APIs, bounds, failures and privacy.
 
+### Take the complete review notebook offline
+
+On the notebook, choose **Download complete notebook (JSON)** or **(Markdown)**.
+These downloads include the frozen query/answer/sources and **both entire
+histories**, ignoring visible page limits/cursors. They use one read-only SQLite
+snapshot and preserve exact quote offsets, digests, source provenance, original
+sequences, UUIDs and timestamps. There is no combined verdict or reviewer identity.
+
+The API is `GET /runs/{run_id}/notebook?format=json|markdown`; native links use
+`GET /explore/run/notebook/export?run_id=...` to retain IDs that cannot safely
+be URL path segments. A 413 means a complete notebook exceeded fixed limits;
+nothing is truncated. The [complete API/Python/browser and portfolio
+guide](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) includes a reproducible,
+fake-only synthetic demo and opt-in executed-output GIF. No model credentials
+or live corpus are needed to export an existing captured run.
+
 ### Export the saved answer's cited references
 
 ```bash

@@ -53,6 +53,10 @@ immutable sequences, newest first; restart a history to see new appends.
 Unseen pages are not audited for corruption. A source link uses a stable
 run-scoped UUID rather than its moving page position. That individual
 annotation and its source are read in one read-only SQLite transaction.
+For a **complete shared snapshot** rather than visible pages, use the new
+**Download complete notebook (JSON/Markdown)** links. The
+[portable notebook guide](PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) covers whole-history
+limits, offline use and the executed demo; existing page semantics stay unchanged.
 
 Keyboard navigation, visible focus, skip links, Find and Print are native.
 Source metadata remains literal text. A highlighted quote is provenance,
@@ -86,8 +90,8 @@ All links and forms retain `root_path` and nested mount prefixes.
 
 The two browser pages reuse the existing explorer escaping, CSP, URL, paging
 and sanitized logged error contracts. No JavaScript, client framework, external
-resources, redirects, new dependencies, tables, export formats or settings are
-introduced. Existing offline evidence downloads remain self-contained and do
+resources, redirects, new dependencies, tables or settings are
+introduced by these pages. Existing offline evidence downloads remain self-contained and do
 not acquire the live notebook or human opinion records.
 
 | Outcome | Meaning and recovery |
@@ -117,7 +121,8 @@ No prior opinions or saved events are changed.
 
 These HTML routes complement, rather than replace,
 `GET /runs/{run_id}/reviews`, `GET /runs/{run_id}/annotations` and the existing
-submission APIs. The notebook exposes no automatic grading or new export.
+submission APIs. The notebook exposes no automatic grading. Complete human-opinion
+downloads use the separate [portable notebook endpoint](PORTABLE_REVIEW_NOTEBOOK_GUIDE.md).
 For query-addressed legacy run IDs that contain slashes, use the browser or
 Python rather than rewriting IDs to fit path-based APIs.
 

@@ -238,6 +238,21 @@ def _notebook(
 ) -> Iterator[str]:
     yield _navigation(options, root_path) + _detail_navigation(options, root_path)
     yield _NOTICE
+    yield '<nav aria-label="Complete notebook downloads">'
+    for format, label in (("json", "JSON"), ("markdown", "Markdown")):
+        url = _url(
+            root_path + "/explore/run/notebook/export",
+            {"run_id": bundle.run_id, "format": format},
+        )
+        yield (
+            f'<a id="download-notebook-{format}" href="{_escaped(url)}" download>'
+            f"Download complete notebook ({label})</a>"
+        )
+    yield (
+        "</nav><p>Downloads include frozen evidence and both complete histories in one read-only "
+        "snapshot, not just the visible pages. Fixed record and byte limits fail explicitly "
+        "without partial exports. Review sensitive source text and human notes before sharing.</p>"
+    )
     yield (
         "<p>The answer, reviews and annotation history are independently read and paginated, "
         "not one shared snapshot. Newly appended opinions require restarting that history. "
