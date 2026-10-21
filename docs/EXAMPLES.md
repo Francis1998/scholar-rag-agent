@@ -35,6 +35,14 @@ These helpers are local lexical checks, not scientific verification. Importing
 same class. Static type checking uses the explicit export, not the runtime
 attribute fallback, so unknown or misspelled exports remain type errors.
 
+For local dense embeddings, use `from retrieval.embeddings import HashEmbeddingModel`.
+`HashEmbeddingModel(dimensions=64)` uses the default vector size. Construction and
+later `embedder.dimensions = ...` assignments require a positive integer, excluding
+booleans; invalid values raise `ValueError("dimensions must be a positive integer")`
+without including the supplied value. Rejected assignments preserve the previous
+size. Positive reassignment remains supported; rebuild any existing dense index
+after changing its size.
+
 For application construction in library code, use
 `from api.application import create_app`. Importing this factory does not read
 runtime settings or initialize storage; calling it creates the app and storage.
