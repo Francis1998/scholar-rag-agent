@@ -181,6 +181,133 @@ def test_text_chunker_preserves_empty_document_behavior(text: str) -> None:
     assert TextChunker(chunk_size=1, overlap=0).chunk(document) == []
 
 
+@pytest.fixture(
+    params=[
+        pytest.param(0, id="zero"),
+        pytest.param(-1, id="negative"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(1.0, id="integral-float"),
+        pytest.param(1.5, id="fractional-float"),
+        pytest.param(math.nan, id="nan"),
+        pytest.param(math.inf, id="infinity"),
+        pytest.param(-math.inf, id="negative-infinity"),
+        pytest.param("64", id="numeric-string"),
+        pytest.param("private-dimension-value", id="private-string"),
+        pytest.param(None, id="none"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+        pytest.param(object(), id="object"),
+        pytest.param(1 + 0j, id="complex"),
+    ]
+)
+def invalid_embedding_dimensions(request: pytest.FixtureRequest) -> object:
+    return request.param
+
+
+def test_hash_embedding_rejects_invalid_dimensions_at_construction(
+    invalid_embedding_dimensions: object,
+) -> None:
+    with pytest.raises(ValueError, match=r"^dimensions must be a positive integer$"):
+        HashEmbeddingModel(dimensions=invalid_embedding_dimensions)  # type: ignore[arg-type]
+
+
+async def test_hash_embedding_rejects_invalid_dimension_reassignment(
+    invalid_embedding_dimensions: object,
+) -> None:
+    embedder = HashEmbeddingModel(dimensions=8)
+    retriever = DenseRetriever(embedder)
+    chunk = Chunk(
+        chunk_id="matching",
+        document_id="paper",
+        title="Evidence",
+        text="Retrieval.",
+        source="fixture",
+    )
+    retriever.add_chunks([chunk])
+
+    with pytest.raises(ValueError, match=r"^dimensions must be a positive integer$"):
+        embedder.dimensions = invalid_embedding_dimensions  # type: ignore[assignment]
+
+    assert embedder.dimensions == 8
+    assert embedder.embed("retrieval") == [0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    assert embedder.embed("") == [0.0] * 8
+    assert await retriever.retrieve("retrieval!") == [
+        SearchResult(chunk=chunk, score=1.0, retriever="dense")
+    ]
+
+
+@pytest.mark.parametrize("dimensions", [1, 7, 64, 129, 10**30])
+def test_hash_embedding_accepts_positive_dimensions_without_an_upper_cap(dimensions: int) -> None:
+    embedder = HashEmbeddingModel(dimensions=dimensions)
+    assert embedder.dimensions == dimensions
+    reassigned = HashEmbeddingModel()
+    reassigned.dimensions = dimensions
+    assert reassigned.dimensions == dimensions
+
+
+def test_hash_embedding_preserves_exact_default_vectors() -> None:
+    embedder = HashEmbeddingModel()
+    expected = [0.0] * 64
+    expected[0] = -0.4472135954999579
+    expected[53] = -0.8944271909999159
+
+    assert embedder.dimensions == 64
+    assert embedder.embed("machine machine learning") == expected
+    assert embedder.embed("(Machine), MACHINE! 'learning'.") == expected
+    assert embedder.embed("machine machine learning") == expected
+    assert HashEmbeddingModel(dimensions=64).embed("machine machine learning") == expected
+    assert sum(value**2 for value in expected) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("dimensions", [1, 7, 64, 129])
+@pytest.mark.parametrize("text", ["", " \t\n ", ".,;:()[]{}!?\"'"])
+def test_hash_embedding_preserves_empty_token_vectors(dimensions: int, text: str) -> None:
+    assert HashEmbeddingModel(dimensions=dimensions).embed(text) == [0.0] * dimensions
+
+
+def test_hash_embedding_preserves_cancelling_collision_vectors() -> None:
+    assert HashEmbeddingModel(dimensions=8).embed("alpha gamma") == [0.0] * 8
+
+
+def test_hash_embedding_preserves_positive_dimension_reassignment() -> None:
+    embedder = HashEmbeddingModel(dimensions=1)
+    assert embedder.embed("retrieval") == [-1.0]
+
+    embedder.dimensions = 8
+
+    assert embedder.dimensions == 8
+    assert embedder.embed("retrieval.") == [0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0]
+    assert embedder.embed(" \t\n ") == [0.0] * 8
+    assert HashEmbeddingModel().dimensions == 64
+
+
+@pytest.mark.parametrize("dimensions", [None, 1, 7, 64, 129])
+async def test_hash_embedding_preserves_dense_retrieval(dimensions: int | None) -> None:
+    embedder = HashEmbeddingModel()
+    if dimensions is not None:
+        embedder.dimensions = dimensions
+    retriever = DenseRetriever(embedder)
+    chunks = [
+        Chunk(
+            chunk_id=chunk_id,
+            document_id=chunk_id,
+            title="Evidence",
+            text=text,
+            source="fixture",
+        )
+        for chunk_id, text in [("other", "alpha"), ("matching", "retrieval."), ("blank", "")]
+    ]
+    retriever.add_chunks(chunks)
+
+    results = await retriever.retrieve("Retrieval!")
+
+    assert [result.chunk.chunk_id for result in results] == ["matching", "blank", "other"]
+    assert [result.score for result in results] == [1.0, 0.0, -1.0 if dimensions == 1 else 0.0]
+    assert all(result.retriever == "dense" for result in results)
+    assert [result.score for result in await retriever.retrieve("")] == [0.0, 0.0, 0.0]
+
+
 def test_hash_embedding_is_invariant_to_attached_punctuation() -> None:
     """Trailing punctuation must not change a token's embedding dimension.
 
