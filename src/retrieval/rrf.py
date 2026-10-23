@@ -12,7 +12,15 @@ def reciprocal_rank_fusion(
 
     Duplicates use their first original 1-based rank in each list. A ``None``
     limit returns all results; integer limits retain Python slicing semantics.
+    ``rank_constant`` must be a positive Python ``int``, excluding ``bool``.
+
+    Raises:
+        ValueError: If ``rank_constant`` is invalid, before reading any input
+            lists, including when the input is empty.
     """
+    if not isinstance(rank_constant, int) or isinstance(rank_constant, bool) or rank_constant <= 0:
+        raise ValueError("rank_constant must be a positive integer")
+
     scores: dict[str, float] = {}
     best_results: dict[str, SearchResult] = {}
     paths: dict[str, list[str]] = {}

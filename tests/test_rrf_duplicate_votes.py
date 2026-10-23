@@ -35,6 +35,70 @@ def fuse(request: pytest.FixtureRequest) -> Fusion:
     return lambda rankings, k: ReciprocalRankFusionGate(k=k).gate(rankings)
 
 
+@pytest.mark.parametrize(
+    "rank_constant",
+    [0, -1, -61, True, False, 1.5, 60.0, float("nan"), float("inf"), float("-inf"), "60", None, []],
+)
+@pytest.mark.parametrize(
+    "rankings", [[], [[]], [[_result("a")]]], ids=["no-lists", "empty-list", "nonempty"]
+)
+def test_rejects_invalid_constants_even_with_empty_input(
+    fuse: Fusion, rank_constant: object, rankings: list[list[SearchResult]]
+) -> None:
+    before = deepcopy(rankings)
+
+    with pytest.raises(ValueError, match=r"^(rank_constant|k) must be a positive integer$"):
+        fuse(rankings, rank_constant)  # type: ignore[arg-type]
+
+    assert rankings == before
+
+
+@pytest.mark.parametrize("rank_constant", [1, 10, 60, 2**64, 10**100, 10**308])
+def test_valid_constants_preserve_exact_scores_provenance_and_inputs(rank_constant: int) -> None:
+    first = _result("b", score=-100)
+    duplicate = _result("b", score=100, retriever="duplicate")
+    duplicate.chunk.title = "Later metadata"
+    other = _result("a", score=100)
+    second_list_hit = _result("a", retriever="bm25")
+    graph_hit = _result("c", retriever="graph")
+    rankings = [
+        [first, duplicate, other],
+        [second_list_hit, second_list_hit, _result("b", retriever="bm25")],
+        [],
+        [graph_hit],
+    ]
+    before = deepcopy(rankings)
+    shared_score = 1.0 / (rank_constant + 1) + 1.0 / (rank_constant + 3)
+    expected = [
+        SearchResult(chunk=hit.chunk, score=shared_score, retriever="rrf", path=["dense", "bm25"])
+        for hit in (first, other)
+    ]
+    expected.append(
+        SearchResult(
+            chunk=graph_hit.chunk,
+            score=1.0 / (rank_constant + 1),
+            retriever="rrf",
+            path=["graph"],
+        )
+    )
+
+    fused = reciprocal_rank_fusion(rankings, limit=None, rank_constant=rank_constant)
+    assert rankings == before
+    gated = ReciprocalRankFusionGate(k=rank_constant).gate(rankings)
+
+    assert rankings == before
+    assert fused == expected
+    assert gated == [
+        result.model_copy(update={"retriever": "reciprocal_rank_fusion_gate"})
+        for result in expected
+    ]
+    assert all(result.score > 0 for result in fused)
+    assert fused[0] is not first
+    assert fused[0].path is not first.path
+    assert gated[0] is not first
+    assert gated[0].path is not first.path
+
+
 @pytest.mark.parametrize("rank_constant", [10, 60])
 def test_single_repeated_hit_contributes_once(fuse: Fusion, rank_constant: int) -> None:
     hit = _result("shared")
