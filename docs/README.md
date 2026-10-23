@@ -409,4 +409,5 @@ instructions or evidence of current scientific performance.
 | Extract offline OutcomeReportingBias cues | [OutcomeReportingBiasCueExtractor](guides/OUTCOME_REPORTING_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline NonresponseBias cues | [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline PrevalentUserBias cues | [PrevalentUserBiasCueExtractor](guides/PREVALENT_USER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
+| Extract offline TimeDependentBias cues | [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
