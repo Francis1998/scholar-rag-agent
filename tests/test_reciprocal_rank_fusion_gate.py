@@ -22,14 +22,13 @@ def _result(chunk_id: str, score: float = 1.0, retriever: str = "bm25") -> Searc
     )
 
 
-def test_rejects_non_positive_k() -> None:
-    with pytest.raises(ValueError, match="k must be a positive integer"):
-        ReciprocalRankFusionGate(k=0)
-
-
-def test_rejects_non_integer_k() -> None:
-    with pytest.raises(ValueError, match="k must be a positive integer"):
-        ReciprocalRankFusionGate(k=1.5)  # type: ignore[arg-type]
+@pytest.mark.parametrize(
+    "k",
+    [0, -1, -61, True, False, 1.5, 60.0, float("nan"), float("inf"), float("-inf"), "60", None, []],
+)
+def test_rejects_invalid_k_at_construction(k: object) -> None:
+    with pytest.raises(ValueError, match=r"^k must be a positive integer$"):
+        ReciprocalRankFusionGate(k=k)  # type: ignore[arg-type]
 
 
 def test_empty_result_sets() -> None:

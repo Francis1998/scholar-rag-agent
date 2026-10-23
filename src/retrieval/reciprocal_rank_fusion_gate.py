@@ -22,12 +22,13 @@ class ReciprocalRankFusionGate:
         """Create an RRF gate.
 
         Args:
-            k: Rank smoothing constant (positive integer).
+            k: Rank smoothing constant (positive Python ``int``, excluding ``bool``).
 
         Raises:
-            ValueError: If *k* is not a positive integer.
+            ValueError: If *k* is invalid, at construction rather than when
+                processing results (including empty inputs).
         """
-        if not isinstance(k, int) or k <= 0:
+        if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
             raise ValueError("k must be a positive integer")
         self._k = k
 
