@@ -10,7 +10,7 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Finite reasoning/generation timeout in seconds, at least `1`. |
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per query, despite the historical setting name; not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound; planner tasks request one to three hops depending on intent. |
-| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
+| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Exact lowercase provider family for DEFAULT tasks and missing-provider fallbacks: `openai`, `anthropic`, `gemini`, `kimi`, or `fake`; not an API model ID. |
 | `SCHOLAR_RAG_OPENAI_MODEL` | `gpt-6-astra` | OpenAI Chat Completions model ID. |
 | `SCHOLAR_RAG_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Anthropic Messages model ID. |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini-3.8-flash` | Gemini generateContent model ID. |
@@ -132,7 +132,14 @@ Python `SafetyLimits` and effective `RunConfiguration` accept finite positive
 subsecond values such as `0.1`; no additional maximum is imposed. See the
 [timeout policy](SAFETY.md#timeout-policy) for coercion and runtime error behavior.
 
-Model IDs are stripped of surrounding whitespace and must be non-empty strings.
+`SCHOLAR_RAG_DEFAULT_MODEL` (`Settings.default_model`) is case-sensitive and its
+parsed value is not trimmed. Blank, unknown, differently cased,
+surrounding-whitespace, and API model ID values fail settings validation before
+the application container, storage, or providers initialize; they do not silently
+select another provider. Leave it unset to retain `openai`.
+
+Unlike provider families, API model IDs are stripped of surrounding whitespace
+and must be non-empty strings.
 Unset values use the defaults; explicit blank values fail settings validation,
 even without API keys. Model IDs alone never enable live calls.
 
@@ -151,6 +158,9 @@ is configured. SPEED prefers Gemini, COST prefers Kimi, and DEFAULT uses
 `SCHOLAR_RAG_DEFAULT_MODEL`. A missing preferred provider falls back to the
 configured default family, then OpenAI, then the offline fake. This is
 configuration fallback, not failover after an HTTP error.
+Setting `SCHOLAR_RAG_DEFAULT_MODEL=fake` does not disable preferred live
+providers: a keyed Anthropic provider still handles REASONING, and keyed
+Gemini/Kimi providers still handle SPEED/COST.
 
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
