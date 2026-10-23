@@ -407,4 +407,5 @@ instructions or evidence of current scientific performance.
 | Extract offline SpectrumBias cues | [SpectrumBiasCueExtractor](guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md) |
 | Extract offline AtomisticFallacy cues | [AtomisticFallacyCueExtractor](guides/ATOMISTIC_FALLACY_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline OutcomeReportingBias cues | [OutcomeReportingBiasCueExtractor](guides/OUTCOME_REPORTING_BIAS_CUES_EXTRACTOR_GUIDE.md) |
+| Extract offline NonresponseBias cues | [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
