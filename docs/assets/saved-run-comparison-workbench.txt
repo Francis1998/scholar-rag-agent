@@ -1,0 +1,24 @@
+1. Choose an explicit saved baseline
+Two actual offline fake-adapter queries saved 16 events.
+History -> baseline picker -> native GET form: HTTP 200.
+JSON-string choices preserve exact IDs; no automatic baseline.
+Original synthetic fixtures; no real papers, credentials or live models.
+
+2. Inspect recorded outputs side by side
+Frozen source counts: baseline=2; candidate=2.
+Shared=1; added=1; removed=1.
+Changed saved fields=13; native/Python/JSON API agree.
+Same-run any_changes=False; no quality or release verdict.
+
+3. Reverse direction and open frozen sources
+Swap: HTTP 200; baseline and candidate explicitly reverse.
+Exact candidate frozen source: HTTP 200; rank=1.
+Source reader and comparison retain the original filtered history page.
+Missing candidate: HTTP 404; no partial comparison.
+
+4. Restart after deleting the synthetic corpus
+Remaining corpus chunks=0; events before/after=16/16.
+Restarted comparison and source HTML are byte-identical.
+Guarded generation/retrieval/writes/external calls=0.
+Temporary fixture database removed; inspectable responses retained.
+Measured-output illustration, not browser footage or a fair A/B experiment.

@@ -38,7 +38,8 @@ accumulated feature list in the project README.
 | Download a whole frozen answer plus complete human-review and annotation histories in one bounded read snapshot | [Portable notebook: API/Python/browser/portfolio guide and executed-output GIF/still](guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
 | Discover saved runs in a browser and follow their validated frozen evidence without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](guides/SAVED_RUN_BROWSER_GUIDE.md) |
-| Inspect exact changes between two saved evidence bundles without rerunning models | [Run comparison and offline demo](guides/RUN_COMPARISON_GUIDE.md) |
+| Choose an explicit saved baseline, compare recorded outputs side by side, swap direction and open precise frozen sources | [Native comparison workbench: browser/API/Python/portfolio and measured illustration](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md) |
+| Inspect exact changes between two saved evidence bundles without rerunning models | [Existing JSON/Python comparison contract](guides/RUN_COMPARISON_GUIDE.md) |
 | Check saved source chunks against today's persisted corpus without regeneration | [Corpus drift and measured offline demo](guides/CORPUS_DRIFT_GUIDE.md) |
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |
 | Reproduce the showcased animation | [Demo](DEMO.md) |

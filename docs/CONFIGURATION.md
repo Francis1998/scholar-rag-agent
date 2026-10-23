@@ -99,6 +99,14 @@ The existing 4-MiB evidence HTML cap includes inline navigation. No dependency,
 provider setting, database table or environment variable is added. See
 [the complete browser/API/Python guide](guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+`GET /explore/runs/compare` adds a native baseline/candidate chooser, with
+1-100 choices per page (default 20), JSON-string exact IDs and structured history
+return state. The same 16-KiB query and 1-MiB escaped-page caps apply, plus bounded
+frozen events on each side. Either-side errors reject all results. There are no
+new settings, dependencies, tables or provider changes; the original JSON
+comparison API is unchanged. See the
+[workbench contract and measured demo](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md).
+
 ## Portable human-review notebook bounds
 
 `GET /runs/{run_id}/notebook` and the exact-ID query-addressed native download
@@ -173,7 +181,7 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-21 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-23 America/Los_Angeles** four-provider catalog-only recheck,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
 the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol

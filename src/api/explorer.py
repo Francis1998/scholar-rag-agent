@@ -110,6 +110,9 @@ textarea { min-height: 7rem; resize: vertical; }
 table { width: 100%; border-collapse: collapse; background: white; }
 th, td { border: 1px solid #c4d3df; padding: .65rem; text-align: left; vertical-align: top; }
 caption { text-align: left; font-weight: 650; padding: .5rem 0; }
+.comparison-grid { overflow-x: auto; }
+.comparison-table { table-layout: fixed; min-width: 34rem; }
+.comparison-table th:first-child { width: 22%; }
 summary { cursor: pointer; font-weight: 650; }
 form p { font-size: .9rem; margin: .4rem 0; }
 button { font: inherit; font-weight: 650; min-height: 2.75rem; padding: .5rem 1rem;

@@ -66,7 +66,7 @@ PDF-upload UI.
 | Take the complete human-review notebook offline | Download JSON/literal Markdown with frozen evidence and both entire opinion histories in one bounded read-only snapshot, not just visible pages | [Portable notebook: API/Python/browser/portfolio guide and executed illustration](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
 | Find a saved answer in a normal browser | Preserve state/cursor selection, validate a complete capture, follow frozen sources and download existing artifacts without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) |
-| Review changes between two completed runs | Compare frozen queries, scope, configuration, answers, and evidence without retrieval or generation | [Saved-run comparison](docs/guides/RUN_COMPARISON_GUIDE.md) |
+| Review changes between two completed runs | Choose an explicit baseline in the native browser, compare recorded outputs side by side, swap direction and open exact frozen sources | [Saved-run comparison workbench: browser/API/Python/portfolio](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md) |
 | Check whether saved source chunks still match the local corpus | Read unchanged/changed/missing findings in frozen rank order, without regenerating or rewriting evidence | [Corpus drift and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md) |
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
@@ -116,6 +116,24 @@ frozen evidence. The [complete browser/API/Python and portfolio guide](docs/guid
 reproduces the measured offline workflow and the [four actual browser frames](docs/assets/saved-run-browser.gif).
 The still preview makes animation opt-in; the GIF is a screenshot sequence,
 not a continuous recording, benchmark or scientific result.
+
+### Compare two saved answers without rerunning
+
+[![Executed synthetic comparison measurements: 16 events and one shared, added and removed source pair](docs/assets/saved-run-comparison-workbench.png)](docs/assets/saved-run-comparison-workbench.gif)
+
+Choose **Compare saved runs** or **Use as comparison baseline** in saved-run
+history. Native GET controls preserve exact IDs, including controls and slashes;
+inspect query/scope/configuration/provider-model/answer/evidence changes side by
+side, explicitly swap direction, or compare a run to itself. Source links open
+that side's precise frozen rank and retain the original history page.
+
+The [complete user/API/Python/portfolio guide](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md)
+reproduces this **measured-output Pillow illustration, not browser footage**;
+an [exact text transcript](docs/assets/saved-run-comparison-workbench.txt) is
+available. The static preview makes animation opt-in. Bounded read-only events
+and fail-closed HTML add no model calls, retrieval, writes or migration.
+No-change is not a quality verdict, safe-release decision, full trace equality
+or a fair A/B experiment. The existing JSON comparison API is unchanged.
 
 ### Inspect human feedback beside that answer
 
@@ -390,7 +408,7 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-21 America/Los_Angeles** catalog-only recheck identifies
+The **2026-10-23 America/Los_Angeles** catalog-only recheck identifies
 `gemini-4-argon` as Google's latest flagship while retaining the selected
 Astra, Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 defaults. OpenAI 6.1 Sol and
 Anthropic Haiku 5.5 are additional catalog alternatives, not new compatibility

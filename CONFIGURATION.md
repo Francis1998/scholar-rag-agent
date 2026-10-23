@@ -103,6 +103,14 @@ escaped HTML cap. Opening frozen evidence uses bounded read-only events
 HTML limit. The 16-KiB native query-string cap is independent of provider
 budgets. These reads do not consult models or the current corpus.
 
+The [native comparison workbench](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md)
+adds no settings. Its GET chooser uses 1-100 saved summaries (default 20);
+baseline/candidate IDs are JSON-string values, and structured return state
+preserves history filters. The 16-KiB query and 1-MiB complete escaped HTML caps
+are fixed. Existing bounded event limits apply separately to both runs, including
+later events; either-side errors reject the whole comparison. The original
+JSON comparison API and selected models remain unchanged.
+
 Exact frozen-evidence annotations also add no environment setting or provider
 requirement. They use an additive table in the existing database, fixed
 1000-character note/quote limits, 1-100-row pages, and a 256-KiB UTF-8 response
@@ -155,7 +163,7 @@ configuration fallback, not failover after an HTTP error.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-21 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-23 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
 retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
 Haiku 5.5 are additional catalog alternatives.

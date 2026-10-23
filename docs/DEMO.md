@@ -1,5 +1,19 @@
 # Demo
 
+## Native saved-run comparison workbench
+
+[![Measured synthetic comparison preview, not browser footage](assets/saved-run-comparison-workbench.png)](assets/saved-run-comparison-workbench.gif)
+
+The [complete browser/API/Python/portfolio guide](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md)
+reproduces actual native selection, swap/same-run controls, exact frozen source
+navigation and history return. Two fake-adapter queries save 16 events; each
+side has two sources with one shared, one added and one removed pair. Comparison
+and source HTML remain byte-identical after corpus deletion and restart.
+The opt-in GIF is a **Pillow illustration of measured output**, not screenshots
+or a fair A/B experiment. An [exact transcript](assets/saved-run-comparison-workbench.txt)
+is available without animation. No live model credentials or browser tooling
+are needed; the temporary fixture database is removed.
+
 ## Saved-run browser and frozen evidence
 
 [![Still frame of the actual synthetic saved-run browser](assets/saved-run-browser.png)](assets/saved-run-browser.gif)

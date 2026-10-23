@@ -655,6 +655,24 @@ valid return selections are preserved; errors stay sanitized, no-store and
 script-free. No schema, retrieval, generation, writes or current-corpus
 hydration is added. See the [browser guide and real-frame demo](docs/guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+### Native saved-run comparison workbench
+
+`GET /explore/runs/compare` in `api.run_comparison_explorer` connects saved-run
+history to a script-free baseline/candidate chooser and side-by-side result.
+`SavedRunComparator(container.saved_run_evidence)` reuses `compare_bundles` with
+the bounded `SQLiteEvidenceReader`; the existing JSON API keeps its original
+exporter. Each distinct side is validated in its own read-only transaction;
+same-ID comparisons read once. Either failure rejects the entire comparison.
+
+JSON-string select values and structured history-return state preserve opaque
+IDs and controls; exact frozen-source links use query-addressed run IDs and
+side-specific ranks, never current corpus lookup. Native pagination pins selected
+IDs across bounded history pages. The 16-KiB query and 1-MiB full escaped HTML
+limits include navigation, and existing per-side event bounds apply. All change
+flags retain pure comparison semantics, not trace equality or quality scoring.
+No tables, settings, dependencies, retrieval or providers are added. See the
+[complete contract and executed illustration](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md).
+
 ### Native human-review notebook
 
 `api.review_notebook` exposes GET `/explore/run/notebook` and
@@ -702,7 +720,7 @@ See [portable notebook semantics, exact bounds and executed demo](docs/guides/PO
 
 Completed exports also feed a pure, typed saved-run comparison through
 `GET /runs/{baseline_run_id}/compare/{candidate_run_id}`. The dedicated
-`SavedRunComparator` depends only on `EvidenceExporter`; either side's export
+`SavedRunComparator` accepts `EvidenceExporter` or `SQLiteEvidenceReader`; either side's export
 failure rejects the operation. Owner-aware chunk identities, exact field changes,
 bounded previews, and digests expose differences without copying full passages
 or arbitrary diagnostics. There is no new retrieval, generation, event write,

@@ -521,6 +521,17 @@ or model quality; differing queries/scopes are explicitly not a fair model A/B
 test. Comparison does not retrieve, generate, read current corpus data, or write
 events. See [comparison limits and privacy](docs/guides/RUN_COMPARISON_GUIDE.md).
 
+The native `/explore/runs/compare` workbench uses bounded read-only frozen-event
+reads separately for each selected side, including later events, rather than
+the legacy unbounded exporter. Same-ID comparisons read once. Exact JSON-string
+form values preserve control-bearing IDs; query-addressed source links use that
+side's frozen rank. Complete escaped HTML is capped at 1 MiB and queries at
+16 KiB; errors never return partial comparisons or echo raw diagnostics.
+Hash-only CSS CSP, no-store/nosniff/no-referrer and no active source links do not
+provide authentication or erase browser/log history. No-change is not full trace
+equality, quality, a safe-release decision or a fair A/B experiment. See the
+[native workflow and limits](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md).
+
 `GET /runs/{run_id}/corpus-drift` uses a single read-only transaction to validate
 saved evidence and compare at most 50 selected current chunks. It never calls a
 live/fake generator, retrieves again, writes events, or mutates corpus/exports.
