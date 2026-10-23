@@ -244,7 +244,11 @@ sensitive; no-store cannot prevent saving or screenshots. Review permissions
 and artifacts before sharing. Deleting the current corpus does **not** erase
 retained event snapshots; there is no retention or erasure feature here.
 
-There is no chat, write action, replay/resume, comparison UI, model selection,
+Saved history now links to the
+[native comparison workbench](SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md):
+choose an explicit baseline/candidate, inspect recorded changes side by side,
+swap direction and follow precise frozen sources without rerunning.
+There is no chat, write action, replay/resume, model selection,
 auto-refresh, event repair, signed evidence or scientific validation.
 Grounding records token overlap, not entailment. Sources can be incomplete,
 biased, overlapping or wrong even when a citation link resolves.

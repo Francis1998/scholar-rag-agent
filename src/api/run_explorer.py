@@ -1,5 +1,7 @@
 """Native, bounded saved-run discovery and frozen-evidence reading without execution."""
 
+import json
+import re
 import sqlite3
 from collections.abc import Callable, Coroutine, Iterator
 from typing import Annotated
@@ -34,6 +36,7 @@ from api.explorer import (
     _url,
 )
 from storage.evidence_export import EvidenceExportError
+from storage.run_comparison import RunComparisonError
 from storage.run_history import (
     DEFAULT_PAGE_SIZE,
     MAX_QUERY_CHARACTERS,
@@ -202,6 +205,8 @@ class _RunExplorerRoute(APIRoute):
                 raw = request.scope.get("query_string", b"")
                 if len(raw) > MAX_QUERY_BYTES:
                     raise RequestValidationError([])
+                if self.path == "/explore/runs/compare" and re.search(rb"%(?![0-9a-fA-F]{2})", raw):
+                    raise RequestValidationError([])
                 try:
                     unquote_to_bytes(raw).decode("utf-8")
                 except UnicodeDecodeError as exc:
@@ -210,6 +215,18 @@ class _RunExplorerRoute(APIRoute):
                     raise RequestValidationError([])
                 return await handler(request)
             except RequestValidationError:
+                if self.path == "/explore/runs/compare":
+                    return error(
+                        422,
+                        "invalid_comparison_request",
+                        "Invalid saved-run comparison request",
+                        "Choose baseline and candidate as JSON strings decoding to exact run "
+                        "IDs of 1-256 Unicode characters. Blank selections open the chooser. "
+                        "Use limit 1-100 and a positive first-event cursor. History is a JSON "
+                        "object containing only existing saved-run return fields. Unknown or "
+                        "duplicate fields, invalid Unicode/JSON/percent encoding, empty cursors "
+                        "and queries over 16384 bytes fail before reads. No input is echoed.",
+                    )
                 if self.path in {"/explore/run/notebook", "/explore/run/annotation"}:
                     return error(
                         422,
@@ -240,6 +257,14 @@ class _RunExplorerRoute(APIRoute):
                     "Saved history cannot be displayed",
                     "A projected summary or its lookahead is invalid. No partial page is shown. "
                     "Inspect saved records with trusted local tools; browsing cannot repair them.",
+                )
+            except RunComparisonError as exc:
+                message = _EVIDENCE_ERRORS.get(exc.code)
+                return error(
+                    exc.status_code if message is not None else 409,
+                    exc.code if message is not None else "saved_evidence_unavailable",
+                    f"{exc.side.capitalize()} evidence unavailable",
+                    message or "No complete saved evidence could be read. No partial comparison.",
                 )
             except (EvidenceExportError, AnswerReviewError) as exc:
                 message = _EVIDENCE_ERRORS.get(exc.code)
@@ -339,6 +364,12 @@ def _filters(options: _HistoryParameters, root_path: str) -> Iterator[str]:
 
 def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) -> Iterator[str]:
     yield _navigation(options, root_path)
+    comparison_params = {"history": json.dumps(options.parameters(), ensure_ascii=True)}
+    yield _link(
+        "compare-saved-runs",
+        _url(root_path + "/explore/runs/compare", comparison_params),
+        "Compare saved runs",
+    )
     yield from _filters(options, root_path)
     yield (
         '<section aria-labelledby="runs"><h2 id="runs">Persisted research runs</h2>'
@@ -390,6 +421,14 @@ def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) 
             f"inspect-run-{number}",
             _url(root_path + "/explore/run", {"run_id": run.run_id, **options.parameters()}),
             "Inspect saved evidence",
+        )
+        yield " " + _link(
+            f"compare-run-{number}",
+            _url(
+                root_path + "/explore/runs/compare",
+                {**comparison_params, "baseline": json.dumps(run.run_id, ensure_ascii=True)},
+            ),
+            "Use as comparison baseline",
         )
         yield " " + _link(
             f"review-notebook-{number}",

@@ -1,5 +1,11 @@
 # Compare two saved research runs
 
+For native baseline/candidate selection, side-by-side inspection, swap/same-run
+controls and exact frozen-source navigation, use the
+[saved-run comparison workbench](SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md).
+It reuses these semantics through bounded event reads; this JSON API's behavior
+and path-ID restrictions remain unchanged.
+
 `GET /runs/{baseline_run_id}/compare/{candidate_run_id}` inspects **two completed,
 saved evidence bundles**. It compares the recorded query, document scope, runtime
 limits, provider/model identity, answer, citation associations, and exact source
@@ -187,10 +193,14 @@ ID is exported once. It has no corpus, model, settings, or retrieval dependency.
 `RunComparisonError` retains the exporter's `code`, `status_code`, and safe
 message, and adds `side` (`baseline` or `candidate`).
 
+Standalone callers can instead construct `SavedRunComparator(SQLiteEvidenceReader(path))`
+for fixed per-run read limits without application startup. This is the native
+workbench's read path; it does not replace the legacy JSON endpoint's exporter.
+
 ## Response schema and exact-change semantics
 
-The JSON-only response is `RunComparison`, **schema version `1.0`**, discoverable
-in `/docs` and `/openapi.json`. There are no new query parameters, batches,
+The JSON endpoint's response is `RunComparison`, **schema version `1.0`**, discoverable
+in `/docs` and `/openapi.json`. That endpoint has no new query parameters, batches,
 Markdown comparison downloads, background jobs, migrations, or backfills.
 
 | Top-level field | Contract |

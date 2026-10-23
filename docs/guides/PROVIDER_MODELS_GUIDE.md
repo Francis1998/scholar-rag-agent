@@ -4,7 +4,7 @@ The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
 [Gemini latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model), and
 [Kimi overview](https://platform.kimi.ai/docs/overview) were checked
-**2026-10-21 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
+**2026-10-23 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
 flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
 for cost-sensitive, high-volume work. Anthropic lists `claude-fable-5-1`,
 `claude-opus-5-5`, `claude-sonnet-5-5`, and `claude-haiku-5-5`.

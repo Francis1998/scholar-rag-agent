@@ -5,7 +5,7 @@ from typing import Literal
 from agent.comparison_models import RunComparison
 from agent.evidence import EvidenceBundle
 from agent.run_comparison import compare_bundles
-from storage.evidence_export import EvidenceExporter, EvidenceExportError
+from storage.evidence_export import EvidenceExporter, EvidenceExportError, SQLiteEvidenceReader
 
 ComparisonSide = Literal["baseline", "candidate"]
 
@@ -21,7 +21,7 @@ class RunComparisonError(EvidenceExportError):
 class SavedRunComparator:
     """No corpus, model, settings, or writable run state is needed for comparison."""
 
-    def __init__(self, exporter: EvidenceExporter) -> None:
+    def __init__(self, exporter: EvidenceExporter | SQLiteEvidenceReader) -> None:
         self._exporter = exporter
 
     def _export(self, run_id: str, side: ComparisonSide) -> EvidenceBundle:
