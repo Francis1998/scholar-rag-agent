@@ -1,6 +1,7 @@
 """Provider rate limiting and exponential backoff helpers."""
 
 import asyncio
+import math
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from time import monotonic
@@ -52,8 +53,9 @@ async def with_backoff(
 
     Args:
         operation: Zero-argument coroutine factory to execute.
-        retries: Maximum number of retries after the initial attempt.
-        initial_delay_seconds: Delay before the first retry; doubled each retry.
+        retries: Nonnegative integer retry budget after the initial attempt, excluding bool.
+        initial_delay_seconds: Finite nonnegative int/float delay, excluding bool;
+            doubled each retry. Must be representable as a finite float.
         is_retryable: Predicate deciding whether a raised exception should be
             retried. When ``None`` every exception is treated as retryable,
             preserving the previous behavior. A non-retryable exception is
@@ -66,9 +68,25 @@ async def with_backoff(
         The successful operation result.
 
     Raises:
+        ValueError: Invalid retry budget or initial delay, before any operation,
+            predicate, delay callback, or sleep, even when retries is zero.
         Exception: The last error raised by ``operation`` once retries are
             exhausted or a non-retryable error is encountered.
     """
+    if not isinstance(retries, int) or isinstance(retries, bool) or retries < 0:
+        raise ValueError("retries must be a nonnegative integer")
+    try:
+        valid_delay = (
+            isinstance(initial_delay_seconds, (int, float))
+            and not isinstance(initial_delay_seconds, bool)
+            and math.isfinite(initial_delay_seconds)
+            and initial_delay_seconds >= 0
+        )
+    except OverflowError:
+        valid_delay = False
+    if not valid_delay:
+        raise ValueError("initial_delay_seconds must be a finite nonnegative number")
+
     retry_predicate = is_retryable if is_retryable is not None else (lambda _exc: True)
     delay_seconds = initial_delay_seconds
     last_error: Exception | None = None

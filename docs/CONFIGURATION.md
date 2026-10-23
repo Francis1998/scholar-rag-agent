@@ -281,6 +281,16 @@ Admission state is
 in memory, not shared across instances or workers. See
 [provider backoff and rate limits](../SAFETY.md#provider-backoff).
 
+Direct Python callers of `llm.rate_limit.with_backoff` must pass a nonnegative
+integer `retries` and a finite nonnegative `int`/`float` `initial_delay_seconds`
+representable as a finite float. Booleans, strings, negative values, and
+non-finite delays raise `ValueError` before the operation, retry predicate,
+minimum-delay callback, or sleep runs, including with a zero retry budget.
+Zero retries means one initial attempt; zero delay is allowed. The default
+three retries and 0.25-second exponential schedule, original operation errors,
+cancellation, and provider admission/`Retry-After` behavior are unchanged.
+These are helper arguments, not new environment settings.
+
 HTTP-success bodies must be JSON objects with nonblank final answer text and
 must not explicitly signal output/context-limit truncation, nonfinal tool or
 continuation output, or a block/refusal. Selected Gemini `CONTINUATION` hops
