@@ -1,7 +1,7 @@
 """Runtime configuration for Scholar RAG Agent."""
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -27,7 +27,9 @@ class Settings(BaseSettings):
     reasoning_timeout_seconds: float = Field(default=60.0, ge=1.0, allow_inf_nan=False)
     max_source_docs: int = Field(default=50, ge=1, le=50)
     max_hops: int = Field(default=5, ge=1, le=5)
-    default_model: str = Field(default="openai")
+    default_model: Literal["openai", "anthropic", "gemini", "kimi", "fake"] = Field(
+        default="openai"
+    )
     openai_model: ModelId = Field(default=DEFAULT_OPENAI_MODEL)
     anthropic_model: ModelId = Field(default=DEFAULT_ANTHROPIC_MODEL)
     gemini_model: ModelId = Field(default=DEFAULT_GEMINI_MODEL)

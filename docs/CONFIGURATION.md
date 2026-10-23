@@ -19,8 +19,18 @@ Scholar RAG Agent is configured through environment variables loaded by
 | `SCHOLAR_RAG_REASONING_TIMEOUT_SECONDS` | `60` | Finite reasoning/generation timeout in seconds, at least `1`. |
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per request, not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Hard graph traversal bound. |
-| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Provider family for DEFAULT tasks and missing-provider fallbacks, not an API model ID. |
+| `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Exact lowercase provider family for DEFAULT tasks and missing-provider fallbacks: `openai`, `anthropic`, `gemini`, `kimi`, or `fake`; not an API model ID. |
 | `PdfOcrHook.min_chars` | `40` | Constructor threshold: stripped pypdf text shorter than this triggers `OcrBackend` (default `NullOcrBackend`). |
+
+`SCHOLAR_RAG_DEFAULT_MODEL` (`Settings.default_model`) accepts only the exact
+lowercase families above, not API model IDs or aliases. Its parsed value is
+neither trimmed nor case-normalized. Blank, unknown, differently cased, or
+surrounding-whitespace values fail settings validation before the application
+container, storage, or providers initialize, including without API keys.
+Leave it unset to use `openai`; invalid values do not trigger routing fallback.
+Normal `.env` syntax parsing still applies: quotes preserve surrounding spaces,
+which are then rejected. Explicit `Settings(...)` arguments override process
+environment, then `.env`, then built-in defaults.
 
 Both timeout settings require finite values of at least one second, including
 values from process environment and `.env`. `NaN`, infinities, and floating-point
@@ -271,6 +281,10 @@ always requests `REASONING`. Changing `SCHOLAR_RAG_DEFAULT_MODEL` therefore does
 not override a configured Anthropic provider for API answers; it chooses the
 fallback if Anthropic is absent. Even `SCHOLAR_RAG_DEFAULT_MODEL=fake` does not
 force all tasks offline when preferred live providers have keys.
+
+The family validation applies to application settings only. Direct Python
+`ModelRouter(adapters=..., default_provider=...)` callers can still supply
+custom adapter names, with the existing routing and fallback behavior.
 
 This fallback policy selects providers before a call. HTTP failures are surfaced
 after the existing transient-error retries; they do not trigger cross-provider
