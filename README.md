@@ -49,6 +49,7 @@ PDF-upload UI.
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
+| Save an auditable human screening progress report | Download complete JSON/literal Markdown with resolved/pending totals and exact exclusion-reason membership, derived from one export without models or writes | [Human progress report: browser/API/Python/portfolio guide and executed illustration](docs/guides/SCREENING_REPORT_GUIDE.md) |
 | Restrict a query to selected ingested papers | Pass `document_ids` through hybrid and graph retrieval; preserve scope in the saved evidence | [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect evidence before generating | `POST /retrieve` returns the actual prepared chunks and plan without any live/fake LLM call or agent-event writes | [Retrieval preview](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Compare evidence policies before generating | Two real previews share one query/scope and report exact source, provenance, and context-byte changes without saved runs | [Retrieval policy comparison and measured demo](docs/guides/RETRIEVAL_COMPARISON_GUIDE.md) |
@@ -312,6 +313,28 @@ is not a live UI, active learning, a PRISMA audit or frozen paper contents.
 The [complete API/Python guide](docs/guides/SCREENING_EXPORT_GUIDE.md) covers
 escaping, limits, errors, privacy, peer workflow attribution and reproduction.
 
+## Save an auditable human screening progress report
+
+[![Executed synthetic screening progress report preview](docs/assets/screening-progress-report.png)](docs/assets/screening-progress-report.gif)
+
+Choose **Human screening progress JSON/Markdown** under a collection's
+**Revision-bound downloads**. `GET /collections/{collection_id}/screening-report`
+requires the current revision and derives a complete report from one existing
+screening export. Current includes/excludes are resolved; unsure, unscreened
+and stale opinions still need human review. Exact case/whitespace-sensitive
+reason groups retain every excluded member ID, original reason and the complete
+source snapshot, with a digest identifying those exact values.
+
+The [user/API/Python and portfolio guide](docs/guides/SCREENING_REPORT_GUIDE.md)
+reproduces nine synthetic members despite one visible row: five resolved,
+four needing review, and four current exclusions in reason groups `[2, 1, 1]`.
+It measures restart-identical bytes, explicit revision conflicts, and zero
+models/network/retrieval/writes. This is not PRISMA, automatic screening,
+deduplication, scientific validation or a recall/stopping estimate.
+The static preview links to an opt-in **generated illustration of executed
+output**, not browser footage; the
+[measured transcript](docs/assets/screening-progress-report.txt) is also available.
+
 ## Export cited sources to a reference manager
 
 ![Measured synthetic offline saved bibliography export](docs/assets/saved-bibliography.gif)
@@ -414,6 +437,7 @@ Astra, Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 defaults. OpenAI 6.1 Sol and
 Anthropic Haiku 5.5 are additional catalog alternatives, not new compatibility
 claims. Selected defaults, endpoints, budgets and separately dated migration
 contracts remain unchanged. No live account or inference verification was performed.
+Human screening progress reports use none of these models or provider endpoints.
 Gemini `CONTINUATION` hops now fail explicitly instead of becoming completed
 answers; there is no long-decode loop or increase to the current 60-second
 HTTPX timeouts and default reasoning deadline.

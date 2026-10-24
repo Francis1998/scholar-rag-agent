@@ -46,6 +46,9 @@ No key, new setting, migration, browser package, or front-end framework is neede
    and reranking, without generation. Its 10-member bound remains enforced,
    including for larger collections: no automatic subset is chosen.
 5. Download complete screening JSON/CSV or duplicate-candidate JSON/Markdown.
+   **Human screening progress JSON/Markdown** also downloads resolved and
+   still-needing-review totals with exact exclusion-reason membership and the
+   complete source snapshot; see the [report guide](SCREENING_REPORT_GUIDE.md).
    Every link uses the exact collection ID and displayed revision. Downloads
    include all members regardless of the visible filter. Duplicate inspection
    uses its existing default threshold `0.92`; no browser tuning or deduplication
@@ -73,6 +76,7 @@ an empty list with `collection_id` or an omitted scope.
 | `/collections` | Existing JSON summaries, with the same collection pagination. |
 | `/collections/{id}/screening?collection_revision=N` | Existing paged JSON screening queue, counts and current include IDs. |
 | `/collections/{id}/screening/export?collection_revision=N&format=json` | Complete JSON; use `format=csv` for spreadsheet-safe CSV. |
+| `/collections/{id}/screening-report?collection_revision=N&format=json` | Complete human progress report and exact-reason audit groups; use `format=markdown` for literal Markdown. |
 | `/collections/{id}/duplicates?collection_revision=N&format=json` | Existing complete duplicate report; use `format=markdown` for literal Markdown. |
 
 Browser return-only fields are `catalog_limit`, `source`, `title` and

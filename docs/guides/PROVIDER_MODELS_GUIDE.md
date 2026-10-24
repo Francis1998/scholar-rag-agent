@@ -2,7 +2,7 @@
 
 The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
-[Gemini latest-model guide](https://ai.google.dev/gemini-api/docs/latest-model), and
+[Gemini 4 Argon model guide](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon), and
 [Kimi overview](https://platform.kimi.ai/docs/overview) were checked
 **2026-10-23 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
 flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
@@ -18,6 +18,8 @@ does not replace this repository's selected Sonnet 5.5 text-adapter default.
 Catalog alternatives are not new payload-compatibility tests or default
 migrations. In particular, Argon's long-decode and latency recommendations
 are not implemented by selecting its model ID; see [Gemini limitations](#google-gemini).
+The [human screening progress report](SCREENING_REPORT_GUIDE.md) performs no
+model calls and requires none of these providers.
 
 The separate Anthropic Sonnet 5.5 migration-contract check remains
 **2026-10-01 America/Los_Angeles** (2026-10-01 UTC), earlier default-model

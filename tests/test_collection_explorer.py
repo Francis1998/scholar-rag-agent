@@ -112,6 +112,8 @@ def test_collection_detail_uses_existing_screening_snapshot(
     for output, path, format in (
         ("screening-json", "screening/export", "json"),
         ("screening-csv", "screening/export", "csv"),
+        ("screening-report-json", "screening-report", "json"),
+        ("screening-report-markdown", "screening-report", "markdown"),
         ("duplicates-json", "duplicates", "json"),
         ("duplicates-markdown", "duplicates", "markdown"),
     ):
@@ -283,7 +285,14 @@ def test_mounts_downloads_and_error_navigation(
         catalog = ExplorerDOM(client.get(prefix + "/explore").text).root
         listed = ExplorerDOM(client.get(href(catalog, "saved-collections")).text).root
         detail = ExplorerDOM(client.get(href(listed, "inspect-collection-1")).text).root
-        for output in ("screening-json", "screening-csv", "duplicates-json", "duplicates-markdown"):
+        for output in (
+            "screening-json",
+            "screening-csv",
+            "screening-report-json",
+            "screening-report-markdown",
+            "duplicates-json",
+            "duplicates-markdown",
+        ):
             downloaded = client.get(href(detail, f"download-{output}"))
             assert downloaded.status_code == 200
             assert downloaded.headers["content-disposition"].startswith("attachment;")

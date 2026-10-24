@@ -511,6 +511,8 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
     yield (
         "<p>Downloads reread all members, regardless of visible filters. Revision changes fail "
         "explicitly. Decision or corpus edits at the same revision can change the output. "
+        "Human progress reports include resolved and still-needing-review totals, exact exclusion "
+        "reasons and their member IDs; stale opinions are not active decisions. "
         "Duplicate reports contain candidates, not automatic removals or screening decisions. "
         "CSV uses reversible apostrophe-prefix-v1 text encoding.</p>"
         '<nav aria-label="Collection downloads">'
@@ -518,6 +520,13 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
     for identifier, endpoint, format, label in (
         ("screening-json", "screening/export", "json", "Screening JSON"),
         ("screening-csv", "screening/export", "csv", "Screening CSV"),
+        ("screening-report-json", "screening-report", "json", "Human screening progress JSON"),
+        (
+            "screening-report-markdown",
+            "screening-report",
+            "markdown",
+            "Human screening progress Markdown",
+        ),
         ("duplicates-json", "duplicates", "json", "Duplicate candidates JSON"),
         ("duplicates-markdown", "duplicates", "markdown", "Duplicate candidates Markdown"),
     ):

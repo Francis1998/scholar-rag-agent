@@ -6,6 +6,11 @@ bounded title/source labels, and consistent counts. This is a read-only,
 model-free handoff from [human paper screening](PAPER_SCREENING_GUIDE.md), not
 automatic screening or a new retrieval policy.
 
+For a saved human-progress summary over this same complete snapshot, use the
+[screening report](SCREENING_REPORT_GUIDE.md): resolved/needs-review totals,
+exact exclusion-reason groups and member IDs, and complete JSON/literal Markdown.
+Existing JSON/CSV export shapes and semantics are unchanged.
+
 ![Measured synthetic offline screening-result exports](../assets/screening-exports.gif)
 
 The four-frame GIF is rendered from actual synthetic API output, not a UI

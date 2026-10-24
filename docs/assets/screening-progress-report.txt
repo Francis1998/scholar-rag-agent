@@ -1,0 +1,25 @@
+1. Discover the saved human review
+Executed: corpus explorer -> saved collections -> human progress download.
+Collection revision: 2; visible filtered members: 1.
+Complete report members: 9; no hidden duplicates.
+Original synthetic notes and human decisions, not a real literature review.
+
+2. Separate resolved from still needing review
+unscreened: 1; include: 1; exclude: 4; unsure: 1; stale: 2.
+Resolved: 5; still needing human review: 4.
+Resolved means current include or exclude, not scientific validation.
+Both earlier include and exclude opinions are stale, not active decisions.
+
+3. Audit exact exclusion reasons
+Current excluded members: 4.
+Exact reason group counts: [2, 1, 1].
+Case and leading whitespace stay distinct; identical reasons group together.
+JSON and literal Markdown retain exact member IDs and original multiline reasons.
+No PRISMA stages, automatic labels, recall estimates or stopping claims.
+
+4. Save and reproduce without models or writes
+Actual JSON: 7069 bytes; Markdown: 8218 bytes.
+Stale revision: HTTP 409; restart bytes identical: True.
+Database unchanged: True; events: 0.
+Forbidden work calls: 0; portable Markdown reproduced offline.
+Executed synthetic output illustration, not browser footage or a benchmark.
