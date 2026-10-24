@@ -1,5 +1,11 @@
 # Scholar RAG Agent
 
+### LossToFollowupBiasCueExtractor
+
+![LossToFollowupBiasCueExtractor](assets/demo/loss-to-followup-bias-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers loss-to-follow-up bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ### LateLookerBiasCueExtractor
 
 ![LateLookerBiasCueExtractor](assets/demo/late-looker-bias-cues.gif)
