@@ -22,6 +22,7 @@ accumulated feature list in the project README.
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
 | Inspect append-only human decisions, original reasons/timestamps and an explicit legacy boundary without writes | [Screening history: user/API/Python/browser/portfolio guide and executed GIF](guides/SCREENING_HISTORY_GUIDE.md) |
 | Download all current screening results as atomic, bounded JSON or spreadsheet-safe CSV | [Screening exports and measured offline demo](guides/SCREENING_EXPORT_GUIDE.md) |
+| Save resolved/needs-review totals and auditable exact exclusion-reason groups from one complete snapshot | [Human screening report: browser/API/Python/portfolio guide and executed GIF/still](guides/SCREENING_REPORT_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
 | Compare two evidence policies on one shared query/scope before any generation | [Retrieval policy comparison and measured offline demo](guides/RETRIEVAL_COMPARISON_GUIDE.md) |

@@ -29,6 +29,7 @@ from api.run_comparison_explorer import router as run_comparison_explorer_router
 from api.run_explorer import router as run_explorer_router
 from api.runs import router as runs_router
 from api.screening import router as screening_router
+from api.screening_report import router as screening_report_router
 from api.search import router as search_router
 from api.worksheet_explorer import router as worksheet_explorer_router
 from config import Settings
@@ -87,6 +88,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(collections_router)
     application.include_router(collection_duplicates_router)
     application.include_router(screening_router)
+    application.include_router(screening_report_router)
     application.include_router(evidence_router)
     application.include_router(bibliography_router)
     application.include_router(runs_router)

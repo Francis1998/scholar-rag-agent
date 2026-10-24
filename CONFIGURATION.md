@@ -88,6 +88,14 @@ carrying validated collection return state; ordinary worksheet URLs retain
 16 KiB and form bodies retain 64 KiB. These are finite serialization/navigation
 bounds, not model budgets or a promise of frozen output across requests.
 
+The [human screening progress report](docs/guides/SCREENING_REPORT_GUIDE.md)
+adds no settings, tables, dependencies or providers. It consumes one complete
+512-KiB screening JSON snapshot for up to 100 members, and caps each requested
+JSON/literal Markdown report at 1 MiB of serialized UTF-8. API queries are
+limited to 16 KiB with one required revision and one optional format.
+All counts, exact exclusion reasons and member IDs derive from that snapshot;
+oversized or inconsistent input fails without truncation or extra history reads.
+
 The [screening decision history](docs/guides/SCREENING_HISTORY_GUIDE.md) adds only
 an additive SQLite table, initialized at startup without backfill. No setting,
 dependency or model default changes. Reads require exact member/collection
@@ -181,6 +189,8 @@ This catalog-only check leaves selected
 defaults and separately dated migration contracts unchanged.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
+The screening progress workflow performs zero model calls; this catalog check
+does not enable a provider or change reporting's fixed serialization bounds.
 
 Gemini still uses `generateContent`, not the current Interactions quickstart.
 Google rejects unrestricted standard keys; auth keys and appropriately restricted
