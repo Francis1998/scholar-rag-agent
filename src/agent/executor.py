@@ -6,6 +6,7 @@ from agent.evidence import EvidenceSnapshot, GenerationRecord
 from agent.models import AgentAnswer, Claim, QueryPlan
 from llm.base import BaseLLMAdapter
 from retrieval.citations import CitationGrounder
+from retrieval.counts import validate_result_count
 from retrieval.diversity_cap_gate import DiversityCapGate
 from retrieval.evidence_policy import (
     EvidencePolicy,
@@ -56,12 +57,15 @@ class Executor:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[SearchResult]:
-        """Run hybrid and multi-hop retrieval for every planned sub-task."""
+        """Retrieve planned tasks with a nonnegative integer max_results; zero skips work."""
         scope = normalize_document_ids(
             plan.observation.document_ids if document_ids is None else document_ids
         )
         if scope != plan.observation.document_ids:
             raise ValueError("Retrieval document_ids do not match the plan's scope.")
+        validate_result_count(max_results, name="max_results")
+        if max_results == 0:
+            return []
         scope_kwargs = scope_arguments(scope)
         merged_results: dict[str, SearchResult] = {}
         for task in plan.tasks:

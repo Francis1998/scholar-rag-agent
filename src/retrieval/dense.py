@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import RLock
 
+from retrieval.counts import validate_result_count
 from retrieval.embeddings import HashEmbeddingModel, cosine_similarity
 from retrieval.models import Chunk, SearchResult
 from retrieval.scope import DocumentIdsInput, normalize_document_ids
@@ -57,8 +58,11 @@ class DenseRetriever:
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
     ) -> list[SearchResult]:
-        """Return detached snapshots of the most similar chunks for a query."""
+        """Return detached nearest chunks; a nonnegative integer limit of zero skips work."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         allowed = None if scope is None else frozenset(scope)
         with self._lock:
             query_vector = self._embedder.embed(query)
