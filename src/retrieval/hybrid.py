@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import RLock
 
+from retrieval.counts import validate_result_count
 from retrieval.dense import DenseRetriever
 from retrieval.hyde import HyDEExpander
 from retrieval.mmr import MMRDiversifier
@@ -82,8 +83,11 @@ class HybridRetriever:
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
     ) -> list[SearchResult]:
-        """Retrieve fused dense and sparse results for a query."""
+        """Fuse query results; a nonnegative integer limit of zero skips all retrieval."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         scope_kwargs = scope_arguments(scope)
         expanded_query = await self._hyde_expander.expand(query)
         dense_results = await self._dense_retriever.retrieve(

@@ -35,7 +35,7 @@ def make_chunks() -> list[Chunk]:
 async def assert_matches_fresh(actual: Retriever, fresh: Retriever) -> None:
     for query in ("alpha", "beta", "gamma", "unindexed"):
         for document_ids in (None, ["paper"], ["other"], ["unindexed-paper"]):
-            for limit in (0, 1, -1, 10):
+            for limit in (0, 1, 2, 10):
                 assert await actual.retrieve(
                     query, limit=limit, document_ids=document_ids
                 ) == await fresh.retrieve(query, limit=limit, document_ids=document_ids), (
@@ -238,7 +238,7 @@ async def test_snapshots_copy_only_indexed_inputs_and_returned_chunks(
         assert copy_chunk.call_count == 0
 
         for document_ids in (None, ["paper"], ["missing"]):
-            for limit in (0, 1, -1, 10):
+            for limit in (0, 1, 2, 10):
                 copy_chunk.reset_mock()
                 results = await retriever.retrieve("alpha", limit=limit, document_ids=document_ids)
                 assert copy_chunk.call_count == len(results), (document_ids, limit)

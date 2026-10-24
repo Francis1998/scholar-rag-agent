@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from numbers import Real
 from threading import RLock
 
+from retrieval.counts import validate_result_count
 from retrieval.models import Chunk, SearchResult
 from retrieval.scope import DocumentIdsInput, normalize_document_ids
 
@@ -148,8 +149,11 @@ class BM25Retriever:
     async def retrieve(
         self, query: str, limit: int = 10, *, document_ids: DocumentIdsInput | None = None
     ) -> list[SearchResult]:
-        """Return detached hits, ranking scoped candidates with global BM25 statistics."""
+        """Rank scoped hits with global statistics; a nonnegative integer zero skips work."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         allowed = None if scope is None else frozenset(scope)
         query_terms = tokenize(query)
         with self._lock:

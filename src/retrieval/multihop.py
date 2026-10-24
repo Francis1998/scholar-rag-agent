@@ -1,5 +1,6 @@
 """Bounded multi-hop entity-chain retrieval."""
 
+from retrieval.counts import validate_result_count
 from retrieval.models import SearchResult
 from retrieval.scope import (
     DocumentIdsInput,
@@ -27,9 +28,12 @@ class MultiHopRetriever:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[SearchResult]:
-        """Retrieve chunks by traversing entity chains up to a bounded depth."""
+        """Traverse bounded entity chains; a nonnegative integer zero skips storage reads."""
         del query
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         scope_kwargs = scope_arguments(scope)
         bounded_depth = min(depth, self._max_depth)
         if bounded_depth <= 0:

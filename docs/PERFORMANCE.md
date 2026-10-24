@@ -16,6 +16,23 @@ use `--dataset` and independently reviewed labels for a meaningful baseline.
 - Keep multi-hop retrieval at depth `3` for research questions; higher values increase graph fan-out.
 - The API uses lexical reranking. A cross-encoder requires explicit Python wiring with `AdaptiveReranker(use_cross_encoder=True)`, its optional dependency, and access to model weights; installing extras alone does not enable it.
 
+The core Python `DenseRetriever.retrieve`, `BM25Retriever.retrieve`,
+`HybridRetriever.retrieve`, and `MultiHopRetriever.retrieve` methods require
+`limit` to be a nonnegative Python `int`, excluding `bool`.
+`Executor.retrieve` applies the same contract to `max_results`. Negative integers
+raise `ValueError`; booleans, floats (including integral floats), strings, `None`,
+and other non-integers raise `TypeError`. Messages name the field, not the supplied
+value. Validation happens even for empty indexes, seed lists, or plans, before
+query embedding, tokenization, HyDE/model calls, traversal, or storage reads.
+
+Zero returns `[]` without retrieval work, but still validates an explicit document
+scope and, for the executor, its agreement with the plan. Positive counts retain
+existing ranking, provenance, and scope behavior. Defaults remain `10` for these
+retrievers and `8` for the executor; no coercion or new upper cap is introduced.
+Existing backend-specific integer constraints still apply. These entrypoint rules
+do not change the RRF helper's `None`/slicing contract, its smoothing constant, or
+optional gates' `top_k` contracts.
+
 Explicit cross-encoder initialization is fail-closed: dependency-import and
 model-construction errors propagate unchanged, including missing dependencies
 and unavailable or corrupt weights. Previously, these failures could silently
