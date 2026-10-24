@@ -1,5 +1,11 @@
 # Scholar RAG Agent
 
+### RightTruncationBiasCueExtractor
+
+![RightTruncationBiasCueExtractor](assets/demo/right-truncation-bias-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers right-truncation bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)

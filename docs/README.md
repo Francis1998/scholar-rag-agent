@@ -412,4 +412,5 @@ instructions or evidence of current scientific performance.
 | Extract offline NonresponseBias cues | [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline PrevalentUserBias cues | [PrevalentUserBiasCueExtractor](guides/PREVALENT_USER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline TimeDependentBias cues | [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
+| Extract offline RightTruncationBias cues | [RightTruncationBiasCueExtractor](guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
