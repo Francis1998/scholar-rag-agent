@@ -1,5 +1,11 @@
 # Scholar RAG Agent
 
+### LateLookerBiasCueExtractor
+
+![LateLookerBiasCueExtractor](assets/demo/late-looker-bias-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers late-looker bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ### RightTruncationBiasCueExtractor
 
 ![RightTruncationBiasCueExtractor](assets/demo/right-truncation-bias-cues.gif)
