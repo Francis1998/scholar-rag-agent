@@ -15,7 +15,7 @@ from starlette.types import Receive, Scope, Send
 from api.collection_explorer import _ERRORS, _history_review
 from api.dependencies import AppContainer
 from api.explorer import (
-    _HEADERS,
+    _SCREENING_HEADERS,
     _collection_link,
     _CollectionReturn,
     _CollectionReturnToken,
@@ -338,7 +338,7 @@ async def explore_screening(request: Request) -> Response:
                 },
             ),
             status_code=303,
-            headers=_HEADERS,
+            headers=_SCREENING_HEADERS,
         )
         await run_in_threadpool(
             container.paper_screening.submit,

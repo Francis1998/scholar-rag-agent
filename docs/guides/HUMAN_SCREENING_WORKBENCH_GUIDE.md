@@ -181,8 +181,16 @@ Origin comparisons do not trust arbitrary `X-Forwarded-Host` headers. A mismatch
 proxy setup fails closed; fix the deployment rather than bypassing the check.
 The original JSON API remains independently unauthenticated and unchanged.
 
-The form reuses no-store, nosniff, no-referrer, frame denial, script-free CSP
-and literal escaping. These are not access controls or deletion guarantees.
+Only screening pages, redirects and errors use `Referrer-Policy: same-origin`.
+This preserves the browser's native POST Origin; Chromium can instead send
+`Origin: null` under `no-referrer`, which remains correctly rejected. The local
+page URL, including its selection query, may now be sent as a Referer to this
+same server, but is not sent as a cross-origin referrer. All existing read-only
+and worksheet pages retain `no-referrer`. POST reasons remain absent from
+redirect URLs.
+
+The form otherwise reuses no-store, nosniff, frame denial, script-free CSP and
+literal escaping. These are not access controls or deletion guarantees.
 Do not enter credentials or personal data. Reasons persist in append-only
 history, and may appear in browser resubmission state/infrastructure logs even
 though they are absent from redirect URLs. Collection/document IDs can remain

@@ -62,7 +62,7 @@ def fields(collection: PaperCollection, **updates: str) -> dict[str, str]:
 
 def failure(response: httpx.Response, status: int) -> None:
     assert response.status_code == status, response.text[:1000]
-    assert_headers(response)
+    assert_headers(response, referrer_policy="same-origin")
     root = ExplorerDOM(response.text).root
     assert not root.by_tag("form") and not root.by_class("history-reason")
     assert "PRIVATE_" not in response.text
@@ -91,7 +91,7 @@ def test_native_decision_redirect_and_restart_preserve_reason_and_history(
         },
     )
     assert opened.status_code == 200
-    assert_headers(opened)
+    assert_headers(opened, referrer_policy="same-origin")
     root = ExplorerDOM(opened.text).root
     assert root.by_id("screening-form").attrs["method"] == "post"
     assert root.by_id("screening-form").attrs["action"] == ENDPOINT
@@ -117,7 +117,7 @@ def test_native_decision_redirect_and_restart_preserve_reason_and_history(
     assert response.headers["cache-control"] == "no-store"
     persisted = api.client.get(response.headers["location"])
     assert persisted.status_code == 200
-    assert_headers(persisted)
+    assert_headers(persisted, referrer_policy="same-origin")
     saved = ExplorerDOM(persisted.text).root
     assert saved.by_id("screening-saved").text() == "Stored decision revision 1 confirmed."
     assert values(saved, "latest-review-reason") == values(saved, "history-reason") == [reason]
@@ -164,7 +164,7 @@ def test_explicit_decisions_are_not_presets_or_retrieval_filters(
     collection = seed(api)
     before = api.path.read_bytes()
     with browsing_guards(api.container) as guards:
-        root = api.page(ENDPOINT, **selection(collection))
+        root = api.page(ENDPOINT, referrer_policy="same-origin", **selection(collection))
         assert api.path.read_bytes() == before
         response = api.client.post(
             ENDPOINT,
@@ -293,7 +293,7 @@ def test_stale_decision_collection_and_removed_member_do_not_append(api: Explore
         409,
     )
     assert api.path.read_bytes() == before
-    root = api.page(ENDPOINT, **selection(collection))
+    root = api.page(ENDPOINT, referrer_policy="same-origin", **selection(collection))
     assert values(root, "current-status") == ["stale"]
     assert controls(root)["expected_decision_revision"] == "1"
     api.seed("replacement", ("other",))
@@ -358,17 +358,19 @@ def test_history_is_append_only_and_retained_boundary_is_honest(api: ExplorerAPI
             ).status_code
             == 200
         )
-    page = api.page(ENDPOINT, **selection(collection))
+    page = api.page(ENDPOINT, referrer_policy="same-origin", **selection(collection))
     assert values(page, "history-revision") == ["7", "6", "5", "4", "3"]
     history = api.page(href(page, "screening-history"))
     assert values(history, "history-revision") == ["7", "6", "5", "4", "3", "2", "1"]
     before = api.path.read_bytes()
-    unconfirmed = api.page(ENDPOINT, **selection(collection), saved_revision=99)
+    unconfirmed = api.page(
+        ENDPOINT, referrer_policy="same-origin", **selection(collection), saved_revision=99
+    )
     assert not any(node.attrs.get("id") == "screening-saved" for node in unconfirmed.walk())
     assert api.path.read_bytes() == before
     with closing(sqlite3.connect(api.path)) as connection, connection:
         connection.execute("DELETE FROM paper_screening_history")
-    legacy = api.page(ENDPOINT, **selection(collection))
+    legacy = api.page(ENDPOINT, referrer_policy="same-origin", **selection(collection))
     assert legacy.by_id("unretained-revisions").text() == "7"
     assert "No old decisions were backfilled" in legacy.text()
 
@@ -412,7 +414,7 @@ def test_native_hidden_selectors_preserve_opaque_identifiers(
 ) -> None:
     collection = seed(api, identifier)
     detail = api.page(detail_url(collection, limit=1, source="filter\r\nvalue"))
-    root = api.page(href(detail, "screen-member-1"))
+    root = api.page(href(detail, "screen-member-1"), referrer_policy="same-origin")
     assert identities(root) == [identifier]
     assert json.loads(controls(root)["selection"])["document_id"] == identifier
     response = api.client.post(
@@ -629,3 +631,64 @@ def test_origin_checks_support_explicit_ports_tls_and_ipv6(api: ExplorerAPI) -> 
                 follow_redirects=False,
             )
             assert response.status_code == 303
+
+
+@pytest.mark.parametrize(
+    "surface,status",
+    [
+        ("form", 200),
+        ("redirect", 303),
+        ("invalid-form", 422),
+        ("method-error", 405),
+        ("null-origin", 403),
+        ("cross-origin", 403),
+    ],
+)
+def test_screening_referrer_policy_allows_native_posts_only_on_screening_surfaces(
+    api: ExplorerAPI, surface: str, status: int
+) -> None:
+    collection = seed(api)
+    before = api.path.read_bytes()
+    if surface == "form":
+        response = api.client.get(ENDPOINT, params=selection(collection))
+    elif surface == "invalid-form":
+        response = api.client.get(ENDPOINT)
+    elif surface == "method-error":
+        response = api.client.put(ENDPOINT)
+    else:
+        origin = {
+            "redirect": "http://testserver",
+            "null-origin": "null",
+            "cross-origin": "https://external.invalid",
+        }[surface]
+        response = api.client.post(
+            ENDPOINT,
+            data=fields(collection),
+            headers={"origin": origin},
+            follow_redirects=False,
+        )
+    assert response.status_code == status
+    assert response.headers["referrer-policy"] == "same-origin"
+    if surface != "redirect":
+        assert api.path.read_bytes() == before
+    else:
+        redirected = api.client.get(response.headers["location"])
+        assert redirected.status_code == 200
+        assert redirected.headers["referrer-policy"] == "same-origin"
+        assert "reason" not in parse_qs(urlsplit(response.headers["location"]).query)
+    for url in (
+        "/explore",
+        "/explore/collections",
+        detail_url(collection),
+        "/explore/document?document_id=exact",
+        "/explore/context?document_id=exact&chunk_id=c",
+        "/explore/screening-history?" + urlencode(selection(collection)),
+        "/explore/runs",
+        "/explore/worksheet",
+    ):
+        read_only = api.client.get(url)
+        assert read_only.status_code == 200
+        assert read_only.headers["referrer-policy"] == "no-referrer"
+    worksheet_error = api.client.post("/explore/worksheet", data={"questions": ""})
+    assert worksheet_error.status_code == 422
+    assert worksheet_error.headers["referrer-policy"] == "no-referrer"

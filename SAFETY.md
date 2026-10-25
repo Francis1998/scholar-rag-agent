@@ -323,7 +323,14 @@ URL-encoded parsing rejects duplicate/unknown fields, ambiguous inner JSON,
 malformed escapes, GET bodies, POST queries and inconsistent lengths. Query
 and streaming body caps are 64 KiB; reasons retain the service's 1000-character
 bound. Opaque hidden IDs are JSON encoded rather than normalized. Escaped
-HTML/CSP, no-store/no-referrer/nosniff and frame denial apply to form/error pages.
+HTML/CSP, no-store/nosniff and frame denial apply to form/error pages.
+Only screening pages, redirects and errors use `Referrer-Policy: same-origin`
+so native browser POSTs preserve their Origin instead of Chromium sending
+`Origin: null` under `no-referrer`. Strict Origin validation is unchanged:
+null/missing/cross-origin values are still rejected. The local page URL and
+selection query may be sent as a Referer to this same server, never as a
+cross-origin referrer; POST reasons remain out of redirect URLs. Existing
+read-only and worksheet pages retain `no-referrer`.
 
 This adds no authentication, CSRF session framework or DNS-rebinding defense.
 Direct clients can forge Origin. Use loopback/trusted access, allowed-host

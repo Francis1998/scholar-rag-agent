@@ -155,6 +155,8 @@ _HEADERS = {
     "Referrer-Policy": "no-referrer",
     "X-Frame-Options": "DENY",
 }
+# Chromium's no-referrer policy makes native form POSTs send Origin: null.
+_SCREENING_HEADERS = {**_HEADERS, "Referrer-Policy": "same-origin"}
 _FOOTER = (
     "</main><footer><h2>Read-only, not private by default</h2>"
     "<p>These pages inspect the current local corpus, not frozen run evidence or verified "
@@ -238,7 +240,9 @@ _SCREENING_FOOTER = (
     "processes or DNS rebinding. The JSON API retains its existing independent contract.</p>"
     "<p>Use no credentials or personal data in reasons. POST keeps reasons out of redirect "
     "URLs, not browser resubmission state or infrastructure logs. IDs can remain in URLs; "
-    "no-store cannot prevent saving or screenshots. Inspect persisted history after a "
+    "screening pages use same-origin referrer policy, so the local page URL may be sent "
+    "to this same server, never as a cross-origin referrer. Other readers keep no-referrer. "
+    "No-store cannot prevent saving or screenshots. Inspect persisted history after a "
     "network failure before retrying. Separate reads are not one frozen snapshot.</p>"
     "<p>Exact IDs use JSON strings so slashes and control characters survive native inputs. "
     "Decode quotes/escapes when a raw ID is needed. Prior opinions are never rewritten "
@@ -330,7 +334,9 @@ def _page(
         if len(content) + len(encoded) > MAX_HTML_BYTES:
             raise _PageTooLargeError()
         content.extend(encoded)
-    return HTMLResponse(bytes(content), status_code=status, headers=_HEADERS)
+    return HTMLResponse(
+        bytes(content), status_code=status, headers=_SCREENING_HEADERS if screening else _HEADERS
+    )
 
 
 def _error(
