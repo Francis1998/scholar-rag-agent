@@ -1,5 +1,12 @@
 # Scholar RAG Agent
 
+
+### HealthyAdhererBiasCueExtractor
+
+![HealthyAdhererBiasCueExtractor](assets/demo/healthy-adherer-bias-cues.gif)
+
+Offline bias cues. Gap vs Elicit/Consensus/Connected Papers healthy-adherer bias cue extractors. See `docs/guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ### LossToFollowupBiasCueExtractor
 
 ![LossToFollowupBiasCueExtractor](assets/demo/loss-to-followup-bias-cues.gif)
