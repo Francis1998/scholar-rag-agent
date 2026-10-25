@@ -1,5 +1,6 @@
 """Simple in-memory vector store abstraction for local retrieval."""
 
+from retrieval.counts import validate_result_count
 from retrieval.embeddings import cosine_similarity
 from retrieval.models import Chunk, SearchResult
 
@@ -25,6 +26,9 @@ class InMemoryVectorStore:
 
     def search(self, vector: list[float], limit: int = 10) -> list[SearchResult]:
         """Return detached chunks by cosine similarity, with insertion-order ties."""
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         results = [
             SearchResult(
                 chunk=self._chunks[chunk_id].model_copy(deep=True),

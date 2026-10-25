@@ -66,5 +66,13 @@ either value. Search returns detached chunks, so later edits to inputs or result
 cannot change indexed evidence or scores. Call `upsert` again with the same chunk
 ID to replace both snapshots; equal-score results retain original insertion order.
 Vectors and queries must already be normalized; the store does not normalize
-them. Results use the existing `[:limit]` slicing semantics, including zero and
-negative limits. This primitive does not provide persistence or thread safety.
+them. `search(vector, limit=10)` requires a nonnegative Python `int`, excluding
+`bool`, using the same validator as the core retrievers. Negative integers raise
+`ValueError`; non-integers, including booleans, integral floats, strings, and
+`None`, raise `TypeError`. Validation applies to empty stores too, before scoring
+vectors or copying chunks, and diagnostics never include the supplied value.
+Zero returns `[]` without scoring, query iteration, or chunk copies. Positive
+limits preserve scores, insertion-order ties, and detached results; the default
+remains ten with no additional upper cap. Negative Python slicing is no longer
+supported: use a positive result count, not `-1`, to select evidence. This
+primitive does not provide persistence or thread safety.
