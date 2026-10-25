@@ -88,6 +88,18 @@ carrying validated collection return state; ordinary worksheet URLs retain
 16 KiB and form bodies retain 64 KiB. These are finite serialization/navigation
 bounds, not model budgets or a promise of frozen output across requests.
 
+The [native human screening workbench](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md)
+adds no setting, dependency, table or provider change. It uses the configured
+SQLite database, fixed five-entry recent history, 64-KiB query/body limits,
+four URL-encoded POST fields and the existing 1-MiB escaped HTML cap. Writes
+require one Origin exactly matching the request scheme/host/port; when present,
+Fetch Metadata must be `same-origin`. Keep loopback binding or deployment-owned
+access/host controls. For mounts/proxies configure the actual root path and
+trusted external scheme/authority; mismatches fail closed, and arbitrary
+forwarded-host headers do not redefine the accepted origin. No built-in
+authentication or DNS-rebinding protection is implied. Original JSON API
+Origin behavior is unchanged; this is not a global security policy.
+
 The [human screening progress report](docs/guides/SCREENING_REPORT_GUIDE.md)
 adds no settings, tables, dependencies or providers. It consumes one complete
 512-KiB screening JSON snapshot for up to 100 members, and caps each requested

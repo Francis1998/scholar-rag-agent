@@ -307,6 +307,33 @@ Historical reasons now survive latest-decision edits: do not assume an update
 erases sensitive text. This is application append-only behavior, not authenticated
 reviewer identity, tamper evidence, a retention/purge policy, or scientific proof.
 
+### Native human-screening writes
+
+`/explore/screening` is explicitly write-capable on POST, never GET. It reuses
+the existing transactional service and both optimistic revisions. The form
+requires a fresh explicit decision/reason; no preselection, auto-screening,
+retrieval handoff or automatic retry is performed. Stale submissions and failed
+history inserts write nothing. A 303 rereads persisted history; success is not
+inferred from a supplied confirmation URL. Existing JSON APIs are unchanged.
+
+Reject missing/null/duplicate/different Origin and non-same-origin Fetch
+Metadata before reading POST bodies. Compare scheme/authority exactly, without
+Referer fallback or trusting arbitrary forwarded-host values. Strict UTF-8
+URL-encoded parsing rejects duplicate/unknown fields, ambiguous inner JSON,
+malformed escapes, GET bodies, POST queries and inconsistent lengths. Query
+and streaming body caps are 64 KiB; reasons retain the service's 1000-character
+bound. Opaque hidden IDs are JSON encoded rather than normalized. Escaped
+HTML/CSP, no-store/no-referrer/nosniff and frame denial apply to form/error pages.
+
+This adds no authentication, CSRF session framework or DNS-rebinding defense.
+Direct clients can forge Origin. Use loopback/trusted access, allowed-host
+controls and carefully configured proxies; never expose an unauthenticated
+instance to an untrusted network. Do not enter credentials or personal data:
+append-only reasons survive label changes, and POST is not protection from
+resubmission state, logs or screenshots. No scripts/external assets, models,
+retrieval or agent events run. See the [complete native browser, API and
+Python contract](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md).
+
 ## Read-only collection browser
 
 `/explore/collections` and `/explore/collection` expose existing metadata, not

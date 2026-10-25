@@ -224,6 +224,26 @@ _COLLECTION_FOOTER = (
     "are literal text, never external links. Browsing cannot repair invalid stored data."
     "</p></footer></body></html>"
 )
+_SCREENING_FOOTER = (
+    "</main><footer><h2>Explicit human opinions, local trusted use only</h2>"
+    "<p>Only an explicit form POST records one decision and appends its history. GET never "
+    "writes. Include, exclude and unsure do not change collection membership or retrieval "
+    "selection, run models, or establish scientific validity. No automatic screening occurs.</p>"
+    "<p>No scripts, external resources, analytics, cookies or browser storage are used. "
+    "Normal startup still initializes stores and loads indexes. Source labels stay literal "
+    "text; follow only the local paper and source readers.</p>"
+    "<p>There is no authentication or tenant isolation. Keep the app on loopback or behind "
+    "your own access controls with trusted host/proxy configuration. Exact Origin checks "
+    "block cross-origin browser form submissions, not direct clients, malicious local "
+    "processes or DNS rebinding. The JSON API retains its existing independent contract.</p>"
+    "<p>Use no credentials or personal data in reasons. POST keeps reasons out of redirect "
+    "URLs, not browser resubmission state or infrastructure logs. IDs can remain in URLs; "
+    "no-store cannot prevent saving or screenshots. Inspect persisted history after a "
+    "network failure before retrying. Separate reads are not one frozen snapshot.</p>"
+    "<p>Exact IDs use JSON strings so slashes and control characters survive native inputs. "
+    "Decode quotes/escapes when a raw ID is needed. Prior opinions are never rewritten "
+    "by this form; legacy gaps remain explicit.</p></footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -269,6 +289,7 @@ def _page(
     saved_runs: bool = False,
     worksheet: bool = False,
     collections: bool = False,
+    screening: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -287,13 +308,18 @@ def _page(
             "Inspect saved membership and current human screening, without changing either."
         )
         footer = _COLLECTION_FOOTER
+    if screening:
+        subject = "HUMAN SCREENING"
+        description = "Inspect an exact member, then explicitly record your own decision."
+        footer = _SCREENING_FOOTER
+    mode = "EXPLICIT HUMAN WRITE" if screening else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<meta name="theme-color" content="#f4f7fa">'
         f"<title>{title} | Scholar RAG</title><style>{_STYLE}</style></head><body>"
         '<a class="skip-link" href="#main">Skip to main content</a>'
-        f'<header><p class="eyebrow" translate="no">SCHOLAR RAG / READ-ONLY / {subject}</p>'
+        f'<header><p class="eyebrow" translate="no">SCHOLAR RAG / {mode} / {subject}</p>'
         f"<h1>{title}</h1>"
         f'<p class="muted">{description}</p>'
         '</header><main id="main" tabindex="-1">'
@@ -318,6 +344,7 @@ def _error(
     saved_runs: bool = False,
     worksheet: bool = False,
     collections: bool = False,
+    screening: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -334,6 +361,7 @@ def _error(
         saved_runs=saved_runs,
         worksheet=worksheet,
         collections=collections,
+        screening=screening,
     )
 
 

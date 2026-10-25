@@ -3,7 +3,9 @@
 Open **Browse saved collections** from `/explore`. This native, script-free
 workflow discovers saved selections, inspects current membership and human
 screening, and hands off to the existing readers and downloads. It does not
-create collections, record decisions, select evidence automatically, or deduplicate.
+create collections, record decisions on GET, select evidence automatically, or deduplicate.
+Member cards now link to the separate [explicit native screening
+workbench](HUMAN_SCREENING_WORKBENCH_GUIDE.md); only its same-origin form POST writes.
 
 ![Executed synthetic collection-browser output illustration](../assets/collection-browser.gif)
 
@@ -34,6 +36,9 @@ No key, new setting, migration, browser package, or front-end framework is neede
    of retained decisions, with exact reasons/timestamps and an explicit legacy
    boundary. The [history guide](SCREENING_HISTORY_GUIDE.md) covers the separate
    query-selected API/Python reader; there is no editing control or backfill.
+   **Open explicit human screening form** opens a separate, revision-bound
+   write surface: inspect the paper, choose a decision and supply your own reason.
+   The workbench preserves this collection return state and never changes membership.
 3. Choose **Read this exact paper / choose source context**. The existing passage
    reader selects an exact document; its source links select exact stored chunks.
    Back links preserve collection status, member/list pagination and catalog

@@ -181,7 +181,8 @@ class _CollectionExplorerRoute(APIRoute):
                 405,
                 "collection_browser_method_not_allowed",
                 "Collection browsing requires GET",
-                "No operation was executed. This browser has no editing or screening actions.",
+                "No operation was executed. Use the separate explicit human screening form "
+                "to record a decision; collection inspection itself is read-only.",
                 navigation=_navigation(None, scope.get("root_path", "").rstrip("/")),
                 collections=True,
             )
@@ -414,6 +415,19 @@ def _member(
             f"{review.updated_at.isoformat()}</time>.</p>"
         )
         yield _literal(review.reason, "review-reason")
+    yield _link(
+        f"screen-member-{index}",
+        _url(
+            root_path + "/explore/screening",
+            {
+                "collection_id": options.collection_id,
+                "collection_revision": options.collection_revision,
+                "document_id": item.document_id,
+                "collection_return": options.token(),
+            },
+        ),
+        "Open explicit human screening form",
+    )
     yield _link(
         f"screening-history-{index}",
         _url(

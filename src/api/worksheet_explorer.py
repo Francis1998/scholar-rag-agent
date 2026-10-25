@@ -1,10 +1,8 @@
 """Bounded native forms over the existing model-free research worksheet service."""
 
 import json
-import re
 from collections.abc import Iterator
 from typing import Annotated, Literal, Self
-from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import HTMLResponse
@@ -33,6 +31,7 @@ from api.explorer import (
     _UnrepresentableTextError,
     _url,
 )
+from api.native_forms import FormTooLargeError, parse_fields, read_body, require_urlencoded
 from storage.document_catalog import DEFAULT_PAGE_SIZE
 from storage.paper_collections import CollectionError, CollectionId
 from storage.source_context import ContextDocumentIdentity
@@ -109,39 +108,19 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 
 
 def _fields(raw: bytes) -> dict[str, str]:
-    wire = raw.decode("ascii")
-    if re.search(r"%(?![0-9a-fA-F]{2})", wire):
-        raise ValueError("Malformed percent encoding.")
-    pairs = parse_qsl(
-        wire,
-        keep_blank_values=True,
-        strict_parsing=True,
-        encoding="utf-8",
-        errors="strict",
-        max_num_fields=MAX_FORM_FIELDS,
+    fields = parse_fields(
+        raw, max_fields=MAX_FORM_FIELDS, max_field_characters=MAX_FIELD_CHARACTERS
     )
-    if len(dict(pairs)) != len(pairs) or any(
-        len(name) > 32 or len(value) > MAX_FIELD_CHARACTERS or "\0" in name + value
-        for name, value in pairs
-    ):
+    if any("\0" in value for value in fields.values()):
         raise ValueError("Invalid form fields.")
-    return dict(pairs)
+    return fields
 
 
 async def _body(request: Request) -> bytes:
-    lengths = request.headers.getlist("content-length")
-    if len(lengths) > 1 or (lengths and (not lengths[0].isascii() or not lengths[0].isdecimal())):
-        raise ValueError("Invalid body length.")
-    if lengths and int(lengths[0]) > MAX_FORM_BYTES:
-        raise WorksheetError("worksheet_form_too_large", "", 413)
-    content = bytearray()
-    async for chunk in request.stream():
-        if len(content) + len(chunk) > MAX_FORM_BYTES:
-            raise WorksheetError("worksheet_form_too_large", "", 413)
-        content.extend(chunk)
-    if lengths and int(lengths[0]) != len(content):
-        raise ValueError("Body length mismatch.")
-    return bytes(content)
+    try:
+        return await read_body(request, max_bytes=MAX_FORM_BYTES)
+    except FormTooLargeError as exc:
+        raise WorksheetError("worksheet_form_too_large", "", 413) from exc
 
 
 _FAILURES = {
@@ -471,16 +450,10 @@ async def explore_worksheet(request: Request) -> Response:
             return _page(
                 "Research evidence worksheet", _form(fields, navigation, root_path), worksheet=True
             )
-        content_types = request.headers.getlist("content-type")
-        if (
-            len(content_types) != 1
-            or not re.fullmatch(
-                r'application/x-www-form-urlencoded(?:\s*;\s*charset=(?:utf-8|"utf-8"))?',
-                content_types[0].strip().lower(),
-            )
-            or "content-encoding" in request.headers
-        ):
-            raise WorksheetError("worksheet_form_encoding", "", 415)
+        try:
+            require_urlencoded(request)
+        except ValueError as exc:
+            raise WorksheetError("worksheet_form_encoding", "", 415) from exc
         if raw_query:
             raise ValueError("POST controls belong only in the body.")
         fields = _Form.model_validate(_fields(body))
