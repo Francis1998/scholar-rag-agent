@@ -14,6 +14,13 @@ Offline bias cues. Gap vs Elicit/Consensus/Connected Papers healthy-adherer bias
 
 Offline bias cues. Gap vs Elicit/Consensus/Connected Papers Neyman bias cue extractors. See `docs/guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md`.
 
+
+### ObserverExpectancyBiasCueExtractor
+
+![ObserverExpectancyBiasCueExtractor](assets/demo/observer-expectancy-bias-cues.gif)
+
+Offline bias cues. Gap vs Elicit/Consensus/Connected Papers observer-expectancy bias cue extractors. See `docs/guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ### LossToFollowupBiasCueExtractor
 
 ![LossToFollowupBiasCueExtractor](assets/demo/loss-to-followup-bias-cues.gif)
