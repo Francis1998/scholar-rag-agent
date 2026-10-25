@@ -167,7 +167,7 @@ calls or current-corpus enrichment. Its fixed source/read limits and exact
 | `SCHOLAR_RAG_OPENAI_MODEL` | `openai_model` | `gpt-6-astra` |
 | `SCHOLAR_RAG_ANTHROPIC_MODEL` | `anthropic_model` | `claude-sonnet-5-5` |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini_model` | `gemini-3.8-flash` |
-| `SCHOLAR_RAG_KIMI_MODEL` | `kimi_model` | `kimi-k3` |
+| `SCHOLAR_RAG_KIMI_MODEL` | `kimi_model` | `kimi-k3.1-pro` |
 
 Settings precedence is explicit `Settings(...)` arguments, process environment,
 `.env`, then the built-in defaults. Model IDs are trimmed and must be non-empty
@@ -191,12 +191,14 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-23 America/Los_Angeles** four-provider catalog-only recheck,
+for the **2026-10-24 America/Los_Angeles** four-provider catalog recheck and Kimi
+K3.1 migration-contract check,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
 the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol
 and Anthropic Haiku 5.5 are additional catalog options, not new
-adapter-compatibility claims. Defaults, endpoints, routing, and budgets remain unchanged.
+adapter-compatibility claims. Only the Kimi default changes to `kimi-k3.1-pro`;
+other selected defaults, endpoints, routing, and budgets remain unchanged.
 
 Selecting Argon does not implement its long-decode loop or background execution.
 Google recommends longer client timeouts for that workload; this repository
@@ -239,6 +241,31 @@ To return to the new default, remove overrides from both the environment and
 `.env`, or explicitly set `claude-sonnet-5-5`; explicit `Settings(...)` arguments
 still take precedence. Neither these settings nor offline contract tests check
 account access, live answer quality, or whether the budget suits your workload.
+
+### Kimi K3.1 default and rollback
+
+The selected default is `kimi-k3.1-pro`; `kimi-k3.1-pro-highspeed` is an optional
+override, not an automatic fallback. Both variants inherit K3's documented
+parameter constraints. The adapter keeps Moonshot Chat Completions, the
+`MOONSHOT_API_KEY` credential, and a body containing only `model` and `messages`.
+It omits unsupported `thinking`, fixed sampling fields, and `reasoning_effort`,
+leaving effort at the provider's `max` default. No effort knob, multi-turn
+reasoning replay, or tool support is added.
+
+To keep the previous K3 model:
+
+```bash
+export SCHOLAR_RAG_KIMI_MODEL=kimi-k3
+```
+
+Restart after changing settings. Explicit `Settings(kimi_model="...")` arguments
+still win over environment, then `.env`, then the built-in default. Remove older
+overrides from those sources or explicitly set `kimi-k3.1-pro` to adopt K3.1 Pro.
+Direct `KimiAdapter(model="...", api_key="...")` overrides remain independent of
+application settings. Custom IDs are preserved, not verified against an account.
+The unchanged 60-second HTTPX timeouts and default reasoning deadline can still
+expire on slow reasoning responses; the COST route is not a price guarantee.
+Without provider keys the application still uses the deterministic offline fake.
 
 ## Optional Provider Keys
 

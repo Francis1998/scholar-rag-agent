@@ -1,5 +1,26 @@
 # Scholar RAG Agent
 
+
+### HealthyAdhererBiasCueExtractor
+
+![HealthyAdhererBiasCueExtractor](assets/demo/healthy-adherer-bias-cues.gif)
+
+Offline bias cues. Gap vs Elicit/Consensus/Connected Papers healthy-adherer bias cue extractors. See `docs/guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
+
+### NeymanBiasCueExtractor
+
+![NeymanBiasCueExtractor](assets/demo/neyman-bias-cues.gif)
+
+Offline bias cues. Gap vs Elicit/Consensus/Connected Papers Neyman bias cue extractors. See `docs/guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
+
+### ObserverExpectancyBiasCueExtractor
+
+![ObserverExpectancyBiasCueExtractor](assets/demo/observer-expectancy-bias-cues.gif)
+
+Offline bias cues. Gap vs Elicit/Consensus/Connected Papers observer-expectancy bias cue extractors. See `docs/guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ### LossToFollowupBiasCueExtractor
 
 ![LossToFollowupBiasCueExtractor](assets/demo/loss-to-followup-bias-cues.gif)
@@ -469,12 +490,16 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-23 America/Los_Angeles** catalog-only recheck identifies
-`gemini-4-argon` as Google's latest flagship while retaining the selected
-Astra, Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 defaults. OpenAI 6.1 Sol and
-Anthropic Haiku 5.5 are additional catalog alternatives, not new compatibility
-claims. Selected defaults, endpoints, budgets and separately dated migration
-contracts remain unchanged. No live account or inference verification was performed.
+The **2026-10-24 America/Los_Angeles** official documentation check updates the
+selected Kimi default to **`kimi-k3.1-pro`**, retaining its stateless Moonshot
+Chat Completions payload and endpoint. Explicit `kimi-k3` overrides still work;
+`kimi-k3.1-pro-highspeed` is an optional alternative, not an automatic fallback.
+The selected OpenAI `gpt-6-astra`, Anthropic `claude-sonnet-5-5`, and SPEED-route
+`gemini-3.8-flash` defaults are unchanged. Google's latest flagship is
+`gemini-4-argon`, not the selected Flash model. OpenAI `gpt-6.1-sol` / `gpt-6-luna`
+and Anthropic Fable 5.1 / Opus 5.5 / Haiku 5.5 are catalog alternatives, not
+additional default migrations. Routing and budgets remain unchanged. Catalog
+checks and mocked HTTPX contracts are not live account or inference verification.
 Human screening progress reports use none of these models or provider endpoints.
 Gemini `CONTINUATION` hops now fail explicitly instead of becoming completed
 answers; there is no long-decode loop or increase to the current 60-second
