@@ -39,7 +39,7 @@ def test_router_defaults_to_fake_without_provider_keys() -> None:
         (OpenAIAdapter(api_key="test-key"), "gpt-6-astra"),
         (AnthropicAdapter(api_key="test-key"), "claude-sonnet-5-5"),
         (GeminiAdapter(api_key="test-key"), "gemini-3.8-flash"),
-        (KimiAdapter(api_key="test-key"), "kimi-k3"),
+        (KimiAdapter(api_key="test-key"), "kimi-k3.1-pro"),
     ],
     ids=["openai", "anthropic", "gemini", "kimi"],
 )

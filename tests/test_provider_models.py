@@ -45,7 +45,7 @@ PROVIDERS = [
         "ANTHROPIC_API_KEY",
     ),
     ProviderCase("gemini", GeminiAdapter, "gemini-3.8-flash", "gemini-3.7-flash", "GEMINI_API_KEY"),
-    ProviderCase("kimi", KimiAdapter, "kimi-k3", "kimi-k2.6", "MOONSHOT_API_KEY"),
+    ProviderCase("kimi", KimiAdapter, "kimi-k3.1-pro", "kimi-k2.6", "MOONSHOT_API_KEY"),
 ]
 
 
@@ -109,6 +109,24 @@ def assert_anthropic_request(request: httpx.Request, llm_request: LLMRequest, mo
     elif model == "claude-sonnet-5":
         expected["thinking"] = {"type": "disabled"}
     assert json.loads(request.content) == expected
+
+
+def assert_kimi_request(request: httpx.Request, llm_request: LLMRequest, model: str) -> None:
+    """Keep K3.1 requests free of thinking, effort, sampling, and tool overrides."""
+    assert request.method == "POST"
+    assert str(request.url) == "https://api.moonshot.ai/v1/chat/completions"
+    assert request.headers["authorization"] == "Bearer test-provider-key"
+    assert request.headers["content-type"] == "application/json"
+    assert json.loads(request.content) == {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "Answer with citation chunk IDs from the context."},
+            {
+                "role": "user",
+                "content": f"Context:\n{llm_request.context}\n\nQuestion:\n{llm_request.prompt}",
+            },
+        ],
+    }
 
 
 def test_settings_expose_current_model_defaults(provider_case: ProviderCase) -> None:
@@ -285,6 +303,200 @@ async def test_current_model_http_contract(
     assert response.raw_provider == provider_case.name
     assert response.model_name == model
     assert "test-provider-key" not in response.model_dump_json()
+
+
+@pytest.mark.parametrize("task", list(TaskType))
+async def test_kimi_default_reaches_app_container_wire_and_response(
+    task: TaskType,
+    llm_request: LLMRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """K3.1 is selected for COST/default and missing preferred-provider fallbacks."""
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-provider-key")
+    monkeypatch.setenv("SCHOLAR_RAG_DEFAULT_MODEL", "kimi")
+    container = AppContainer(
+        Settings(_env_file=None, database_path=tmp_path / "kimi-routing.sqlite3")
+    )
+    llm_request = llm_request.model_copy(update={"task_type": task})
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert_kimi_request(request, llm_request, "kimi-k3.1-pro")
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "reasoning_content": "Private reasoning, not answer text.",
+                            "content": "Grounded answer [c1].",
+                        },
+                    }
+                ],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        response = await container.llm.generate(llm_request)
+
+    assert len(requests) == 1
+    assert response == LLMResponse(
+        text="Grounded answer [c1].",
+        citation_chunk_ids=["c1"],
+        raw_provider="kimi",
+        model_name="kimi-k3.1-pro",
+    )
+
+
+@pytest.mark.parametrize(
+    ("file_model", "env_model", "explicit_model", "model"),
+    [
+        (None, None, None, "kimi-k3.1-pro"),
+        ("  kimi-k3.1-pro-highspeed  ", None, None, "kimi-k3.1-pro-highspeed"),
+        ("kimi-k2.6", "  kimi-k3  ", None, "kimi-k3"),
+        ("kimi-k3", "  kimi-k3.1-pro-highspeed  ", None, "kimi-k3.1-pro-highspeed"),
+        ("kimi-k3", "kimi-k3.1-pro-highspeed", "  custom-kimi-model  ", "custom-kimi-model"),
+    ],
+    ids=[
+        "default",
+        "dotenv-highspeed",
+        "environment-rollback",
+        "environment-highspeed",
+        "explicit",
+    ],
+)
+async def test_kimi_precedence_reaches_wire_and_saved_generation(
+    file_model: str | None,
+    env_model: str | None,
+    explicit_model: str | None,
+    model: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Settings precedence survives routing, accepted generation, and SQLite reopening."""
+    dotenv = tmp_path / ".env"
+    dotenv.write_text(
+        "" if file_model is None else f'SCHOLAR_RAG_KIMI_MODEL="{file_model}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-provider-key")
+    monkeypatch.setenv("SCHOLAR_RAG_DEFAULT_MODEL", "kimi")
+    if env_model is not None:
+        monkeypatch.setenv("SCHOLAR_RAG_KIMI_MODEL", env_model)
+    overrides = {} if explicit_model is None else {"kimi_model": explicit_model}
+    settings = Settings(
+        _env_file=dotenv,
+        database_path=tmp_path / "kimi-provenance.sqlite3",
+        SEMANTIC_SCHOLAR_API_KEY="",
+        **overrides,
+    )
+    container = AppContainer(settings)
+    chunk = Chunk(
+        chunk_id="c1",
+        document_id="synthetic-document",
+        title="Synthetic evidence",
+        text="GraphRAG connects research entities.",
+        source="offline-fixture",
+    )
+    container.document_store.add_documents(
+        [Document(**chunk.model_dump(exclude={"chunk_id"}))], [chunk]
+    )
+    container.hybrid_retriever.add_chunks([chunk])
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "reasoning_content": "Private reasoning, not answer text.",
+                            "content": "GraphRAG connects research entities [c1].",
+                        },
+                    }
+                ],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        result = await container.runner.run("What does GraphRAG connect?")
+
+    assert result.state == AgentState.DONE, result.error
+    assert result.answer is not None
+    assert result.answer.answer == "GraphRAG connects research entities [c1]."
+    assert len(requests) == 1
+    events = SQLiteEventLog(settings.database_path).list_events(result.run_id)
+    [snapshot] = [
+        event["payload"] for event in events if event["event_type"] == "evidence_snapshot"
+    ]
+    [generation] = [
+        event["payload"] for event in events if event["event_type"] == "generation_record"
+    ]
+    request = LLMRequest.model_validate(snapshot["request"])
+    assert request.task_type == TaskType.REASONING
+    assert generation == {
+        "provider": "kimi",
+        "model_name": model,
+        "task_type": "reasoning",
+        "claim_chunk_ids": [["c1"]],
+    }
+    assert settings.kimi_model == model
+    assert_kimi_request(requests[0], request, model)
+    assert "test-provider-key" not in json.dumps(events)
+    assert "server-reported-version" not in json.dumps(events)
+    assert "Private reasoning" not in json.dumps(events)
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["kimi-k3.1-pro", "kimi-k3.1-pro-highspeed", "kimi-k3", "kimi-k2.7-code", "custom-kimi-model"],
+)
+async def test_kimi_explicit_models_keep_stateless_http_contract(
+    model: str, llm_request: LLMRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Explicit new-family, legacy, and custom IDs bypass application model settings."""
+    monkeypatch.setenv("SCHOLAR_RAG_KIMI_MODEL", "different-model")
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert_kimi_request(request, llm_request, model)
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "reasoning_content": "Private reasoning, not answer text.",
+                            "content": "Grounded answer [c1].",
+                        },
+                    }
+                ],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        response = await KimiAdapter(api_key="test-provider-key", model=model).generate(llm_request)
+    assert len(requests) == 1
+    assert response == LLMResponse(
+        text="Grounded answer [c1].",
+        citation_chunk_ids=["c1"],
+        raw_provider="kimi",
+        model_name=model,
+    )
 
 
 @pytest.mark.parametrize(
