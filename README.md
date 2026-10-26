@@ -1,44 +1,5 @@
 # Scholar RAG Agent
 
-
-### HealthyAdhererBiasCueExtractor
-
-![HealthyAdhererBiasCueExtractor](assets/demo/healthy-adherer-bias-cues.gif)
-
-Offline bias cues. Gap vs Elicit/Consensus/Connected Papers healthy-adherer bias cue extractors. See `docs/guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### NeymanBiasCueExtractor
-
-![NeymanBiasCueExtractor](assets/demo/neyman-bias-cues.gif)
-
-Offline bias cues. Gap vs Elicit/Consensus/Connected Papers Neyman bias cue extractors. See `docs/guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### ObserverExpectancyBiasCueExtractor
-
-![ObserverExpectancyBiasCueExtractor](assets/demo/observer-expectancy-bias-cues.gif)
-
-Offline bias cues. Gap vs Elicit/Consensus/Connected Papers observer-expectancy bias cue extractors. See `docs/guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-### LossToFollowupBiasCueExtractor
-
-![LossToFollowupBiasCueExtractor](assets/demo/loss-to-followup-bias-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers loss-to-follow-up bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-### LateLookerBiasCueExtractor
-
-![LateLookerBiasCueExtractor](assets/demo/late-looker-bias-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers late-looker bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-### RightTruncationBiasCueExtractor
-
-![RightTruncationBiasCueExtractor](assets/demo/right-truncation-bias-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers right-truncation bias cue extractors. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
 [![CI](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Francis1998/scholar-rag-agent/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
@@ -50,6 +11,10 @@ literature workflows, with SQLite persistence and optional model-provider adapte
 
 The default setup works without model credentials. Its fake adapter demonstrates
 the workflow; it does **not** produce a scientific summary or validate a hypothesis.
+
+The API/browser workflows below are integrated; [offline cue extractors](#offline-evidence-extractors)
+and most catalog extensions need explicit Python wiring. Keep this unauthenticated
+service on loopback for local, trusted use.
 
 ## Start offline
 
@@ -467,9 +432,10 @@ API/Python usage and reproduction of this actual-output offline illustration.
 
 ## What actually runs
 
-The API uses a hand-written **Observe -> Decide -> Act** state machine, not
-LangGraph. Pydantic validates settings and schemas; HTTPX connects optional live
-providers; SQLite stores documents, graph data, and durable run events.
+The Python 3.11+ FastAPI service uses a hand-written **Observe -> Decide -> Act**
+state machine, not LangGraph. Pydantic validates settings and schemas; HTTPX
+connects optional live providers; SQLite stores documents, graph data, and
+durable run events. Development checks use ruff, mypy, and pytest.
 
 | Stage | Default behavior |
 | --- | --- |
@@ -490,18 +456,26 @@ most other cataloged helpers require explicit library integration.
 For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
-The **2026-10-24 America/Los_Angeles** official documentation check updates the
-selected Kimi default to **`kimi-k3.1-pro`**, retaining its stateless Moonshot
-Chat Completions payload and endpoint. Explicit `kimi-k3` overrides still work;
-`kimi-k3.1-pro-highspeed` is an optional alternative, not an automatic fallback.
-The selected OpenAI `gpt-6-astra`, Anthropic `claude-sonnet-5-5`, and SPEED-route
-`gemini-3.8-flash` defaults are unchanged. Google's latest flagship is
-`gemini-4-argon`, not the selected Flash model. OpenAI `gpt-6.1-sol` / `gpt-6-luna`
-and Anthropic Fable 5.1 / Opus 5.5 / Haiku 5.5 are catalog alternatives, not
-additional default migrations. Routing and budgets remain unchanged. Catalog
-checks and mocked HTTPX contracts are not live account or inference verification.
+
+The **2026-10-25 America/Los_Angeles** catalog recheck leaves all selected
+defaults unchanged:
+
+| Provider | Repository default | Current official guidance |
+| --- | --- | --- |
+| OpenAI | `gpt-6-astra` | [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model): Astra for highest intelligence, `gpt-6.1-sol` for balanced near-Astra performance, `gpt-6-luna` for speed and cost-sensitive volume. |
+| Anthropic | `claude-sonnet-5-5` | [Claude catalog](https://platform.claude.com/docs/en/models/overview): generally recommends `claude-opus-5-5`, with `claude-fable-5-1` for demanding long-horizon reasoning and `claude-haiku-5-5` for latency-sensitive work. Sonnet remains this bounded text adapter's selection. |
+| Google | `gemini-3.8-flash` | [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) is the flagship; Flash remains the repository's SPEED-route default. |
+| Kimi | `kimi-k3.1-pro` | [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md): K3.1 Pro, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
+
+These remain stateless, single-turn text adapters: OpenAI and Kimi use Chat
+Completions, Anthropic Messages, and Gemini `generateContent`. Selecting another
+ID does not add tool loops, streaming, or a different endpoint. Earlier Kimi
+and Sonnet migration checks are dated separately in the provider guide;
+explicit `kimi-k3` rollback overrides remain available.
+Routing and budgets are unchanged. Catalog guidance is not a repository
+benchmark, account-entitlement check, or live inference verification.
 Human screening progress reports use none of these models or provider endpoints.
-Gemini `CONTINUATION` hops now fail explicitly instead of becoming completed
+Gemini `CONTINUATION` hops fail explicitly instead of becoming completed
 answers; there is no long-decode loop or increase to the current 60-second
 HTTPX timeouts and default reasoning deadline.
 `/query` requests the reasoning route; the default-provider setting is not a
@@ -530,11 +504,19 @@ additional `/query` stages or clinical assessments. Browse the
 [categorized cue guides](docs/README.md#clinical-and-statistical-evidence-cues)
 for study-design, outcome, statistical, and reporting cues. Each guide retains
 its usage examples and illustration; these heuristics do not validate findings.
+Older model names in helper guides and illustrations are historical, not current
+defaults or compatibility promises; use the [provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
 
 Existing cue illustrations remain available without interrupting the introduction:
 
 | Opt-in helper | Illustration |
 | --- | --- |
+| [HealthyAdhererBiasCueExtractor](docs/guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/healthy-adherer-bias-cues.gif) |
+| [NeymanBiasCueExtractor](docs/guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/neyman-bias-cues.gif) |
+| [ObserverExpectancyBiasCueExtractor](docs/guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/observer-expectancy-bias-cues.gif) |
+| [LossToFollowupBiasCueExtractor](docs/guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/loss-to-followup-bias-cues.gif) |
+| [LateLookerBiasCueExtractor](docs/guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/late-looker-bias-cues.gif) |
+| [RightTruncationBiasCueExtractor](docs/guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/right-truncation-bias-cues.gif) |
 | PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
 | BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
 | DifferenceInDifferencesCueExtractor | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
@@ -559,7 +541,6 @@ Existing cue illustrations remain available without interrupting the introductio
 | MissingDataMechanismCueExtractor | [GIF](docs/assets/missing-data-mechanism-cue-extractor.gif) |
 | EstimandIchE9CueExtractor | [GIF](docs/assets/estimand-ich-e9-cue-extractor.gif) |
 | SimpsonParadoxCueExtractor | [GIF](docs/assets/simpson-paradox-cues.gif) |
-
 | ResidualConfoundingCueExtractor | [GIF](docs/assets/residual-confounding-cues.gif) |
 | IntervalCensoringCueExtractor | [GIF](docs/assets/interval-censoring-cues.gif) |
 | EcologicalFallacyCueExtractor | [GIF](docs/assets/ecological-fallacy-cues.gif) |
@@ -574,6 +555,11 @@ Existing cue illustrations remain available without interrupting the introductio
 | ReferralBiasCueExtractor | [GIF](docs/assets/referral-bias-cues.gif) |
 | HawthorneEffectCueExtractor | [GIF](docs/assets/hawthorne-effect-cues.gif) |
 | RightCensoringCueExtractor | [GIF](docs/assets/right-censoring-cues.gif) |
+| DiagnosticAccessBiasCueExtractor | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
+| NonDifferentialMisclassificationCueExtractor | [GIF](docs/assets/non-differential-misclassification-cues.gif) |
+| SocialDesirabilityBiasCueExtractor | [GIF](docs/assets/social-desirability-bias-cues.gif) |
+| IndexEventBiasCueExtractor | [GIF](docs/assets/index-event-bias-cues.gif) |
+| CompetingEventBiasCueExtractor | [GIF](docs/assets/competing-event-bias-cues.gif) |
 
 ## Documentation
 
@@ -598,13 +584,6 @@ uv run pytest tests/ -v --cov=src --cov-fail-under=70
 [CI](.github/workflows/ci.yml) runs on Python 3.11 and 3.12.
 [Security Scan](.github/workflows/security.yml) also audits dependencies and runs
 Bandit. Passing these checks is not a scientific-accuracy benchmark.
-
-| DiagnosticAccessBiasCueExtractor | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
-
-| NonDifferentialMisclassificationCueExtractor | [GIF](docs/assets/non-differential-misclassification-cues.gif) |
-| SocialDesirabilityBiasCueExtractor | [GIF](docs/assets/social-desirability-bias-cues.gif) |
-| IndexEventBiasCueExtractor | [GIF](docs/assets/index-event-bias-cues.gif) |
-| CompetingEventBiasCueExtractor | [GIF](docs/assets/competing-event-bias-cues.gif) |
 
 ## License
 
