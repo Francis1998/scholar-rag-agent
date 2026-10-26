@@ -280,6 +280,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Healthy-adherer bias](guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) | Healthy-adherer bias wording |
 | [Measurement scale shift](guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | Measurement-scale shift / recalibration wording |
 | [Overadjustment bias](guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Overadjustment / overcontrol / mediator-adjustment wording |
+| [Competing-risk informative censoring](guides/COMPETING_RISK_INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | Competing-risk informative / dependent censoring wording |
 | [Neyman bias](guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | Neyman bias / selective-survival wording |
 | [Observer-expectancy bias](guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) | Observer-expectancy bias wording |
 | [Loss-to-follow-up bias](guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | Loss-to-follow-up wording |
