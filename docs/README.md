@@ -279,6 +279,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Risk of bias](guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md) | Advisory risk-of-bias domain wording, not a completed assessment |
 | [Healthy-adherer bias](guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) | Healthy-adherer bias wording |
 | [Measurement scale shift](guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | Measurement-scale shift / recalibration wording |
+| [Overadjustment bias](guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Overadjustment / overcontrol / mediator-adjustment wording |
 | [Neyman bias](guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | Neyman bias / selective-survival wording |
 | [Observer-expectancy bias](guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) | Observer-expectancy bias wording |
 | [Loss-to-follow-up bias](guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | Loss-to-follow-up wording |
