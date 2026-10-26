@@ -513,6 +513,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | --- | --- |
 | [HealthyAdhererBiasCueExtractor](docs/guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/healthy-adherer-bias-cues.gif) |
 | [MeasurementScaleShiftCueExtractor](docs/guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/measurement-scale-shift-cues.gif) |
+| [OveradjustmentBiasCueExtractor](docs/guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/overadjustment-bias-cues.gif) |
 | [NeymanBiasCueExtractor](docs/guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/neyman-bias-cues.gif) |
 | [ObserverExpectancyBiasCueExtractor](docs/guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/observer-expectancy-bias-cues.gif) |
 | [LossToFollowupBiasCueExtractor](docs/guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/loss-to-followup-bias-cues.gif) |
