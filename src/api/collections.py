@@ -112,7 +112,8 @@ def create_collection(
             name=payload.name, document_ids=payload.document_ids
         )
     response.headers.update(COLLECTION_HEADERS)
-    response.headers["Location"] = f"/collections/{collection.collection_id}"
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    response.headers["Location"] = f"{root_path}/collections/{collection.collection_id}"
     return collection
 
 
