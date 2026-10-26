@@ -86,6 +86,7 @@ PDF-upload UI.
 | Browse saved collections and human screening | Discover collections from `/explore`, inspect membership/status/reasons, follow exact readers and download revision-bound screening/duplicate outputs | [Native collection browser and executed demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) |
 | Inspect duplicate candidates before screening | Read a revision-checked selection in one bounded snapshot; review exact IDs, raw metadata, reasons and singletons without hiding or deleting papers | [Collection duplicate inspection and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
+| Record a human screening decision in a normal browser | Open an exact member/revision, read local paper/source links, explicitly submit a reasoned opinion, and recover append-only history after restart | [Native screening workbench: user/API/Python/portfolio guide](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md) |
 | Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Save an auditable human screening progress report | Download complete JSON/literal Markdown with resolved/pending totals and exact exclusion-reason membership, derived from one export without models or writes | [Human progress report: browser/API/Python/portfolio guide and executed illustration](docs/guides/SCREENING_REPORT_GUIDE.md) |
@@ -111,6 +112,25 @@ PDF-upload UI.
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Explicitly screen a paper in your browser
+
+[![Measured synthetic native screening: three decisions, rejected writes and restart recovery](docs/assets/human-screening-workbench.png)](docs/assets/human-screening-workbench.gif)
+
+From a saved collection member, choose **Open explicit human screening form**,
+read its exact paper/source context, then submit include/exclude/unsure with your
+own reason. A local 303 redirect rereads the persisted decision and recent
+append-only history. Stale revisions fail instead of overwriting; GET never
+writes, and labels do not change retrieval selection implicitly.
+
+This is for **local/trusted use**, not authenticated reviewer approval.
+Strict same-origin browser writes, bounded form parsing and escaped script-free
+HTML preserve the original JSON API. No models, network, automatic screening or
+scientific validation are involved. ASReview LAB informed the workflow only,
+not parity or a dependency. The [complete guide and offline demo](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md)
+reproduce this **measured-output illustration, not browser footage**.
+The still makes animation opt-in; an [exact text alternative](docs/assets/human-screening-workbench.txt)
+is available.
 
 ## Browse papers and passages without generating
 
