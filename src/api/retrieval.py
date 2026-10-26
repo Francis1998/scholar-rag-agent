@@ -28,10 +28,13 @@ class RetrievalRequest(QueryRequest):
     response_model=RetrievalPreview,
     responses={
         404: {"description": "Unknown collection"},
-        409: {"description": "Generative retrieval or invalid/broken collection"},
+        409: {
+            "description": "Generative retrieval, invalid/broken collection or screening, "
+            "stale revision, or no inclusions"
+        },
         422: {"description": "Invalid query, scope, evidence bounds, or unsupported fields"},
         500: {"description": "Planning, retrieval, scope, or context-capture failure"},
-        503: {"description": "Collection storage unavailable"},
+        503: {"description": "Collection or screening storage unavailable"},
         504: {"description": "Retrieval or context-preparation timeout"},
     },
 )

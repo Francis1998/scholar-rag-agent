@@ -53,15 +53,20 @@ async def ingest_text(request: Request, payload: IngestTextRequest) -> IngestRes
     response_model=QueryResponse,
     responses={
         404: {"description": "Unknown collection"},
-        409: {"description": "Invalid collection or missing member documents"},
-        503: {"description": "Collection storage unavailable"},
+        409: {
+            "description": (
+                "Invalid/broken collection or screening, stale revision, or no inclusions"
+            )
+        },
+        422: {"description": "Invalid query, mutually exclusive scope, or evidence bounds"},
+        503: {"description": "Collection or screening storage unavailable"},
     },
 )
 async def query(request: Request, payload: QueryRequest, response: Response) -> QueryResponse:
     """Execute an Observe-Decide-Act RAG query."""
     container: AppContainer = request.app.state.container
     document_ids = resolve_document_scope(container, payload)
-    if payload.collection_id is not None:
+    if payload.collection_id is not None or payload.screened_collection is not None:
         response.headers.update(COLLECTION_HEADERS)
     result = await container.runner.run(
         payload.query,

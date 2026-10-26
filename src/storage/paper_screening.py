@@ -71,6 +71,15 @@ Reason = Annotated[
 _IDENTITY = TypeAdapter(Identity)
 
 
+class ScreenedCollectionScope(BaseModel):
+    """Select current human inclusions at an exact collection revision, never all members."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    collection_id: CollectionId
+    collection_revision: Revision
+
+
 class ScreeningSubmission(BaseModel):
     """Zero is the initial decision revision, never an unconditional overwrite."""
 
@@ -606,6 +615,27 @@ class SQLitePaperScreening:
             )
         except ValidationError as exc:
             raise _invalid_record() from exc
+
+    def select_included(self, collection_id: str, *, collection_revision: int) -> tuple[str, ...]:
+        """Resolve nonempty current inclusions in one read snapshot, before caller awaits.
+
+        Only the returned IDs are frozen; later corpus or screening changes are not locked.
+        """
+        scope = ScreenedCollectionScope(
+            collection_id=collection_id, collection_revision=collection_revision
+        )
+        with self.collections.resolved_collection(
+            scope.collection_id, expected_revision=scope.collection_revision
+        ) as (connection, collection):
+            included = self._snapshot(connection, collection).included_document_ids
+            if not included:
+                raise CollectionError(
+                    "screened_collection_empty",
+                    "Collection has no current human include decisions; "
+                    "review its screening queue.",
+                    409,
+                )
+            return included
 
     def list_queue(
         self,
