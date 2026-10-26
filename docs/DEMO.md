@@ -1,5 +1,20 @@
 # Demo
 
+## Native human paper-screening workbench
+
+[![Executed synthetic screening measurements, not browser footage](assets/human-screening-workbench.png)](assets/human-screening-workbench.gif)
+
+The [complete user/API/Python/portfolio guide](guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md)
+reproduces catalog-to-collection discovery, exact paper/source reading, three
+explicit native POSTs, persisted 303 redirects and restart/history recovery.
+It measures no writes for cross-origin, duplicate-field or stale submissions;
+no retrieval, models, external network or agent events run. Labels never change
+retrieval selection automatically. The original SQLite service owns the writes.
+
+This is a **measured-output Pillow illustration, not browser footage** or
+scientific validation. The static preview is opt-in animation, with an
+[exact text alternative](assets/human-screening-workbench.txt).
+
 ## Native saved-run comparison workbench
 
 [![Measured synthetic comparison preview, not browser footage](assets/saved-run-comparison-workbench.png)](assets/saved-run-comparison-workbench.gif)
