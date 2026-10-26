@@ -31,8 +31,7 @@ Collection operations do not retrieve, call models, or append agent events.
 Preview retrieves without any live or fake generator or event writes.
 
 For optional live generation, consult the dated, official-source-linked
-[provider guide](PROVIDER_MODELS_GUIDE.md): GPT-6 Astra, Claude Sonnet 5 (selected
-default), Gemini 3.8 Flash GA, and Kimi K3. The
+[provider guide](PROVIDER_MODELS_GUIDE.md) for current model choices and defaults. The
 [official Claude catalog](https://platform.claude.com/docs/en/models/overview),
 rechecked **2026-09-22**, recommends Opus 5.5 for most workloads and Fable 5.1
 for demanding reasoning and long-horizon agentic work. Collections make no
@@ -225,6 +224,13 @@ and legacy unscoped test doubles retain their exact calling convention.
 | `PUT /collections/{collection_id}` | `{"name": string, "document_ids": string[], "expected_revision": integer}` | 200 complete new detail |
 | `DELETE /collections/{collection_id}` | Required query parameter `expected_revision` | 204, no body |
 | `POST /query` or `POST /retrieve` | Existing `query` plus optional **either** `collection_id` **or** `document_ids` | Existing query/preview response with resolved IDs |
+
+The table shows unmounted paths. Creation's origin-relative `Location` includes
+the effective ASGI `root_path`, including nested mounts, exactly once. For example,
+a `/proxy` deployment with `/outer/library` mounts returns
+`/proxy/outer/library/collections/{collection_id}`. Unmounted creation keeps
+`/collections/{collection_id}`. Resolve `Location` against the response origin;
+do not prepend the deployment prefix again.
 
 Detail fields are exactly `collection_id`, `name`, `document_ids`, and `revision`.
 Summary fields are exactly `collection_id`, `name`, `revision`, and
