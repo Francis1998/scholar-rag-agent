@@ -179,10 +179,10 @@ For example, choose a different available OpenAI model without changing the
 provider-routing policy:
 
 ```bash
-export SCHOLAR_RAG_OPENAI_MODEL=gpt-5.6-terra
+export SCHOLAR_RAG_OPENAI_MODEL=gpt-6.1-sol
 ```
 
-Or set `Settings(openai_model="gpt-5.6-terra")` in Python. `build_model_router`
+Or set `Settings(openai_model="gpt-6.1-sol")` in Python. `build_model_router`
 passes each field to its corresponding adapter only when that provider has a
 key. Direct adapter callers can still pass `model="..."` explicitly; constructors
 do not load or override that choice from application environment settings.
@@ -191,14 +191,17 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-24 America/Los_Angeles** four-provider catalog recheck and Kimi
-K3.1 migration-contract check,
+for the **2026-10-25 America/Los_Angeles** four-provider catalog recheck,
+the separate **2026-10-24 America/Los_Angeles** Kimi K3.1 migration-contract check,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
 the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol
 and Anthropic Haiku 5.5 are additional catalog options, not new
-adapter-compatibility claims. Only the Kimi default changes to `kimi-k3.1-pro`;
-other selected defaults, endpoints, routing, and budgets remain unchanged.
+adapter-compatibility claims. OpenAI documents Chat Completions without tools
+for [6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol); tool use
+requires Responses, which this adapter does not implement. All selected defaults,
+including `kimi-k3.1-pro`, endpoints, routing, and budgets remain unchanged by
+this catalog recheck.
 
 Selecting Argon does not implement its long-decode loop or background execution.
 Google recommends longer client timeouts for that workload; this repository

@@ -595,6 +595,26 @@ Native HTML is capped at 1 MiB and history URLs at 64 KiB; API URLs at 16 KiB.
 No model, network, retrieval, corpus/event write or full-history scan occurs.
 See [the complete history contract](docs/guides/SCREENING_HISTORY_GUIDE.md).
 
+`api.screening_explorer` adds a native `/explore/screening` GET/POST pair.
+Collection cards link to exact query-selected members/revisions. GET delegates
+to the existing history reader with a fixed five-row recent window and renders
+local paper/source/history links; the selected decision revision is the one
+displayed in that read. POST requires an exact Origin match (scheme/authority),
+rejects conflicting Fetch Metadata, and decodes a bounded four-field URL-encoded
+form. ASCII JSON hidden selection preserves opaque IDs through browser input
+normalization. The shared `api.native_forms` parser also preserves the worksheet's
+existing wire/error behavior; no global auth/session middleware is added.
+
+The sole write is `SQLitePaperScreening.submit`, offloaded from the async route
+to a worker thread, with both optimistic revisions. Its reserved transaction
+owns latest/history atomicity. A prepared local 303 response avoids reason-bearing
+URLs; redirected GET confirms only revisions actually present in retained history.
+No new table, migration, retrieval selection, generation, event, network or JSON
+API change is introduced. A dedicated write-aware renderer label/footer avoids
+misrepresenting the workbench as read-only. Bounds are 64 KiB URL/body, 16,384
+decoded field characters and 1 MiB complete escaped HTML. See the
+[native workbench guide](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md).
+
 `SQLitePaperScreening.export_results` and
 `GET /collections/{collection_id}/screening/export` reuse the queue's complete
 status/count snapshot and existing review validators. Current title/source labels

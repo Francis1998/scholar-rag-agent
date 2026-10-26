@@ -1,0 +1,23 @@
+1. Discover and inspect an exact member
+Executed catalog -> collection -> native screening form under /review.
+Read the exact paper/source; slash, CRLF and NUL ID remained unchanged.
+GET database bytes unchanged; decision and reason not preselected.
+
+2. Explicitly record a human opinion
+Explicit include, exclude, unsure submissions: 3.
+Local redirect statuses: [303, 303, 303]; reasons absent from URLs.
+Persisted reasons retain spaces, CRLF and escaped literal markup.
+Collection membership unchanged; no retrieval selection changed.
+
+3. Reject unsafe or stale submissions
+Cross-origin: 403; duplicate field: 422; stale decision: 409.
+Database bytes unchanged by rejected writes: True.
+Submit service attempts: 4; successful decisions: 3.
+No automatic retry or unconditional overwrite.
+
+4. Restart and inspect retained history
+Retained revisions, newest first: [3, 2, 1].
+Python/API history equal: True; restart HTML identical: True.
+Events: 0; forbidden calls: 0.
+Temporary synthetic database removed; no network, retrieval or generation.
+Measured-output illustration, not browser footage or scientific validation.

@@ -4,6 +4,11 @@ Save `include`, `exclude`, or `unsure` decisions on members of a named paper
 collection, resume after restart, and explicitly pass the included IDs to
 retrieval. Nothing labels a paper automatically or changes `/query` defaults.
 
+For native browser writes, open a saved collection member's **Open explicit
+human screening form** link. The [workbench guide](HUMAN_SCREENING_WORKBENCH_GUIDE.md)
+covers exact same-origin submissions, stale-tab rejection, persisted redirects
+and recent history. The JSON and Python contracts below remain unchanged.
+
 ![Measured synthetic paper-screening workflow](../assets/paper-screening.gif)
 
 This four-frame illustration is rendered from the executable demo's actual API

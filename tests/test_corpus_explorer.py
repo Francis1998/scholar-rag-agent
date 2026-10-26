@@ -85,10 +85,12 @@ class ExplorerAPI:
             ],
         )
 
-    def page(self, path: str = "/explore", **params: str | int) -> Node:
+    def page(
+        self, path: str = "/explore", *, referrer_policy: str = "no-referrer", **params: str | int
+    ) -> Node:
         response = self.client.get(path, params=params) if params else self.client.get(path)
         assert response.status_code == 200, response.text[:1000]
-        assert_headers(response)
+        assert_headers(response, referrer_policy=referrer_policy)
         assert "UNEXPOSED_" not in response.text
         return ExplorerDOM(response.text).root
 
@@ -108,11 +110,11 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[ExplorerAPI
         yield ExplorerAPI(app, client, app.state.container, path)
 
 
-def assert_headers(response: httpx.Response) -> None:
+def assert_headers(response: httpx.Response, *, referrer_policy: str = "no-referrer") -> None:
     assert response.headers["content-type"] == "text/html; charset=utf-8"
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["x-content-type-options"] == "nosniff"
-    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["referrer-policy"] == referrer_policy
     csp = response.headers["content-security-policy"]
     for directive in (
         "default-src 'none'",

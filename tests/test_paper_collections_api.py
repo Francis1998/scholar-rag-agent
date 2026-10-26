@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 import sqlite3
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -76,6 +77,50 @@ def collection_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
             response.raise_for_status()
             identifiers.append(response.json()["document_id"])
         yield CollectionAPI(application, client, path, *identifiers)
+
+
+@pytest.mark.parametrize(
+    ("root_path", "mounts"),
+    [
+        pytest.param("", (), id="unmounted"),
+        pytest.param("/", (), id="root-slash"),
+        pytest.param("", ("/library",), id="mounted"),
+        pytest.param("", ("/outer", "/library"), id="nested-mount"),
+        pytest.param("/proxy", (), id="root-path"),
+        pytest.param("/proxy", ("/outer", "/library"), id="root-path-nested-mount"),
+    ],
+)
+def test_created_collection_location_resolves_to_exact_resource(
+    collection_api: CollectionAPI, root_path: str, mounts: tuple[str, ...]
+) -> None:
+    api = collection_api
+    application = api.application
+    for mount_path in reversed(mounts):
+        parent = FastAPI()
+        parent.mount(mount_path, application, name="child")
+        application = parent
+    prefix = root_path.rstrip("/") + "".join(mounts)
+    with TestClient(application, root_path=root_path) as client:
+        response = client.post(
+            prefix + "/collections",
+            json={"name": "Mounted selection", "document_ids": [api.second]},
+        )
+        assert response.status_code == 201, response.text
+        assert_private(response)
+        saved = response.json()
+        assert re.fullmatch(r"col_[0-9a-f]{32}", saved["collection_id"])
+        assert saved == {
+            "collection_id": saved["collection_id"],
+            "name": "Mounted selection",
+            "document_ids": [api.second],
+            "revision": 1,
+        }
+        location = response.headers["location"]
+        detail = client.get(location)
+        assert detail.status_code == 200, detail.text
+        assert_private(detail)
+        assert detail.json() == saved
+        assert location == f"{prefix}/collections/{saved['collection_id']}"
 
 
 def test_create_restart_list_detail_replace_and_conditional_delete(
