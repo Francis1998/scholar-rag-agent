@@ -277,6 +277,12 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | --- | --- |
 | [Study limitations](guides/STUDY_LIMITATION_CUE_EXTRACTOR_GUIDE.md) | Limitation-language cues |
 | [Risk of bias](guides/RISK_OF_BIAS_CUE_EXTRACTOR_GUIDE.md) | Advisory risk-of-bias domain wording, not a completed assessment |
+| [Healthy-adherer bias](guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) | Healthy-adherer bias wording |
+| [Neyman bias](guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | Neyman bias / selective-survival wording |
+| [Observer-expectancy bias](guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) | Observer-expectancy bias wording |
+| [Loss-to-follow-up bias](guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | Loss-to-follow-up wording |
+| [Late-looker bias](guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md) | Late-looker bias wording |
+| [Right-truncation bias](guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | Right-truncation wording |
 | [Publication bias](guides/PUBLICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Funnel plots, Egger's test, and small-study effects |
 | [Funding disclosures](guides/FUNDING_DISCLOSURE_FLAGGER_GUIDE.md) | Funding and grant cues |
 | [Funding conflicts](guides/FUNDING_CONFLICT_CUE_EXTRACTOR_GUIDE.md) | Funding and conflict-of-interest wording |
@@ -413,10 +419,4 @@ instructions or evidence of current scientific performance.
 | Extract offline NonresponseBias cues | [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline PrevalentUserBias cues | [PrevalentUserBiasCueExtractor](guides/PREVALENT_USER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline TimeDependentBias cues | [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline HealthyAdhererBiasCue cues | [HealthyAdhererBiasCueExtractor](guides/HEALTHY_ADHERER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline NeymanBiasCue cues | [NeymanBiasCueExtractor](guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline ObserverExpectancyBiasCue cues | [ObserverExpectancyBiasCueExtractor](guides/OBSERVER_EXPECTANCY_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline LossToFollowupBias cues | [LossToFollowupBiasCueExtractor](guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline LateLookerBias cues | [LateLookerBiasCueExtractor](guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline RightTruncationBias cues | [RightTruncationBiasCueExtractor](guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |

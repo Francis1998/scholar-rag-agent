@@ -1,20 +1,23 @@
 # Provider Models and Compatibility
 
-The official [OpenAI](https://developers.openai.com/api/docs/models.md) and
+The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
 [Gemini 4 Argon model guide](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon), and
 [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md) were checked
-**2026-10-24 America/Los_Angeles**. OpenAI identifies `gpt-6-astra` as its
-flagship, `gpt-6.1-sol` as an intelligence/cost alternative, and `gpt-6-luna`
-for cost-sensitive, high-volume work. Anthropic lists `claude-fable-5-1`,
-`claude-opus-5-5`, `claude-sonnet-5-5`, and `claude-haiku-5-5`.
+**2026-10-25 America/Los_Angeles**. OpenAI positions `gpt-6-astra` for highest
+intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
+and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
+Anthropic generally recommends `claude-opus-5-5`, lists `claude-fable-5-1` for
+demanding reasoning and long-horizon agents, and includes `claude-sonnet-5-5`
+and `claude-haiku-5-5` in its current lineup.
 Google identifies **Gemini 4 Argon (`gemini-4-argon`)** as its latest flagship,
 not Gemini 3.8 Flash. Kimi recommends **`kimi-k3.1-pro`** as its latest flagship
 and lists `kimi-k3.1-pro-highspeed` as the optional high-speed variant.
 
-Only the selected Kimi default changes, from `kimi-k3` to `kimi-k3.1-pro`.
-The other selections remain unchanged, including `gemini-3.8-flash` for the
-existing SPEED route. Anthropic's general Opus 5.5 recommendation
+This catalog recheck changes no runtime defaults, endpoints, routing, or budgets.
+The existing selections remain `gpt-6-astra`, `claude-sonnet-5-5`,
+`gemini-3.8-flash` for the SPEED route, and `kimi-k3.1-pro`.
+Anthropic's general Opus 5.5 recommendation
 does not replace this repository's selected Sonnet 5.5 text-adapter default.
 The other providers' catalog alternatives are not new payload-compatibility
 tests or default migrations. In particular, Argon's long-decode and latency recommendations
@@ -29,7 +32,8 @@ migration-contract check remains
 **2026-10-01 America/Los_Angeles** (2026-10-01 UTC), earlier default-model
 migration guidance **2026-09-17**, and Opus 5.5 migration notes **2026-09-22**.
 Sonnet 5.5's no-tools `between_tools` / medium-effort contract is unchanged.
-These are dated documentation checks and the existing offline HTTPX contract tests,
+Today's catalog review does not repeat or redate those migrations. Documentation
+checks and existing offline HTTPX contract tests are
 **not an account-entitlement check or a live inference test**. Availability,
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.
@@ -38,14 +42,15 @@ account and workload.
 
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
-| OpenAI | `gpt-6-astra` | Current flagship in the [model catalog](https://developers.openai.com/api/docs/models.md); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
+| OpenAI | `gpt-6-astra` | Highest-intelligence selection in the [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
 | Google | `gemini-3.8-flash` | Retained [Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) for the existing SPEED route, not Google's latest overall model. The Argon catalog update does not change this selection. |
 | Moonshot | `kimi-k3.1-pro` | Recommended latest flagship in the [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md). Both K3.1 variants retain K3's documented parameter constraints; the existing stateless text payload needs no changes. |
 
-The current [OpenAI catalog](https://developers.openai.com/api/docs/models.md)
-also positions `gpt-6.1-sol` for balancing intelligence and cost, and
-`gpt-6-luna` for cost-sensitive, high-volume workloads. These are provider
+The current [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model)
+also positions `gpt-6.1-sol` for balancing speed, cost, and intelligence with
+near-Astra performance, and `gpt-6-luna` for focused, high-volume workloads.
+These are provider
 catalog descriptions
 ([6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)),
 not measured tradeoffs or additional adapter-contract tests in this repository;
@@ -77,8 +82,9 @@ without editing source. They are nonblank, whitespace-trimmed strings; see
 
 These are stateless, single-turn text adapters built on HTTPX. They do not
 implement provider tool loops, streaming, multimodal inputs, or multi-turn
-reasoning-state replay. The local application uses FastAPI, SQLite, Pydantic, and
-a custom agent state machine; it is not a LangGraph integration.
+reasoning-state replay. The Python 3.11+ application uses FastAPI, SQLite,
+Pydantic, and a hand-written agent state machine, not LangGraph. Its development
+checks use ruff, mypy, and pytest.
 
 Each live `generate()` call takes an owned deep snapshot of `LLMRequest` when
 its coroutine starts, before its first suspension. Every HTTP attempt and the
@@ -383,6 +389,9 @@ The [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md) recomme
 `kimi-k3.1-pro` with `POST https://api.moonshot.ai/v1/chat/completions`. This is
 now the shared default for Settings, direct construction, and routed Kimi calls.
 The endpoint and `MOONSHOT_API_KEY` bearer credential are unchanged.
+The quickstart also documents Responses and Messages interfaces. Those are
+provider options, not additional adapters implemented here; changing a model ID
+does not switch this integration away from Chat Completions.
 
 The [model parameter reference](https://platform.kimi.ai/docs/api/models-overview.md),
 checked **2026-10-24 America/Los_Angeles**, explicitly applies K3's constraints to
@@ -461,6 +470,7 @@ rollback and custom IDs. Exact HTTPX body/header assertions keep unsupported
 thinking, fixed sampling fields, tools, and effort overrides out of requests.
 Reopened SQLite events retain the accepted requested model without reasoning text,
 provider-reported aliases, or credentials.
-Live sampling is provider-controlled and is not guaranteed deterministic. No
-paid calls, live keys, account access, performance, or generation quality were
-tested by this maintenance change.
+Live sampling is provider-controlled and is not guaranteed deterministic.
+These offline regressions and catalog checks do not verify live authentication,
+inference compatibility, performance, or answer quality. This catalog recheck
+used no paid model calls or live credentials.

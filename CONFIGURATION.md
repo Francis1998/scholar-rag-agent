@@ -193,12 +193,16 @@ Gemini/Kimi providers still handle SPEED/COST.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-24 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-25 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
-retains `gemini-3.8-flash` for its SPEED route. OpenAI 6.1 Sol and Anthropic
-Haiku 5.5 are additional catalog alternatives.
-Only the Kimi default changes, from `kimi-k3` to `kimi-k3.1-pro`, following
-Kimi's current quickstart and parameter reference. Both K3.1 variants use K3's
+retains `gemini-3.8-flash` for its SPEED route. OpenAI positions `gpt-6.1-sol` as a
+balanced near-Astra option and `gpt-6-luna` for speed/cost-sensitive volume;
+Anthropic generally recommends Opus 5.5 and lists Fable 5.1 for demanding
+long-horizon reasoning and Haiku 5.5 for latency-sensitive work. These catalog
+alternatives do not replace the selected `gpt-6-astra` / `claude-sonnet-5-5` defaults.
+The earlier Kimi K3.1 migration-contract check remains dated
+**2026-10-24 America/Los_Angeles**; the selected default remains `kimi-k3.1-pro`.
+Both K3.1 variants use K3's
 constraints: no `thinking` field, provider-default `reasoning_effort="max"`,
 and fixed sampling values. The existing `model` + `messages` request omits these
 controls, so no endpoint, credential, timeout, retry, or rate-limit change is needed.
@@ -206,7 +210,8 @@ Use `SCHOLAR_RAG_KIMI_MODEL=kimi-k3` to keep the previous model, or
 `SCHOLAR_RAG_KIMI_MODEL=kimi-k3.1-pro-highspeed` for the optional high-speed variant,
 then restart. Explicit Settings arguments still take precedence over environment,
 then `.env`, then defaults; remove older overrides to adopt the new default.
-The other selected defaults and separately dated migration contracts are unchanged.
+All selected defaults and separately dated migration contracts are unchanged
+by today's catalog recheck.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
 The screening progress workflow performs zero model calls; this catalog check
