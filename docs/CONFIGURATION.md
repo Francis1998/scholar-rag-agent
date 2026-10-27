@@ -336,11 +336,21 @@ in memory, not shared across instances or workers. See
 Direct Python callers of `llm.rate_limit.with_backoff` must pass a nonnegative
 integer `retries` and a finite nonnegative `int`/`float` `initial_delay_seconds`
 representable as a finite float. Booleans, strings, negative values, and
-non-finite delays raise `ValueError` before the operation, retry predicate,
+non-finite initial delays raise `ValueError` before the operation, retry predicate,
 minimum-delay callback, or sleep runs, including with a zero retry budget.
 Zero retries means one initial attempt; zero delay is allowed. The default
 three retries and 0.25-second exponential schedule, original operation errors,
 cancellation, and provider admission/`Retry-After` behavior are unchanged.
+
+The optional `minimum_delay_seconds` callback runs only before a needed retry.
+It must return `None` or a finite nonnegative `int`/`float` representable as a
+finite float, excluding booleans. Invalid results raise a value-free `ValueError`
+even when the exponential delay would otherwise hide them. Each actual retry
+wait is also checked for overflow before sleeping or making another attempt.
+Unused future waits are not checked: a large finite wait can still lead to
+success, or to the original permanent/exhausted error, without a speculative
+overflow failure. Valid minimums only extend the current wait, never reset
+exponential progression; finite waits are not capped or coerced.
 These are helper arguments, not new environment settings.
 
 HTTP-success bodies must be JSON objects with nonblank final answer text and

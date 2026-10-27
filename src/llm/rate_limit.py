@@ -42,6 +42,20 @@ class AsyncRateLimiter:
                 await asyncio.sleep(60.0 - (now - self._timestamps[0]))
 
 
+def _validate_delay_seconds(value: float, name: str) -> None:
+    try:
+        valid_delay = (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+            and value >= 0
+        )
+    except OverflowError:
+        valid_delay = False
+    if not valid_delay:
+        raise ValueError(f"{name} must be a finite nonnegative number")
+
+
 async def with_backoff(
     operation: Callable[[], Awaitable[T]],
     retries: int = 3,
@@ -60,9 +74,10 @@ async def with_backoff(
             retried. When ``None`` every exception is treated as retryable,
             preserving the previous behavior. A non-retryable exception is
             re-raised immediately without consuming further attempts.
-        minimum_delay_seconds: Optional per-error minimum wait, returning finite,
-            nonnegative seconds or ``None``. Evaluated only before a retry;
-            it can extend, but never shorten, the exponential delay.
+        minimum_delay_seconds: Optional per-error minimum wait, returning ``None``
+            or a finite nonnegative int/float delay, excluding bool. Must be
+            representable as a finite float. Evaluated only before a needed
+            retry; it can extend, but never shorten, the exponential delay.
 
     Returns:
         The successful operation result.
@@ -70,22 +85,14 @@ async def with_backoff(
     Raises:
         ValueError: Invalid retry budget or initial delay, before any operation,
             predicate, delay callback, or sleep, even when retries is zero.
+            Invalid minimum delays or overflowing retry waits also raise before
+            that sleep or another attempt. Unneeded future waits are not checked.
         Exception: The last error raised by ``operation`` once retries are
             exhausted or a non-retryable error is encountered.
     """
     if not isinstance(retries, int) or isinstance(retries, bool) or retries < 0:
         raise ValueError("retries must be a nonnegative integer")
-    try:
-        valid_delay = (
-            isinstance(initial_delay_seconds, (int, float))
-            and not isinstance(initial_delay_seconds, bool)
-            and math.isfinite(initial_delay_seconds)
-            and initial_delay_seconds >= 0
-        )
-    except OverflowError:
-        valid_delay = False
-    if not valid_delay:
-        raise ValueError("initial_delay_seconds must be a finite nonnegative number")
+    _validate_delay_seconds(initial_delay_seconds, "initial_delay_seconds")
 
     retry_predicate = is_retryable if is_retryable is not None else (lambda _exc: True)
     delay_seconds = initial_delay_seconds
@@ -98,9 +105,11 @@ async def with_backoff(
             if attempt == retries or not retry_predicate(exc):
                 break
             minimum = minimum_delay_seconds(exc) if minimum_delay_seconds is not None else None
-            await asyncio.sleep(
-                max(delay_seconds, minimum) if minimum is not None else delay_seconds
-            )
+            if minimum is not None:
+                _validate_delay_seconds(minimum, "minimum_delay_seconds")
+            wait_seconds = max(delay_seconds, minimum) if minimum is not None else delay_seconds
+            _validate_delay_seconds(wait_seconds, "retry delay")
+            await asyncio.sleep(wait_seconds)
             delay_seconds *= 2
     if last_error is None:
         raise RuntimeError("backoff operation failed without an exception")

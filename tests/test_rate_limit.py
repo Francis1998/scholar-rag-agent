@@ -504,8 +504,12 @@ async def test_with_backoff_zero_retry_budget_preserves_original_failure(
 @pytest.mark.parametrize("retries", [0, 1, 3, pytest.param(10**400, id="large-budget")])
 async def test_with_backoff_valid_retry_budget_can_succeed_immediately(retries: int) -> None:
     operation = AsyncMock(return_value="ok")
-    assert await with_backoff(operation, retries=retries) == "ok"
+    minimum_delay = Mock(side_effect=AssertionError("successful attempts need no minimum delay"))
+    assert (
+        await with_backoff(operation, retries=retries, minimum_delay_seconds=minimum_delay) == "ok"
+    )
     operation.assert_awaited_once_with()
+    minimum_delay.assert_not_called()
 
 
 @pytest.mark.parametrize("delay", [0, 0.0, -0.0, 0.125, 1])
@@ -914,6 +918,185 @@ async def test_with_backoff_retry_after_minimum_does_not_replace_exponential_pro
     assert [call.args[0] for call in sleep.await_args_list] == [2.0, 0.5, 1.0]
     assert [call.args[0] for call in minimum_delay.call_args_list] == errors
     assert operation.await_count == 4
+
+
+@pytest.mark.parametrize(
+    "minimum",
+    [
+        pytest.param(math.nan, id="nan"),
+        pytest.param(math.inf, id="positive-infinity"),
+        pytest.param(-math.inf, id="negative-infinity"),
+        pytest.param(-1, id="negative-integer"),
+        pytest.param(-0.25, id="negative-float"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param("0.25", id="numeric-string"),
+        pytest.param("synthetic-private-delay", id="nonnumeric-string"),
+        pytest.param(b"1", id="bytes"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+        pytest.param(object(), id="object"),
+        pytest.param(1 + 0j, id="complex"),
+        pytest.param(10**400, id="unrepresentable-integer"),
+    ],
+)
+@pytest.mark.parametrize("completed_retries", [0, 1], ids=["first-wait", "later-wait"])
+async def test_with_backoff_rejects_invalid_minimum_before_sleep(
+    minimum: object, completed_retries: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    errors = [RuntimeError(f"attempt {index}") for index in range(completed_retries + 1)]
+    operation = AsyncMock(side_effect=[*errors, "ok"])
+    minimum_delay = Mock(side_effect=[*[None] * completed_retries, minimum])
+    sleep = AsyncMock(
+        side_effect=[
+            *[None] * completed_retries,
+            AssertionError("invalid minimum reached asyncio.sleep"),
+        ]
+    )
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    with pytest.raises(
+        ValueError, match=r"^minimum_delay_seconds must be a finite nonnegative number$"
+    ):
+        await with_backoff(
+            operation, retries=completed_retries + 1, minimum_delay_seconds=minimum_delay
+        )
+
+    assert operation.await_count == len(errors)
+    assert [call.args[0] for call in minimum_delay.call_args_list] == errors
+    assert [call.args[0] for call in sleep.await_args_list] == [
+        0.25 * 2**index for index in range(completed_retries)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("initial_delay", "minimum", "wait"),
+    [
+        (0, None, 0),
+        (0, 0, 0),
+        (0, 0.5, 0.5),
+        (0.25, None, 0.25),
+        (0.25, 0, 0.25),
+        (0.25, 0.0, 0.25),
+        (0.25, -0.0, 0.25),
+        (0.25, 0.125, 0.25),
+        (0.25, 0.25, 0.25),
+        (0.25, 0.5, 0.5),
+        (0.25, 2, 2),
+        pytest.param(0.25, 9007199254740993, 9007199254740993, id="exact-large-integer"),
+        pytest.param(0.25, 10**300, 10**300, id="large-finite-integer"),
+        pytest.param(0.25, sys.float_info.max, sys.float_info.max, id="largest-float"),
+    ],
+)
+async def test_with_backoff_valid_minimum_only_extends_current_wait(
+    initial_delay: float, minimum: float | None, wait: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    error = RuntimeError("retryable failure")
+    operation = AsyncMock(side_effect=[error, "ok"])
+    minimum_delay = Mock(return_value=minimum)
+    sleep = AsyncMock()
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    assert (
+        await with_backoff(
+            operation, initial_delay_seconds=initial_delay, minimum_delay_seconds=minimum_delay
+        )
+        == "ok"
+    )
+    assert operation.await_count == 2
+    minimum_delay.assert_called_once_with(error)
+    sleep.assert_awaited_once_with(wait)
+
+
+@pytest.mark.parametrize(
+    ("initial_delay", "valid_waits"),
+    [
+        pytest.param(1e308, [1e308], id="float-overflow"),
+        pytest.param(10**308, [10**308], id="integer-overflow"),
+        pytest.param(5e307, [5e307, 1e308], id="later-float-overflow"),
+    ],
+)
+async def test_with_backoff_rejects_overflow_before_required_retry_wait(
+    initial_delay: float, valid_waits: list[float], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    errors = [RuntimeError(f"attempt {index}") for index in range(len(valid_waits) + 1)]
+    operation = AsyncMock(side_effect=[*errors, "ok"])
+    minimum_delay = Mock(return_value=0.0)
+    sleep = AsyncMock(
+        side_effect=[
+            *[None] * len(valid_waits),
+            AssertionError("overflowed retry wait reached asyncio.sleep"),
+        ]
+    )
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    with pytest.raises(ValueError, match=r"^retry delay must be a finite nonnegative number$"):
+        await with_backoff(
+            operation,
+            retries=len(errors),
+            initial_delay_seconds=initial_delay,
+            minimum_delay_seconds=minimum_delay,
+        )
+
+    assert operation.await_count == len(errors)
+    assert [call.args[0] for call in minimum_delay.call_args_list] == errors
+    assert [call.args[0] for call in sleep.await_args_list] == valid_waits
+
+
+@pytest.mark.parametrize(
+    "delay",
+    [1e308, sys.float_info.max, pytest.param(10**308, id="large-finite-integer")],
+)
+@pytest.mark.parametrize("retries", [1, 3], ids=["last-attempt", "remaining-budget"])
+async def test_with_backoff_success_does_not_validate_unused_future_wait(
+    delay: float, retries: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    error = RuntimeError("retryable failure")
+    operation = AsyncMock(side_effect=[error, "ok"])
+    minimum_delay = Mock(return_value=None)
+    sleep = AsyncMock()
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    assert (
+        await with_backoff(
+            operation,
+            retries=retries,
+            initial_delay_seconds=delay,
+            minimum_delay_seconds=minimum_delay,
+        )
+        == "ok"
+    )
+    assert operation.await_count == 2
+    minimum_delay.assert_called_once_with(error)
+    sleep.assert_awaited_once_with(delay)
+
+
+@pytest.mark.parametrize("delay", [1e308, pytest.param(10**308, id="large-finite-integer")])
+@pytest.mark.parametrize("retries", [1, 3], ids=["exhausted", "permanent"])
+async def test_with_backoff_unused_overflow_preserves_final_error(
+    delay: float, retries: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    errors = [RuntimeError("transient"), RuntimeError("final failure")]
+    operation = AsyncMock(side_effect=errors)
+    retryable = Mock(side_effect=[True, False])
+    minimum_delay = Mock(return_value=None)
+    sleep = AsyncMock()
+    monkeypatch.setattr("llm.rate_limit.asyncio.sleep", sleep)
+
+    with pytest.raises(RuntimeError) as caught:
+        await with_backoff(
+            operation,
+            retries=retries,
+            initial_delay_seconds=delay,
+            is_retryable=retryable,
+            minimum_delay_seconds=minimum_delay,
+        )
+
+    assert caught.value is errors[-1]
+    assert operation.await_count == 2
+    assert [call.args[0] for call in retryable.call_args_list] == errors[: 1 if retries == 1 else 2]
+    minimum_delay.assert_called_once_with(errors[0])
+    sleep.assert_awaited_once_with(delay)
 
 
 @pytest.mark.parametrize("retryable", [False, True])

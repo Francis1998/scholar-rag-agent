@@ -738,6 +738,15 @@ later exponential delays, impose an account-wide cooldown, change retryable
 statuses, or create a retry on a successful/permanent failure. Transport errors
 have no HTTP hint and retain their existing backoff.
 
+Direct `with_backoff` callbacks have a stricter contract than raw HTTP hints:
+`minimum_delay_seconds` must return `None` or a finite nonnegative `int`/`float`
+representable as a finite float, excluding booleans. Invalid callback results
+and overflowed exponential waits raise a value-free `ValueError` before the
+affected sleep or another operation attempt; they are not silently ignored or
+capped. Validation applies only when a retry wait is needed. A hypothetical
+future overflow does not reject a successful retry or replace the original
+permanent/exhausted error. Finite waits remain cancellable and have no new cap.
+
 This implements a documented provider contract, not a promise that every error
 carries the header. For example, [Claude rate limits](https://platform.claude.com/docs/en/api/rate-limits)
 document `retry-after` on rate-limit responses, but not on monthly spend-cap
