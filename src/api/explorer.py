@@ -156,7 +156,7 @@ _HEADERS = {
     "X-Frame-Options": "DENY",
 }
 # Chromium's no-referrer policy makes native form POSTs send Origin: null.
-_SCREENING_HEADERS = {**_HEADERS, "Referrer-Policy": "same-origin"}
+_WRITE_HEADERS = {**_HEADERS, "Referrer-Policy": "same-origin"}
 _FOOTER = (
     "</main><footer><h2>Read-only, not private by default</h2>"
     "<p>These pages inspect the current local corpus, not frozen run evidence or verified "
@@ -248,6 +248,27 @@ _SCREENING_FOOTER = (
     "Decode quotes/escapes when a raw ID is needed. Prior opinions are never rewritten "
     "by this form; legacy gaps remain explicit.</p></footer></body></html>"
 )
+_ANNOTATION_FOOTER = (
+    "</main><footer><h2>Frozen evidence, explicit human opinions</h2>"
+    "<p>Opening and previewing never write. Only Save annotation appends one immutable opinion "
+    "through the existing annotation service. No model, retrieval, network, current-corpus "
+    "read, source edit or agent event runs during authoring. Normal startup still initializes "
+    "stores and indexes. A quote is not scientific validation or proof of entailment.</p>"
+    "<p>No authentication, reviewer attribution or tenant isolation is provided. Use loopback "
+    "or your own access controls and trusted host/proxy configuration. Origin checks stop "
+    "cross-origin browser posts, not direct clients, malicious local processes or DNS rebinding. "
+    "The existing JSON API is unchanged.</p>"
+    "<p>No scripts, external assets, cookies or browser storage are used. POST keeps notes out "
+    "of GET URLs, not browser resubmission state or infrastructure logs. IDs and return filters "
+    "can remain in history. Same-origin referrer policy preserves native POST Origin and may "
+    "send the local selection URL to this same server, never as a cross-origin referrer. "
+    "No-store cannot prevent saving or screenshots. Do not enter credentials or personal data.</p>"
+    "<p>After a network failure, inspect the notebook or resubmit the unchanged preview: its "
+    "UUID preserves the original sequence and timestamp. Changed content under that UUID "
+    "conflicts. Reopening the composer starts a new UUID, not a retry. IDs are JSON strings; "
+    "decode escapes once. Unicode visual order alone is not an identity check.</p>"
+    "</footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -294,6 +315,7 @@ def _page(
     worksheet: bool = False,
     collections: bool = False,
     screening: bool = False,
+    annotation: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -316,7 +338,11 @@ def _page(
         subject = "HUMAN SCREENING"
         description = "Inspect an exact member, then explicitly record your own decision."
         footer = _SCREENING_FOOTER
-    mode = "EXPLICIT HUMAN WRITE" if screening else "READ-ONLY"
+    if annotation:
+        subject = "FROZEN ANNOTATION"
+        description = "Choose an exact frozen span, preview your note, then explicitly save it."
+        footer = _ANNOTATION_FOOTER
+    mode = "EXPLICIT HUMAN WRITE" if screening or annotation else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -335,7 +361,9 @@ def _page(
             raise _PageTooLargeError()
         content.extend(encoded)
     return HTMLResponse(
-        bytes(content), status_code=status, headers=_SCREENING_HEADERS if screening else _HEADERS
+        bytes(content),
+        status_code=status,
+        headers=_WRITE_HEADERS if screening or annotation else _HEADERS,
     )
 
 
@@ -351,6 +379,7 @@ def _error(
     worksheet: bool = False,
     collections: bool = False,
     screening: bool = False,
+    annotation: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -368,6 +397,7 @@ def _error(
         worksheet=worksheet,
         collections=collections,
         screening=screening,
+        annotation=annotation,
     )
 
 

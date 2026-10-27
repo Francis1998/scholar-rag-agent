@@ -1,0 +1,13 @@
+Frozen annotation workbench / executed original synthetic workflow
+Setup: one manually recorded eight-event fixture; no model or retrieval setup.
+Mounted browser route: saved runs -> frozen source -> compose -> preview -> save.
+Explicit second occurrence [139, 175): GraphRAG connects synthetic evidence
+Unicode code points, not bytes or UTF-16 units; one occurrence highlighted.
+GET and preview: no annotation/service writes; database bytes unchanged.
+Save: 303 to exact persisted quote; note absent from GET URLs.
+Unchanged retry: 303; one record with original UUID, sequence and timestamp.
+Cross-origin: 403; ambiguous form: 422; changed UUID payload: 409.
+Current corpus changed, deleted, app restarted: preview and saved view identical.
+Python/API records equal; agent events unchanged: 8; forbidden calls: 0.
+GIF: four actual local browser screenshots, not a continuous recording.
+Synthetic human opinions are not scientific validation or authenticated reviews.

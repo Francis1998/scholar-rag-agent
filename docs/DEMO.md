@@ -1,5 +1,18 @@
 # Demo
 
+## Native frozen annotation workbench
+
+[![Actual browser frame of the synthetic frozen source](assets/frozen-annotation-workbench.png)](assets/frozen-annotation-workbench.gif)
+
+The [complete guide](guides/FROZEN_ANNOTATION_WORKBENCH_GUIDE.md) reproduces
+reader/notebook discovery, explicit second-occurrence Unicode offsets, read-only
+preview, native same-origin save, persisted 303 and UUID-safe retry. Its isolated
+demo also exercises malformed/cross-origin writes, changed-payload conflicts and
+corpus deletion/restart without models or retrieval. This is an opt-in sequence
+of actual local screenshots, not a continuous recording or scientific result.
+The [text alternative](assets/frozen-annotation-workbench.txt) contains measured
+outcomes; only original synthetic source text is used.
+
 ## Native human paper-screening workbench
 
 [![Executed synthetic screening measurements, not browser footage](assets/human-screening-workbench.png)](assets/human-screening-workbench.gif)

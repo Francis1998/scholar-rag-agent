@@ -14,6 +14,7 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel, BeforeValidator, ConfigDict
 from starlette.types import Receive, Scope, Send
 
+from agent.evidence import EvidenceSource
 from agent.evidence_html import HTML_CSP, BrowserNavigation, render_html
 from agent.models import AgentState
 from agent.review_models import AnswerReviewError
@@ -90,6 +91,21 @@ class _HistoryParameters(BaseModel):
 
 class _RunParameters(_HistoryParameters):
     run_id: Identity
+
+
+def _annotation_composer_url(
+    source: EvidenceSource, parameters: dict[str, str | int | None], root_path: str
+) -> str:
+    selection = {
+        **parameters,
+        "document_id": source.chunk.document_id,
+        "chunk_id": source.chunk.chunk_id,
+        "source_text_sha256": source.text_sha256,
+    }
+    return _url(
+        root_path + "/explore/run/annotate",
+        {"selection": json.dumps(selection, ensure_ascii=True, separators=(",", ":"))},
+    )
 
 
 def _navigation(options: _HistoryParameters | None, root_path: str) -> str:
@@ -485,6 +501,12 @@ def explore_run(request: Request, options: Annotated[_RunParameters, Query()]) -
                 root_path + "/explore/run/notebook",
                 {"run_id": options.run_id, **options.parameters()},
             ),
+            annotation_urls={
+                source.chunk.chunk_id: _annotation_composer_url(
+                    source, {"run_id": options.run_id, **options.parameters()}, root_path
+                )
+                for source in bundle.snapshot.sources
+            },
         ),
     )
     return HTMLResponse(

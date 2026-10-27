@@ -44,8 +44,11 @@ The still preview makes animation opt-in.
    decisions coexist; the UI does not infer consensus, an overall verdict or
    total-history counts. To add an opinion, use the existing
    [review API/Python service](ANSWER_REVIEWS_GUIDE.md) or
-   [exact-annotation API/Python service](EVIDENCE_ANNOTATIONS_GUIDE.md).
-   There are no browser editing controls or new write endpoints.
+   [exact-annotation API/Python service](EVIDENCE_ANNOTATIONS_GUIDE.md), or choose
+   **Annotate frozen evidence N** in the separate
+   [native composer](FROZEN_ANNOTATION_WORKBENCH_GUIDE.md). That workflow previews
+   before an explicit save. The notebook and persisted source reader remain
+   GET-only; existing opinions cannot be edited here.
 
 **Snapshot boundary:** the answer, reviews and annotation history are
 independently read, not one shared snapshot. Cursors select strictly smaller
