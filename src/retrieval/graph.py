@@ -3,6 +3,7 @@
 import re
 from itertools import combinations
 
+from retrieval.counts import validate_result_count
 from retrieval.models import Chunk, Entity, EntityEdge, SearchResult
 from retrieval.scope import DocumentIdsInput, normalize_document_ids, scope_arguments
 from storage.graph_store import PreparedGraphChunk, SQLiteGraphStore
@@ -92,8 +93,11 @@ class GraphRetriever:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[SearchResult]:
-        """Return chunks directly mentioning seed entities."""
+        """Return seed-mention chunks; a nonnegative integer zero skips storage reads."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
+        if limit == 0:
+            return []
         results: list[SearchResult] = []
         for chunk in self._graph_store.chunks_for_entities(
             seed_entities, limit=limit, **scope_arguments(scope)
