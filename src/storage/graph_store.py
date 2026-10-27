@@ -5,10 +5,15 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+from retrieval.counts import validate_result_count
 from retrieval.models import Chunk, Entity, EntityEdge
 from retrieval.scope import DocumentIdsInput, normalize_document_ids
 
 PreparedGraphChunk = tuple[Chunk, list[Entity], list[EntityEdge]]
+
+# SQLite binds signed 64-bit integers; even its largest database cannot hold
+# this many rows, so larger valid counts select the same finite result.
+_SQLITE_MAX_LIMIT = 2**63 - 1
 
 
 def _document_filter(document_ids: tuple[str, ...] | None) -> str:
@@ -120,10 +125,11 @@ class SQLiteGraphStore:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[Chunk]:
-        """Return distinct eligible chunks in exact chunk-ID order before LIMIT."""
+        """Return distinct eligible chunks in chunk-ID order; zero skips SQL reads."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
         scope_parameters = () if scope is None else scope
-        if not entities:
+        if not entities or limit == 0:
             return []
         entity_keys = [entity.lower() for entity in entities]
         placeholders = ",".join("?" for _ in entity_keys)
@@ -138,7 +144,9 @@ class SQLiteGraphStore:
             LIMIT ?
         """  # nosec B608
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
-            rows = connection.execute(query, (*entity_keys, *scope_parameters, limit)).fetchall()
+            rows = connection.execute(
+                query, (*entity_keys, *scope_parameters, min(limit, _SQLITE_MAX_LIMIT))
+            ).fetchall()
         return [
             Chunk(
                 chunk_id=row[0],
@@ -158,10 +166,11 @@ class SQLiteGraphStore:
         *,
         document_ids: DocumentIdsInput | None = None,
     ) -> list[str]:
-        """Return distinct neighbours in stored-key order, scoped before grouping and LIMIT."""
+        """Return distinct scoped neighbours in stored-key order; zero skips SQL reads."""
         scope = normalize_document_ids(document_ids)
+        validate_result_count(limit)
         scope_parameters = () if scope is None else scope
-        if not entities:
+        if not entities or limit == 0:
             return []
         entity_keys = [entity.lower() for entity in entities]
         placeholders = ",".join("?" for _ in entity_keys)
@@ -185,7 +194,14 @@ class SQLiteGraphStore:
         """  # nosec B608
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
             rows = connection.execute(
-                query, (*entity_keys, *scope_parameters, *entity_keys, *scope_parameters, limit)
+                query,
+                (
+                    *entity_keys,
+                    *scope_parameters,
+                    *entity_keys,
+                    *scope_parameters,
+                    min(limit, _SQLITE_MAX_LIMIT),
+                ),
             ).fetchall()
         return [str(row[0]) for row in rows]
 

@@ -17,8 +17,9 @@ use `--dataset` and independently reviewed labels for a meaningful baseline.
 - The API uses lexical reranking. A cross-encoder requires explicit Python wiring with `AdaptiveReranker(use_cross_encoder=True)`, its optional dependency, and access to model weights; installing extras alone does not enable it.
 
 The core Python `DenseRetriever.retrieve`, `BM25Retriever.retrieve`,
-`HybridRetriever.retrieve`, and `MultiHopRetriever.retrieve` methods require
-`limit` to be a nonnegative Python `int`, excluding `bool`.
+`HybridRetriever.retrieve`, `GraphRetriever.retrieve`, and
+`MultiHopRetriever.retrieve` methods require `limit` to be a nonnegative Python
+`int`, excluding `bool`.
 `Executor.retrieve` applies the same contract to `max_results`. Negative integers
 raise `ValueError`; booleans, floats (including integral floats), strings, `None`,
 and other non-integers raise `TypeError`. Messages name the field, not the supplied
@@ -29,7 +30,7 @@ Zero returns `[]` without retrieval work, but still validates an explicit docume
 scope and, for the executor, its agreement with the plan. Positive counts retain
 existing ranking, provenance, and scope behavior. Defaults remain `10` for these
 retrievers and `8` for the executor; no coercion or new upper cap is introduced.
-Existing backend-specific integer constraints still apply. These entrypoint rules
+For SQLite graph lookups, see the binding-only bound below. These entrypoint rules
 do not change the RRF helper's `None`/slicing contract, its smoothing constant, or
 optional gates' `top_k` contracts.
 
@@ -57,6 +58,19 @@ model. The default API wiring remains lexical and unchanged.
 ## Storage
 
 SQLite is adequate for local and small-team workflows. If write contention becomes the bottleneck, keep the storage interfaces and move document/vector/graph persistence behind a dedicated service.
+
+`SQLiteGraphStore.chunks_for_entities(limit=10)` and `neighbours(limit=20)` use
+the same result-count validator, including with empty entity lists. Negative
+counts never mean an unbounded SQL query, and zero returns `[]` without opening
+SQLite. Explicit document scopes are validated first: an empty scope remains
+invalid, never global. Direct `GraphRetriever` calls validate counts before
+calling even a custom store or slicing its results.
+
+Valid Python counts have no upper cap. Only the SQL-bound value is limited to
+`2**63 - 1`, SQLite's signed 64-bit integer maximum. SQLite cannot store that many
+rows, so this avoids binding overflow without losing finite eligible results,
+including when multi-hop expansion multiplies the count. Stored Python-lowercase
+neighbour identities, binary ordering, and scope-before-grouping/LIMIT are unchanged.
 
 `storage.vector_store.InMemoryVectorStore` is an optional, process-local library
 primitive, not the default API index. `upsert(chunk, vector)` owns a deep chunk
