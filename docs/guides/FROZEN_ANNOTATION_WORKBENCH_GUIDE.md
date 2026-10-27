@@ -123,8 +123,14 @@ There is no trimming or server-side normalization.
 captures and unrepresentable source text; 413 means a byte/output bound; 415
 unsupported encoding; 422 malformed fields/selectors; 503 storage unavailable.
 Unsupported methods return 405. Errors are sanitized and logged by code without
-echoing submitted notes. GET/preview never call `create`; save performs all HTML
-and redirect preflight before its one transactional service call.
+echoing submitted notes. GET/preview never call `create`; save preflights both the
+composer and the **complete persisted reader**, including escaped frozen metadata,
+navigation and annotation fields, before its one transactional service call.
+The reader's shared renderer uses the exact submission and source with the
+maximum valid sequence and UTC timestamp widths until persistence supplies them.
+This conservative bound is not arbitrary byte padding; it can reject a submission
+very close to the output cap even if a shorter eventual sequence/time would fit.
+It prevents saving successfully only to redirect into an oversized-reader error.
 
 ## Python
 

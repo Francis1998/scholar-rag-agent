@@ -3,6 +3,7 @@
 import json
 import sqlite3
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from typing import Annotated, Self
 from urllib.parse import urlencode
 from uuid import UUID, uuid4
@@ -37,7 +38,7 @@ from api.native_forms import (
     require_urlencoded,
     unsigned_decimal,
 )
-from api.review_notebook import _NotebookParameters
+from api.review_notebook import _annotation_page, _AnnotationParameters, _NotebookParameters
 from api.run_explorer import _EVIDENCE_ERRORS, _navigation
 from api.run_explorer import MAX_QUERY_BYTES as MAX_RETURN_QUERY_BYTES
 from storage.evidence_annotations import (
@@ -46,10 +47,12 @@ from storage.evidence_annotations import (
     AnnotationError,
     AnnotationIdentity,
     AnnotationSubmission,
+    SavedEvidenceAnnotation,
     SpanOffset,
     _anchor,
 )
 from storage.evidence_export import EvidenceExportError
+from storage.run_history import MAX_EVENT_ID
 
 PATH = "/explore/run/annotate"
 MAX_FORM_BYTES = 65_536
@@ -343,10 +346,22 @@ def _save(container: AppContainer, form: _Save, root_path: str) -> RedirectRespo
     payload = AnnotationSubmission.model_validate(
         json.loads(form.submission, object_pairs_hook=_return_pairs)
     )
-    # Fail unrenderable/oversized previews before the sole write, including direct submissions.
-    _render(
-        selection, _read_source(container, selection), payload.annotation_id, root_path, payload
+    source = _read_source(container, selection)
+    _render(selection, source, payload.annotation_id, root_path, payload)
+    # Only sequence/time are not known yet: use their maximum valid rendered widths, not padding.
+    prospective = SavedEvidenceAnnotation.model_validate(
+        {
+            **payload.model_dump(),
+            "schema_version": "1.0",
+            "run_id": selection.run_id,
+            "sequence": MAX_EVENT_ID,
+            "created_at": datetime.max.replace(tzinfo=UTC).isoformat().replace("+00:00", "Z"),
+        }
     )
+    options = _AnnotationParameters.model_validate(
+        {**selection.notebook_parameters(), "annotation_id": payload.annotation_id}
+    )
+    _annotation_page(prospective, source, options, root_path)
     redirect = RedirectResponse(
         _return_url(
             root_path + "/explore/run/annotation",

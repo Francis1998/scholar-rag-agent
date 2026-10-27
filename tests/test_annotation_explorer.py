@@ -3,6 +3,7 @@
 import json
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlencode, urlsplit
 from uuid import UUID
@@ -15,11 +16,19 @@ from scripts.demo_corpus_explorer import browsing_guards
 from scripts.demo_evidence_export import offline_settings
 from starlette.types import Message, Scope
 
-from agent.evidence import EvidenceBundle
+from agent.evidence import EvidenceBundle, EvidenceSource, text_digest
 from api import annotation_explorer, explorer
 from api.application import create_app
-from storage.evidence_annotations import AnnotationError, AnnotationSubmission
+from api.explorer import _page
+from api.review_notebook import _AnnotationParameters
+from api.review_notebook import _source as annotation_fragments
+from storage.evidence_annotations import (
+    AnnotationError,
+    AnnotationSubmission,
+    SavedEvidenceAnnotation,
+)
 from storage.evidence_export import EvidenceExportError
+from storage.run_history import MAX_EVENT_ID
 from tests.test_corpus_explorer import (
     ExplorerAPI,
     ExplorerDOM,
@@ -32,7 +41,7 @@ from tests.test_corpus_explorer import (
 from tests.test_corpus_explorer import api as api
 from tests.test_evidence_html import Node
 from tests.test_review_notebook import NOTE, TEXT, annotate, fixture_run, opinion
-from tests.test_run_comparison import ComparisonAPI, _save
+from tests.test_run_comparison import ComparisonAPI, _save, _source
 from tests.test_run_explorer import reader_headers
 
 COMPOSER = "/explore/run/annotate"
@@ -824,3 +833,132 @@ def test_native_openapi_has_unique_operations_and_no_new_storage_schema(api: Exp
             for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
         }
     assert not any("draft" in name or "composer" in name or "preview" in name for name in tables)
+
+
+def test_save_preflights_complete_reader_metadata_before_persistence(
+    api: ExplorerAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _save(
+        ComparisonAPI(api.app, api.client, api.container, api.path),
+        "metadata-heavy",
+        [_source("chunk", text=TEXT, metadata={"expanded": "<" * 300_000})],
+    )
+    bundle = api.container.saved_run_evidence.export("metadata-heavy")
+    page = ExplorerDOM(preview(api, open_draft(api, bundle)).text).root
+    fields = controls(page, "annotation-save")
+    before = api.path.read_bytes()
+    create = Mock(wraps=api.container.evidence_annotations.create)
+    monkeypatch.setattr(api.container.evidence_annotations, "create", create)
+    response = api.client.post(SAVE, data=fields, headers=ORIGIN, follow_redirects=False)
+    failure(response, 413)
+    create.assert_not_called()
+    assert api.path.read_bytes() == before
+    assert api.container.evidence_annotations.list_annotations(bundle.run_id).annotations == []
+
+
+@pytest.mark.parametrize("extra_byte", [0, 1])
+def test_complete_reader_preflight_byte_boundary_with_maximum_record_fields(
+    api: ExplorerAPI, extra_byte: int
+) -> None:
+    run_id = "\U0001f52c" * 256
+    chunk_id = "\U0001f52c" * 256
+    document_id = "\0\u0301" * 128
+    quote = note = "\U0001f52c" * 1000
+    text = quote + "\r\n"
+    result = _source(chunk_id, document_id=document_id, text=text, metadata={"expanded": ""})
+    source = EvidenceSource(**result.model_dump(), rank=1, text_sha256=text_digest(text))
+    payload = AnnotationSubmission(
+        annotation_id=UUID("00000000-0000-4000-8000-000000000001"),
+        document_id=document_id,
+        chunk_id=chunk_id,
+        source_text_sha256=source.text_sha256,
+        start=0,
+        end=1000,
+        quote=quote,
+        note=note,
+    )
+    widest_timestamp = datetime.max.replace(tzinfo=UTC).isoformat().replace("+00:00", "Z")
+    envelope = SavedEvidenceAnnotation.model_validate(
+        {
+            **payload.model_dump(),
+            "schema_version": "1.0",
+            "run_id": run_id,
+            "sequence": MAX_EVENT_ID,
+            "created_at": widest_timestamp,
+        }
+    )
+    options = _AnnotationParameters(
+        run_id=run_id,
+        annotation_id=payload.annotation_id,
+        review_limit=1,
+        review_cursor=42,
+        annotation_limit=1,
+        annotation_cursor=43,
+        limit=2,
+        cursor=99,
+        state="DONE",
+        source="return\r\nfilter\0",
+        title="\U0001f52c" * 100,
+        catalog_limit=3,
+        catalog_cursor="cursor/\u7814",
+    )
+    base = _page(
+        "Annotated frozen source",
+        annotation_fragments(envelope, source, options, "/library"),
+        saved_runs=True,
+    )
+    count, remainder = divmod(explorer.MAX_HTML_BYTES - len(base.body), 4)
+    result.chunk.metadata["expanded"] = "<" * count + "x" * (remainder + extra_byte)
+    _save(ComparisonAPI(api.app, api.client, api.container, api.path), run_id, [result])
+    with closing(sqlite3.connect(api.path)) as connection, connection:
+        connection.execute(
+            "INSERT INTO sqlite_sequence (name, seq) VALUES ('evidence_annotations', ?)",
+            (MAX_EVENT_ID - 1,),
+        )
+    with TestClient(api.app, root_path="/library") as client:
+        notebook = ExplorerDOM(
+            client.get(
+                "/library/explore/run/notebook",
+                params={
+                    key: value
+                    for key, value in options.notebook_parameters().items()
+                    if value is not None
+                },
+            ).text
+        ).root
+        opened = ExplorerDOM(client.get(href(notebook, "annotate-source-1")).text).root
+        response = client.post(
+            "/library" + COMPOSER,
+            data={**controls(opened), "start": "0", "end": "1000", "note": note},
+            headers=ORIGIN,
+        )
+        assert response.status_code == 200
+        fields = controls(ExplorerDOM(response.text).root, "annotation-save")
+        before = api.path.read_bytes()
+        response = client.post(
+            "/library" + SAVE, data=fields, headers=ORIGIN, follow_redirects=False
+        )
+        if extra_byte:
+            failure(response, 413)
+            assert api.path.read_bytes() == before
+            assert api.container.evidence_annotations.list_annotations(run_id).annotations == []
+            return
+        assert response.status_code == 303
+        location = response.headers["location"]
+        persisted = client.get(location)
+        assert persisted.status_code == 200
+        assert len(persisted.content) <= explorer.MAX_HTML_BYTES
+        root = ExplorerDOM(persisted.text).root
+        assert root.by_id("annotation-quote").text() == quote
+        assert values(root, "annotation-note") == [note]
+        assert values(root, "annotation-sequence") == [str(MAX_EVENT_ID)]
+        assert href(root, "back-to-notebook") == href(opened, "back-to-notebook")
+        saved, _ = api.container.evidence_annotations.get_annotation(
+            run_id, UUID(json.loads(fields["submission"])["annotation_id"])
+        )
+        assert len(saved.created_at.isoformat()) <= len(envelope.created_at.isoformat())
+        before = api.path.read_bytes()
+        retry = client.post("/library" + SAVE, data=fields, headers=ORIGIN, follow_redirects=False)
+        assert retry.status_code == 303 and retry.headers["location"] == location
+        assert client.get(location).content == persisted.content
+        assert api.path.read_bytes() == before

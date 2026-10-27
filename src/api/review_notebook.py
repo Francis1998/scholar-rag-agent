@@ -374,6 +374,15 @@ def explore_annotation(
     saved, source = container.evidence_annotations.get_annotation(
         options.run_id, options.annotation_id
     )
+    return _annotation_page(saved, source, options, root_path)
+
+
+def _annotation_page(
+    saved: SavedEvidenceAnnotation,
+    source: EvidenceSource,
+    options: _AnnotationParameters,
+    root_path: str,
+) -> HTMLResponse:
     return _page(
         "Annotated frozen source",
         _source(saved, source, options, root_path),
