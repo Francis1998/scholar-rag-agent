@@ -283,6 +283,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Measurement scale shift](guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | Measurement-scale shift / recalibration wording |
 | [Overadjustment bias](guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Overadjustment / overcontrol / mediator-adjustment wording |
 | [Competing-risk informative censoring](guides/COMPETING_RISK_INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | Competing-risk informative / dependent censoring wording |
+| [Survey mode effect](guides/SURVEY_MODE_EFFECT_CUES_EXTRACTOR_GUIDE.md) | Survey-mode effect / mixed-mode survey bias wording |
 | [Collider bias interaction](guides/COLLIDER_BIAS_INTERACTION_CUES_EXTRACTOR_GUIDE.md) | Collider-bias interaction / collider stratification interaction wording |
 | [Ascertainment differential residual](guides/ASCERTAINMENT_DIFFERENTIAL_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Ascertainment-differential residual / residual ascertainment bias wording |
 | [Neyman bias](guides/NEYMAN_BIAS_CUES_EXTRACTOR_GUIDE.md) | Neyman bias / selective-survival wording |
