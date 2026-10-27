@@ -179,6 +179,14 @@ ordinary `collection_id` scope still includes every member. The complete
 [paper-screening guide and offline GIF](docs/guides/PAPER_SCREENING_GUIDE.md)
 cover setup, reasons, restart, stale decisions, and explicit selection.
 
+Alternatively, pass `"screened_collection": {"collection_id": "...",
+"collection_revision": 1}` with the actual ID and revision to `/retrieve` or
+`/query`, instead of `collection_id` or `document_ids`. It selects only current
+human inclusions and rejects empty/stale selections before work. Ordinary
+`collection_id` still selects all members. The
+[complete screened-scope guide and executed demo](docs/guides/SCREENED_COLLECTION_GUIDE.md)
+cover strict validation, per-request re-resolution, and saved evidence.
+
 To inspect changes to a member's judgment, choose **Inspect human decision
 history** in the collection browser, or call
 `GET /collections/{collection_id}/screening/history` with query parameters

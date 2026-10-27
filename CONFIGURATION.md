@@ -19,6 +19,14 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 
 Provider keys are optional: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MOONSHOT_API_KEY`, and `SEMANTIC_SCHOLAR_API_KEY`.
 
+`screened_collection` is a request-only scope for `/query` and `/retrieve`, not
+an environment setting. Its strict `collection_id` and `collection_revision`
+select current human inclusions in one read snapshot, then pass immutable IDs
+to existing retrieval. It is mutually exclusive with ordinary `collection_id`
+and `document_ids`; empty or stale selections fail rather than widening scope.
+No new tables, providers, dependencies or budgets are introduced. See the
+[screened-scope guide](docs/guides/SCREENED_COLLECTION_GUIDE.md).
+
 `max_chunks_per_document` is an optional **request field**, not an environment
 setting. `/query`, `/retrieve`, and their runner methods accept strict integers
 1-50; HTTP null is invalid and omission leaves the existing behavior unchanged.

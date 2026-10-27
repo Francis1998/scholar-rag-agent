@@ -96,6 +96,12 @@ def resolve_document_scope(
     container: AppContainer, payload: QueryRequest
 ) -> tuple[str, ...] | None:
     """Resolve once synchronously; neither the shared runner nor retriever owns this scope."""
+    if payload.screened_collection is not None:
+        with collection_errors():
+            return container.paper_screening.select_included(
+                payload.screened_collection.collection_id,
+                collection_revision=payload.screened_collection.collection_revision,
+            )
     if payload.collection_id is None:
         return payload.document_ids
     with collection_errors():

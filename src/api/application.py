@@ -1,5 +1,6 @@
 """Construct an API instance without initializing storage at module import."""
 
+import json
 import logging
 
 from fastapi import FastAPI, Request, Response
@@ -7,11 +8,13 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
 from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
 from api.collection_duplicates import router as collection_duplicates_router
 from api.collection_explorer import router as collection_explorer_router
+from api.collections import COLLECTION_HEADERS
 from api.collections import router as collections_router
 from api.comparisons import router as comparisons_router
 from api.corpus_drift import router as corpus_drift_router
@@ -40,6 +43,21 @@ logger = logging.getLogger(__name__)
 
 async def _evidence_validation_error(request: Request, exc: RequestValidationError) -> Response:
     """Do not echo unencodable numeric input; leave unrelated validation contracts intact."""
+    route = request.scope.get("route")
+    if (
+        isinstance(route, APIRoute)
+        and route.path in ("/query", "/retrieve")
+        and isinstance(exc.body, dict)
+        and "screened_collection" in exc.body
+    ):
+        logger.warning("Screened scope validation failed: invalid_screened_collection_scope")
+        detail = [{key: error[key] for key in ("loc", "type", "msg")} for error in exc.errors()]
+        return Response(
+            content=json.dumps({"detail": detail}, ensure_ascii=True),
+            status_code=422,
+            media_type="application/json",
+            headers=COLLECTION_HEADERS,
+        )
     if request.url.path == "/documents/context":
         logger.warning("Source context request validation failed: invalid_source_context_request")
         return JSONResponse(

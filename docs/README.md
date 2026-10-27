@@ -20,6 +20,7 @@ accumulated feature list in the project README.
 | Browse saved membership, human screening and revision-bound downloads without writes | [Native collection browser: end-user/API/Python/portfolio guide and executed GIF](guides/COLLECTION_BROWSER_GUIDE.md) |
 | Inspect complete duplicate candidates and singletons in a revision-checked saved selection, without paper loss | [Collection duplicate API/Python guide and measured offline GIF](guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Save human paper labels, recover a screening queue, and select only current included IDs | [Paper screening and measured offline demo](guides/PAPER_SCREENING_GUIDE.md) |
+| Hand current human inclusions directly to preview/query without manually copying IDs | [Screened collection scope: API/Python/portfolio guide and executed GIF](guides/SCREENED_COLLECTION_GUIDE.md) |
 | Explicitly submit include/exclude/unsure and a reason for an exact member in a native browser, then recover persisted history | [Human screening workbench: user/API/Python/portfolio guide and measured GIF/still/text](guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md) |
 | Inspect append-only human decisions, original reasons/timestamps and an explicit legacy boundary without writes | [Screening history: user/API/Python/browser/portfolio guide and executed GIF](guides/SCREENING_HISTORY_GUIDE.md) |
 | Download all current screening results as atomic, bounded JSON or spreadsheet-safe CSV | [Screening exports and measured offline demo](guides/SCREENING_EXPORT_GUIDE.md) |

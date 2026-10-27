@@ -105,6 +105,17 @@ scope. Unscoped calls preserve old signatures; unsupported scoped components fai
 rather than retrying globally.
 See [Document scope](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for the exact contract.
 
+The opt-in `screened_collection` API selector resolves via
+`SQLitePaperScreening.select_included` before either runner entrypoint is awaited.
+Collection membership/revision and validated review records share one SQLite
+read transaction; only current human `include` labels become a nonempty tuple.
+Ordinary collection scope still includes all members. No empty selection becomes
+unscoped, and no review is silently skipped. Existing plan/event/snapshot formats
+retain actual selected IDs, not a new collection or review-history provenance
+field. The transaction ends before retrieval: current text is not frozen and
+later requests see later decisions. See the
+[API/Python handoff guide](docs/guides/SCREENED_COLLECTION_GUIDE.md).
+
 Graph neighbour lookup groups eligible edges by their stored `source_key` or
 `target_key`, using the graph's existing Python `str.lower()` identity, including
 non-ASCII casing. It returns one display spelling per key: `MIN(name)` in SQLite

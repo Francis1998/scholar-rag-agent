@@ -134,6 +134,16 @@ configured generation provider.
 See the [document scope guide](docs/guides/DOCUMENT_SCOPE_GUIDE.md) for behavior,
 legacy component handling, and the offline demonstration.
 
+Explicit `screened_collection` scope requires the current collection revision
+and selects only current human `include` decisions. Empty, stale, missing-member
+or corrupt-review selections fail before agent work; invalid input returns 422,
+including under ASGI mounts. It never changes ordinary collection scope or
+automatically includes unsure/stale/unscreened members. Selection is copied
+before awaits but does not lock or version corpus text; collection revision does
+not detect corpus edits. Saved evidence preserves resolved IDs and actual context,
+not authenticated reviewer identity or a new screening-history record.
+See [screened selection boundaries](docs/guides/SCREENED_COLLECTION_GUIDE.md).
+
 ## Corpus Discovery
 
 `GET /documents` exposes selectable IDs, bounded titles/source labels, and stored

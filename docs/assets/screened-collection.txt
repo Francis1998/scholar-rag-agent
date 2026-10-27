@@ -1,0 +1,26 @@
+1. Choose a reviewed collection, not manual ID copying
+Saved members: 3; current human includes: 1
+One include, one exclude, one unsure: synthetic human opinions.
+Restart preserves Python selection: True
+No automatic labeling, paper-quality claim, or new connector.
+
+2. Preview the actual screened-only evidence
+Ordinary collection_id: 3 evidence documents
+Opt-in screened_collection: 1 evidence documents
+Preview database unchanged: True
+Agent events after previews: 0
+Both fake/live generation and event appends were forbidden for previews.
+
+3. Save a deliberately fake answer with exact source IDs
+Run state: DONE; provider: fake
+Selected IDs retained in the saved plan: 1
+Frozen evidence documents: 1
+Only the query uses the offline fake; it does not summarize research.
+External HTTP and live generation were forbidden throughout.
+
+4. Fail closed when the review changes
+Empty selection: preview HTTP 409; query HTTP 409
+Rejected requests leave database unchanged: True
+Outdated collection revision: HTTP 409
+Saved evidence unchanged after re-screening and restart: True
+Later requests see current labels; a prior selection freezes IDs only.

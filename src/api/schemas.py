@@ -13,6 +13,7 @@ from retrieval.evidence_policy import (
 )
 from retrieval.scope import DocumentIds
 from storage.paper_collections import CollectionId
+from storage.paper_screening import ScreenedCollectionScope
 
 
 class HealthResponse(BaseModel):
@@ -68,8 +69,21 @@ class QueryRequest(BaseModel):
         frozen=True,
         description=(
             "Saved paper collection ID. Resolved to document_ids before query/preview work. "
-            "Mutually exclusive with document_ids; omit both for the full corpus. "
+            "Selects all members regardless of screening. Mutually exclusive with "
+            "document_ids and screened_collection; omit all scopes for the full corpus. "
             "Null, malformed, unknown, or broken collections never widen scope."
+        ),
+    )
+    screened_collection: ScreenedCollectionScope | SkipJsonSchema[None] = Field(
+        default=None,
+        frozen=True,
+        description=(
+            "Opt in to only current human include decisions at an exact collection_revision. "
+            "Resolve once to immutable document_ids before planning or retrieval; exclude "
+            "stale, unsure, excluded, and unscreened members. Mutually exclusive with "
+            "collection_id and document_ids. Null, empty inclusion selections, stale revisions, "
+            "and broken collections/reviews fail without starting work. Only selected IDs "
+            "are frozen, not document content or later screening changes."
         ),
     )
     max_chunks_per_document: MaxChunksPerDocument | SkipJsonSchema[None] = Field(
@@ -134,7 +148,7 @@ class QueryRequest(BaseModel):
             raise ValueError("query must not be blank.")
         return value
 
-    @field_validator("document_ids", "collection_id", mode="before")
+    @field_validator("document_ids", "collection_id", "screened_collection", mode="before")
     @classmethod
     def reject_explicit_null(cls, value: object) -> object:
         """Omission alone selects the full corpus in the HTTP API."""
@@ -144,8 +158,16 @@ class QueryRequest(BaseModel):
 
     @model_validator(mode="after")
     def exclusive_scope(self) -> Self:
-        if self.document_ids is not None and self.collection_id is not None:
-            raise ValueError("Supply either collection_id or document_ids, not both.")
+        if (
+            sum(
+                scope is not None
+                for scope in (self.document_ids, self.collection_id, self.screened_collection)
+            )
+            > 1
+        ):
+            raise ValueError(
+                "Supply only one of collection_id, document_ids, or screened_collection."
+            )
         return self
 
 
