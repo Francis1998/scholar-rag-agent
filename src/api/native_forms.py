@@ -10,6 +10,23 @@ class FormTooLargeError(ValueError):
     pass
 
 
+def unsigned_decimal(value: object) -> object:
+    if isinstance(value, str) and value.isascii() and value.isdecimal() and len(value) <= 19:
+        return int(value)
+    return value
+
+
+def require_same_origin(request: Request) -> None:
+    origins = request.headers.getlist("origin")
+    sites = request.headers.getlist("sec-fetch-site")
+    if (
+        len(request.headers.getlist("host")) != 1
+        or origins != [f"{request.url.scheme}://{request.url.netloc}"]
+        or (sites and sites != ["same-origin"])
+    ):
+        raise ValueError("Expected one exact same-origin browser submission.")
+
+
 def parse_fields(
     raw: bytes, *, max_fields: int, max_field_characters: int = 16_384
 ) -> dict[str, str]:

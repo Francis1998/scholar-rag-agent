@@ -15,7 +15,7 @@ from starlette.types import Receive, Scope, Send
 from api.collection_explorer import _ERRORS, _history_review
 from api.dependencies import AppContainer
 from api.explorer import (
-    _SCREENING_HEADERS,
+    _WRITE_HEADERS,
     _collection_link,
     _CollectionReturn,
     _CollectionReturnToken,
@@ -31,7 +31,14 @@ from api.explorer import (
     _UnrepresentableTextError,
     _url,
 )
-from api.native_forms import FormTooLargeError, parse_fields, read_body, require_urlencoded
+from api.native_forms import (
+    FormTooLargeError,
+    parse_fields,
+    read_body,
+    require_same_origin,
+    require_urlencoded,
+    unsigned_decimal,
+)
 from storage.paper_collections import MAX_REVISION, CollectionError, CollectionId, Revision
 from storage.paper_screening import (
     MAX_REASON_CHARACTERS,
@@ -48,15 +55,9 @@ MAX_QUERY_BYTES = 65_536
 HISTORY_LIMIT = 5
 
 
-def _number(value: object) -> object:
-    if isinstance(value, str) and value.isascii() and value.isdecimal() and len(value) <= 19:
-        return int(value)
-    return value
-
-
-_Revision = Annotated[Revision, BeforeValidator(_number)]
+_Revision = Annotated[Revision, BeforeValidator(unsigned_decimal)]
 _ExpectedRevision = Annotated[
-    int, Field(strict=True, ge=0, le=MAX_REVISION), BeforeValidator(_number)
+    int, Field(strict=True, ge=0, le=MAX_REVISION), BeforeValidator(unsigned_decimal)
 ]
 
 
@@ -105,14 +106,10 @@ class _Form(BaseModel):
 
 
 def _same_origin(request: Request) -> None:
-    origins = request.headers.getlist("origin")
-    sites = request.headers.getlist("sec-fetch-site")
-    if (
-        len(request.headers.getlist("host")) != 1
-        or origins != [f"{request.url.scheme}://{request.url.netloc}"]
-        or (sites and sites != ["same-origin"])
-    ):
-        raise CollectionError("screening_form_origin", "", 403)
+    try:
+        require_same_origin(request)
+    except ValueError as exc:
+        raise CollectionError("screening_form_origin", "", 403) from exc
 
 
 _FAILURES = {
@@ -338,7 +335,7 @@ async def explore_screening(request: Request) -> Response:
                 },
             ),
             status_code=303,
-            headers=_SCREENING_HEADERS,
+            headers=_WRITE_HEADERS,
         )
         await run_in_threadpool(
             container.paper_screening.submit,

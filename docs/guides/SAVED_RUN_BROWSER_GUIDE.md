@@ -12,6 +12,11 @@ recorded decisions/comments and exact annotations. The
 and native exact-quote highlighting. Opinions stay separate from grounding;
 the existing offline downloads do not acquire live notebook data.
 
+Each source in the native evidence reader also links to the
+[frozen annotation composer](FROZEN_ANNOTATION_WORKBENCH_GUIDE.md): explicitly
+select code-point offsets, preview a human note, then save through a separate
+same-origin form POST. The reader and offline downloads remain read-only.
+
 [![Static preview of the actual synthetic saved-run browser](../assets/saved-run-browser.png)](../assets/saved-run-browser.gif)
 
 [Play the four-frame browser GIF](../assets/saved-run-browser.gif).

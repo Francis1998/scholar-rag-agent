@@ -21,6 +21,11 @@ validation, active learning, or signed audit-proof claim. Whole-answer
 and the opt-in [term-matching span aligner](EVIDENCE_SPAN_ALIGN_GUIDE.md) retain
 their separate contracts and are not used to choose this selector.
 
+For native authoring, the [frozen annotation workbench](FROZEN_ANNOTATION_WORKBENCH_GUIDE.md)
+links each saved passage to explicit span/note controls, a read-only preview,
+and an explicit same-origin save. It reuses this exact API/Python storage
+contract; the existing JSON endpoint does not acquire Origin restrictions.
+
 ![Measured synthetic exact-quote annotation workflow](../assets/evidence-annotations.gif)
 
 This generated illustration comes from [actual offline API output](../assets/evidence-annotations.txt),

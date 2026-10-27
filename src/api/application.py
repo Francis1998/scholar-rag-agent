@@ -10,6 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 
+from api.annotation_explorer import router as annotation_explorer_router
 from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
 from api.collection_duplicates import router as collection_duplicates_router
@@ -101,6 +102,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(run_explorer_router)
     application.include_router(run_comparison_explorer_router)
     application.include_router(review_notebook_router)
+    application.include_router(annotation_explorer_router)
     application.include_router(notebook_export_router)
     application.include_router(worksheet_explorer_router)
     application.include_router(collection_explorer_router)

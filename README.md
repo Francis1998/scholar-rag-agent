@@ -69,6 +69,7 @@ PDF-upload UI.
 | Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
+| Author an exact-source note in a normal browser | Choose a frozen span, preview your note without writes, explicitly save, and reopen the exact persisted quote with retry-safe identity | [Frozen annotation workbench: user/API/Python/portfolio guide and actual browser GIF](docs/guides/FROZEN_ANNOTATION_WORKBENCH_GUIDE.md) |
 | Read saved human feedback in a normal browser | Open a completed run's notebook, page independent review/annotation histories, and highlight an annotation's exact occurrence in its frozen source | [Human-review notebook and actual browser GIF](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
 | Take the complete human-review notebook offline | Download JSON/literal Markdown with frozen evidence and both entire opinion histories in one bounded read-only snapshot, not just visible pages | [Portable notebook: API/Python/browser/portfolio guide and executed illustration](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
@@ -172,6 +173,23 @@ only the recorded occurrence highlighted. Human opinions remain separate from
 model grounding and scientific truth; no browser writes or model calls occur.
 The [user/portfolio guide](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) reproduces
 this actual screenshot sequence, including corpus deletion/restart checks.
+
+### Preview and save an exact frozen-source note
+
+[![Actual native browser view of the synthetic frozen source](docs/assets/frozen-annotation-workbench.png)](docs/assets/frozen-annotation-workbench.gif)
+
+Choose **Annotate this exact frozen passage** in the saved evidence reader, or
+select a source in its notebook. Explicit Unicode code-point offsets distinguish
+repeated wording. Preview the highlighted occurrence and your own note, then
+press **Save annotation** for a same-origin POST and a 303 to the persisted
+exact-quote view. GET/preview never write; unchanged UUID retries retain the
+original record and timestamp. No model, retrieval or current-corpus read runs.
+
+The [complete guide and isolated demo](docs/guides/FROZEN_ANNOTATION_WORKBENCH_GUIDE.md)
+cover API/Python use, return pagination, bounds and local/trusted deployment.
+This opt-in GIF contains actual synthetic browser screenshots, not continuous
+footage or scientific claims; a [text alternative](docs/assets/frozen-annotation-workbench.txt)
+records executed outcomes. There is no authentication or scientific validation.
 
 ### Take the complete review notebook offline
 

@@ -3,7 +3,7 @@
 import base64
 import hashlib
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from html import escape
 from urllib.parse import urlsplit
@@ -63,6 +63,21 @@ class BrowserNavigation:
     catalog_url: str
     export_url: str | None = None
     notebook_url: str | None = None
+    annotation_urls: Mapping[str, str] | None = None
+
+
+def _local_link(identifier: str, label: str, url: str) -> str:
+    parts = urlsplit(url)
+    if (
+        not url.startswith("/")
+        or url.startswith("//")
+        or parts.scheme
+        or parts.netloc
+        or "\\" in url
+        or any(ord(character) < 32 or ord(character) == 127 for character in url)
+    ):
+        raise ValueError("Evidence reader navigation must use application-local paths.")
+    return f'<a id="{identifier}" href="{escape(url)}">{label}</a>'
 
 
 def _navigation(links: BrowserNavigation) -> Iterator[str]:
@@ -81,17 +96,7 @@ def _navigation(links: BrowserNavigation) -> Iterator[str]:
         )
     yield '<nav aria-label="Saved run navigation">'
     for identifier, label, url in destinations:
-        parts = urlsplit(url)
-        if (
-            not url.startswith("/")
-            or url.startswith("//")
-            or parts.scheme
-            or parts.netloc
-            or "\\" in url
-            or any(ord(character) < 32 or ord(character) == 127 for character in url)
-        ):
-            raise ValueError("Evidence reader navigation must use application-local paths.")
-        yield f'<a id="{identifier}" href="{escape(url)}">{label}</a>'
+        yield _local_link(identifier, label, url)
     yield "</nav>"
     if links.export_url is None:
         yield (
@@ -268,6 +273,14 @@ def _fragments(
     for source in bundle.snapshot.sources:
         yield f'<article id="source-{source.rank}"><h3>Evidence {source.rank}</h3>'
         yield _literal(source.chunk.text, "passage")
+        if navigation is not None and navigation.annotation_urls is not None:
+            annotation_url = navigation.annotation_urls.get(source.chunk.chunk_id)
+            if annotation_url is not None:
+                yield _local_link(
+                    f"annotate-source-{source.rank}",
+                    "Annotate this exact frozen passage",
+                    annotation_url,
+                )
         metadata = source.model_dump(mode="json")
         metadata["chunk"].pop("text")
         yield "<h4>Recorded identity, rank, score, path, digest and metadata</h4>"

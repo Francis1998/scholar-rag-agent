@@ -18,6 +18,7 @@ from api.dependencies import AppContainer
 from api.explorer import _escaped, _identity, _link, _literal, _page, _pagination, _url
 from api.run_explorer import (
     _RESPONSES,
+    _annotation_composer_url,
     _HistoryCursor,
     _HistoryLimit,
     _navigation,
@@ -271,6 +272,21 @@ def _notebook(
         "</dl><p>Model grounding is recorded separately and is never changed by these opinions.</p>"
     )
     yield _literal(bundle.answer.answer, "answer-text") + "</section>"
+    yield '<section id="author-annotation"><h2>Add an exact-source note</h2>'
+    yield (
+        "<p>Choose a frozen passage, enter explicit code-point offsets and your note, "
+        "then preview before saving. Opening a composer does not create an annotation.</p>"
+    )
+    for source in bundle.snapshot.sources:
+        yield _link(
+            f"annotate-source-{source.rank}",
+            _annotation_composer_url(source, options.notebook_parameters(), root_path),
+            f"Annotate frozen evidence {source.rank}",
+        )
+        yield " " + _identity(source.chunk.title, "annotation-source-title")
+    if not bundle.snapshot.sources:
+        yield "<p>No frozen passages were captured; there is no source to annotate.</p>"
+    yield "</section>"
     yield from _reviews(reviews, bundle, options, root_path)
     yield from _annotations(annotations, options, root_path)
 
@@ -316,6 +332,11 @@ def _source(
         options.evidence_url(root_path) + f"#source-{source.rank}",
         "Open this source in the complete saved evidence",
     )
+    yield " " + _link(
+        "annotate-source",
+        _annotation_composer_url(source, options.notebook_parameters(), root_path),
+        "Create a separate note on this frozen passage",
+    )
     yield "</article>"
 
 
@@ -353,6 +374,15 @@ def explore_annotation(
     saved, source = container.evidence_annotations.get_annotation(
         options.run_id, options.annotation_id
     )
+    return _annotation_page(saved, source, options, root_path)
+
+
+def _annotation_page(
+    saved: SavedEvidenceAnnotation,
+    source: EvidenceSource,
+    options: _AnnotationParameters,
+    root_path: str,
+) -> HTMLResponse:
     return _page(
         "Annotated frozen source",
         _source(saved, source, options, root_path),
