@@ -263,6 +263,7 @@ def test_query_document_identity_survives_links_and_cursor_exactly(
                 "/explore/runs",
                 "/explore/worksheet",
                 "/explore/collections",
+                "/explore/collections/new",
             }
 
 

@@ -144,6 +144,14 @@ includes. The [complete collection-browser guide and executed
 demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) covers API/Python use, bounds,
 restart and privacy. These reads do not create or edit collections.
 
+To create a selection without API tooling, choose **Create a paper collection**
+from either the corpus explorer or saved collections. Filter a bounded page,
+enter a name, check exact papers explicitly, and press **Create collection**.
+No paper is preselected and page/filter changes do not carry unsaved choices.
+The [native builder guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md) includes
+a complete credential-free synthetic start, restart, error handling and browser
+demonstration. Only its explicit same-origin POST writes collection metadata.
+
 The existing JSON discovery workflow remains available:
 
 ```bash

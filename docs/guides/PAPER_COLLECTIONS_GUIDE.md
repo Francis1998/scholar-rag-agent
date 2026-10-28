@@ -6,6 +6,12 @@ Collections are live selections of corpus IDs, not copied documents, archived
 source versions, or permissions. Each request resolves the current membership
 to immutable `document_ids` before asynchronous agent work begins.
 
+For creation without API tooling, use the
+[native paper collection builder](NATIVE_COLLECTION_BUILDER_GUIDE.md) from
+`/explore` or `/explore/collections`. It explicitly saves checked exact IDs from
+one bounded catalog page through the same atomic store, then opens the persisted
+collection. The API/Python examples and editing contracts below are unchanged.
+
 ![Measured synthetic saved-collection workflow](../assets/paper-collections.gif)
 
 This original generated illustration renders the actual offline demo's measured

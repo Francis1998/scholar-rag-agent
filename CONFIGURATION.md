@@ -96,6 +96,14 @@ carrying validated collection return state; ordinary worksheet URLs retain
 16 KiB and form bodies retain 64 KiB. These are finite serialization/navigation
 bounds, not model budgets or a promise of frozen output across requests.
 
+The [native collection builder](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md)
+adds no setting, dependency or schema. It uses the same catalog page/filter
+bounds and collection store: 1-100 exact IDs, a trimmed 1-120-character name,
+16-KiB GET query, 256-KiB streamed form and 1-MiB escaped HTML. Exact Origin
+and optional same-origin Fetch Metadata are required only for its native POST;
+the JSON API stays unchanged. Configure trusted scheme/host/root-path correctly
+for mounted/proxy use. There is no multi-page state or authentication.
+
 The [native human screening workbench](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md)
 adds no setting, dependency, table or provider change. It uses the configured
 SQLite database, fixed five-entry recent history, 64-KiB query/body limits,

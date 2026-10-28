@@ -338,6 +338,19 @@ def _filters(options: _ListParameters | _CollectionReturn, root_path: str) -> It
 
 def _list(page: CollectionPage, options: _ListParameters, root_path: str) -> Iterator[str]:
     yield _navigation(options, root_path)
+    yield _link(
+        "create-collection",
+        _url(
+            root_path + "/explore/collections/new",
+            {
+                "limit": options.catalog_limit,
+                "source": options.source,
+                "title": options.title,
+                "cursor": options.catalog_cursor,
+            },
+        ),
+        "Create a paper collection",
+    )
     yield (
         '<p class="notice">Current saved selections, not screened-in papers. '
         "Membership counts are not screening decisions. Open a collection to inspect "
@@ -352,8 +365,8 @@ def _list(page: CollectionPage, options: _ListParameters, root_path: str) -> Ite
         yield (
             "<p>No saved collections after this cursor. Start again to see current selections.</p>"
             if options.cursor
-            else "<p>No saved collections. Save a selection through the existing API or Python "
-            "interface; this browser does not create collections.</p>"
+            else "<p>No saved collections. Choose Create a paper collection to explicitly "
+            "select papers and save a named selection in your browser.</p>"
         )
     for index, collection in enumerate(page.collections, 1):
         detail = _CollectionReturn(

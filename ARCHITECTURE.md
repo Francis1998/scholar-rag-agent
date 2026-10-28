@@ -645,6 +645,23 @@ collection list/detail retain 16 KiB. Downloads link directly to the existing
 revision-checked APIs. No retrieval or generation runs while browsing collections.
 See [the collection-browser guide](docs/guides/COLLECTION_BROWSER_GUIDE.md).
 
+`api.collection_creation` connects both discovery pages to GET/POST
+`/explore/collections/new`. GET delegates to the existing bounded document
+catalog; source/title/cursor semantics are unchanged. POST reuses strict
+`api.native_forms` wire/Origin guards and exact Unicode identity validators.
+Unique indexed checkbox names retain global duplicate-field rejection; ASCII
+JSON-string values preserve IDs through native input normalization. There is no
+session, cart, second schema or filter expansion on submission.
+
+Only the existing `SQLitePaperCollections.create` transaction writes, offloaded
+to a worker thread. Every ID must still exist and the exact normalized name must
+be unique; the store commits all metadata or none. The 303 uses the returned
+persisted ID/revision to open existing collection inspection and workflow links.
+GET queries are bounded to 16 KiB, POST bodies to 256 KiB and fully escaped HTML
+to 1 MiB. A write-aware footer/header distinguishes creation from read-only
+browsing. No models, retrieval, screening, corpus edits, agent events or JSON
+contract changes occur. See the [native builder guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md).
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,

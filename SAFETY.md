@@ -374,6 +374,29 @@ There is no authentication or tenant isolation: use loopback/access controls,
 avoid secrets in URLs/reasons, and review artifacts before sharing. See the
 [complete browser boundaries and demo](docs/guides/COLLECTION_BROWSER_GUIDE.md).
 
+## Explicit native collection creation
+
+The separate `/explore/collections/new` form writes only after an explicit
+same-origin POST. GET/filter/page navigation never writes; no papers are
+preselected and no multi-page selection is implied. Strict URL-encoded parsing
+rejects unknown/repeated fields, malformed percent/UTF-8, invalid lengths,
+GET bodies and POST queries. Indexed JSON-string checkbox values preserve exact
+opaque IDs without trimming or browser line-ending normalization. Limits are
+16-KiB query, 256-KiB streamed body, 101 fields and 1-MiB complete escaped HTML.
+
+The existing store validates all IDs and name uniqueness atomically, including
+concurrent creation. Unknown/deleted IDs, duplicate names and storage failures
+never save a partial selection. Error pages/logs do not echo private submitted
+values. Names/selections persist as metadata, not frozen text or screening.
+No model, retrieval, network, corpus change or agent event is involved.
+
+Origin/Host and optional Fetch Metadata checks, same-origin referrer policy,
+CSP/escaping/no-store and root-path-safe redirects follow the other native
+write surfaces. They are not authentication, tenant isolation or DNS-rebinding
+defense. Inspect saved collections before retrying interrupted writes; there is
+no idempotency token. The original JSON API remains unchanged. See the
+[complete builder contract and privacy limits](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md).
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the

@@ -17,6 +17,10 @@ passages from one discovered document without running retrieval or generation.
 To reuse that selection instead of resending IDs, save a
 [named paper collection](PAPER_COLLECTIONS_GUIDE.md). Its persistent `collection_id`
 can scope both `/query` and `/retrieve`; catalog browsing itself stays read-only.
+Choose **Create a paper collection** in the explorer for a
+[native bounded checkbox form](NATIVE_COLLECTION_BUILDER_GUIDE.md): explicitly
+select exact papers and a name, with no curl or manual JSON. Nothing is saved by
+filtering or paging, and there is no implicit selection of other result pages.
 
 ![Measured synthetic corpus discovery](../assets/document-catalog.gif)
 
