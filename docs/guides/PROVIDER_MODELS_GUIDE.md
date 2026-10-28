@@ -2,10 +2,13 @@
 
 The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model) and
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
-[Gemini 4 Argon model guide](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon), and
-[Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md) were checked
-**2026-10-25 America/Los_Angeles**. OpenAI positions `gpt-6-astra` for highest
+[Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) and
+[Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) guides,
+[Kimi model list](https://platform.kimi.ai/docs/models.md), and
+[K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md)
+were checked **2026-10-28 America/Los_Angeles**. OpenAI positions `gpt-6-astra` for highest
 intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
+`gpt-6.1-terra` for efficient visual reasoning, computer use, and writing,
 and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
 Anthropic generally recommends `claude-opus-5-5`, lists `claude-fable-5-1` for
 demanding reasoning and long-horizon agents, and includes `claude-sonnet-5-5`
@@ -45,7 +48,7 @@ account and workload.
 | OpenAI | `gpt-6-astra` | Highest-intelligence selection in the [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
 | Google | `gemini-3.8-flash` | Retained [Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) for the existing SPEED route, not Google's latest overall model. The Argon catalog update does not change this selection. |
-| Moonshot | `kimi-k3.1-pro` | Recommended latest flagship in the [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md). Both K3.1 variants retain K3's documented parameter constraints; the existing stateless text payload needs no changes. |
+| Moonshot | `kimi-k3.1-pro` | Recommended latest flagship in the [K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md). Both K3.1 variants retain K3's documented parameter constraints; the existing stateless text payload needs no changes. |
 
 The current [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model)
 also positions `gpt-6.1-sol` for balancing speed, cost, and intelligence with
@@ -65,18 +68,106 @@ alternative, not an endpoint, effort, budget or default migration. No live
 account or inference verification was performed.
 
 The prior OpenAI `gpt-5.5` and Anthropic `claude-sonnet-4-6` defaults are older
-available models, not claimed retired here. `gemini-3.1-pro-preview` remains a Pro
-preview rather than the retained Flash choice. Moonshot explicitly lists the
-`kimi-k2` series as discontinued on **2026-05-25**; the old local default was
-`kimi-k2`, not a preview-suffixed ID. The same Kimi model list also records
-`kimi-k2.5` and the `moonshot-v1` series as discontinued on **2026-08-31**;
-those are not supported fallback recommendations.
+available models, not claimed retired here. `gemini-3.1-pro-preview` remains a
+Pro preview rather than the retained Flash choice.
 
 Use `SCHOLAR_RAG_OPENAI_MODEL`, `SCHOLAR_RAG_ANTHROPIC_MODEL`,
 `SCHOLAR_RAG_GEMINI_MODEL`, and `SCHOLAR_RAG_KIMI_MODEL` to select alternatives
 without editing source. They are nonblank, whitespace-trimmed strings; see
 [configuration](../CONFIGURATION.md) for precedence and credential requirements.
 `SCHOLAR_RAG_DEFAULT_MODEL` remains a **provider family**, not one of these IDs.
+
+### Optional GPT-6.1 Terra
+
+The [Terra model page](https://developers.openai.com/api/docs/models/gpt-6.1-terra),
+checked **2026-10-28 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
+It documents text/image input, text output, and both Chat Completions and
+Responses, but **tool calling requires Responses**. Its reasoning efforts are
+`none`, `low`, `medium` (default), `high`, `xhigh`, and `max`.
+These are provider capabilities, not implemented application features or
+measured speed/quality improvements.
+
+Terra is an optional text-model selection here, not a replacement for
+`gpt-6-astra`. This adapter still sends only `model` and text `messages` to
+Chat Completions. It sends no reasoning-effort override and exposes no effort
+setting, so Terra's documented provider default applies rather than a locally
+pinned effort. Selecting its ID adds neither image input, computer use,
+tool execution, Responses, nor multi-turn reasoning replay. A catalog check
+does not establish this account's access or live payload compatibility.
+
+### Kimi legacy overrides and retirement notice
+
+The [Kimi model list](https://platform.kimi.ai/docs/models.md), checked
+**2026-10-28 America/Los_Angeles**, contains two distinct upcoming notices:
+
+| Timing | Affected users/models |
+| --- | --- |
+| Starting **2026-10-31** | K2-series models become unavailable to **newly registered users**. Existing users are unaffected by this immediate access restriction. |
+| **Planned by the end of December 2026** | Kimi plans to retire **all K2-series models**. This is a planned window, not a guaranteed exact retirement date. |
+
+These notices do not supersede the separately recorded past discontinuations:
+the original `kimi-k2` family on **2026-05-25** (the old local default was
+`kimi-k2`, not a preview-suffixed ID), and `kimi-k2.5` / `moonshot-v1` on
+**2026-08-31**. Do not interpret the new transition window as restored support
+for those discontinued IDs or recommend them as fallbacks.
+
+The repository already selects `kimi-k3.1-pro`; no mandatory runtime migration
+is needed for that default. Inspect explicit overrides and legacy saved
+configuration for K2 IDs, then use the
+[K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md)
+and the checklist below to plan a deliberate switch. The quickstart documents
+account access requirements; verify them yourself without assuming a model ID
+or an API key grants entitlement. `kimi-k3.1-pro-highspeed` remains optional,
+not an automatic fallback. Historical saved-run model identities remain
+historical evidence, not settings to rewrite.
+
+## Selection and Migration Checklist
+
+1. **Record the baseline.** Keep the exact currently selected provider/model ID
+   and configuration source before editing. Explicit `Settings(...)` arguments
+   override process environment, then `.env`, then defaults; direct adapter
+   constructor arguments are independent. Changing a default does not remove a
+   higher-precedence legacy override.
+2. **Check access and adapter fit.** Account entitlement, current availability,
+   rate limits, and pricing must be checked by the user with their provider.
+   Settings validation performs no discovery or inference. Use only a model
+   compatible with the existing text endpoint; a provider's vision/tool
+   quickstart does not add those capabilities here.
+3. **Apply one explicit override.** For an optional Terra text comparison:
+
+   ```bash
+   export SCHOLAR_RAG_OPENAI_MODEL=gpt-6.1-terra
+   ```
+
+   This command sets no credential and makes no request. Restart the application
+   after a deliberate configuration change; do not put this ID in
+   `SCHOLAR_RAG_DEFAULT_MODEL`. `/query` still prefers a configured Anthropic
+   adapter, so an OpenAI override alone does not force API answers through Terra.
+   Check the selected route before any live comparison.
+4. **Evaluate a bounded, permitted sample.** First use offline configuration,
+   fake, or mocked-HTTP checks for plumbing; they cannot measure model quality.
+   Any live evaluation is user-run and separately authorized: start with a
+   small fixed set, such as three representative text questions, using only
+   data permitted for that provider. Keep the same query, scope, retrieval
+   policy, and existing budgets; inspect final captured evidence for drift.
+   Compare citation support, completeness, errors, and measured latency/cost,
+   not catalog rankings. Do not silently enlarge budgets or retry with another
+   provider to turn a failed candidate into an apparent success.
+5. **Keep exact comparison evidence.** Retain baseline/candidate run IDs and
+   completed frozen exports, including the captured request, source context,
+   and generation's `provider` / `model_name`. Check the recorded provider rather
+   than inferring it from an environment variable. The model name is the exact
+   configured/requested ID, not a provider-resolved immutable snapshot.
+   Use the [saved-run comparison](RUN_COMPARISON_GUIDE.md) to inspect differences;
+   preserve failed-run state separately instead of treating an `ERROR` as a
+   completed answer. Never put credentials or request headers in evidence.
+6. **Keep or roll back explicitly.** Restore the previously recorded, still
+   available ID in the configuration source that actually selected it and
+   restart. If the baseline used the OpenAI default, that ID is `gpt-6-astra`;
+   a custom baseline may differ. Removing only an environment override can
+   expose an older `.env` value. For Kimi, remove legacy overrides to use
+   `kimi-k3.1-pro`, or select a verified available alternative; do not roll back
+   to a discontinued K2 ID. No automatic migration or fallback is added.
 
 ## HTTP Payload Contracts
 

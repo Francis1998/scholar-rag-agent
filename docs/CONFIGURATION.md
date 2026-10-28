@@ -200,32 +200,41 @@ strings; explicit empty, whitespace-only, null, or non-string values fail
 validation rather than silently reverting to a default. Leave a variable unset
 to use its default. Validation also applies when no provider key is configured.
 
-For example, choose a different available OpenAI model without changing the
-provider-routing policy:
+For example, select the optional Terra model ID without changing the
+provider-routing policy or making a request:
 
 ```bash
-export SCHOLAR_RAG_OPENAI_MODEL=gpt-6.1-sol
+export SCHOLAR_RAG_OPENAI_MODEL=gpt-6.1-terra
 ```
 
-Or set `Settings(openai_model="gpt-6.1-sol")` in Python. `build_model_router`
+Or set `Settings(openai_model="gpt-6.1-terra")` in Python. `build_model_router`
 passes each field to its corresponding adapter only when that provider has a
 key. Direct adapter callers can still pass `model="..."` explicitly; constructors
 do not load or override that choice from application environment settings.
+Record the previous exact selection before editing and restart after changing
+configuration. Follow the
+[selection and migration checklist](guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
+for account checks, bounded permitted-data evaluation, saved request/provider
+identity, and rollback. An ID override alone does not force `/query` away from
+a configured Anthropic reasoning provider.
 
 These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-25 America/Los_Angeles** four-provider catalog recheck,
+for the **2026-10-28 America/Los_Angeles** four-provider catalog recheck,
 the separate **2026-10-24 America/Los_Angeles** Kimi K3.1 migration-contract check,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
 and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
-the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol
-and Anthropic Haiku 5.5 are additional catalog options, not new
+the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol,
+6.1 Terra, and Anthropic Haiku 5.5 are catalog alternatives, not live
 adapter-compatibility claims. OpenAI documents Chat Completions without tools
-for [6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol); tool use
-requires Responses, which this adapter does not implement. All selected defaults,
-including `kimi-k3.1-pro`, endpoints, routing, and budgets remain unchanged by
+for [6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) and
+[6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra); tool use
+requires Responses, which this adapter does not implement. Terra's supported
+reasoning efforts are provider capabilities, not new configuration controls.
+Selecting Terra adds no vision, computer use, or reasoning-state replay.
+All selected defaults, including `kimi-k3.1-pro`, endpoints, routing, and budgets remain unchanged by
 this catalog recheck.
 
 Selecting Argon does not implement its long-decode loop or background execution.
@@ -271,6 +280,14 @@ still take precedence. Neither these settings nor offline contract tests check
 account access, live answer quality, or whether the budget suits your workload.
 
 ### Kimi K3.1 default and rollback
+
+The [K2 retirement notice](guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
+affects legacy overrides, not this repository's current default. K2 access is
+restricted for newly registered users starting **2026-10-31**; existing users
+are unaffected by that immediate restriction. All-K2 retirement is planned by
+the end of December 2026, not an exact guaranteed date. Earlier discontinuations
+of original K2, K2.5, and `moonshot-v1` remain separate and do not provide safe
+rollback targets.
 
 The selected default is `kimi-k3.1-pro`; `kimi-k3.1-pro-highspeed` is an optional
 override, not an automatic fallback. Both variants inherit K3's documented

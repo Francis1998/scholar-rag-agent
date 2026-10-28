@@ -139,9 +139,15 @@ class PaperChatMemory:
     def format_context(self, session_id: str, *, max_chars: int = 4000) -> str:
         """Return a prompt-ready transcript truncated to ``max_chars``.
 
-        Keeps the newest turns that fit. Empty sessions return ``\"\"``.
+        Keeps the newest contiguous turns that fit, counting Python characters
+        including role prefixes and newline separators. Empty sessions or an
+        oversized newest turn return ``\"\"``.
+
+        Raises:
+            ValueError: If ``max_chars`` is not a positive integer (excluding
+                booleans). Validation happens before reading the session.
         """
-        if max_chars <= 0:
+        if not isinstance(max_chars, int) or isinstance(max_chars, bool) or max_chars <= 0:
             raise ValueError("max_chars must be a positive integer")
         turns = self.get_turns(session_id)
         if not turns:

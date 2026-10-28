@@ -50,7 +50,7 @@ accumulated feature list in the project README.
 | Copy public API requests or try connector examples | [Examples](EXAMPLES.md) |
 | Reproduce the showcased animation | [Demo](DEMO.md) |
 | Understand what the API actually runs | [Architecture](../ARCHITECTURE.md) |
-| Choose provider models and understand routing | [Provider models](guides/PROVIDER_MODELS_GUIDE.md) |
+| Choose provider models, evaluate explicit overrides, and plan legacy K2 migration | [Provider models, routing, and migration checklist](guides/PROVIDER_MODELS_GUIDE.md) |
 | Compare labeled retrieval runs and enforce local CI quality gates | [Offline retrieval benchmarks](guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 
 ## Configuration, operation, and contribution
@@ -286,6 +286,7 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Measurement scale shift](guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | Measurement-scale shift / recalibration wording |
 | [Overadjustment bias](guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Overadjustment / overcontrol / mediator-adjustment wording |
 | [Competing-risk informative censoring](guides/COMPETING_RISK_INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | Competing-risk informative / dependent censoring wording |
+| [Target Trial Emulation](guides/TARGET_TRIAL_EMULATION_CUES_EXTRACTOR_GUIDE.md) | target trial emulation wording |
 | [Survey mode effect](guides/SURVEY_MODE_EFFECT_CUES_EXTRACTOR_GUIDE.md) | Survey-mode effect / mixed-mode survey bias wording |
 | [Collider bias interaction](guides/COLLIDER_BIAS_INTERACTION_CUES_EXTRACTOR_GUIDE.md) | Collider-bias interaction / collider stratification interaction wording |
 | [Ascertainment differential residual](guides/ASCERTAINMENT_DIFFERENTIAL_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Ascertainment-differential residual / residual ascertainment bias wording |

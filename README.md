@@ -516,20 +516,29 @@ For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
 
-The **2026-10-25 America/Los_Angeles** catalog recheck leaves all selected
+The **2026-10-28 America/Los_Angeles** catalog recheck leaves all selected
 defaults unchanged:
 
 | Provider | Repository default | Current official guidance |
 | --- | --- | --- |
-| OpenAI | `gpt-6-astra` | [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model): Astra for highest intelligence, `gpt-6.1-sol` for balanced near-Astra performance, `gpt-6-luna` for speed and cost-sensitive volume. |
+| OpenAI | `gpt-6-astra` | [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model): Astra for highest intelligence, `gpt-6.1-sol` for balanced near-Astra performance, `gpt-6.1-terra` for efficient visual/writing work, and `gpt-6-luna` for speed and cost-sensitive volume. These are provider descriptions, not implemented vision/tools or measured tradeoffs here. |
 | Anthropic | `claude-sonnet-5-5` | [Claude catalog](https://platform.claude.com/docs/en/models/overview): generally recommends `claude-opus-5-5`, with `claude-fable-5-1` for demanding long-horizon reasoning and `claude-haiku-5-5` for latency-sensitive work. Sonnet remains this bounded text adapter's selection. |
 | Google | `gemini-3.8-flash` | [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) is the flagship; Flash remains the repository's SPEED-route default. |
-| Kimi | `kimi-k3.1-pro` | [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md): K3.1 Pro, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
+| Kimi | `kimi-k3.1-pro` | [K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): K3.1 Pro, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
+
+Use the [selection and migration checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
+for an explicit Terra text override, bounded evaluation, saved provider/model
+evidence, and rollback. Kimi's [K2 notice](docs/guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
+restricts newly registered users starting **2026-10-31**, not existing users
+under that immediate restriction, and plans all-K2 retirement by the end of
+December 2026 without an exact guaranteed date. Check legacy overrides; the
+repository's K3.1 default already needs no migration.
 
 These remain stateless, single-turn text adapters: OpenAI and Kimi use Chat
 Completions, Anthropic Messages, and Gemini `generateContent`. Selecting another
-ID does not add tool loops, streaming, or a different endpoint. Earlier Kimi
-and Sonnet migration checks are dated separately in the provider guide;
+ID does not add image input, tool loops, streaming, or a different endpoint.
+Terra tool calling requires Responses, which this adapter does not implement.
+Earlier Kimi and Sonnet migration checks are dated separately in the provider guide;
 explicit `kimi-k3` rollback overrides remain available.
 Routing and budgets are unchanged. Catalog guidance is not a repository
 benchmark, account-entitlement check, or live inference verification.
@@ -574,6 +583,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | [MeasurementScaleShiftCueExtractor](docs/guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/measurement-scale-shift-cues.gif) |
 | [OveradjustmentBiasCueExtractor](docs/guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/overadjustment-bias-cues.gif) |
 | [CompetingRiskInformativeCensoringCueExtractor](docs/guides/COMPETING_RISK_INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/competing-risk-informative-censoring-cues.gif) |
+| [TargetTrialEmulationCueExtractor](docs/guides/TARGET_TRIAL_EMULATION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/target-trial-emulation-cues.gif) |
 | [SurveyModeEffectCueExtractor](docs/guides/SURVEY_MODE_EFFECT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/survey-mode-effect-cues.gif) |
 | [ColliderBiasInteractionCueExtractor](docs/guides/COLLIDER_BIAS_INTERACTION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/collider-bias-interaction-cues.gif) |
 | [AscertainmentDifferentialResidualCueExtractor](docs/guides/ASCERTAINMENT_DIFFERENTIAL_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/ascertainment-differential-residual-cues.gif) |
