@@ -271,7 +271,10 @@ from PIL import Image
 
 frames = Path("/tmp/scholar-answer-review-frames")
 for name, top in (
-    ("saved-answer", 1750), ("compose", 880), ("preview", 900), ("saved-review", 300)
+    ("saved-answer", 1750),
+    ("compose", 880),
+    ("preview", 900),
+    ("saved-review", 300),
 ):
     with Image.open(frames / f"raw-{name}.png") as image:
         assert image.size == (1280, 3600)
