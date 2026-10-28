@@ -1,6 +1,7 @@
 """Human review boundary with no access to generation, retrieval, or the current corpus."""
 
 import sqlite3
+from uuid import UUID
 
 from agent.review_models import (
     DEFAULT_REVIEW_LIMIT,
@@ -54,3 +55,7 @@ class AnswerReviewService:
         return self._store.list_reviews(
             run_id, limit=limit, cursor=cursor, frozen_chunk_ids=frozen_chunk_ids
         )
+
+    def get_review(self, run_id: str, review_id: UUID) -> SavedAnswerReview:
+        frozen_chunk_ids = self._frozen_chunk_ids(run_id)
+        return self._store.get_review(run_id, review_id, frozen_chunk_ids=frozen_chunk_ids)

@@ -5,6 +5,7 @@ import sqlite3
 from collections.abc import Mapping
 from contextlib import closing
 from pathlib import Path
+from uuid import UUID
 
 from agent.review_models import (
     DEFAULT_REVIEW_LIMIT,
@@ -22,6 +23,7 @@ SELECT id AS sequence, schema_version, run_id, review_id, created_at,
        decision, comment, cited_chunk_ids
 FROM answer_reviews
 """
+MAX_REVIEW_READ_BYTES = 262_144
 
 
 def _read_record(row: sqlite3.Row | Mapping[str, object]) -> SavedAnswerReview:
@@ -51,6 +53,7 @@ class SQLiteAnswerReviews:
     def __init__(self, database_path: Path | str) -> None:
         path = Path(database_path).resolve()
         self._database_uri = path.as_uri() + "?mode=rw"
+        self._read_uri = path.as_uri() + "?mode=ro"
         try:
             with closing(sqlite3.connect(path)) as connection, connection:
                 connection.execute(
@@ -174,3 +177,77 @@ class SQLiteAnswerReviews:
             reviews=page,
             next_cursor=page[-1].sequence if len(reviews) > options.limit else None,
         )
+
+    def get_review(
+        self, run_id: str, review_id: UUID, *, frozen_chunk_ids: frozenset[str]
+    ) -> SavedAnswerReview:
+        """Read one run-scoped UUID without traversing or depending on history pages."""
+        try:
+            with closing(sqlite3.connect(self._read_uri, uri=True, timeout=5)) as connection:
+                connection.row_factory = sqlite3.Row
+                connection.execute("BEGIN")
+                encoding = connection.execute("PRAGMA encoding").fetchone()[0]
+                size = connection.execute(
+                    """
+                    SELECT typeof(schema_version) != 'text' OR typeof(run_id) != 'text'
+                        OR typeof(review_id) != 'text' OR typeof(created_at) != 'text'
+                        OR typeof(decision) != 'text' OR typeof(comment) != 'text'
+                        OR typeof(cited_chunk_ids) != 'text' AS invalid_record,
+                        length(CAST(schema_version AS BLOB)) + length(CAST(run_id AS BLOB))
+                        + length(CAST(review_id AS BLOB)) + length(CAST(created_at AS BLOB))
+                        + length(CAST(decision AS BLOB)) + length(CAST(comment AS BLOB))
+                        + length(CAST(cited_chunk_ids AS BLOB)) AS text_bytes
+                    FROM answer_reviews WHERE run_id = ? AND review_id = ?
+                    """,
+                    (run_id, str(review_id)),
+                ).fetchone()
+                if size is None:
+                    raise AnswerReviewError(
+                        "review_not_found",
+                        "No review with this exact UUID exists in this run.",
+                        404,
+                    )
+                if size["invalid_record"]:
+                    raise invalid_review_record()
+                factor = 1 if encoding == "UTF-8" else 2
+                if size["text_bytes"] > factor * MAX_REVIEW_READ_BYTES:
+                    raise AnswerReviewError(
+                        "review_read_limit_exceeded",
+                        "The exact saved review exceeds the fixed text-byte limit.",
+                        413,
+                    )
+                # SQLite returns UTF-8 bytes here even when the database uses UTF-16 storage.
+                connection.text_factory = bytes
+                row = connection.execute(
+                    _SELECT_REVIEW + " WHERE run_id = ? AND review_id = ?",
+                    (run_id, str(review_id)),
+                ).fetchone()
+                if row is None:
+                    raise invalid_review_record()
+                try:
+                    record = {
+                        key: value.decode("utf-8") if isinstance(value, bytes) else value
+                        for key, value in dict(row).items()
+                    }
+                except UnicodeError as exc:
+                    raise invalid_review_record() from exc
+                if (
+                    sum(
+                        len(value.encode("utf-8"))
+                        for value in record.values()
+                        if isinstance(value, str)
+                    )
+                    > MAX_REVIEW_READ_BYTES
+                ):
+                    raise AnswerReviewError(
+                        "review_read_limit_exceeded",
+                        "The exact saved review exceeds the fixed text-byte limit.",
+                        413,
+                    )
+                saved = _read_record(record)
+                if saved.run_id != run_id or saved.review_id != review_id:
+                    raise invalid_review_record()
+                ensure_saved_references(saved, frozen_chunk_ids)
+                return saved
+        except sqlite3.Error as exc:
+            raise review_storage_unavailable() from exc

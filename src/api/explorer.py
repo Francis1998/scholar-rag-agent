@@ -106,6 +106,8 @@ input, select, textarea { width: 100%; min-height: 2.75rem; font: inherit;
   background: #fff; color: #182b3a; }
 textarea { min-height: 7rem; resize: vertical; }
 .worksheet-input { grid-column: 1 / -1; }
+.review-source-choice input[type="checkbox"] { width: 1.25rem; min-height: 1.25rem;
+  vertical-align: middle; margin-right: .5rem; }
 .worksheet-grid { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: white; }
 th, td { border: 1px solid #c4d3df; padding: .65rem; text-align: left; vertical-align: top; }
@@ -269,6 +271,28 @@ _ANNOTATION_FOOTER = (
     "decode escapes once. Unicode visual order alone is not an identity check.</p>"
     "</footer></body></html>"
 )
+_REVIEW_FOOTER = (
+    "</main><footer><h2>Explicit human opinions, local trusted use only</h2>"
+    "<p>Opening and previewing never write. Only Save review appends the previewed opinion "
+    "through the existing review service. No provider, retrieval, network, current-corpus "
+    "read, annotation, screening or agent-event write runs during this workflow. Normal "
+    "startup still initializes stores and indexes. Acceptance is not scientific validation, "
+    "a grounding change or consensus. No authenticated reviewer identity is recorded.</p>"
+    "<p>Keep this unauthenticated service on loopback or behind your own access controls with "
+    "trusted host/proxy configuration. Exact Origin checks block cross-origin browser forms, "
+    "not direct clients, malicious local processes or DNS rebinding. The JSON API is unchanged. "
+    "There are no scripts, external assets, cookies, browser storage or saved drafts.</p>"
+    "<p>POST keeps comments out of GET URLs, not browser resubmission state or infrastructure "
+    "logs. IDs and return filters can remain in history. Same-origin referrer policy preserves "
+    "native POST Origin and may send the local selection URL to this same server, never as a "
+    "cross-origin referrer. No-store cannot prevent screenshots or saving. Do not enter "
+    "credentials or personal data.</p>"
+    "<p>After a network failure, inspect the notebook or resend the unchanged preview. Its UUID "
+    "retains the original sequence and timestamp; different content under that UUID conflicts. "
+    "Reopening the composer starts a new UUID, not a retry. JSON-displayed IDs must be decoded "
+    "once; visual similarity is not identity. Existing opinions are never overwritten.</p>"
+    "</footer></body></html>"
+)
 
 
 class _PageTooLargeError(ValueError):
@@ -316,6 +340,7 @@ def _page(
     collections: bool = False,
     screening: bool = False,
     annotation: bool = False,
+    review: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -342,7 +367,11 @@ def _page(
         subject = "FROZEN ANNOTATION"
         description = "Choose an exact frozen span, preview your note, then explicitly save it."
         footer = _ANNOTATION_FOOTER
-    mode = "EXPLICIT HUMAN WRITE" if screening or annotation else "READ-ONLY"
+    if review:
+        subject = "SAVED ANSWER REVIEW"
+        description = "Inspect frozen evidence, preview your own verdict, then explicitly save it."
+        footer = _REVIEW_FOOTER
+    mode = "EXPLICIT HUMAN WRITE" if screening or annotation or review else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -363,7 +392,7 @@ def _page(
     return HTMLResponse(
         bytes(content),
         status_code=status,
-        headers=_WRITE_HEADERS if screening or annotation else _HEADERS,
+        headers=_WRITE_HEADERS if screening or annotation or review else _HEADERS,
     )
 
 
@@ -380,6 +409,7 @@ def _error(
     collections: bool = False,
     screening: bool = False,
     annotation: bool = False,
+    review: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -398,6 +428,7 @@ def _error(
         collections=collections,
         screening=screening,
         annotation=annotation,
+        review=review,
     )
 
 

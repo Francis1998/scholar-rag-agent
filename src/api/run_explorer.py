@@ -108,6 +108,15 @@ def _annotation_composer_url(
     )
 
 
+def _review_url(
+    parameters: dict[str, str | int | None], root_path: str, review_id: str | None = None
+) -> str:
+    fields = {"selection": json.dumps(parameters, ensure_ascii=True, separators=(",", ":"))}
+    if review_id is not None:
+        fields["review_id"] = review_id
+    return _url(root_path + "/explore/run/review" + ("/saved" if review_id else ""), fields)
+
+
 def _navigation(options: _HistoryParameters | None, root_path: str) -> str:
     if options is None:
         return (
@@ -501,6 +510,7 @@ def explore_run(request: Request, options: Annotated[_RunParameters, Query()]) -
                 root_path + "/explore/run/notebook",
                 {"run_id": options.run_id, **options.parameters()},
             ),
+            review_url=_review_url({"run_id": options.run_id, **options.parameters()}, root_path),
             annotation_urls={
                 source.chunk.chunk_id: _annotation_composer_url(
                     source, {"run_id": options.run_id, **options.parameters()}, root_path

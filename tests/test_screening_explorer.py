@@ -618,13 +618,15 @@ def test_existing_json_put_does_not_gain_browser_origin_requirements(api: Explor
     assert "text/html" not in response.headers["content-type"]
 
 
-def test_origin_checks_support_explicit_ports_tls_and_ipv6(api: ExplorerAPI) -> None:
+async def test_origin_checks_support_explicit_ports_tls_and_ipv6(api: ExplorerAPI) -> None:
     collection = seed(api)
     for revision, origin in enumerate(
         ("http://127.0.0.1:8765", "https://example.test:8443", "http://[::1]:8765")
     ):
-        with TestClient(api.app, base_url=origin) as client:
-            response = client.post(
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=api.app), base_url=origin
+        ) as client:
+            response = await client.post(
                 ENDPOINT,
                 data=fields(collection, expected_decision_revision=str(revision)),
                 headers={"origin": origin},

@@ -1,5 +1,21 @@
 # Demo
 
+## Native saved-answer review workbench
+
+[![Actual browser frame of the original synthetic saved answer](assets/saved-answer-review-workbench.png)](assets/saved-answer-review-workbench.gif)
+
+The [complete user/API/Python/portfolio guide](guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md)
+reproduces explicit verdict/comment/frozen-source selection, no-write preview,
+same-origin Save, exact UUID rereading and unchanged retries. The guarded demo
+records eight original synthetic events without even a fake model, checks safe
+403/422/409 rejection and identical evidence/opinion after corpus edits,
+deletion and restart. The GIF contains four actual local browser renderings of
+those guarded, already-executed HTTP responses, not recorded/live-click browser
+footage. HTTP persistence is verified separately. These unscaled screenshot
+crops are not fabricated UI, a benchmark or scientific result. The still is an
+opt-in animation link; [text alternative and measurements](assets/saved-answer-review-workbench.txt)
+are available.
+
 ## Native frozen annotation workbench
 
 [![Actual browser frame of the synthetic frozen source](assets/frozen-annotation-workbench.png)](assets/frozen-annotation-workbench.gif)

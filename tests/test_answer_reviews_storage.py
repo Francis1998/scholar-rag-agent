@@ -2,6 +2,7 @@
 
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 from threading import Barrier
 from typing import Any
@@ -12,11 +13,98 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from scripts.demo_evidence_export import offline_settings
 
-from agent.review_models import AnswerReviewError, ReviewPageOptions, ReviewSubmission
+from agent.review_models import (
+    AnswerReviewError,
+    ReviewDecision,
+    ReviewPageOptions,
+    ReviewSubmission,
+)
 from api.application import create_app
-from storage.answer_reviews import SQLiteAnswerReviews
+from storage.answer_reviews import MAX_REVIEW_READ_BYTES, SQLiteAnswerReviews
 from tests.test_answer_reviews_api import ReviewAPI, raw_events, review_body
 from tests.test_answer_reviews_api import review_api as review_api
+
+
+@pytest.mark.parametrize("encoding", ["UTF-8", "UTF-16le", "UTF-16be"])
+@pytest.mark.parametrize("extra_byte", [0, 1])
+def test_exact_uuid_reader_real_utf8_byte_bound_across_sqlite_encodings(
+    tmp_path: Path, encoding: str, extra_byte: int
+) -> None:
+    path = tmp_path / "reviews.sqlite3"
+    with closing(sqlite3.connect(path)) as connection:
+        connection.execute(f"PRAGMA encoding = '{encoding}'")
+        connection.execute("CREATE TABLE encoding_fixture (value TEXT)")
+    store = SQLiteAnswerReviews(path)
+    payload = ReviewSubmission(
+        review_id=uuid4(),
+        decision=ReviewDecision.NEEDS_REVISION,
+        comment="\n  Cafe\u0301 \U0001f52c.\r\n",
+        cited_chunk_ids=("chunk/one",),
+    )
+    saved, _ = store.append("saved", payload, frozen_chunk_ids=frozenset({"chunk/one"}))
+    with closing(sqlite3.connect(path)) as connection, connection:
+        row = connection.execute(
+            """SELECT schema_version, run_id, review_id, created_at, decision, comment,
+                      cited_chunk_ids FROM answer_reviews"""
+        ).fetchone()
+        size = sum(len(value.encode("utf-8")) for value in row)
+        padded = row[-1] + " " * (MAX_REVIEW_READ_BYTES - size + extra_byte)
+        connection.execute("UPDATE answer_reviews SET cited_chunk_ids = ?", (padded,))
+    before = path.read_bytes()
+    if extra_byte:
+        with pytest.raises(AnswerReviewError) as error:
+            store.get_review("saved", payload.review_id, frozen_chunk_ids=frozenset({"chunk/one"}))
+        assert error.value.code == "review_read_limit_exceeded"
+        assert error.value.status_code == 413
+    else:
+        assert (
+            store.get_review("saved", payload.review_id, frozen_chunk_ids=frozenset({"chunk/one"}))
+            == saved
+        )
+    assert path.read_bytes() == before
+
+
+def test_exact_uuid_reader_rejects_malformed_text_and_uses_existing_read_only_database(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "reviews?#.sqlite3"
+    store = SQLiteAnswerReviews(path)
+    payload = ReviewSubmission(
+        review_id=uuid4(), decision=ReviewDecision.REJECTED, comment="Original human opinion."
+    )
+    original, _ = store.append("saved", payload, frozen_chunk_ids=frozenset())
+    with monkeypatch.context() as patch:
+        real_connect = sqlite3.connect
+        connections: list[str] = []
+
+        def readonly_connect(database: str, *, uri: bool, timeout: int) -> sqlite3.Connection:
+            assert uri and database.endswith("?mode=ro")
+            connections.append(database)
+            return real_connect(database, uri=uri, timeout=timeout)
+
+        patch.setattr(sqlite3, "connect", readonly_connect)
+        before = path.read_bytes()
+        assert (
+            store.get_review("saved", payload.review_id, frozen_chunk_ids=frozenset()) == original
+        )
+        assert len(connections) == 1 and path.read_bytes() == before
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute(
+            "UPDATE answer_reviews SET comment = CAST(? AS TEXT)", (b"PRIVATE_\xff",)
+        )
+    before = path.read_bytes()
+    with pytest.raises(AnswerReviewError) as error:
+        store.get_review("saved", payload.review_id, frozen_chunk_ids=frozenset())
+    assert error.value.code == "invalid_review_record" and error.value.status_code == 409
+    assert "PRIVATE_" not in str(error.value)
+    assert path.read_bytes() == before
+    moved = tmp_path / "retained.sqlite3"
+    path.rename(moved)
+    with pytest.raises(AnswerReviewError) as error:
+        store.get_review("saved", payload.review_id, frozen_chunk_ids=frozenset())
+    assert error.value.code == "review_storage_unavailable" and error.value.status_code == 503
+    assert str(path) not in str(error.value) and not path.exists()
+    assert moved.read_bytes() == before
 
 
 @pytest.mark.parametrize("conflicting", [False, True])

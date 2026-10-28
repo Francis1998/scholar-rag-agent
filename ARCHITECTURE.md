@@ -725,6 +725,34 @@ prefixes, with 16-KiB query and 1-MiB full escaped HTML caps. These pages add no
 new persistence, provider, dependency or model work. See the
 [notebook contract and real-browser demo](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md).
 
+### Native saved-answer review authoring
+
+`api.review_explorer` adds GET/POST `/explore/run/review`, explicit POST
+`/explore/run/review/save`, and GET `/explore/run/review/saved`. Reader/notebook
+links carry typed ASCII-JSON return state, preserving opaque valid review IDs,
+both notebook histories and root prefixes without arbitrary redirects.
+Native controls require an explicit verdict and exact nonblank comment;
+optional distinct checkboxes bind ranks to actual frozen chunk IDs.
+
+GET and preview only read `saved_run_evidence`; Save constructs the existing
+`ReviewSubmission`, preflights both complete escaped pages and return navigation,
+then calls `notebook_reviews.create`. That existing `AnswerReviewService` uses
+bounded frozen events and the same `SQLiteAnswerReviews` append transaction as
+the original API. Maximum valid sequence/timestamp widths make persisted-reader
+preflight conservative, not arbitrary padding. UUID retry/conflict semantics,
+existing schemas, original JSON APIs and notebook pagination are unchanged.
+
+`AnswerReviewService.get_review` / `SQLiteAnswerReviews.get_review` adds a
+run-scoped UUID lookup, independent of newest-first history pages. The existing
+database is opened read-only; stored type/byte checks precede hydration, followed
+by exact UTF-8 accounting and existing record/frozen-reference validation.
+UTF-16 databases use a conservative stored-byte preflight before exact UTF-8
+accounting. Evidence and opinion are separate reads, not one shared snapshot.
+No provider, retrieval, current-corpus read, event write, migration, dependency
+or new setting is introduced. Shared native-form/origin/HTML/URL helpers retain
+their established controls. See the
+[complete review workbench guide and browser demo](docs/guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md).
+
 ### Portable human-review notebook export
 
 `api.notebook_export` adds GET `/runs/{run_id}/notebook` and the exact-ID

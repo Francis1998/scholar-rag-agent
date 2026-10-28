@@ -117,6 +117,24 @@ new settings, dependencies, tables or provider changes; the original JSON
 comparison API is unchanged. See the
 [workbench contract and measured demo](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md).
 
+## Native saved-answer review bounds
+
+The [native review workbench](guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md) uses
+the configured saved-event/review database, without new settings, dependencies,
+tables or provider changes. Query/body limits are 65,536/524,288 bytes;
+selection/submission decoded limits are 16,384/262,144 characters. Preview has
+four required fields plus at most 50 distinct actual frozen-source checkboxes.
+Comments retain the existing nonblank 1-4000-code-point contract. Both the
+complete escaped preview and precise persisted page must fit 1 MiB before a
+write; generated return queries must fit 16,384 bytes. Exact UUID lookup
+preflights one saved row and enforces 262,144 UTF-8 text bytes.
+
+Same-origin form checks require the actual external scheme/host/port, including
+explicit ports and IPv6. Trust only configured deployment proxies/root paths;
+arbitrary forwarded-host headers cannot redefine the origin. These are local
+browser safeguards, not authentication. Existing JSON review APIs, ordinary
+notebook pagination and runtime model defaults are unchanged.
+
 ## Portable human-review notebook bounds
 
 `GET /runs/{run_id}/notebook` and the exact-ID query-addressed native download

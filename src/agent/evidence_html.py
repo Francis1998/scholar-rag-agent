@@ -64,6 +64,7 @@ class BrowserNavigation:
     export_url: str | None = None
     notebook_url: str | None = None
     annotation_urls: Mapping[str, str] | None = None
+    review_url: str | None = None
 
 
 def _local_link(identifier: str, label: str, url: str) -> str:
@@ -87,6 +88,8 @@ def _navigation(links: BrowserNavigation) -> Iterator[str]:
     ]
     if links.notebook_url is not None:
         destinations.append(("review-notebook", "Human-review notebook", links.notebook_url))
+    if links.review_url is not None:
+        destinations.append(("review-answer", "Review this saved answer", links.review_url))
     if links.export_url is not None:
         if urlsplit(links.export_url).query or urlsplit(links.export_url).fragment:
             raise ValueError("Evidence download navigation requires a path without a query.")

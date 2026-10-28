@@ -591,6 +591,34 @@ scientific validity; unselected rows and document bodies are not audited.
 Data and errors use no-store/nosniff headers, without adding access control.
 See [the exact drift contract and limitations](docs/guides/CORPUS_DRIFT_GUIDE.md).
 
+## Native Human Verdicts on Saved Answers
+
+The [saved-answer review workbench](docs/guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md)
+shows the original answer, both warning sets and full frozen sources before
+an explicit accepted/needs_revision/rejected decision. Opening and previewing
+never write; only Save appends through the existing review service. Optional
+citations must be real frozen chunk IDs, not copied current-corpus IDs.
+Existing identity/Unicode/comment validation, append-only UUID conflicts and
+original timestamps remain authoritative. There is no default acceptance,
+authenticated reviewer, consensus, active learning or scientific validation.
+
+Shared native forms reject ambiguous fields, malformed encoding, GET bodies,
+POST queries and cross-origin submissions. Authoring queries are at most 64 KiB,
+streamed bodies 512 KiB, return queries 16 KiB, complete escaped pages 1 MiB,
+and exact opinion reads 256 KiB of UTF-8 text. Save preflights the complete
+persisted reader before writing, using maximum server-field widths. Nothing is
+clipped. A UUID-addressed GET rereads that opinion rather than a moving page.
+Frozen evidence/opinion reads are separate snapshots, not a signed audit trail.
+
+Keep local/trusted access and host/proxy controls: same-origin headers do not
+authenticate direct clients or defend against DNS rebinding. Script-free,
+hash-only CSS, no-store/nosniff and frame denial remain in place. Authoring
+surfaces use same-origin referrers so native POST Origin works; persisted
+readers retain no-referrer. Comments stay out of redirect URLs, not browser
+resubmission state or infrastructure logs. Screenshots, history and downloads
+can retain sensitive content. No corpus, retrieval, provider, event, annotation
+or screening work occurs during authoring; startup remains unchanged.
+
 ## Human Notes on Frozen Quotes
 
 Saved-run annotations validate exact frozen chunk/document IDs, whole-source

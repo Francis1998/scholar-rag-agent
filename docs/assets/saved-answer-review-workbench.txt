@@ -1,0 +1,14 @@
+Saved-answer review workbench / executed original synthetic workflow
+Setup: one manually recorded eight-event fixture; no model or retrieval setup.
+Mounted native route: saved answer -> compose -> preview -> explicit save -> exact UUID.
+Explicit verdict: needs_revision; one actual frozen chunk selected by the human.
+Comment: leading/trailing spaces, CRLF, combining mark, emoji and literal markup retained.
+GET and preview: no service writes; database bytes unchanged.
+Save: 303 to exact persisted opinion; comment absent from GET URLs.
+Unchanged retry: 303; one record with original UUID, sequence and timestamp.
+Cross-origin: 403; unknown frozen source: 422; changed UUID payload: 409.
+Current corpus changed, deleted, app restarted: preview, opinion and frozen evidence identical.
+Python/API records equal; agent events unchanged: 8; forbidden calls: 0.
+GIF: four actual local browser screenshots, not a continuous recording.
+Capture: isolated Chrome renderings of guarded HTTP responses, not a live-click workflow.
+Synthetic human opinions are not scientific validation or authenticated approval.
