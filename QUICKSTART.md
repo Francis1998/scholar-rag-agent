@@ -254,6 +254,12 @@ is still executing, and a legacy `DONE` record may not have exportable evidence.
 The [run-history guide](docs/guides/RUN_HISTORY_GUIDE.md) includes a complete
 offline restart demonstration, filtering, pagination, and Python contracts.
 
+Restarting the same file is not a backup. Before maintenance, follow the
+[SQLite backup and recovery walkthrough](docs/guides/SQLITE_BACKUP_RESTORE_GUIDE.md)
+to preserve the corpus, collections, screening history, frozen runs and human
+opinions, then verify a fresh restored copy without model calls. Notebook and
+evidence downloads are useful portable artifacts, not whole-database backups.
+
 ### Read recorded human opinions in the browser
 
 Open `http://127.0.0.1:8000/explore/runs`, select a completed run's
