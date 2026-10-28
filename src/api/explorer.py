@@ -106,8 +106,10 @@ input, select, textarea { width: 100%; min-height: 2.75rem; font: inherit;
   background: #fff; color: #182b3a; }
 textarea { min-height: 7rem; resize: vertical; }
 .worksheet-input { grid-column: 1 / -1; }
-.review-source-choice input[type="checkbox"] { width: 1.25rem; min-height: 1.25rem;
+.review-source-choice input[type="checkbox"],
+.collection-choice input[type="checkbox"] { width: 1.25rem; min-height: 1.25rem;
   vertical-align: middle; margin-right: .5rem; }
+.collection-choices { min-width: 0; border: 0; padding: 0; }
 .worksheet-grid { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: white; }
 th, td { border: 1px solid #c4d3df; padding: .65rem; text-align: left; vertical-align: top; }
@@ -228,6 +230,28 @@ _COLLECTION_FOOTER = (
     "are literal text, never external links. Browsing cannot repair invalid stored data."
     "</p></footer></body></html>"
 )
+_CREATION_FOOTER = (
+    "</main><footer><h2>Explicit selections, local trusted use only</h2>"
+    "<p>Only Create collection writes metadata through the existing atomic collection store. "
+    "GET never writes. No models, retrieval, network, screening decisions, corpus edits or "
+    "agent events run during creation or browsing. Startup still initializes stores and "
+    "loads indexes. Membership saves IDs, not frozen paper text or scientific validation.</p>"
+    "<p>No JavaScript, external resources, cookies or browser storage are used. There is no "
+    "authentication or tenant isolation. Keep this app on loopback or behind your own access "
+    "controls and trusted host/proxy configuration. Exact Origin checks block cross-origin "
+    "browser posts, not direct clients, malicious local processes or DNS rebinding. "
+    "The existing JSON API retains its independent contract.</p>"
+    "<p>Names and selections may be sensitive; do not enter credentials or personal data. "
+    "POST keeps them out of the redirect URL, not browser resubmission state or infrastructure "
+    "logs. Filters/IDs can remain in history. Same-origin referrer policy may send this local "
+    "page URL to the same server, never as a cross-origin referrer. No-store cannot prevent "
+    "saving or screenshots. After a network failure, inspect saved collections before retrying; "
+    "creation has no idempotency token and a repeated name conflicts.</p>"
+    "<p>Exact IDs use JSON strings so control characters, slashes and Unicode survive native "
+    "checkboxes. Decode quotes/escapes when a raw ID is needed. Source labels are literal "
+    "text, never external links. Other browser tools remain separate explicit actions."
+    "</p></footer></body></html>"
+)
 _SCREENING_FOOTER = (
     "</main><footer><h2>Explicit human opinions, local trusted use only</h2>"
     "<p>Only an explicit form POST records one decision and appends its history. GET never "
@@ -341,6 +365,7 @@ def _page(
     screening: bool = False,
     annotation: bool = False,
     review: bool = False,
+    creation: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -371,7 +396,14 @@ def _page(
         subject = "SAVED ANSWER REVIEW"
         description = "Inspect frozen evidence, preview your own verdict, then explicitly save it."
         footer = _REVIEW_FOOTER
-    mode = "EXPLICIT HUMAN WRITE" if screening or annotation or review else "READ-ONLY"
+    if creation:
+        subject = "PAPER COLLECTION BUILDER"
+        description = (
+            "Choose exact papers on one page, name your selection, then explicitly save it."
+        )
+        footer = _CREATION_FOOTER
+    writes = screening or annotation or review or creation
+    mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -392,7 +424,7 @@ def _page(
     return HTMLResponse(
         bytes(content),
         status_code=status,
-        headers=_WRITE_HEADERS if screening or annotation or review else _HEADERS,
+        headers=_WRITE_HEADERS if writes else _HEADERS,
     )
 
 
@@ -410,6 +442,7 @@ def _error(
     screening: bool = False,
     annotation: bool = False,
     review: bool = False,
+    creation: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -429,6 +462,7 @@ def _error(
         screening=screening,
         annotation=annotation,
         review=review,
+        creation=creation,
     )
 
 
@@ -813,8 +847,15 @@ _RESPONSES: dict[int | str, dict[str, str]] = {
 router = APIRouter(route_class=_ExplorerRoute, tags=["Local corpus explorer"])
 
 
-def _filters(limit: int, source: str | None, title: str | None, root_path: str) -> Iterator[str]:
-    catalog_path = _escaped(root_path + "/explore")
+def _filters(
+    limit: int,
+    source: str | None,
+    title: str | None,
+    root_path: str,
+    *,
+    endpoint: str = "/explore",
+) -> Iterator[str]:
+    catalog_path = _escaped(root_path + endpoint)
     yield '<section aria-labelledby="filters"><h2 id="filters">Filter stored papers</h2>'
     if any(character in (source or "") + (title or "") for character in "\0\r\n"):
         yield (
@@ -1155,6 +1196,14 @@ def _catalog(
         "saved-collections",
         _url(root_path + "/explore/collections", {"limit": DEFAULT_PAGE_SIZE, **search_params}),
         "Browse saved collections",
+    )
+    yield _link(
+        "create-collection",
+        _url(
+            root_path + "/explore/collections/new",
+            {"limit": limit, "source": source, "title": title, "cursor": cursor},
+        ),
+        "Create a paper collection",
     )
     yield "</nav>"
     yield from _filters(limit, source, title, root_path)

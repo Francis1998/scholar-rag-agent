@@ -48,6 +48,7 @@ PDF-upload UI.
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Find exact wording and read its source in a browser | Search from `/explore`, inspect highlighted Unicode spans, page within an exact paper/collection, and return from source context without generation | [Browser/API/Python passage search](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Create a named selection without curl or manual JSON | Filter a bounded catalog page, explicitly check exact papers, save a name and reopen persisted membership | [Native collection builder: offline/browser/API/Python/portfolio guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md) |
 | Browse saved collections and human screening | Discover collections from `/explore`, inspect membership/status/reasons, follow exact readers and download revision-bound screening/duplicate outputs | [Native collection browser and executed demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) |
 | Inspect duplicate candidates before screening | Read a revision-checked selection in one bounded snapshot; review exact IDs, raw metadata, reasons and singletons without hiding or deleting papers | [Collection duplicate inspection and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
@@ -80,6 +81,24 @@ PDF-upload UI.
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Build a paper collection in your browser
+
+[![Measured native collection creation, atomic failures and restart](docs/assets/collection-builder.png)](docs/assets/collection-builder.gif)
+
+Choose **Create a paper collection** from the corpus explorer or saved collections.
+Filter one bounded page, check the exact papers yourself, name the selection,
+then explicitly create it. Nothing is selected by default or carried silently
+across pages. Atomic storage rejects missing papers and duplicate names; a 303
+opens persisted membership with screening/search/worksheet links.
+
+The [complete guide and reproducible offline demo](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md)
+cover exact control-character IDs, restart, same-origin writes, finite bounds
+and local/trusted privacy. The opt-in GIF is a **measured-output Pillow
+illustration, not browser footage** or scientific findings; a
+[text alternative](docs/assets/collection-builder.txt) records executed outcomes.
+No models, retrieval, network or agent events run during creation, and membership
+does not freeze paper contents.
 
 ## Explicitly screen a paper in your browser
 

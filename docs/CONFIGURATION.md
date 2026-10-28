@@ -160,6 +160,13 @@ for percent-encoded Unicode. Ordinary worksheet GET queries remain limited to
 16,384 bytes and POST bodies to 65,536. Return state is bounded JSON data, not
 an external URL or access token. Existing download bounds are unchanged.
 
+The separate [native collection builder](guides/NATIVE_COLLECTION_BUILDER_GUIDE.md)
+reuses the document catalog and atomic collection store without new settings:
+1-100 checked exact IDs on one UI page, name 1-120 characters after trimming,
+16-KiB query, 256-KiB body, 101 indexed form fields and 1-MiB escaped HTML.
+Its same-origin POST saves metadata only; GET and pagination never save or
+preserve a multi-page cart. The guide covers Origin/proxy setup and privacy.
+
 ## Screening-history bounds
 
 [Human decision history](guides/SCREENING_HISTORY_GUIDE.md) needs no new dependency,

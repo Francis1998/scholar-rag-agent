@@ -3,7 +3,10 @@
 Open **Browse saved collections** from `/explore`. This native, script-free
 workflow discovers saved selections, inspects current membership and human
 screening, and hands off to the existing readers and downloads. It does not
-create collections, record decisions on GET, select evidence automatically, or deduplicate.
+create collections on GET, record decisions on GET, select evidence automatically, or deduplicate.
+**Create a paper collection** opens the separate
+[native builder](NATIVE_COLLECTION_BUILDER_GUIDE.md); only its explicit POST
+saves a checked named selection.
 Member cards now link to the separate [explicit native screening
 workbench](HUMAN_SCREENING_WORKBENCH_GUIDE.md); only its same-origin form POST writes.
 
@@ -17,7 +20,8 @@ checks restart behavior, and measures forbidden calls. Reproduce it below.
 ## End-user workflow
 
 Start the isolated loopback API in the [Quickstart](../../QUICKSTART.md), ingest
-permitted papers, and save a selection through the existing
+permitted papers, and save a selection through the
+[native builder](NATIVE_COLLECTION_BUILDER_GUIDE.md) or existing
 [collection API/Python interface](PAPER_COLLECTIONS_GUIDE.md). Human decisions
 remain explicit operations in the [screening interface](PAPER_SCREENING_GUIDE.md).
 No key, new setting, migration, browser package, or front-end framework is needed.

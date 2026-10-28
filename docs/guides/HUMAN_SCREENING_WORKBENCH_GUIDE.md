@@ -16,8 +16,9 @@ reproducible offline demo below expose what actually ran.
 
 Start the isolated loopback service using the [Quickstart](../../QUICKSTART.md).
 Use original synthetic notes or papers you are authorized to process. Ingest
-them and save a collection through the existing
-[collection API/Python interface](PAPER_COLLECTIONS_GUIDE.md); this workbench
+them and save a collection through the
+[native collection builder](NATIVE_COLLECTION_BUILDER_GUIDE.md) or existing
+[collection API/Python interface](PAPER_COLLECTIONS_GUIDE.md); this screening workbench
 does not ingest, create, rename or remove collections.
 
 1. Open `http://127.0.0.1:8000/explore`, choose **Browse saved collections**,

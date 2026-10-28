@@ -153,7 +153,9 @@ def _no_work(*args: object, **kwargs: object) -> NoReturn:
 
 
 @contextmanager
-def browsing_guards(container: AppContainer) -> Iterator[dict[str, Mock]]:
+def browsing_guards(
+    container: AppContainer, *, allow_collection_create: bool = False
+) -> Iterator[dict[str, Mock]]:
     """Make forbidden work a failing measurement, not an assumption about a fake provider."""
     with ExitStack() as stack:
         guards = {}
@@ -174,6 +176,12 @@ def browsing_guards(container: AppContainer) -> Iterator[dict[str, Mock]]:
             (httpx.HTTPTransport, "handle_request"),
             (httpx.AsyncHTTPTransport, "handle_async_request"),
         ):
+            if (
+                allow_collection_create
+                and target is container.paper_collections
+                and method == "create"
+            ):
+                continue
             name = f"{getattr(target, '__name__', type(target).__name__)}.{method}"
             guards[name] = stack.enter_context(patch.object(target, method, side_effect=_no_work))
         yield guards

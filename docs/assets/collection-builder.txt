@@ -1,0 +1,20 @@
+1. Discover exact papers without writes
+Synthetic corpus: 5 papers; filtered page sizes: [2, 1].
+Preselected checkboxes: 0; GET database unchanged.
+Both catalog and saved-collection links open the same bounded builder.
+
+2. Explicitly save one named selection
+Checked IDs saved: 2; collection count: 1.
+Native POST: 303; persisted revision: 1.
+Slash, CRLF, NUL and Unicode IDs round-trip; the later page is not selected.
+
+3. Reject unsafe or invalid submissions atomically
+Duplicate name: 409; empty: 422; unknown ID: 422; cross-origin: 403.
+Rejected writes leave database bytes unchanged: True.
+Create service attempts: 3; one successful collection, no partial selection.
+
+4. Reopen after restart and choose the next action
+Python/JSON equal: True; restart HTML identical: True.
+Opened handoffs: screening, search, worksheet.
+Agent events: 0; forbidden calls: 0.
+Executed synthetic HTTP measurements, not scientific findings or a performance benchmark.
