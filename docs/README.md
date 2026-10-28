@@ -57,6 +57,7 @@ accumulated feature list in the project README.
 | --- | --- |
 | [Configuration](../CONFIGURATION.md) | Environment variables and defaults |
 | [Extended configuration](CONFIGURATION.md) | Configuration examples |
+| [SQLite backup and recovery](guides/SQLITE_BACKUP_RESTORE_GUIDE.md) | Safe new-path backups/restores and an offline synthetic recovery exercise |
 | [Safety](../SAFETY.md) | Execution bounds, grounding limitations, and data handling |
 | [Troubleshooting](TROUBLESHOOTING.md) | Setup and runtime troubleshooting |
 | [Performance](PERFORMANCE.md) | Tuning notes, not measured product benchmarks |
