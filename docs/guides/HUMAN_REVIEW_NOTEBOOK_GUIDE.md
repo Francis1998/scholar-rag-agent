@@ -42,7 +42,11 @@ The still preview makes animation opt-in.
    state; its notebook entry starts a fresh opinion traversal.
 7. Empty histories mean no recorded opinions, not endorsement. Conflicting
    decisions coexist; the UI does not infer consensus, an overall verdict or
-   total-history counts. To add an opinion, use the existing
+   total-history counts. **Reopen this exact saved opinion** follows a stable
+   review UUID rather than its page position. To add an opinion, choose
+   **Review this saved answer** for the separate
+   [native verdict/comment preview-and-save workbench](SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md),
+   or use the existing
    [review API/Python service](ANSWER_REVIEWS_GUIDE.md) or
    [exact-annotation API/Python service](EVIDENCE_ANNOTATIONS_GUIDE.md), or choose
    **Annotate frozen evidence N** in the separate

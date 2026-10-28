@@ -68,6 +68,7 @@ PDF-upload UI.
 | Read a completed answer offline | Download one static HTML file with proposed/accepted citation links to frozen passages, recorded provenance and expandable trace; no scripts or network | [Offline evidence reader and measured demo](docs/guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
 | Import only a saved answer's cited references | Download frozen-source BibTeX plus exact document/chunk provenance and metadata warnings; no generation or DOI lookup | [Saved bibliography and measured demo](docs/guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record a human judgment on a saved answer | Append `accepted`, `needs_revision`, or `rejected` opinions with comments and frozen chunk references; recover history after restart | [Saved answer reviews](docs/guides/ANSWER_REVIEWS_GUIDE.md) |
+| Author a saved-answer verdict in a normal browser | Inspect frozen evidence and warnings, choose your verdict/comment/citations, preview without writes, then explicitly save and reopen the precise opinion | [Saved-answer review workbench: user/API/Python/portfolio guide and actual browser GIF](docs/guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md) |
 | Attach a human note to an exact saved passage | Validate frozen source IDs, SHA-256, Unicode offsets, and quote; keep immutable retry-safe notes after corpus changes and restart | [Exact frozen-evidence annotations](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Author an exact-source note in a normal browser | Choose a frozen span, preview your note without writes, explicitly save, and reopen the exact persisted quote with retry-safe identity | [Frozen annotation workbench: user/API/Python/portfolio guide and actual browser GIF](docs/guides/FROZEN_ANNOTATION_WORKBENCH_GUIDE.md) |
 | Read saved human feedback in a normal browser | Open a completed run's notebook, page independent review/annotation histories, and highlight an annotation's exact occurrence in its frozen source | [Human-review notebook and actual browser GIF](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
@@ -173,6 +174,26 @@ only the recorded occurrence highlighted. Human opinions remain separate from
 model grounding and scientific truth; no browser writes or model calls occur.
 The [user/portfolio guide](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) reproduces
 this actual screenshot sequence, including corpus deletion/restart checks.
+
+### Author your own saved-answer verdict
+
+[![Actual native browser view of the synthetic saved answer](docs/assets/saved-answer-review-workbench.png)](docs/assets/saved-answer-review-workbench.gif)
+
+Choose **Review this saved answer** from its reader or notebook. Inspect both
+warning sets and full frozen passages, explicitly choose accepted/needs_revision/
+rejected, enter your comment and optionally select actual frozen IDs. Preview
+without writes, then **Save review** for a same-origin POST and a 303 to that
+precise persisted UUID. Exact retries preserve sequence/time; different content
+under the same UUID conflicts. The original JSON API and notebook pagination
+are unchanged. No models, retrieval, event changes, automatic acceptance or
+authenticated approval are implied.
+
+The [complete user/API/Python/portfolio guide](docs/guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md)
+reproduces the guarded synthetic HTTP workflow and four actual browser renderings
+of those already-executed responses, not recorded/live-click browser footage or a
+scientific result. HTTP persistence is verified separately. A
+[text alternative](docs/assets/saved-answer-review-workbench.txt) is available;
+the still makes animation opt-in.
 
 ### Preview and save an exact frozen-source note
 

@@ -12,6 +12,7 @@ from agent.evidence import EvidenceBundle, EvidenceSource
 from agent.review_models import (
     DEFAULT_REVIEW_LIMIT,
     ReviewHistoryPage,
+    SavedAnswerReview,
     invalid_review_record,
 )
 from api.dependencies import AppContainer
@@ -22,6 +23,7 @@ from api.run_explorer import (
     _HistoryCursor,
     _HistoryLimit,
     _navigation,
+    _review_url,
     _RunExplorerRoute,
     _RunParameters,
 )
@@ -146,30 +148,15 @@ def _reviews(
         f"<p>{len(page.reviews)} reviews on this page (limit {options.review_limit}). "
         "Newest sequence first; the cursor selects strictly older sequences.</p>"
     )
-    sources = {source.chunk.chunk_id: source for source in bundle.snapshot.sources}
     for review in page.reviews:
         yield f'<article id="review-{review.sequence}"><h3>Review sequence {review.sequence}</h3>'
-        yield "<dl>" + _field("Decision (human opinion)", review.decision.value, "review-decision")
-        yield _field("Review UUID (not a person)", str(review.review_id), "review-id")
-        yield _field("Sequence", str(review.sequence), "review-sequence")
-        yield _field("Record schema", review.schema_version, "record-schema")
-        yield _timestamp(review.created_at.isoformat()) + "</dl><h4>Exact recorded comment</h4>"
-        yield _literal(review.comment, "review-comment")
-        yield "<h4>Cited frozen passages</h4>"
-        if not review.cited_chunk_ids:
-            yield "<p>This review cites no frozen passages.</p>"
-        for number, chunk_id in enumerate(review.cited_chunk_ids, 1):
-            source = sources.get(chunk_id)
-            if source is None:
-                raise invalid_review_record()
-            yield _link(
-                f"review-source-{review.sequence}-{number}",
-                options.evidence_url(root_path) + f"#source-{source.rank}",
-                f"Frozen evidence {source.rank}",
-            )
-            yield "<dl><dt>Document ID (JSON)</dt><dd>"
-            yield _identity(source.chunk.document_id, "document-id") + "</dd>"
-            yield "<dt>Chunk ID (JSON)</dt><dd>" + _identity(chunk_id, "chunk-id") + "</dd></dl>"
+        yield _link(
+            f"review-detail-{review.sequence}",
+            _review_url(options.notebook_parameters(), root_path, str(review.review_id))
+            + "#saved-review",
+            "Reopen this exact saved opinion",
+        )
+        yield from _review_record(review, bundle, options, root_path)
         yield "</article>"
     if not page.reviews:
         yield (
@@ -179,6 +166,36 @@ def _reviews(
         )
     yield from _paging(options, root_path, "review", page.next_cursor)
     yield "</section>"
+
+
+def _review_record(
+    review: SavedAnswerReview,
+    bundle: EvidenceBundle,
+    options: _NotebookParameters,
+    root_path: str,
+) -> Iterator[str]:
+    sources = {source.chunk.chunk_id: source for source in bundle.snapshot.sources}
+    yield "<dl>" + _field("Decision (human opinion)", review.decision.value, "review-decision")
+    yield _field("Review UUID (not a person)", str(review.review_id), "review-id")
+    yield _field("Sequence", str(review.sequence), "review-sequence")
+    yield _field("Record schema", review.schema_version, "record-schema")
+    yield _timestamp(review.created_at.isoformat()) + "</dl><h4>Exact recorded comment</h4>"
+    yield _literal(review.comment, "review-comment")
+    yield "<h4>Cited frozen passages</h4>"
+    if not review.cited_chunk_ids:
+        yield "<p>This review cites no frozen passages.</p>"
+    for number, chunk_id in enumerate(review.cited_chunk_ids, 1):
+        source = sources.get(chunk_id)
+        if source is None:
+            raise invalid_review_record()
+        yield _link(
+            f"review-source-{review.sequence}-{number}",
+            options.evidence_url(root_path) + f"#source-{source.rank}",
+            f"Frozen evidence {source.rank}",
+        )
+        yield "<dl><dt>Document ID (JSON)</dt><dd>"
+        yield _identity(source.chunk.document_id, "document-id") + "</dd>"
+        yield "<dt>Chunk ID (JSON)</dt><dd>" + _identity(chunk_id, "chunk-id") + "</dd></dl>"
 
 
 def _annotation_record(saved: SavedEvidenceAnnotation) -> Iterator[str]:
@@ -239,6 +256,16 @@ def _notebook(
 ) -> Iterator[str]:
     yield _navigation(options, root_path) + _detail_navigation(options, root_path)
     yield _NOTICE
+    yield _link(
+        "review-answer",
+        _review_url(options.notebook_parameters(), root_path),
+        "Review this saved answer",
+    )
+    yield (
+        "<p>Open the separate composer to choose a verdict, preview your exact comment and "
+        "optional frozen citations, then explicitly save a new opinion. This notebook stays "
+        "read-only; existing opinions cannot be edited.</p>"
+    )
     yield '<nav aria-label="Complete notebook downloads">'
     for format, label in (("json", "JSON"), ("markdown", "Markdown")):
         url = _url(

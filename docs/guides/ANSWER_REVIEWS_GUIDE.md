@@ -8,7 +8,11 @@ To read recorded opinions without API tooling, choose **Human-review notebook**
 from a saved-run entry or its evidence reader. The
 [native notebook guide](HUMAN_REVIEW_NOTEBOOK_GUIDE.md) covers independent review
 and annotation pagination, exact frozen-quote highlighting and a real-browser
-demo. The browser is read-only; the submission contracts below are unchanged.
+demo. That notebook is read-only; the submission contracts below are unchanged.
+To author a verdict natively, choose **Review this saved answer** in the reader
+or notebook. The separate [review workbench](SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md)
+previews your explicit verdict, exact comment and optional frozen IDs without
+writes, then saves through this same service and reopens the precise UUID.
 
 **A human judgment is an opinion, not factual verification.** `accepted` does not
 prove a claim, remove grounding warnings, approve clinical use, or establish the

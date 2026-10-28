@@ -36,6 +36,7 @@ accumulated feature list in the project README.
 | Read a completed saved answer offline with local links to exact frozen passages | [Offline HTML evidence reader and measured demo](guides/OFFLINE_EVIDENCE_READER_GUIDE.md) |
 | Export only a completed saved answer's cited references as BibTeX with provenance | [Saved bibliography and measured offline demo](guides/SAVED_BIBLIOGRAPHY_GUIDE.md) |
 | Record human judgments and recover append-only saved-answer review history | [Saved answer reviews and offline demo](guides/ANSWER_REVIEWS_GUIDE.md) |
+| Preview an explicit verdict/comment/frozen citations in a native browser, save and reopen the precise opinion | [Saved-answer review workbench: user/API/Python/portfolio guide and actual browser GIF/still/text](guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md) |
 | Save immutable human notes on exact character spans in frozen run evidence | [Exact quote annotations and measured offline demo](guides/EVIDENCE_ANNOTATIONS_GUIDE.md) |
 | Preview and explicitly save a note on one exact frozen occurrence from the native reader/notebook | [Frozen annotation workbench: user/API/Python/portfolio guide and actual browser GIF/still/text](guides/FROZEN_ANNOTATION_WORKBENCH_GUIDE.md) |
 | Read independent human-review histories and follow exact frozen quote highlights from a saved run | [Native human-review notebook: user/API/Python/portfolio guide and actual browser GIF](guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |

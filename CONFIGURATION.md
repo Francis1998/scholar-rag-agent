@@ -146,6 +146,15 @@ cap. IDs and quote selectors come from a completed saved snapshot, not current
 model settings or corpus contents. See
 [the annotation contract and isolated demo](docs/guides/EVIDENCE_ANNOTATIONS_GUIDE.md).
 
+The [saved-answer review workbench](docs/guides/SAVED_ANSWER_REVIEW_WORKBENCH_GUIDE.md)
+adds no setting, dependency, provider default or schema. Native queries allow
+64 KiB, streamed forms 512 KiB, generated return queries 16 KiB, full escaped
+pages 1 MiB, and precise review reads 256 KiB of UTF-8 text. These are fixed
+bounds, not new model budgets. Existing comment limits (4000 code points),
+review identities and UUID retry/conflict rules apply. Native writes require
+the exact same-origin scheme/host/port; configure trusted proxy/root-path
+settings rather than weakening checks. The JSON API contract is unchanged.
+
 The [human-review notebook](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) adds no
 settings, dependencies or tables. Each opinion history uses 1-100 rows (default
 20), independently; complete escaped HTML is limited to 1 MiB and native
