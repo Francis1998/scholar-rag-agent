@@ -176,6 +176,9 @@ class BM25Retriever:
         frequencies = self._term_frequencies[chunk_id]
         document_length = self._document_lengths[chunk_id]
         corpus_size = max(len(self._chunks), 1)
+        # Scale the saturation ratio before multiplication, including at k1=0.
+        k1_plus_one = self._k1 + 1
+        scaled_k1 = self._k1 / k1_plus_one
         for term in query_terms:
             term_frequency = frequencies.get(term, 0)
             if term_frequency == 0:
@@ -185,8 +188,8 @@ class BM25Retriever:
                 1 + (corpus_size - document_frequency + 0.5) / (document_frequency + 0.5)
             )
             # A matching term guarantees a positive corpus average.
-            denominator = term_frequency + self._k1 * (
+            denominator = term_frequency / k1_plus_one + scaled_k1 * (
                 1 - self._b + self._b * document_length / self._average_length
             )
-            score += idf * (term_frequency * (self._k1 + 1)) / denominator
+            score += idf * (term_frequency / denominator)
         return score

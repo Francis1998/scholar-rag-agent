@@ -184,8 +184,11 @@ or retrieval. Values are not clamped or parsed from strings.
 With `k1=0`, each matching query term contributes its inverse-document-frequency
 weight regardless of frequency or chunk length. `b=0` disables length
 normalization; `b=1` applies it fully. There is no arbitrary upper cap on `k1`,
-but constructor validation does not make extreme finite values overflow-safe
-in the existing scoring arithmetic. The benchmark command still uses the
+including the largest finite float. Scoring divides the saturation numerator
+and denominator by `k1 + 1` before forming products, then applies IDF to the
+completed ratio. This prevents intermediate overflow for extreme finite tuning
+without clamping scores or dropping matches. Default and ordinary scores are
+preserved up to floating-point roundoff. The benchmark command still uses the
 defaults; these are library parameters, not new CLI options.
 
 ### BM25 score normalization

@@ -172,8 +172,13 @@ def test_finite_k1_is_not_clamped(k1: float) -> None:
 
 @pytest.mark.parametrize(
     ("k1", "b"),
-    [(Fraction(3, 5), Fraction(1, 5)), (0, 1)],
-    ids=["custom-real-fractions", "zero-k1"],
+    [
+        pytest.param(Fraction(3, 5), Fraction(1, 5), id="custom-real-fractions"),
+        pytest.param(0, 1, id="zero-k1"),
+        pytest.param(sys.float_info.max, 0, id="maximum-k1-no-normalization"),
+        pytest.param(sys.float_info.max, 0.75, id="maximum-k1-default-normalization"),
+        pytest.param(sys.float_info.max, 1, id="maximum-k1-full-normalization"),
+    ],
 )
 async def test_document_replacement_preserves_valid_tuning(k1: float, b: float) -> None:
     short, repeated, other = corpus()
@@ -189,6 +194,7 @@ async def test_document_replacement_preserves_valid_tuning(k1: float, b: float) 
     fresh.add_chunks(corpus())
     results = await retriever.retrieve("alpha")
 
+    assert all(math.isfinite(result.score) for result in results)
     assert results == await fresh.retrieve("alpha")
     assert {result.chunk.chunk_id for result in results} == {"short", "repeat", "other"}
     assert retriever._k1 == k1

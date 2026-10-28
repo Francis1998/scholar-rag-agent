@@ -1,6 +1,9 @@
 """BM25 length normalization must use the true positive mean of indexed chunks."""
 
 import math
+import sys
+from decimal import Decimal, localcontext
+from fractions import Fraction
 from pathlib import Path
 
 import httpx
@@ -40,11 +43,82 @@ def reference_score(
     b: float = 0.75,
 ) -> float:
     """Calculate one matched term's BM25 score from explicit, independent fixture counts."""
-    average_length = total_length / corpus_size
-    idf = math.log((corpus_size + 1) / (document_frequency + 0.5))
-    return (
-        idf * (k1 + 1) / (1 + k1 / term_frequency * (1 - b + b * document_length / average_length))
-    )
+    with localcontext() as context:
+        context.prec = 80
+        saturation = Decimal(float(k1))
+        normalization = Decimal(float(b))
+        frequency = Decimal(term_frequency)
+        average_length = Decimal(total_length) / corpus_size
+        idf = ((Decimal(corpus_size) + 1) / (Decimal(document_frequency) + Decimal("0.5"))).ln()
+        denominator = frequency + saturation * (
+            1 - normalization + normalization * document_length / average_length
+        )
+        return float(idf * frequency * (saturation + 1) / denominator)
+
+
+@pytest.mark.parametrize(
+    "k1",
+    [
+        pytest.param(0, id="zero"),
+        pytest.param(math.nextafter(0.0, math.inf), id="smallest-positive"),
+        pytest.param(sys.float_info.min, id="smallest-normal"),
+        pytest.param(1.5, id="default"),
+        pytest.param(1e154, id="large"),
+        pytest.param(1e308, id="near-maximum"),
+        pytest.param(math.nextafter(sys.float_info.max, 0.0), id="below-maximum"),
+        pytest.param(sys.float_info.max, id="maximum"),
+        pytest.param(10**308, id="large-integer"),
+        pytest.param(Fraction(sys.float_info.max), id="maximum-fraction"),
+    ],
+)
+@pytest.mark.parametrize("b", [0.0, 0.75, math.nextafter(1.0, 0.0), 1.0])
+@pytest.mark.parametrize(
+    "texts",
+    [
+        pytest.param(("alpha alpha beta", "alpha beta gamma"), id="equal-lengths"),
+        pytest.param(("alpha alpha beta gamma delta", "alpha", "beta " * 50), id="unequal-lengths"),
+        pytest.param(("alpha alpha", "", "", "", ""), id="fractional-average"),
+        pytest.param(("alpha", "", ""), id="denominator-only-overflow"),
+        pytest.param(("alpha", "beta", "gamma", "delta", "epsilon"), id="idf-above-one"),
+    ],
+)
+async def test_finite_tuning_matches_high_precision_scores(
+    k1: float, b: float, texts: tuple[str, ...]
+) -> None:
+    chunks = [make_chunk(str(index), text) for index, text in enumerate(texts)]
+    retriever = BM25Retriever(k1=k1, b=b)
+    retriever.add_chunks(list(reversed(chunks)))
+    fixture_terms = [text.split() for text in texts]
+    total_length = sum(len(terms) for terms in fixture_terms)
+    document_frequency = sum("alpha" in terms for terms in fixture_terms)
+    expected = {
+        chunk.chunk_id: (
+            reference_score(
+                term_frequency=terms.count("alpha"),
+                document_length=len(terms),
+                corpus_size=len(chunks),
+                total_length=total_length,
+                document_frequency=document_frequency,
+                k1=k1,
+                b=b,
+            )
+            if "alpha" in terms
+            else 0.0
+        )
+        for chunk, terms in zip(chunks, fixture_terms, strict=True)
+    }
+
+    for query, repetitions in [("alpha", 1), ("ALPHA, alpha missing", 2)]:
+        results = await retriever.retrieve(query)
+
+        assert all(math.isfinite(result.score) for result in results)
+        for result in results:
+            assert result.score == pytest.approx(
+                expected[result.chunk.chunk_id] * repetitions, rel=2e-14, abs=0.0
+            )
+        assert [result.chunk.chunk_id for result in results] == sorted(
+            expected, key=lambda chunk_id: (-expected[chunk_id], chunk_id)
+        )
 
 
 async def test_one_token_and_one_empty_chunk_use_half_token_average() -> None:
@@ -153,9 +227,11 @@ async def test_no_matching_query_returns_finite_zeros_in_id_order(query: str) ->
     assert all(math.isfinite(result.score) and result.score == 0.0 for result in results)
 
 
-async def test_document_scope_preserves_global_fractional_statistics() -> None:
+@pytest.mark.parametrize("k1", [0.0, 1.5, sys.float_info.max])
+@pytest.mark.parametrize("b", [0.0, 0.75, 1.0])
+async def test_document_scope_preserves_global_fractional_statistics(k1: float, b: float) -> None:
     selected = make_chunk("b", "alpha")
-    retriever = BM25Retriever()
+    retriever = BM25Retriever(k1=k1, b=b)
     retriever.add_chunks(
         [
             selected,
@@ -168,6 +244,7 @@ async def test_document_scope_preserves_global_fractional_statistics() -> None:
     [scoped] = await retriever.retrieve("alpha", limit=1, document_ids=["selected"])
 
     assert [result.chunk.chunk_id for result in all_results[:2]] == ["a", "b"]
+    assert await retriever.retrieve("alpha", limit=1) == all_results[:1]
     assert scoped == all_results[1]
     assert scoped.chunk == selected
     assert scoped.score == pytest.approx(
@@ -177,11 +254,15 @@ async def test_document_scope_preserves_global_fractional_statistics() -> None:
             corpus_size=6,
             total_length=2,
             document_frequency=2,
+            k1=k1,
+            b=b,
         )
     )
     assert await retriever.retrieve("alpha", document_ids=["missing"]) == []
+    assert await retriever.retrieve("alpha", limit=0, document_ids=["selected"]) == []
 
 
+@pytest.mark.parametrize("k1", [0.0, 1.5, sys.float_info.max])
 @pytest.mark.parametrize("same_batch", [False, True])
 @pytest.mark.parametrize(
     ("original_text", "replacement_text", "total_length"),
@@ -194,12 +275,12 @@ async def test_document_scope_preserves_global_fractional_statistics() -> None:
     ids=["one-to-quarter", "quarter-to-zero", "zero-to-quarter", "quarter-to-one"],
 )
 async def test_upsert_across_normalization_boundary_matches_fresh_index(
-    same_batch: bool, original_text: str, replacement_text: str, total_length: int
+    k1: float, same_batch: bool, original_text: str, replacement_text: str, total_length: int
 ) -> None:
     empty_chunks = [make_chunk(key, text) for key, text in [("a", ""), ("b", " "), ("c", "!!!")]]
     original = make_chunk("match", original_text)
     replacement = make_chunk("match", replacement_text)
-    retriever = BM25Retriever()
+    retriever = BM25Retriever(k1=k1)
     if same_batch:
         retriever.add_chunks([original, *empty_chunks, replacement, replacement])
     else:
@@ -207,7 +288,7 @@ async def test_upsert_across_normalization_boundary_matches_fresh_index(
         retriever.add_chunks([replacement])
         retriever.add_chunks([replacement])
         retriever.add_chunks([])
-    fresh = BM25Retriever()
+    fresh = BM25Retriever(k1=k1)
     fresh.add_chunks([*empty_chunks, replacement])
 
     results = await retriever.retrieve("alpha")
@@ -220,6 +301,7 @@ async def test_upsert_across_normalization_boundary_matches_fresh_index(
             document_length=total_length,
             corpus_size=4,
             total_length=total_length,
+            k1=k1,
         )
         if total_length
         else 0.0
@@ -229,14 +311,15 @@ async def test_upsert_across_normalization_boundary_matches_fresh_index(
     )
 
 
+@pytest.mark.parametrize(("k1", "b"), [(0.6, 0.2), (sys.float_info.max, 0.75)])
 async def test_small_window_ingestion_replacement_and_restart_preserve_scores(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, k1: float, b: float
 ) -> None:
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", deny_network)
     monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", deny_network)
     database = tmp_path / "normalization.sqlite3"
     store = SQLiteDocumentStore(database)
-    sparse = BM25Retriever(k1=0.6, b=0.2)
+    sparse = BM25Retriever(k1=k1, b=b)
     hybrid = HybridRetriever(DenseRetriever(), sparse, HyDEExpander())
     pipeline = IngestionPipeline(
         store,
@@ -261,7 +344,7 @@ async def test_small_window_ingestion_replacement_and_restart_preserve_scores(
         assert pipeline.ingest_documents([revision]) == chunks
         persisted = SQLiteDocumentStore(database).list_chunks()
         assert persisted == sorted([*retained, *chunks], key=lambda chunk: chunk.chunk_id)
-        restarted_sparse = BM25Retriever(k1=0.6, b=0.2)
+        restarted_sparse = BM25Retriever(k1=k1, b=b)
         restarted_hybrid = HybridRetriever(DenseRetriever(), restarted_sparse, HyDEExpander())
         restarted_hybrid.add_chunks(persisted)
 
@@ -273,8 +356,8 @@ async def test_small_window_ingestion_replacement_and_restart_preserve_scores(
                 document_length=1,
                 corpus_size=len(expected_texts) + 1,
                 total_length=total_length,
-                k1=0.6,
-                b=0.2,
+                k1=k1,
+                b=b,
             )
             if total_length
             else 0.0
