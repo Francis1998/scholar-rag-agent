@@ -210,13 +210,20 @@ Gemini/Kimi providers still handle SPEED/COST.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-25 America/Los_Angeles**;
+All four official model catalogs were checked again on **2026-10-28 America/Los_Angeles**;
 Google now names `gemini-4-argon` as its latest flagship, while this repository
-retains `gemini-3.8-flash` for its SPEED route. OpenAI positions `gpt-6.1-sol` as a
-balanced near-Astra option and `gpt-6-luna` for speed/cost-sensitive volume;
-Anthropic generally recommends Opus 5.5 and lists Fable 5.1 for demanding
-long-horizon reasoning and Haiku 5.5 for latency-sensitive work. These catalog
-alternatives do not replace the selected `gpt-6-astra` / `claude-sonnet-5-5` defaults.
+retains `gemini-3.8-flash` for its SPEED route. OpenAI's `gpt-6.1-terra` is an
+optional text-model override here, not a replacement for `gpt-6-astra`.
+Its tool calling requires Responses; selecting the ID does not add Responses,
+image input, or tools to this adapter. The
+[selection checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
+provides a credential-free environment example, bounded evaluation, exact
+provider/model evidence, and rollback to the previously selected ID.
+Kimi's [K2 notice](docs/guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
+restricts newly registered users from **2026-10-31**, leaving existing users
+unaffected by that immediate restriction, and plans all-K2 retirement by the
+end of December 2026, without an exact guaranteed date. Inspect legacy
+overrides; this is not a mandatory migration of the existing K3.1 default.
 The earlier Kimi K3.1 migration-contract check remains dated
 **2026-10-24 America/Los_Angeles**; the selected default remains `kimi-k3.1-pro`.
 Both K3.1 variants use K3's
