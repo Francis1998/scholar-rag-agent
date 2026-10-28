@@ -555,6 +555,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | [MeasurementScaleShiftCueExtractor](docs/guides/MEASUREMENT_SCALE_SHIFT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/measurement-scale-shift-cues.gif) |
 | [OveradjustmentBiasCueExtractor](docs/guides/OVERADJUSTMENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/overadjustment-bias-cues.gif) |
 | [CompetingRiskInformativeCensoringCueExtractor](docs/guides/COMPETING_RISK_INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/competing-risk-informative-censoring-cues.gif) |
+| [TargetTrialEmulationCueExtractor](docs/guides/TARGET_TRIAL_EMULATION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/target-trial-emulation-cues.gif) |
 | [SurveyModeEffectCueExtractor](docs/guides/SURVEY_MODE_EFFECT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/survey-mode-effect-cues.gif) |
 | [ColliderBiasInteractionCueExtractor](docs/guides/COLLIDER_BIAS_INTERACTION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/collider-bias-interaction-cues.gif) |
 | [AscertainmentDifferentialResidualCueExtractor](docs/guides/ASCERTAINMENT_DIFFERENTIAL_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/ascertainment-differential-residual-cues.gif) |
