@@ -32,12 +32,26 @@ and provenance IDs are whitespace-normalized without mutating the caller's lists
 `get_turns` returns a list of frozen `ChatTurn` values with tuple provenance;
 without a limit it returns all session turns in chronological order.
 `get_turns(..., limit=N)` returns the newest N turns, still in chronological order.
-`format_context` keeps the newest complete lines that fit `max_chars`; it returns
-an empty string if the session is empty or the newest line does not fit.
 
 `clear_session` returns the number of deleted rows for one session without
 affecting others. It is not a secure-erasure guarantee or a cleanup mechanism for
 backups, agent events, or other stored data.
+
+## Context character budget
+
+`format_context(session_id, max_chars=4000)` requires a positive Python `int`,
+excluding `bool`, with no upper cap. Zero, negative integers, all floats
+(including integral floats, NaN, and infinities), strings, `None`, and other
+non-integer values raise `ValueError("max_chars must be a positive integer")`.
+Validation occurs before `format_context` calls `get_turns` or accesses SQLite,
+even for a missing or blank session.
+
+The budget counts Python characters, not bytes or model tokens, including role
+prefixes and newline separators. Formatting keeps the newest contiguous suffix
+of complete turns in chronological order; it stops at the first turn that does
+not fit rather than skipping it to include older, shorter turns. It returns an
+empty string if the session is empty or the newest turn exceeds the budget.
+The default remains 4000 characters; `get_turns(..., limit=N)` is unchanged.
 
 ## Connection and transaction scope
 
@@ -59,20 +73,9 @@ Blank-session reads/clears, reads with a nonpositive limit, and input-validation
 failures do not open a connection. A nonblank session with no matching rows still
 opens and closes its read or delete connection.
 
-## Current provider catalog note
+## Provider compatibility
 
-Official catalogs checked **2026-10-07 America/Los_Angeles** list:
-
-- [OpenAI](https://developers.openai.com/api/docs/models.md): `gpt-6-astra`,
-  `gpt-6.1-sol`, and `gpt-6-luna`.
-- [Anthropic](https://platform.claude.com/docs/en/models/overview): Sonnet 5.5
-  (`claude-sonnet-5-5`), Opus 5.5, and Fable 5.1.
-- [Google](https://ai.google.dev/gemini-api/docs/latest-model): `gemini-3.8-flash`
-  is generally available.
-- [Moonshot](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart): `kimi-k3`.
-
-These names describe the current catalogs, not a model requirement for local
-memory or a live-inference/account-entitlement check. See the
+This helper is provider-agnostic and performs no model calls. See the shared
 [provider model guide](PROVIDER_MODELS_GUIDE.md) for selected defaults and
-separately dated payload/migration checks. This lifecycle fix changes no model
-selection, endpoint, routing, token budget, or provider contract.
+separately dated catalog and payload-compatibility notes. Context validation
+changes no model selection, endpoint, routing, or provider token budget.
