@@ -20,8 +20,8 @@ from pydantic import ValidationError
 from agent.evidence import EvidenceSnapshot
 from agent.models import AgentAnswer, AgentState, Citation, Claim, QueryPlan, StateTransition
 from agent.safety import with_timeout
+from api.application import create_app
 from api.dependencies import AppContainer
-from api.main import app
 from config import Settings
 from llm.schemas import LLMRequest, LLMResponse
 from retrieval.models import Chunk, Document, SearchResult
@@ -58,10 +58,10 @@ def no_live_call(*args: object, **kwargs: object) -> NoReturn:
 def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, AppContainer, Path]:
     """Give each test its own durable store and fail closed on live HTTP."""
     database_path = tmp_path / "evidence.sqlite3"
-    container = AppContainer(offline_settings(database_path))
-    monkeypatch.setattr(app.state, "container", container)
+    application = create_app(offline_settings(database_path))
+    container: AppContainer = application.state.container
     monkeypatch.setattr("httpx.AsyncClient.send", no_live_call)
-    return TestClient(app), container, database_path
+    return TestClient(application), container, database_path
 
 
 def add_chunk(container: AppContainer, chunk_id: str = "chunk-original") -> Chunk:
@@ -274,18 +274,21 @@ def test_exports_survive_corpus_replacement_deletion_and_container_restart(
         connection.execute("DELETE FROM graph_chunks")
         connection.execute("DELETE FROM chunks")
         connection.execute("DELETE FROM documents")
-    restarted = AppContainer(offline_settings(database_path))
+    restarted_app = create_app(offline_settings(database_path))
+    restarted: AppContainer = restarted_app.state.container
     assert restarted.document_store.list_chunks() == []
-    monkeypatch.setattr(app.state, "container", restarted)
     monkeypatch.setattr(restarted.llm, "generate", no_live_call)
     monkeypatch.setattr(restarted.hybrid_retriever, "retrieve", no_live_call)
     monkeypatch.setattr(restarted.document_store, "list_chunks", no_live_call)
     monkeypatch.setattr(restarted.graph_store, "chunks_for_entities", no_live_call)
-    for fmt in ("json", "markdown"):
-        after = client.get(path, params={"format": fmt})
-        assert after.status_code == 200
-        assert after.content == before[fmt].content
-        assert after.headers["content-disposition"] == before[fmt].headers["content-disposition"]
+    with TestClient(restarted_app) as restarted_client:
+        for fmt in ("json", "markdown"):
+            after = restarted_client.get(path, params={"format": fmt})
+            assert after.status_code == 200
+            assert after.content == before[fmt].content
+            assert (
+                after.headers["content-disposition"] == before[fmt].headers["content-disposition"]
+            )
 
 
 async def test_concurrent_runs_keep_their_own_context_and_provenance(
