@@ -435,3 +435,4 @@ instructions or evidence of current scientific performance.
 | Extract offline TimeDependentBias cues | [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 - [GComputationCueExtractor](guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md)
+- [InformativeCensoringCueExtractor](guides/INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md)
