@@ -436,3 +436,4 @@ instructions or evidence of current scientific performance.
 | Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
 - [GComputationCueExtractor](guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md)
 - [InformativeCensoringCueExtractor](guides/INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md)
+- [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md)
