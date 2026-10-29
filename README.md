@@ -586,6 +586,7 @@ Existing cue illustrations remain available without interrupting the introductio
 | [TargetTrialEmulationCueExtractor](docs/guides/TARGET_TRIAL_EMULATION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/target-trial-emulation-cues.gif) |
 | [InstrumentStrengthCueExtractor](docs/guides/INSTRUMENT_STRENGTH_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/instrument-strength-cues.gif) |
 | [HealthyWorkerSurvivorCueExtractor](docs/guides/HEALTHY_WORKER_SURVIVOR_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/healthy-worker-survivor-cues.gif) |
+| [GComputationCueExtractor](docs/guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/g-computation-cues.gif) |
 | [SurveyModeEffectCueExtractor](docs/guides/SURVEY_MODE_EFFECT_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/survey-mode-effect-cues.gif) |
 | [ColliderBiasInteractionCueExtractor](docs/guides/COLLIDER_BIAS_INTERACTION_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/collider-bias-interaction-cues.gif) |
 | [AscertainmentDifferentialResidualCueExtractor](docs/guides/ASCERTAINMENT_DIFFERENTIAL_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/ascertainment-differential-residual-cues.gif) |
