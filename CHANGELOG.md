@@ -5,6 +5,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `GComputationCueExtractor` (`retrieval/g_computation_cues.py`): offline advisory bias cues. Gap vs Elicit/Consensus/Connected Papers g-computation cue extractors. Distinct from `TargetTrialEmulationCueExtractor` / `TimeVaryingConfoundingCueExtractor`. Optional narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md`.
 ### Added
 - `HealthyWorkerSurvivorCueExtractor` (`retrieval/healthy_worker_survivor_cues.py`): offline advisory bias cues. Gap vs Elicit/Consensus/Connected Papers healthy-worker survivor cue extractors. Distinct from `HealthyAdhererBiasCueExtractor` / `HealthyUserBiasCueExtractor`. Optional narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEALTHY_WORKER_SURVIVOR_CUES_EXTRACTOR_GUIDE.md`.
 - `InstrumentStrengthCueExtractor` (`retrieval/instrument_strength_cues.py`): offline advisory bias cues. Gap vs Elicit/Consensus/Connected Papers instrument-strength cue extractors. Distinct from `ResidualConfoundingCueExtractor` / `ColliderBiasInteractionCueExtractor`. Optional narrative via GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INSTRUMENT_STRENGTH_CUES_EXTRACTOR_GUIDE.md`.
