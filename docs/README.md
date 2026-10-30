@@ -438,4 +438,5 @@ instructions or evidence of current scientific performance.
 - [InformativeCensoringCueExtractor](guides/INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md)
 - [OutcomeSwitchingCueExtractor](guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md)
 - [SelectionIntoTreatmentCueExtractor](guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md)
+- [MendelianRandomizationWeakCueExtractor](guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md)
 - [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md)
