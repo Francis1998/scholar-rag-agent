@@ -443,14 +443,14 @@ def test_decode_failures_do_not_leave_connections_open(
     tracker.assert_closed_since(start)
 
 
-def test_serialization_failure_closes_event_connection(
+def test_serialization_failure_does_not_open_event_connection(
     tmp_path: Path, tracker: ConnectionTracker
 ) -> None:
     events = SQLiteEventLog(tmp_path / "store.sqlite3")
     start = len(tracker.connections)
     with pytest.raises(TypeError, match="JSON serializable"):
         events.append_event("agent", "run", "test", {"invalid": object()})
-    tracker.assert_closed_since(start)
+    assert len(tracker.connections) == start
     assert events.list_events() == []
 
 
