@@ -669,3 +669,9 @@ Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
 own licenses and access terms.
+
+### OutcomeSwitchingCueExtractor
+
+![OutcomeSwitchingCueExtractor](assets/demo/outcome-switching-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers outcome-switching cue extractors. Distinct from `PrimaryEndpointCueExtractor` / `SpinPHackingCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md`.
