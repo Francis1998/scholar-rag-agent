@@ -150,6 +150,12 @@ escaped HTML cap. Opening frozen evidence uses bounded read-only events
 HTML limit. The 16-KiB native query-string cap is independent of provider
 budgets. These reads do not consult models or the current corpus.
 
+Saved history's optional `question` literal is limited to 1-200 Unicode code
+points. API search queries and native history return URLs allow 16 KiB; the
+complete original question is searched even though summaries stay at 300 code
+points. There is no new setting, index, schema, provider or search-scan deadline.
+See [search limits, restart and URL privacy](docs/guides/SAVED_QUESTION_SEARCH_GUIDE.md).
+
 The [native comparison workbench](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md)
 adds no settings. Its GET chooser uses 1-100 saved summaries (default 20);
 baseline/candidate IDs are JSON-string values, and structured return state

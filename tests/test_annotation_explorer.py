@@ -243,6 +243,7 @@ def test_opaque_ids_and_independent_return_pages_survive_authoring(
         limit=2,
         cursor=99,
         state="DONE",
+        question=" literal %_\U0001f52c ",
         source="return\r\nfilter\0",
         title="literal /?#",
         catalog_limit=3,
@@ -301,7 +302,10 @@ def test_mounts_cover_composer_forms_preview_save_redirect_and_errors(
         application.mount("/library", api.app)
     with TestClient(application, root_path="/prefix" if mounted else prefix) as client:
         root = ExplorerDOM(
-            client.get(prefix + "/explore/run/notebook", params={"run_id": bundle.run_id}).text
+            client.get(
+                prefix + "/explore/run/notebook",
+                params={"run_id": bundle.run_id, "question": " Exact %_ "},
+            ).text
         ).root
         opened = ExplorerDOM(client.get(href(root, "annotate-source-1")).text).root
         draft = controls(opened)

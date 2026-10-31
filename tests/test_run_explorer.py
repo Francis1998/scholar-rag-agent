@@ -130,13 +130,19 @@ def test_native_catalog_history_filter_paging_evidence_downloads_and_exact_retur
             if node.attrs.get("type") != "hidden":
                 assert node.attrs["id"] in labels
         assert form.attrs["method"] == "get"
-        params = {**form_parameters(first), "state": "DONE", "limit": "1"}
+        params = {
+            **form_parameters(first),
+            "state": "DONE",
+            "question": "graph evidence",
+            "limit": "1",
+        }
         assert "cursor" not in params
         done = api.page(form.attrs["action"], **params)
         assert identities(done, "run-id") == [newer.run_id]
         next_url = href(done, "next-page")
         next_params = parse_qs(urlsplit(next_url).query)
         assert next_params["state"] == ["DONE"] and next_params["limit"] == ["1"]
+        assert next_params["question"] == ["graph evidence"]
         assert next_params["source"] == ["synthetic:saved-runs"]
         second = api.page(next_url)
         assert identities(second, "run-id") == [older.run_id]
@@ -240,8 +246,13 @@ def test_root_path_and_mounts_preserve_every_navigation_target(
         root_path = "/prefix"
     with TestClient(application, root_path=root_path) as client:
         catalog = ExplorerDOM(client.get(prefix + "/explore").text).root
-        history = ExplorerDOM(client.get(href(catalog, "saved-runs")).text).root
+        history = ExplorerDOM(
+            client.get(href(catalog, "saved-runs"), params={"question": "graph evidence"}).text
+        ).root
         reader = reader_headers(client.get(href(history, "inspect-run-1")))
+        assert parse_qs(urlsplit(href(reader, "back-to-runs")).query)["question"] == [
+            "graph evidence"
+        ]
         error = client.get(prefix + "/explore/run", params={"run_id": "missing"})
         invalid = client.get(prefix + "/explore/runs?state=done")
         for response in (error, invalid):
@@ -297,7 +308,7 @@ def rename_fixture_run(api: ExplorerAPI, original: str, renamed: str) -> None:
 def test_exact_ids_are_never_trimmed_or_interpreted_as_paths(api: ExplorerAPI, run_id: str) -> None:
     bundle = complete(api)
     rename_fixture_run(api, bundle.run_id, run_id)
-    catalog = api.page("/explore/runs")
+    catalog = api.page("/explore/runs", question="graph evidence")
     assert identities(catalog, "run-id") == [run_id]
     url = href(catalog, "inspect-run-1")
     assert urlsplit(url).path == "/explore/run"
@@ -376,6 +387,12 @@ def test_control_bearing_catalog_return_keeps_exact_links_without_lossy_forms(
         "catalog_limit=0",
         "catalog_cursor=",
         "query=PRIVATE_INPUT",
+        "question=%20%20",
+        "question=" + "x" * 201,
+        "question=%FF",
+        "question=%ED%A0%80",
+        "question=%GG",
+        "question=PRIVATE_FIRST&question=PRIVATE_SECOND",
         "source=%FF",
         "title=%C0%AF",
         "catalog_cursor=%ED%A0%80",
@@ -420,6 +437,73 @@ def test_default_maximum_empty_state_and_exhausted_history(api: ExplorerAPI) -> 
     assert "No runs match this exact" in api.page("/explore/runs", state="DONE").text()
     for state in AgentState:
         assert api.client.get("/explore/runs", params={"state": state.value}).status_code == 200
+
+
+@pytest.mark.parametrize("start", [0, 298, 305, 800])
+def test_browser_search_reports_matches_outside_or_across_preview(
+    api: ExplorerAPI, start: int
+) -> None:
+    question = "x" * start + "<script>&%_needle" + "x" * 400
+    record(api, "match", query=question)
+    record(api, "newer-nonmatch", query="unrelated")
+    root = api.page("/explore/runs", question="<script>&%_needle", limit=1)
+    assert identities(root, "run-id") == ["match"]
+    assert identities(root, "question-filter") == ["<script>&%_needle"]
+    assert values(root, "query-preview") == [question[:300]]
+    assert bool(root.by_class("question-match-beyond-preview")) is (start != 0)
+    assert not root.by_tag("script")
+    assert root.by_id("question").attrs["value"] == "<script>&%_needle"
+    assert "maxlength" not in root.by_id("question").attrs
+    assert "Search terms appear in URLs" in root.text()
+
+
+def test_question_controls_restart_or_clear_only_the_intended_filter(api: ExplorerAPI) -> None:
+    for run_id in ("older", "newer"):
+        record(api, run_id, query="Case Exact")
+        record(api, run_id, AgentState.ERROR)
+    record(api, "nonmatch", query="case exact")
+    first = api.page("/explore/runs", question="Case Exact", state="ERROR", limit=1, title="return")
+    second_url = href(first, "next-page")
+    second = api.page(second_url)
+    assert identities(second, "run-id") == ["older"]
+    assert form_parameters(second)["question"] == "Case Exact"
+    assert "cursor" not in form_parameters(second)
+    restarted = api.page(second.by_id("run-filters").attrs["action"], **form_parameters(second))
+    assert identities(restarted, "run-id") == ["newer"]
+    for root, name, omitted in (
+        (second, "all-states", "state"),
+        (second, "clear-question", "question"),
+    ):
+        params = parse_qs(urlsplit(href(root, name)).query)
+        assert omitted not in params and "cursor" not in params
+        assert params["title"] == ["return"] and params["limit"] == ["1"]
+        retained = "state" if omitted == "question" else "question"
+        assert params[retained] == [form_parameters(second)[retained]]
+    assert (
+        api.client.get("/explore/runs", params={"question": ""}).content
+        == api.client.get("/explore/runs").content
+    )
+    empty = api.page("/explore/runs", question="CASE EXACT")
+    assert "No runs match this original-question" in empty.text()
+    assert "No persisted runs" not in empty.text()
+
+
+@pytest.mark.parametrize("needle", ["literal\r\nquery", "literal\0query"])
+def test_control_bearing_question_keeps_exact_links_and_disables_lossy_form(
+    api: ExplorerAPI, needle: str
+) -> None:
+    for run_id in ("older", "newer"):
+        record(api, run_id, query="x" * 400 + needle)
+    first = api.page("/explore/runs", question=needle, limit=1)
+    assert not first.by_tag("form")
+    assert identities(first, "question-filter") == [needle]
+    next_url = href(first, "next-page")
+    assert parse_qs(urlsplit(next_url).query)["question"] == [needle]
+    second = api.page(next_url)
+    response = api.client.get(href(second, "inspect-run-1"))
+    assert response.status_code == 409
+    assert href(ExplorerDOM(response.text).root, "back-to-runs") == next_url
+    assert "question" not in parse_qs(urlsplit(href(first, "clear-question")).query)
 
 
 @pytest.mark.parametrize(
