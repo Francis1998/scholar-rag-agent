@@ -64,9 +64,7 @@ def test_whitespace_only_triggers_ocr() -> None:
     assert hook.extract_or_ocr("a.pdf", "   \n\t  ") == "ocr"
 
 
-def test_docstring_mentions_frontier_models() -> None:
-    doc = PdfOcrHook.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+def test_default_backend_replaces_even_nonempty_short_text_with_empty_output() -> None:
+    hook = PdfOcrHook()
+    assert hook.needs_ocr("A short extraction.")
+    assert hook.extract_or_ocr("paper.pdf", "A short extraction.") == ""
