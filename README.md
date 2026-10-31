@@ -75,6 +75,7 @@ PDF-upload UI.
 | Read saved human feedback in a normal browser | Open a completed run's notebook, page independent review/annotation histories, and highlight an annotation's exact occurrence in its frozen source | [Human-review notebook and actual browser GIF](docs/guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
 | Take the complete human-review notebook offline | Download JSON/literal Markdown with frozen evidence and both entire opinion histories in one bounded read-only snapshot, not just visible pages | [Portable notebook: API/Python/browser/portfolio guide and executed illustration](docs/guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Find a previous run after restart | Page through saved query previews and recorded states, then follow events/export links | [Run history](docs/guides/RUN_HISTORY_GUIDE.md) |
+| Remember a fragment of an earlier original question | Search full saved questions literally before state/cursor pagination, even beyond the preview; keep the selection through native review navigation | [Original-question search: browser/API/Python/portfolio and measured GIF/still/text](docs/guides/SAVED_QUESTION_SEARCH_GUIDE.md) |
 | Find a saved answer in a normal browser | Preserve state/cursor selection, validate a complete capture, follow frozen sources and download existing artifacts without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](docs/guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Review changes between two completed runs | Choose an explicit baseline in the native browser, compare recorded outputs side by side, swap direction and open exact frozen sources | [Saved-run comparison workbench: browser/API/Python/portfolio](docs/guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md) |
 | Check whether saved source chunks still match the local corpus | Read unchanged/changed/missing findings in frozen rank order, without regenerating or rewriting evidence | [Corpus drift and measured demo](docs/guides/CORPUS_DRIFT_GUIDE.md) |
@@ -163,6 +164,22 @@ frozen evidence. The [complete browser/API/Python and portfolio guide](docs/guid
 reproduces the measured offline workflow and the [four actual browser frames](docs/assets/saved-run-browser.gif).
 The still preview makes animation opt-in; the GIF is a screenshot sequence,
 not a continuous recording, benchmark or scientific result.
+
+### Search the complete saved original question
+
+[![Measured synthetic original-question matching beyond the preview, pagination and restart](docs/assets/saved-question-search.png)](docs/assets/saved-question-search.gif)
+
+Use **Original question contains (literal)** in saved history, or
+`GET /runs?question=GraphRAG`. Search is case-sensitive, accepts 1-200 Unicode
+code points and checks the complete first PLANNING question, not just its
+300-character preview. State filtering and stable pagination still apply;
+reader, comparison, notebook and authoring return links keep the selection.
+There is no answer-body search, relevance scoring, model call or event write.
+
+The [complete guide](docs/guides/SAVED_QUESTION_SEARCH_GUIDE.md) documents exact
+Unicode/legacy/error behavior, limits and URL privacy. The opt-in GIF is an
+**executed synthetic-output illustration, not browser footage**; its
+[text alternative](docs/assets/saved-question-search.txt) records the measurements.
 
 ### Compare two saved answers without rerunning
 

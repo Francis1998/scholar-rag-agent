@@ -43,6 +43,7 @@ accumulated feature list in the project README.
 | Read independent human-review histories and follow exact frozen quote highlights from a saved run | [Native human-review notebook: user/API/Python/portfolio guide and actual browser GIF](guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
 | Download a whole frozen answer plus complete human-review and annotation histories in one bounded read snapshot | [Portable notebook: API/Python/browser/portfolio guide and executed-output GIF/still](guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
+| Find a remembered literal in the complete saved original question, not just its preview | [Saved-question search: browser/API/Python/portfolio guide and measured GIF/still/text](guides/SAVED_QUESTION_SEARCH_GUIDE.md) |
 | Diagnose a failed or unfinished saved run without paid retries or rewriting history | [Failed-run triage, safe next actions, and executable offline exercises](guides/FAILED_RUN_TRIAGE_GUIDE.md) |
 | Discover saved runs in a browser and follow their validated frozen evidence without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Choose an explicit saved baseline, compare recorded outputs side by side, swap direction and open precise frozen sources | [Native comparison workbench: browser/API/Python/portfolio and measured illustration](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md) |

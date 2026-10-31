@@ -1,0 +1,27 @@
+1. Search the complete original question
+Executed synthetic API/Python/native HTML demo; not scientific evidence.
+Saved runs: 6; question matches: 3.
+Literal needle: Literal 100%_[x]; case-sensitive, no pattern syntax.
+Older match starts at code point 444; preview: 300 code points.
+Answer-only, empty and missing-query fixtures are not matches.
+
+2. Filter before creation-order pagination
+DONE pages: 1 + 1; no duplicates.
+Both filters precede the exclusive first-event-ID continuation.
+Lowercase matches: 0; regex-like .* matches: 0.
+Empty API question: HTTP 422; empty native field clears it.
+Python, JSON and native result IDs agree.
+
+3. Keep the native return selection
+Submitted the actual native form and followed its Next page link.
+The long-question page explains the match beyond its preview.
+Reader, notebook, review, annotation, chooser and comparison keep selection.
+Exact question, state, cursor and catalog context survive under /lab.
+No review or annotation was submitted; those are separate explicit writes.
+
+4. Restart without generation or writes
+Recreated the application on the same saved SQLite database.
+Search and frozen evidence responses remain byte-identical.
+Events before/after: 22/22; schema and database bytes unchanged.
+Guarded runtime/network calls during reads: 0/0.
+Two fake-adapter queries and four inserted traces preceded measurements.

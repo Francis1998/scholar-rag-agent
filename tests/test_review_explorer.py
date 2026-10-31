@@ -242,6 +242,7 @@ def test_opaque_ids_and_independent_notebook_cursors_round_trip(
         limit=2,
         cursor=99,
         state="DONE",
+        question=" literal %_\U0001f52c ",
         source="return\r\nfilter\0",
         title="literal /?#",
         catalog_limit=3,
@@ -280,7 +281,8 @@ def test_mounts_preserve_all_form_actions_links_and_redirects(
         app.mount("/library", api.app)
     with TestClient(app, root_path="/prefix" if mounted else prefix) as client:
         response = client.get(
-            prefix + COMPOSER, params={"selection": json.dumps({"run_id": bundle.run_id})}
+            prefix + COMPOSER,
+            params={"selection": json.dumps({"run_id": bundle.run_id, "question": " Exact %_ "})},
         )
         assert response.status_code == 200
         page = ExplorerDOM(response.text).root
@@ -299,6 +301,9 @@ def test_mounts_preserve_all_form_actions_links_and_redirects(
         assert response.headers["location"].startswith(prefix + SAVED + "?")
         persisted = client.get(response.headers["location"])
         assert persisted.status_code == 200
+        assert parse_qs(urlsplit(href(ExplorerDOM(persisted.text).root, "back-to-runs")).query)[
+            "question"
+        ] == [" Exact %_ "]
         error = client.post(prefix + SAVE, data={"selection": "{}"}, headers=ORIGIN)
         failure(error, 422)
         for root in (page, view, ExplorerDOM(persisted.text).root, ExplorerDOM(error.text).root):

@@ -562,6 +562,17 @@ text, queries, metadata, and answers; a run ID is not access control. Corpus
 deletion does not delete saved evidence. Protect the SQLite database, backups,
 downloaded artifacts, and their retention independently.
 
+Saved-run `question` search is a 1-200-code-point case-sensitive literal filter
+on the full first PLANNING question, not answers, scientific relevance or
+validation. It binds SQL values, rejects invalid input before reading and
+preserves malformed-record failures, including invalid question Unicode beyond
+the preview. Filtering and native navigation do not generate, retrieve, read
+the current corpus or write events. Full-question scanning still scales with
+stored text; bounded pages do not guarantee bounded latency. Search terms
+remain in URLs, return tokens, browser history and potentially proxy/server
+logs even with no-store. Protect these alongside saved evidence; see the
+[complete search contract](docs/guides/SAVED_QUESTION_SEARCH_GUIDE.md).
+
 Exports allowlist provider/model identity and operational payloads; they do not
 dump settings, credentials, headers, environment, raw provider responses, or
 hidden model thinking. Unknown event payloads are explicitly omitted. Sensitive
