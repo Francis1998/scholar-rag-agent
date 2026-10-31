@@ -37,7 +37,7 @@ authorizing a new run, and why updating a model ID never repairs saved history.
 Before enabling providers, use the
 [executable routing preflight](MODEL_ROUTING_PREFLIGHT_GUIDE.md) to inspect
 every preferred/default fallback, demonstrate why a fake default alone is not
-offline, and retain synthetic fake evidence without reading real credentials.
+offline, and retain synthetic fake evidence without live provider requests.
 
 The Kimi K3.1 migration-contract check is **2026-10-24 America/Los_Angeles**:
 both K3.1 variants follow the documented K3 constraints, already satisfied by

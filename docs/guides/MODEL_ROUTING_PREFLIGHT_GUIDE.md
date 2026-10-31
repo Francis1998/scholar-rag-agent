@@ -15,11 +15,20 @@ The [guide tests](../../tests/test_model_routing_preflight_guide.py) execute the
 published blocks, rather than a second implementation.
 
 **Do not substitute real credentials.** The examples use the existing
-`offline_settings` helper, which accepts only explicit constructor inputs and
-defaults, not environment, dotenv, or file-secret values. The one ordinary
-`Settings` source-precedence exercise replaces the environment mapping with
-synthetic values and uses a temporary dotenv file. Nothing prints a settings
-dump, credential, adapter headers, or real request context.
+`offline_settings` helper, which resolves configuration from explicit
+constructor inputs and defaults, ignoring other source values. Ignoring a
+source is not the same as preventing its initialization: Pydantic constructs
+sources before calling `settings_customise_sources`. Every reconstructed
+settings instance therefore repeats `_env_file=None` to disable ambient dotenv
+loading; an instance's constructor argument is not inherited by `type(instance)`.
+
+The helper is not a guarantee that Pydantic never inspects the process
+environment internally. Use a fresh, scrubbed process, as in the validation
+command below, rather than a process containing real provider credentials.
+The ordinary `Settings` precedence exercise replaces the environment mapping
+with synthetic values and deliberately loads only its temporary dotenv file.
+Nothing prints a settings dump, credential, adapter headers, or real request
+context.
 
 ## 1. Separate provider families from API model IDs
 
@@ -42,6 +51,7 @@ from llm.schemas import LLMRequest, TaskType
 baseline = offline_settings(Path("unused-preflight.sqlite3"))
 # Reconstruct the helper's init-only Settings subclass, retaining validation.
 settings = type(baseline)(
+    _env_file=None,
     database_path=baseline.database_path,
     default_model="openai",
     openai_model="  gpt-6.1-terra  ",
@@ -51,7 +61,7 @@ assert settings.openai_model == "gpt-6.1-terra"
 assert build_model_router(settings).route(TaskType.DEFAULT).provider_name == "fake"
 
 try:
-    type(baseline)(default_model="gpt-6.1-terra")
+    type(baseline)(_env_file=None, default_model="gpt-6.1-terra")
 except ValidationError as error:
     assert error.errors()[0]["loc"] == ("default_model",)
     print("API ID rejected as a provider family")
@@ -121,6 +131,7 @@ request = LLMRequest(task_type=TaskType.DEFAULT, prompt="Synthetic inspection", 
 routes = {}
 for label, default, enabled in cases:
     settings = type(baseline)(
+        _env_file=None,
         database_path=baseline.database_path,
         default_model=default,
         **{
@@ -405,4 +416,6 @@ env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" \
 The guide tests use temporary directories, synthetic ambient-variable/dotenv
 sentinels, and failing network/live-generation guards. They also verify every
 matrix cell, the exact printed model IDs, the exported evidence, and refusal
-to overwrite an existing output file, directory, or symlink.
+to overwrite an existing output file, directory, or symlink. A guarded dotenv
+loader must receive zero calls in the isolated examples; unchanged fixture
+bytes or ignored values alone would not detect an unintended file read.

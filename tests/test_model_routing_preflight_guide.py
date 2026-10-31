@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
+from pydantic_settings.sources import DotEnvSettingsSource
 
 from agent.evidence import EvidenceBundle
 from config import Settings
@@ -33,7 +34,7 @@ EXPECTED_ROUTES = {
 def isolate_example(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> Iterator[None]:
-    """Make accidental ambient reads fail, and reject even swallowed network attempts."""
+    """Isolate ambient values and reject even swallowed network attempts."""
     monkeypatch.chdir(tmp_path)
     ambient = tmp_path / "ambient.sqlite3"
     sentinel = b"Do not open or modify this ambient database"
@@ -79,6 +80,16 @@ def run_example(index: int) -> dict[str, object]:
     namespace: dict[str, object] = {}
     exec(compile(blocks[index], str(GUIDE), "exec"), namespace)  # noqa: S102
     return namespace
+
+
+@pytest.mark.parametrize("index", [0, 1, 3], ids=["family", "routes", "fake-evidence"])
+def test_isolated_examples_do_not_attempt_dotenv_reads(
+    index: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    read_dotenv = Mock(side_effect=AssertionError("Ambient dotenv must not be read"))
+    monkeypatch.setattr(DotEnvSettingsSource, "_read_env_file", read_dotenv)
+    run_example(index)
+    read_dotenv.assert_not_called()
 
 
 def test_family_and_model_example_validates_without_building_live_route(
