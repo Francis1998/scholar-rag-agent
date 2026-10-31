@@ -6,6 +6,11 @@ return the actual bounded, post-rerank passages, scores, ranks, paths, plan,
 scope, and context digest. Neither entrypoint calls a live **or fake** LLM,
 grounds claims, nor writes agent events.
 
+For an integrated script-free form over this same API, open `/explore/retrieve`.
+The [native retrieval workbench guide](NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md) covers
+browser scope/policy controls, complete prepared results, current-source links,
+privacy and a reproducible offline GIF. GET only opens; POST explicitly computes.
+
 To reuse a selection across restarts, send a saved
 [`collection_id`](PAPER_COLLECTIONS_GUIDE.md) instead of `document_ids`.
 The API resolves it before awaits; the Python preview signature remains unchanged.

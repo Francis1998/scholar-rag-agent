@@ -206,6 +206,17 @@ are unchanged. A preview does not freeze concurrent or subsequent corpus changes
 and is not a saved evidence export. See the
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+`api.retrieval_explorer` adds GET/POST `/explore/retrieve`: GET only renders
+native controls; bounded same-origin POST converts explicit scope/policy fields
+to `RetrievalRequest` and calls the existing `api.retrieval.retrieve` function
+in process. That function owns `resolve_document_scope` and `AgentRunner.preview`;
+there is no second engine, internal HTTP call or new store. Complete escaped
+HTML displays the actual plan, resolved scope/policy, minimum assessment, context
+and ordered sources with exact current-source links. The shared page renderer
+retains CSP/no-store and applies same-origin referrer policy for native forms,
+without labeling inspection as a write. See the
+[native workbench guide](docs/guides/NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md).
+
 ## Retrieval Policy Comparison
 
 `POST /research/compare-retrieval` in `api.research` delegates to

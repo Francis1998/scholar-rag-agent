@@ -29,6 +29,7 @@ accumulated feature list in the project README.
 | Save resolved/needs-review totals and auditable exact exclusion-reason groups from one complete snapshot | [Human screening report: browser/API/Python/portfolio guide and executed GIF/still](guides/SCREENING_REPORT_GUIDE.md) |
 | Restrict every query retrieval path to selected ingested papers | [Document scope and offline demo](guides/DOCUMENT_SCOPE_GUIDE.md) |
 | Inspect the actual prepared evidence without generation or agent-event writes | [Retrieval preview and offline demo](guides/RETRIEVAL_PREVIEW_GUIDE.md) |
+| Submit a scoped question in the browser and inspect ordered prepared passages, policies and count diagnostics | [Native retrieval workbench: offline/browser/API/Python/portfolio guide and GIF/still/text](guides/NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md) |
 | Compare two evidence policies on one shared query/scope before any generation | [Retrieval policy comparison and measured offline demo](guides/RETRIEVAL_COMPARISON_GUIDE.md) |
 | Collapse near-duplicate passages in query/preview with preserved survivor provenance | [Near-duplicate evidence collapse and zero-model demo](guides/NEAR_DUPLICATE_COLLAPSE_GUIDE.md) |
 | Apply a per-request passage quota to each paper in query and preview evidence | [Per-paper evidence limits and measured demo](guides/PER_PAPER_EVIDENCE_LIMITS_GUIDE.md) |

@@ -212,6 +212,28 @@ _WORKSHEET_FOOTER = (
     "quotes/escapes when a raw ID is needed; visual Unicode order is not an identity check."
     "</p></footer></body></html>"
 )
+_RETRIEVAL_FOOTER = (
+    "</main><footer><h2>Prepared now, not a frozen saved run</h2>"
+    "<p>GET only opens controls. Each explicit POST runs the existing local retrieval and "
+    "context preparation; no live or fake generation, grounding, ingestion, collection edit "
+    "or agent-event write occurs. Generative retrieval is rejected, not substituted. "
+    "Startup still initializes stores and loads indexes.</p>"
+    "<p>Sources and scores are retrieval heuristics, not scientific findings. The complete "
+    "prepared passages are shown in actual order, without truncation. Source-context links "
+    "read today's corpus and may differ or fail after edits. Submitting again recomputes "
+    "evidence; no run or frozen export is saved. A digest is not a signature.</p>"
+    "<p>No scripts, external resources, analytics, cookies or browser storage are used. "
+    "Source labels stay literal text, never external links. There is no authentication or "
+    "tenant isolation; use loopback or your own access controls and trusted host/proxy setup. "
+    "Exact Origin checks block cross-origin browser posts, not direct clients, malicious "
+    "local processes or DNS rebinding.</p>"
+    "<p>POST keeps questions out of the address bar, not browser resubmission state or "
+    "infrastructure logs. Same-origin referrer policy may send local selection URLs to "
+    "this same server, never as cross-origin referrers. IDs can remain in history. No-store "
+    "cannot prevent saving, printing or screenshots. Do not enter credentials or personal data. "
+    "IDs are JSON strings: decode quotes/escapes once; Unicode visual order is not identity."
+    "</p></footer></body></html>"
+)
 _COLLECTION_FOOTER = (
     "</main><footer><h2>Saved selections and human opinions</h2>"
     "<p>Membership counts are not screening decisions. Includes are current human opinions, "
@@ -220,8 +242,8 @@ _COLLECTION_FOOTER = (
     "corpus labels can change without changing the collection revision.</p>"
     "<p>These GET pages do not retrieve, rerank, generate, ingest, change collections or "
     "screening, or write events. Normal startup still initializes stores and loads indexes. "
-    "Search and worksheet links open existing tools for all current members, not a screened "
-    "subset; worksheet submission performs local retrieval separately.</p>"
+    "Search, preview and worksheet links open tools for all current members, not a screened "
+    "subset; preview/worksheet submissions perform local retrieval separately.</p>"
     "<p>No scripts, external resources, analytics or browser storage are used. There is no "
     "built-in authentication. Use loopback or your own access controls. IDs, filters and "
     "reasons may be sensitive; URLs can remain in history or server logs. No-store does not "
@@ -386,6 +408,7 @@ def _page(
     review: bool = False,
     creation: bool = False,
     editing: bool = False,
+    retrieval: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -426,6 +449,10 @@ def _page(
         subject = "PAPER COLLECTION EDITOR"
         description = "Choose exact additions/removals, review the changes, then explicitly save."
         footer = _EDITING_FOOTER
+    if retrieval:
+        subject = "RETRIEVAL PREVIEW"
+        description = "Submit a question, inspect prepared passages, and decide before generation."
+        footer = _RETRIEVAL_FOOTER
     writes = screening or annotation or review or creation or editing
     mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
@@ -448,7 +475,7 @@ def _page(
     return HTMLResponse(
         bytes(content),
         status_code=status,
-        headers=_WRITE_HEADERS if writes else _HEADERS,
+        headers=_WRITE_HEADERS if writes or retrieval else _HEADERS,
     )
 
 
@@ -468,6 +495,7 @@ def _error(
     review: bool = False,
     creation: bool = False,
     editing: bool = False,
+    retrieval: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -489,6 +517,7 @@ def _error(
         review=review,
         creation=creation,
         editing=editing,
+        retrieval=retrieval,
     )
 
 
@@ -1225,6 +1254,11 @@ def _catalog(
         "Build research worksheet",
     )
     yield _link(
+        "retrieval-preview",
+        _url(root_path + "/explore/retrieve", search_params),
+        "Preview retrieval before generation",
+    )
+    yield _link(
         "saved-collections",
         _url(root_path + "/explore/collections", {"limit": DEFAULT_PAGE_SIZE, **search_params}),
         "Browse saved collections",
@@ -1320,6 +1354,21 @@ def _document(
     yield '<nav aria-label="Corpus navigation">'
     yield _link("back-to-catalog", back, "Back to filtered catalog")
     yield _collection_link(collection_return, root_path)
+    yield _link(
+        "preview-document",
+        _url(
+            root_path + "/explore/retrieve",
+            {
+                "document_id": page.document_id,
+                "catalog_limit": limit,
+                "source": source,
+                "title": title,
+                "catalog_cursor": catalog_cursor,
+                "collection_return": collection_return,
+            },
+        ),
+        "Preview retrieval in this paper",
+    )
     yield _link(
         "worksheet-document",
         _url(
