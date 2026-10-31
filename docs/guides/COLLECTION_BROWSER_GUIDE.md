@@ -7,6 +7,10 @@ create collections on GET, record decisions on GET, select evidence automaticall
 **Create a paper collection** opens the separate
 [native builder](NATIVE_COLLECTION_BUILDER_GUIDE.md); only its explicit POST
 saves a checked named selection.
+**Edit collection name and membership** opens the separate
+[native editor](NATIVE_COLLECTION_EDITOR_GUIDE.md): explicit add/remove choices,
+complete-result preview and revision-checked save preserve unchecked/off-page
+members. Collection inspection itself remains read-only.
 Member cards now link to the separate [explicit native screening
 workbench](HUMAN_SCREENING_WORKBENCH_GUIDE.md); only its same-origin form POST writes.
 
@@ -183,7 +187,7 @@ JSON-encoded document IDs and exact paper/source links retain their existing rul
 | 409 | Revision changed, a member is missing, or stored metadata/text is invalid. Refresh the list or inspect trusted storage; browsing cannot repair it. |
 | 413 | Complete export or escaped HTML exceeds its fixed bound. A smaller visible page helps HTML, not an oversized complete export. |
 | 422 | Missing/invalid revision, unsupported status, nonmember/empty cursor, duplicate/unknown fields, invalid UTF-8 or oversized query. Correct the request; no filter is discarded. |
-| 405 | Collection browsing accepts GET only; no editing actions exist. |
+| 405 | Collection browsing accepts GET only; writes use separate explicit native forms. |
 | 503 | Existing storage is unavailable, not an empty list or unscreened result. |
 
 HTML successes and failures reuse `no-store`, `nosniff`, `no-referrer`, frame

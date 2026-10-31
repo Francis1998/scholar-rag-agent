@@ -15,6 +15,7 @@ from api.annotations import router as annotations_router
 from api.bibliography import router as bibliography_router
 from api.collection_creation import router as collection_creation_router
 from api.collection_duplicates import router as collection_duplicates_router
+from api.collection_editing import router as collection_editing_router
 from api.collection_explorer import router as collection_explorer_router
 from api.collections import COLLECTION_HEADERS
 from api.collections import router as collections_router
@@ -110,6 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(worksheet_explorer_router)
     application.include_router(collection_explorer_router)
     application.include_router(collection_creation_router)
+    application.include_router(collection_editing_router)
     application.include_router(screening_explorer_router)
     application.include_router(collections_router)
     application.include_router(collection_duplicates_router)

@@ -57,6 +57,12 @@ lists by query, and pass a synchronous lookup callback to the harness.
 
 ## Metric contract
 
+`k` defaults to `5` and must be a positive Python `int`, excluding booleans.
+Booleans, floats (including integral floats, NaN, and infinities), strings,
+`None`, and nonpositive integers raise `ValueError` before the retrieval
+callback is invoked. The harness does not coerce values or impose an upper
+bound on valid positive integer cutoffs.
+
 The harness uses the first `k` results in callback order for **all** metrics.
 It does not rerank them. Hit-rate@k and recall@k still compare retrieved chunk
 IDs with `relevant_chunk_ids`.
@@ -98,4 +104,4 @@ The new fields are appended to `CaseScore` and `HarnessReport` with `None`
 defaults, preserving existing positional and keyword construction. Serialized
 dataclasses now include these additional fields; strict consumers must allow
 them. Existing generated-answer scores without gold, retrieval metrics, ranking,
-and cutoff behavior are unchanged.
+and behavior for valid positive integer cutoffs are unchanged.
