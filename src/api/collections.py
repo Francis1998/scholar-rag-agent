@@ -1,18 +1,17 @@
 """Local/trusted metadata management and fail-closed request scope resolution."""
 
-import json
 import logging
 from collections.abc import Callable, Coroutine, Iterator
 from contextlib import contextmanager
 from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 
 from api.dependencies import AppContainer
 from api.schemas import QueryRequest
+from api.validation import sanitized_validation_content
 from storage.paper_collections import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
@@ -37,25 +36,12 @@ class _CollectionRoute(APIRoute):
             try:
                 return await original(request)
             except RequestValidationError as exc:
-                detail: list[dict[str, object]] = jsonable_encoder(exc.errors())
-                sanitized = False
-                for index, error in enumerate(detail):
-                    try:
-                        json.dumps(error, ensure_ascii=False, allow_nan=False).encode("utf-8")
-                    except (TypeError, ValueError):
-                        detail[index] = {key: error[key] for key in ("loc", "type", "msg")}
-                        sanitized = True
-                if not sanitized:
+                content = sanitized_validation_content(exc)
+                if content is None:
                     raise
                 logger.warning("Collection request validation failed: unserializable_diagnostic")
-                # Escaping also preserves locations containing an invalid object key.
                 return Response(
-                    content=json.dumps(
-                        {"detail": detail},
-                        ensure_ascii=True,
-                        allow_nan=False,
-                        separators=(",", ":"),
-                    ),
+                    content=content,
                     status_code=422,
                     media_type="application/json",
                     headers=COLLECTION_HEADERS,

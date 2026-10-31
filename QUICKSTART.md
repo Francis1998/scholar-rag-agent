@@ -98,6 +98,17 @@ Changing any value, including whitespace or Unicode composition, changes the
 identity; raw document content is preserved and searchable chunks still normalize
 whitespace. Treat returned IDs as opaque.
 
+Unpaired Unicode surrogates in `title`, `text`, or `source` are invalid strings,
+not characters to repair or silently discard. They return HTTP 422 before ID
+generation or ingestion, including behind an ASGI mount/root path. If an invalid
+field's diagnostic contains an unpaired surrogate or a non-finite number, the
+response omits that diagnostic's raw `input`/`ctx` instead of failing to encode
+an error response. Its location, type, and message remain available; other
+ordinary validation details are unchanged. These sanitized errors use
+`Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
+Valid non-ASCII text, including JSON-escaped astral characters, keeps the exact
+document identity and stored content described above.
+
 **Upgrade boundary:** pre-fix API documents used `doc-<digest>` over the ambiguous
 colon-joined fields. Existing documents, chunks, saved runs, and collection
 memberships are not rewritten and remain usable by their original IDs.
