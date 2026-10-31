@@ -1,0 +1,21 @@
+1. Open a bounded editor without writes
+Saved members: 3; candidate page size: 1.
+Preselected checkboxes: 0; GET bytes unchanged.
+Next page changes candidates only; all removals still show exact JSON IDs.
+
+2. Preview exact changes, then explicitly save
+Preview: 200; no writes. Remove 1, add 1, retain 2.
+Save: 303; revision 1 -> 2; members 3 -> 3.
+Renamed Synthetic before edit -> Synthetic after edit.
+The off-page member is retained; the removed paper is not deleted.
+
+3. Reject stale resubmissions without overwriting
+Repeated old-revision saves: [409, 409]; database unchanged.
+Current screening: stale=1, unscreened=2.
+Earlier include is stale, not current; opinions/history remain stored.
+
+4. Restart with papers, evidence and opinions intact
+Python/JSON and restarted collection equal; restarted HTML identical.
+Preserved rows: papers=4, chunks=4, events=8, decisions=2, history=3.
+Frozen evidence unchanged; forbidden model/retrieval/network/write calls: 0.
+Executed synthetic HTTP measurements, not browser footage or scientific findings.
