@@ -34,6 +34,14 @@ stores `timestamp`, `agent_id`, `run_id`, event type, and a JSON payload; state
 transition payloads contain the source and target states. The plan includes
 operational rationale, not a model's hidden reasoning.
 
+New event payloads are serialized before opening SQLite. Non-finite floats
+(`NaN`, positive/negative infinity), including nested values and mapping keys,
+raise the standard JSON encoder's `ValueError`; unsupported objects raise
+`TypeError`. Rejected payloads create no database file, row, or event ID.
+Finite JSON serialization, key coercion, ordering, and transition envelopes are
+unchanged. Existing rows are not repaired or migrated, and permissive legacy
+reads remain unchanged; old non-finite rows can still fail strict JSON consumers.
+
 ## Query Analysis
 
 `QueryAnalyzer` uses case-insensitive whole-word markers, not semantic intent

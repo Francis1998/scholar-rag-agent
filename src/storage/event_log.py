@@ -41,13 +41,14 @@ class SQLiteEventLog:
         payload: dict[str, Any],
     ) -> int:
         """Persist a generic JSON event and return its id."""
+        serialized_payload = json.dumps(payload, sort_keys=True, allow_nan=False)
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
             cursor = connection.execute(
                 """
                 INSERT INTO agent_events (timestamp, agent_id, run_id, event_type, payload)
                 VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?, ?, ?, ?)
                 """,
-                (agent_id, run_id, event_type, json.dumps(payload, sort_keys=True)),
+                (agent_id, run_id, event_type, serialized_payload),
             )
             connection.commit()
             event_id = cursor.lastrowid
