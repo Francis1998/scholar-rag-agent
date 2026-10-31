@@ -1,12 +1,17 @@
 # Provider Models and Compatibility
 
-The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model) and
-[Anthropic](https://platform.claude.com/docs/en/models/overview) catalogs,
+The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model),
+[Astra](https://developers.openai.com/api/docs/models/gpt-6-astra),
+[6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), and
+[6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra) model pages,
+[Anthropic](https://platform.claude.com/docs/en/models/overview) catalog,
 [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) and
 [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) guides,
 [Kimi model list](https://platform.kimi.ai/docs/models.md), and
-[K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md)
-were checked **2026-10-28 America/Los_Angeles**. OpenAI positions `gpt-6-astra` for highest
+[Kimi API quickstart](https://platform.kimi.ai/docs/get-your-api-key.md)
+were reviewed **2026-10-30 America/Los_Angeles**, during the maintainer pass
+begun October 29. Exact model pages were read directly rather than inferring
+availability from incomplete dynamic catalog indexes. OpenAI positions `gpt-6-astra` for highest
 intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
 `gpt-6.1-terra` for efficient visual reasoning, computer use, and writing,
 and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
@@ -25,8 +30,10 @@ does not replace this repository's selected Sonnet 5.5 text-adapter default.
 The other providers' catalog alternatives are not new payload-compatibility
 tests or default migrations. In particular, Argon's long-decode and latency recommendations
 are not implemented by selecting its model ID; see [Gemini limitations](#google-gemini).
-The [human screening progress report](SCREENING_REPORT_GUIDE.md) performs no
-model calls and requires none of these providers.
+Saved-run inspection requires none of these providers. The
+[failed-run triage guide](FAILED_RUN_TRIAGE_GUIDE.md) demonstrates why a provider
+HTTP 200 can still become a durable `ERROR`, how internal retries differ from
+authorizing a new run, and why updating a model ID never repairs saved history.
 
 The Kimi K3.1 migration-contract check is **2026-10-24 America/Los_Angeles**:
 both K3.1 variants follow the documented K3 constraints, already satisfied by
@@ -80,7 +87,7 @@ without editing source. They are nonblank, whitespace-trimmed strings; see
 ### Optional GPT-6.1 Terra
 
 The [Terra model page](https://developers.openai.com/api/docs/models/gpt-6.1-terra),
-checked **2026-10-28 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
+rechecked **2026-10-30 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
 It documents text/image input, text output, and both Chat Completions and
 Responses, but **tool calling requires Responses**. Its reasoning efforts are
 `none`, `low`, `medium` (default), `high`, `xhigh`, and `max`.
@@ -98,7 +105,7 @@ does not establish this account's access or live payload compatibility.
 ### Kimi legacy overrides and retirement notice
 
 The [Kimi model list](https://platform.kimi.ai/docs/models.md), checked
-**2026-10-28 America/Los_Angeles**, contains two distinct upcoming notices:
+**2026-10-30 America/Los_Angeles**, contains two distinct upcoming notices:
 
 | Timing | Affected users/models |
 | --- | --- |
@@ -173,8 +180,13 @@ historical evidence, not settings to rewrite.
 
 These are stateless, single-turn text adapters built on HTTPX. They do not
 implement provider tool loops, streaming, multimodal inputs, or multi-turn
-reasoning-state replay. The Python 3.11+ application uses FastAPI, SQLite,
-Pydantic, and a hand-written agent state machine, not LangGraph. Its development
+reasoning-state replay. The local-first stack recheck for this review confirms
+Python 3.11+, FastAPI, Pydantic, HTTPX, SQLite, and a hand-written agent state
+machine, not LangGraph. [Runtime wiring](../../src/api/dependencies.py) uses
+deterministic hash embeddings, BM25, lexical reranking, and a co-mention graph;
+optional spaCy can improve entity extraction but does not make these learned
+semantic retrieval or scientific validation. Installing optional dependencies
+alone does not enable a cross-encoder or LLM-backed HyDE in the API. Development
 checks use ruff, mypy, and pytest.
 
 Each live `generate()` call takes an owned deep snapshot of `LLMRequest` when
