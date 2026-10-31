@@ -104,6 +104,11 @@ through the existing JSON API, not this deliberately bounded form.
 | `min_evidence_documents` | Integer 1-50; counts distinct document IDs in the final prepared context |
 | `near_duplicate_threshold` | Finite number greater than 0 and at most 1; lexical Jaccard collapse before quota and minimum assessment |
 
+The native threshold control accepts ASCII decimal/exponent spellings such as
+`.9`, `00.9` and `9e-1`, all interpreted as `0.9`. Shared request validation
+still rejects nonfinite values, zero and values above one. The JSON API remains
+strict: send a JSON number, not a quoted numeric string.
+
 These policies do not refill the bounded candidate pool. The minimum may fail
 after a quota or collapse. **Minimum not met** retains the actual evidence and
 is a successful diagnostic, not an operational failure or empty success.

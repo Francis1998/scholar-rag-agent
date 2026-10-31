@@ -159,6 +159,36 @@ def test_post_displays_exact_api_preparation_and_failed_minimum_without_discardi
     )
 
 
+@pytest.mark.parametrize("spelling", [".9", "00.9", "0.9", "9e-1", "9E-1", "0.09e+1"])
+def test_native_threshold_spellings_preserve_api_policy_and_read_only_contract(
+    workbench: PreviewAPI, monkeypatch: pytest.MonkeyPatch, spelling: str
+) -> None:
+    preview = AsyncMock(wraps=workbench.container.runner.preview)
+    monkeypatch.setattr(workbench.container.runner, "preview", preview)
+    response = workbench.client.post(
+        ENDPOINT, data={**FORM, "near_duplicate_threshold": spelling}, headers=ORIGIN
+    )
+    assert response.status_code == 200
+    assert_headers(response, referrer_policy="same-origin")
+    root = ExplorerDOM(response.text).root
+    policy = json.loads(values(root, "evidence-policy")[0])
+    assert policy["near_duplicate_threshold"] == 0.9
+    assert controls(response.text)["near_duplicate_threshold"] == spelling
+    preview.assert_awaited_once_with(
+        FORM["query"],
+        document_ids=("a", "b"),
+        max_chunks_per_document=1,
+        min_evidence_documents=2,
+        near_duplicate_threshold=0.9,
+    )
+    # Form conversion must not weaken the JSON API's strict numeric type.
+    invalid_json = workbench.client.post(
+        "/retrieve", json={"query": FORM["query"], "near_duplicate_threshold": spelling}
+    )
+    assert invalid_json.status_code == 422
+    assert preview.await_count == 1
+
+
 @pytest.mark.parametrize(
     "updates",
     [
@@ -189,7 +219,20 @@ def test_post_displays_exact_api_preparation_and_failed_minimum_without_discardi
         {"min_evidence_documents": " 1"},
         {"near_duplicate_threshold": "NaN"},
         {"near_duplicate_threshold": "Infinity"},
+        {"near_duplicate_threshold": "-Infinity"},
+        {"near_duplicate_threshold": "inf"},
+        {"near_duplicate_threshold": "1e309"},
+        {"near_duplicate_threshold": "null"},
+        {"near_duplicate_threshold": "false"},
+        {"near_duplicate_threshold": "0_0.9"},
+        {"near_duplicate_threshold": "\u0660.\u0669"},
+        {"near_duplicate_threshold": "0x0.9"},
+        {"near_duplicate_threshold": "1."},
+        {"near_duplicate_threshold": "+.9"},
+        {"near_duplicate_threshold": "."},
         {"near_duplicate_threshold": "0"},
+        {"near_duplicate_threshold": ".0"},
+        {"near_duplicate_threshold": "-.9"},
         {"near_duplicate_threshold": "1.1"},
         {"near_duplicate_threshold": "true"},
         {"near_duplicate_threshold": '"0.5"'},

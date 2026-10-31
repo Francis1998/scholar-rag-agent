@@ -1,6 +1,7 @@
 """Explicit, bounded native forms over the existing generation-free retrieval endpoint."""
 
 import json
+import re
 from collections.abc import Iterator
 from typing import Literal, Self
 
@@ -84,7 +85,13 @@ class _Form(BaseModel):
             if value != "":
                 payload[name] = unsigned_decimal(value)
         if self.near_duplicate_threshold != "":
-            payload["near_duplicate_threshold"] = json.loads(self.near_duplicate_threshold)
+            # Native number controls allow .9 and 00.9, unlike JSON numeric syntax.
+            if not re.fullmatch(
+                r"-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?",
+                self.near_duplicate_threshold,
+            ):
+                raise ValueError("Use a native decimal number for the threshold.")
+            payload["near_duplicate_threshold"] = float(self.near_duplicate_threshold)
         # JSON-escaped IDs must be real Unicode before reaching SQLite or retrieval.
         json.dumps(payload, ensure_ascii=False).encode("utf-8")
         return RetrievalRequest.model_validate(payload)
