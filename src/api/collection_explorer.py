@@ -391,6 +391,17 @@ def _list(page: CollectionPage, options: _ListParameters, root_path: str) -> Ite
             _url(root_path + "/explore/collection", detail.parameters()),
             "Inspect membership and human screening",
         )
+        yield _link(
+            f"edit-collection-{index}",
+            _url(
+                root_path + "/explore/collections/edit",
+                {
+                    "collection_id": collection.collection_id,
+                    "expected_revision": collection.revision,
+                },
+            ),
+            "Edit collection name and membership",
+        )
         yield "</article>"
     params = options.parameters()
     yield _pagination(
@@ -487,6 +498,17 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
     yield _navigation(options, root_path)
     yield _literal(snapshot.collection_name, "collection-name")
     yield _identity(snapshot.collection_id, "collection-id")
+    yield _link(
+        "edit-collection",
+        _url(
+            root_path + "/explore/collections/edit",
+            {
+                "collection_id": snapshot.collection_id,
+                "expected_revision": snapshot.collection_revision,
+            },
+        ),
+        "Edit collection name and membership",
+    )
     yield (
         f"<p>Collection revision: {snapshot.collection_revision}; "
         f"current members: {snapshot.total_documents}. "
