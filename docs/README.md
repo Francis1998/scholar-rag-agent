@@ -44,6 +44,7 @@ accumulated feature list in the project README.
 | Read independent human-review histories and follow exact frozen quote highlights from a saved run | [Native human-review notebook: user/API/Python/portfolio guide and actual browser GIF](guides/HUMAN_REVIEW_NOTEBOOK_GUIDE.md) |
 | Download a whole frozen answer plus complete human-review and annotation histories in one bounded read snapshot | [Portable notebook: API/Python/browser/portfolio guide and executed-output GIF/still](guides/PORTABLE_REVIEW_NOTEBOOK_GUIDE.md) |
 | Recover forgotten run IDs and inspect recorded states after restart | [Run history](guides/RUN_HISTORY_GUIDE.md) |
+| Diagnose a failed or unfinished saved run without paid retries or rewriting history | [Failed-run triage, safe next actions, and executable offline exercises](guides/FAILED_RUN_TRIAGE_GUIDE.md) |
 | Discover saved runs in a browser and follow their validated frozen evidence without rerunning | [Saved-run browser, API/Python guide and actual browser GIF](guides/SAVED_RUN_BROWSER_GUIDE.md) |
 | Choose an explicit saved baseline, compare recorded outputs side by side, swap direction and open precise frozen sources | [Native comparison workbench: browser/API/Python/portfolio and measured illustration](guides/SAVED_RUN_COMPARISON_WORKBENCH_GUIDE.md) |
 | Inspect exact changes between two saved evidence bundles without rerunning models | [Existing JSON/Python comparison contract](guides/RUN_COMPARISON_GUIDE.md) |
@@ -62,7 +63,7 @@ accumulated feature list in the project README.
 | [Extended configuration](CONFIGURATION.md) | Configuration examples |
 | [SQLite backup and recovery](guides/SQLITE_BACKUP_RESTORE_GUIDE.md) | Safe new-path backups/restores and an offline synthetic recovery exercise |
 | [Safety](../SAFETY.md) | Execution bounds, grounding limitations, and data handling |
-| [Troubleshooting](TROUBLESHOOTING.md) | Setup and runtime troubleshooting |
+| [Troubleshooting](TROUBLESHOOTING.md) | Setup/runtime symptoms and the credential-free saved-failure workflow |
 | [Performance](PERFORMANCE.md) | Tuning notes, not measured product benchmarks |
 | [Contributing](../CONTRIBUTING.md) | Development, quality gates, and PR workflow |
 | [Security](../SECURITY.md) | Vulnerability reporting |
@@ -441,3 +442,5 @@ instructions or evidence of current scientific performance.
 - [SelectionIntoTreatmentCueExtractor](guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md)
 - [MendelianRandomizationWeakCueExtractor](guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md)
 - [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md)
+- [CompetingRisksResidualCueExtractor](guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
+- [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md)

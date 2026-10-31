@@ -666,6 +666,18 @@ uv run pytest tests/ -v --cov=src --cov-fail-under=70
 [Security Scan](.github/workflows/security.yml) also audits dependencies and runs
 Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
+### CompetingRisksResidualCueExtractor
+
+![CompetingRisksResidualCueExtractor](assets/demo/competing-risks-residual-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers competing-risks residual cue extractors. Distinct from `CompetingRiskCueExtractor` / `CompetingRiskInformativeCensoringCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
+### MediationBiasCueExtractor
+
+![MediationBiasCueExtractor](assets/demo/mediation-bias-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers mediation-bias cue extractors. Distinct from `MediationAnalysisCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
