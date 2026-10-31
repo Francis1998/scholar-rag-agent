@@ -12,6 +12,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from scripts.demo_evidence_export import offline_settings
 
 import api.routes as routes_module
@@ -235,3 +236,134 @@ def test_ingest_openapi_documents_nonblank_text(ingest_app: FastAPI) -> None:
     assert schema["properties"]["text"]["type"] == "string"
     assert schema["properties"]["text"]["minLength"] == 1
     assert "non-whitespace" in schema["properties"]["text"]["description"]
+
+
+@pytest.mark.parametrize("field", ["title", "text", "source"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "PRIVATE_INGEST_\ud800",
+        "PRIVATE_INGEST_\udfff",
+        ["PRIVATE_INGEST_\ud800"],
+        {"nested": "PRIVATE_INGEST_\udfff"},
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("mount_path", "root_path"), [("", ""), ("/library", ""), ("/library", "/proxy")]
+)
+def test_unencodable_ingestion_diagnostics_return_422_without_work(
+    ingest_app: FastAPI,
+    ingestion_spies: list[Mock],
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    field: str,
+    value: object,
+    mount_path: str,
+    root_path: str,
+) -> None:
+    application = ingest_app
+    if mount_path:
+        application = FastAPI()
+        application.mount(mount_path, ingest_app)
+    payload: dict[str, object] = {
+        "title": "Synthetic validation note",
+        "text": PADDED_TEXT,
+        "source": "synthetic:validation",
+        field: value,
+    }
+    database_path = tmp_path / "ingest-text-validation.sqlite3"
+    before = database_dump(database_path)
+    with TestClient(application, root_path=root_path, raise_server_exceptions=False) as client:
+        response = client.post(
+            f"{root_path}{mount_path}/ingest/text",
+            content=json.dumps(payload, ensure_ascii=True).encode("ascii"),
+            headers={"Content-Type": "application/json"},
+        )
+
+    assert response.status_code == 422, response.text
+    errors = response.json()["detail"]
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ["body", field]
+    expected_type = (
+        ("string_unicode" if field == "text" else "value_error")
+        if isinstance(value, str)
+        else "string_type"
+    )
+    assert errors[0]["type"] == expected_type
+    assert set(errors[0]) == {"loc", "type", "msg"}
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    response.content.decode("utf-8")
+    assert "PRIVATE_INGEST" not in response.text
+    assert "PRIVATE_INGEST" not in caplog.text
+    assert "unserializable_diagnostic" in caplog.text
+    for spy in ingestion_spies:
+        spy.assert_not_called()
+    assert database_dump(database_path) == before
+
+
+def test_ingestion_sanitization_preserves_ordinary_validation_details(
+    ingest_app: FastAPI, ingestion_spies: list[Mock]
+) -> None:
+    with TestClient(ingest_app, raise_server_exceptions=False) as client:
+        baseline = client.post("/ingest/text", json={"title": 12, "text": " ", "source": None})
+        response = client.post(
+            "/ingest/text",
+            content=json.dumps({"title": 12, "text": " ", "source": "\ud800"}).encode("ascii"),
+            headers={"Content-Type": "application/json"},
+        )
+    assert baseline.status_code == 422
+    assert response.status_code == 422, response.text
+    ordinary = [error for error in baseline.json()["detail"] if error["loc"][-1] != "source"]
+    assert [
+        error for error in response.json()["detail"] if error["loc"][-1] != "source"
+    ] == ordinary
+    assert any("input" in error for error in ordinary)
+    assert any("ctx" in error for error in ordinary)
+    for spy in ingestion_spies:
+        spy.assert_not_called()
+
+
+@pytest.mark.parametrize("field", ["title", "text", "source"])
+@pytest.mark.parametrize("surrogate", ["\ud800", "\udfff"])
+def test_ingestion_schema_rejects_unpaired_unicode(field: str, surrogate: str) -> None:
+    payload = {"title": "Synthetic note", "text": PADDED_TEXT, field: surrogate}
+    with pytest.raises(ValidationError) as error:
+        IngestTextRequest.model_validate(payload)
+    assert error.value.errors()[0]["loc"] == (field,)
+
+
+@pytest.mark.parametrize("escaped", [False, True])
+def test_ingestion_keeps_astral_unicode_and_exact_identity(
+    ingest_app: FastAPI, tmp_path: Path, escaped: bool
+) -> None:
+    payload = {
+        "title": " \U0001f52c Synthetic research ",
+        "text": f"{PADDED_TEXT}\U0001f9ec",
+        "source": "\U0001f30d:synthetic",
+    }
+    expected_id = stable_id(
+        json.dumps(
+            [payload["source"], payload["title"], payload["text"]],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ),
+        "doc-api-v2",
+    )
+    with TestClient(ingest_app) as client:
+        response = client.post(
+            "/ingest/text",
+            content=json.dumps(payload, ensure_ascii=escaped).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        repeated = client.post("/ingest/text", json=payload)
+    assert response.status_code == 200, response.text
+    assert response.json()["document_id"] == expected_id
+    assert repeated.json() == response.json()
+    with closing(sqlite3.connect(tmp_path / "ingest-text-validation.sqlite3")) as connection:
+        assert connection.execute("SELECT title, text, source FROM documents").fetchall() == [
+            (payload["title"], payload["text"], payload["source"])
+        ]

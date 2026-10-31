@@ -32,6 +32,15 @@ class IngestTextRequest(BaseModel):
     )
     source: str = "api"
 
+    @field_validator("title", "text", "source")
+    @classmethod
+    def reject_invalid_unicode(cls, value: str) -> str:
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError("Text fields must contain valid Unicode characters.") from None
+        return value
+
     @field_validator("text")
     @classmethod
     def reject_blank_text(cls, value: str) -> str:
