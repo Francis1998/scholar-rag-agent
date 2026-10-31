@@ -678,6 +678,12 @@ Gap vs Elicit/Consensus/Connected Papers competing-risks residual cue extractors
 
 Gap vs Elicit/Consensus/Connected Papers mediation-bias cue extractors. Distinct from `MediationAnalysisCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
 
+### ProtocolAmendmentCueExtractor
+
+![ProtocolAmendmentCueExtractor](assets/demo/protocol-amendment-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers protocol-amendment cue extractors. Distinct from `OutcomeSwitchingCueExtractor` / `WinnerCurseCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md`.
+
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
