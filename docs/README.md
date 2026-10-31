@@ -442,3 +442,4 @@ instructions or evidence of current scientific performance.
 - [MendelianRandomizationWeakCueExtractor](guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md)
 - [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md)
 - [CompetingRisksResidualCueExtractor](guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
+- [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md)
