@@ -10,7 +10,11 @@ For creation without API tooling, use the
 [native paper collection builder](NATIVE_COLLECTION_BUILDER_GUIDE.md) from
 `/explore` or `/explore/collections`. It explicitly saves checked exact IDs from
 one bounded catalog page through the same atomic store, then opens the persisted
-collection. The API/Python examples and editing contracts below are unchanged.
+collection. The separate [native editor](NATIVE_COLLECTION_EDITOR_GUIDE.md)
+supports rename and exact add/remove deltas with preview and revision-checked
+save, preserving all unchecked/off-page members. The JSON full-replacement
+contract below is unchanged; Python also exposes `CollectionEdit`,
+`preview_edit` and `edit` for these atomic deltas.
 
 ![Measured synthetic saved-collection workflow](../assets/paper-collections.gif)
 

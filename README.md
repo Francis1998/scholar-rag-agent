@@ -49,6 +49,7 @@ PDF-upload UI.
 | Find exact wording and read its source in a browser | Search from `/explore`, inspect highlighted Unicode spans, page within an exact paper/collection, and return from source context without generation | [Browser/API/Python passage search](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
 | Create a named selection without curl or manual JSON | Filter a bounded catalog page, explicitly check exact papers, save a name and reopen persisted membership | [Native collection builder: offline/browser/API/Python/portfolio guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md) |
+| Edit a collection without dropping hidden members | Rename, explicitly select additions/removals, preview the complete result and save against the current revision | [Native editor: browser/API/Python/portfolio guide and measured demo](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md) |
 | Browse saved collections and human screening | Discover collections from `/explore`, inspect membership/status/reasons, follow exact readers and download revision-bound screening/duplicate outputs | [Native collection browser and executed demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) |
 | Inspect duplicate candidates before screening | Read a revision-checked selection in one bounded snapshot; review exact IDs, raw metadata, reasons and singletons without hiding or deleting papers | [Collection duplicate inspection and measured demo](docs/guides/COLLECTION_DUPLICATES_GUIDE.md) |
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
@@ -100,6 +101,23 @@ illustration, not browser footage** or scientific findings; a
 [text alternative](docs/assets/collection-builder.txt) records executed outcomes.
 No models, retrieval, network or agent events run during creation, and membership
 does not freeze paper contents.
+
+## Edit a collection without deleting papers
+
+[![Measured native editing, stale-save rejection and preserved history](docs/assets/collection-editor.png)](docs/assets/collection-editor.gif)
+
+Choose **Edit collection name and membership** from a saved collection or list
+card. Check explicit additions/removals, rename, preview the complete result,
+then save. Filtering candidates never removes unchecked or off-page members.
+Revision-checked atomic saves reject stale replays. Removing membership leaves
+documents, frozen evidence, events and human opinion history intact; even a
+rename makes earlier screening decisions stale.
+
+The [complete browser/API/Python and portfolio guide](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md)
+includes an executed credential-free demo, restart checks and finite limits.
+The opt-in GIF is a **measured-output Pillow illustration, not browser footage**;
+its [text alternative](docs/assets/collection-editor.txt) records actual results.
+No models, retrieval, network or agent events run while editing.
 
 ## Explicitly screen a paper in your browser
 
@@ -677,6 +695,12 @@ Gap vs Elicit/Consensus/Connected Papers competing-risks residual cue extractors
 ![MediationBiasCueExtractor](assets/demo/mediation-bias-cues.gif)
 
 Gap vs Elicit/Consensus/Connected Papers mediation-bias cue extractors. Distinct from `MediationAnalysisCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
+
+### ProtocolAmendmentCueExtractor
+
+![ProtocolAmendmentCueExtractor](assets/demo/protocol-amendment-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers protocol-amendment cue extractors. Distinct from `OutcomeSwitchingCueExtractor` / `WinnerCurseCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md`.
 
 ## License
 

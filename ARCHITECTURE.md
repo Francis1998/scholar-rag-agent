@@ -681,6 +681,35 @@ to 1 MiB. A write-aware footer/header distinguishes creation from read-only
 browsing. No models, retrieval, screening, corpus edits, agent events or JSON
 contract changes occur. See the [native builder guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md).
 
+### Native collection membership editing
+
+`api.collection_editing` adds GET/POST `/explore/collections/edit`, discoverable
+from list cards and collection detail. GET resolves complete validated membership
+at the requested revision and separately reads bounded catalog candidates; it
+does not claim those reads freeze corpus contents. Full membership is always
+shown for explicit removals. Candidate filtering/pagination affects additions
+only. Indexed ASCII JSON-string controls preserve exact IDs. Unsaved choices
+are not carried between pages; there is no session, cart or hidden full-selection
+replacement.
+
+The shared native form parser/Origin guards and HTML renderer provide strict
+wire validation, escaped labels, mounted links, sanitized failures and no-store
+CSP. POST preview calls `SQLitePaperCollections.preview_edit`, showing complete
+resulting membership without writes. Final save calls `edit`: `CollectionEdit`
+validates exact, disjoint ordered deltas, and `resolved_collection(write=True)`
+reserves and checks all old members plus the expected revision. The shared
+replacement helper validates resulting IDs/name and writes atomically. The
+original JSON full-replacement/recovery behavior is unchanged.
+
+GET queries are capped at 16 KiB, POST bodies at 512 KiB (204 fields), and
+complete escaped HTML at 1 MiB. Retained IDs keep saved order and additions
+follow checkbox index. Missing old members, stale revisions, no-op/empty/
+over-limit edits and conflicting names fail, never silently merge or repair.
+Save advances the revision once and redirects to its actual persisted detail.
+Documents, evidence, opinions/history and events are untouched; prior screening
+becomes stale, including after a rename. No models, retrieval, network, new schema
+or settings are involved. See the [editor guide](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md).
+
 ## Persistent Run Discovery
 
 `SQLiteRunHistory` projects `GET /runs` summaries directly from `agent_events`,
