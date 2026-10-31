@@ -235,9 +235,12 @@ print(saved.model_dump_json(indent=2))
 ```
 
 `CollectionEdit` rejects unordered collections, duplicate or overlapping IDs,
-invalid exact IDs and unknown fields. `edit`/`preview_edit` return typed records
-or raise `CollectionError`/Pydantic validation errors; no partial success is
-reported. Existing `create`, `replace`, `delete` and JSON API contracts remain.
+invalid exact IDs and unknown fields. Both `edit` and `preview_edit` revalidate
+a detached `model_dump` before opening storage, including models made with
+unvalidated `model_copy(update=...)` or `model_construct()`. Valid copied edits
+remain supported. These methods return typed records or raise
+`CollectionError`/Pydantic validation errors; no partial success is reported.
+Existing `create`, `replace`, `delete` and JSON API contracts remain.
 
 ## Local/trusted use and privacy
 

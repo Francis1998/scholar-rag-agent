@@ -414,19 +414,21 @@ class SQLitePaperCollections:
         self, collection_id: str, *, changes: CollectionEdit
     ) -> tuple[PaperCollection, CollectionReplacement]:
         """Validate a proposed delta without reserving it or writing any state."""
+        payload = CollectionEdit.model_validate(changes.model_dump())
         with self.resolved_collection(
-            collection_id, expected_revision=changes.expected_revision
+            collection_id, expected_revision=payload.expected_revision
         ) as (connection, current):
-            replacement = changes.apply_to(current)
+            replacement = payload.apply_to(current)
             self._validate_replacement(connection, collection_id, replacement)
             return current, replacement
 
     def edit(self, collection_id: str, *, changes: CollectionEdit) -> PaperCollection:
         """Validate all old members and apply explicit deltas in one reserved transaction."""
+        payload = CollectionEdit.model_validate(changes.model_dump())
         with self.resolved_collection(
-            collection_id, expected_revision=changes.expected_revision, write=True
+            collection_id, expected_revision=payload.expected_revision, write=True
         ) as (connection, current):
-            return self._replace(connection, collection_id, changes.apply_to(current))
+            return self._replace(connection, collection_id, payload.apply_to(current))
 
     def delete(self, collection_id: str, *, expected_revision: int) -> None:
         identifier = _COLLECTION_ID.validate_python(collection_id)
