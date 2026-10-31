@@ -28,6 +28,7 @@ from api.explorer import router as explorer_router
 from api.notebook_export import router as notebook_export_router
 from api.research import router as research_router
 from api.retrieval import router as retrieval_router
+from api.retrieval_explorer import router as retrieval_explorer_router
 from api.review_explorer import router as review_explorer_router
 from api.review_notebook import router as review_notebook_router
 from api.reviews import router as reviews_router
@@ -111,6 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.container = create_container(settings)
     application.include_router(core_router)
     application.include_router(retrieval_router)
+    application.include_router(retrieval_explorer_router)
     application.include_router(documents_router)
     application.include_router(explorer_router)
     application.include_router(run_explorer_router)

@@ -435,6 +435,18 @@ errors (409 for generative retrieval), not `ERROR` run bodies or empty successes
 Task cancellation propagates without journaling. See the
 [retrieval preview contract](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md).
 
+The native `/explore/retrieve` workbench computes only on an explicit same-origin
+URL-encoded POST; GET opens controls without preview work. It reuses that same
+request validation, scope resolution and preparation, with strict bounded wire
+parsing and no partial HTML on failure. Empty/ambiguous scopes never widen.
+All text is escaped, source labels are never external links, and complete HTML
+is capped at 1 MiB. CSP/no-store/framing protections apply to errors too.
+Same-origin referrer policy preserves native POST Origin; this is not
+authentication, rate limiting, DNS-rebinding protection or isolation of custom
+Python components. POST data may remain in resubmission state or infrastructure
+logs. Source-context links read current corpus text, not frozen preview evidence.
+See the [complete workbench privacy and bounds](docs/guides/NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md).
+
 ## Retrieval Policy Comparison
 
 `POST /research/compare-retrieval` runs exactly two real previews under one
