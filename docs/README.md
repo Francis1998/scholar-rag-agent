@@ -9,6 +9,7 @@ accumulated feature list in the project README.
 | Goal | Guide |
 | --- | --- |
 | Install and run without model credentials | [Quickstart](../QUICKSTART.md) |
+| Extract a local PDF, review before indexing, and explicitly wire optional OCR | [Executable local PDF ingestion and restart workflow](guides/PDF_OCR_HOOK_GUIDE.md) |
 | Work through a small corpus and prepare an honest portfolio demonstration | [Research workflow](guides/RESEARCH_WORKFLOW_GUIDE.md) |
 | Browse the current paper catalog and bounded passages with native browser forms/links | [Read-only local corpus explorer and actual browser demo](guides/CORPUS_EXPLORER_GUIDE.md) |
 | Browse saved papers, recover IDs after restart, and select a query corpus | [Document catalog and offline demo](guides/DOCUMENT_CATALOG_GUIDE.md) |
@@ -112,7 +113,7 @@ Choose [planning and context](#query-planning-and-context),
 | [Contextual compression](guides/CONTEXTUAL_COMPRESSION_GUIDE.md) | Extract query-relevant sentence spans |
 | [Sentence windows](guides/SENTENCE_WINDOW_EXPAND_GUIDE.md) | Expand hits with neighboring sentences |
 | [Parent documents](guides/PARENT_DOCUMENT_GUIDE.md) | Expand child hits to provided parent text |
-| [PDF OCR hook](guides/PDF_OCR_HOOK_GUIDE.md) | Supply an OCR backend for short PDF extraction |
+| [Local PDF ingestion and explicit OCR](guides/PDF_OCR_HOOK_GUIDE.md) | Extract, inspect, persist, and recover saved IDs; standalone OCR is not enabled by the connector |
 | [Figure captions](guides/FIGURE_CAPTION_GUIDE.md) | Extract figure and table caption text and offsets |
 
 ### Ranking and diversity

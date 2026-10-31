@@ -103,6 +103,16 @@ Unicode such as `"\u00a0\u2003"`) returns HTTP 422 before ingestion, storage,
 or indexing. Nonblank text is passed through unchanged for document IDs and
 stored document content; existing chunk whitespace normalization still applies.
 
+## Ingest a local PDF in Python
+
+Use the [executable local PDF guide](guides/PDF_OCR_HOOK_GUIDE.md) to generate a
+permitted synthetic PDF with pypdf, inspect extraction before writing, explicitly
+wire the offline pipeline, and recover saved IDs for retrieval after restart.
+`PDFConnector.load` does not invoke OCR or persist anything. The standalone
+`PdfOcrHook` needs an explicitly supplied real backend; its default is a no-op.
+The `scholar-rag-ingest` command only prints JSON from a UTF-8 text file, not a PDF.
+Review empty/short output before using the replacement boundary below.
+
 ## Replace a complete document in Python
 
 The Python ingestion boundary replaces the entire current document, not just
