@@ -1,17 +1,15 @@
 # Provider Models and Compatibility
 
 The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model),
-[Astra](https://developers.openai.com/api/docs/models/gpt-6-astra),
-[6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), and
-[6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra) model pages,
+[Astra model page](https://developers.openai.com/api/docs/models/gpt-6-astra),
 [Anthropic](https://platform.claude.com/docs/en/models/overview) catalog,
 [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) and
 [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) guides,
-[Kimi model list](https://platform.kimi.ai/docs/models.md), and
-[Kimi API quickstart](https://platform.kimi.ai/docs/get-your-api-key.md)
-were reviewed **2026-10-30 America/Los_Angeles**, during the maintainer pass
-begun October 29. Exact model pages were read directly rather than inferring
-availability from incomplete dynamic catalog indexes. OpenAI positions `gpt-6-astra` for highest
+and [Kimi model list](https://platform.kimi.ai/docs/models.md)
+were read directly **2026-10-31 America/Los_Angeles**. This is a current catalog
+check, not a new migration or inference test; separately dated model-specific
+contracts below retain their original check dates.
+OpenAI positions `gpt-6-astra` for highest
 intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
 `gpt-6.1-terra` for efficient visual reasoning, computer use, and writing,
 and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
@@ -105,11 +103,12 @@ does not establish this account's access or live payload compatibility.
 ### Kimi legacy overrides and retirement notice
 
 The [Kimi model list](https://platform.kimi.ai/docs/models.md), checked
-**2026-10-30 America/Los_Angeles**, contains two distinct upcoming notices:
+**2026-10-31 America/Los_Angeles**, distinguishes today's access restriction
+from a later planned retirement:
 
 | Timing | Affected users/models |
 | --- | --- |
-| Starting **2026-10-31** | K2-series models become unavailable to **newly registered users**. Existing users are unaffected by this immediate access restriction. |
+| Starting **2026-10-31** (today's check date) | K2-series models are no longer available to **newly registered users**. Existing users are unaffected by this immediate access restriction. |
 | **Planned by the end of December 2026** | Kimi plans to retire **all K2-series models**. This is a planned window, not a guaranteed exact retirement date. |
 
 These notices do not supersede the separately recorded past discontinuations:

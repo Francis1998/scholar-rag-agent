@@ -20,6 +20,21 @@ ingestion run. Starting with a new temporary path creates an empty corpus.
 Also inspect `result.state`, `result.error`, and grounding warnings: HTTP success
 does not necessarily mean the agent completed successfully.
 
+## Local PDF Text Is Empty, Short, or Missing From Retrieval
+
+`PDFConnector.load` extracts text with pypdf but neither invokes OCR nor writes
+the corpus. Stop before persistence when output is empty, suspiciously short,
+or incomplete. A same-path PDF keeps its document ID, and a blank same-ID
+replacement clears current evidence rather than skipping the update.
+
+The [executable local PDF guide](guides/PDF_OCR_HOOK_GUIDE.md) separates
+inspection, explicit offline pipeline ingestion, restart discovery, and optional
+OCR wiring. Its default `NullOcrBackend` returns empty text; no real OCR engine
+is included. Protected/malformed files may raise `ValueError`, not trigger OCR.
+The `scholar-rag-ingest` CLI only prints JSON from UTF-8 text and cannot ingest
+a PDF. After Python ingestion, restart a separate API container against the
+same database to reload its in-memory indexes.
+
 ## A Saved Run Failed or Never Finished
 
 Do not resend `/query` as a diagnostic: that starts a new run and may make paid
