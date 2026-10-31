@@ -669,3 +669,21 @@ Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
 own licenses and access terms.
+
+### OutcomeSwitchingCueExtractor
+
+![OutcomeSwitchingCueExtractor](assets/demo/outcome-switching-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers outcome-switching cue extractors. Distinct from `PrimaryEndpointCueExtractor` / `SpinPHackingCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md`.
+
+### SelectionIntoTreatmentCueExtractor
+
+![SelectionIntoTreatmentCueExtractor](assets/demo/selection-into-treatment-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers selection-into-treatment cue extractors. Distinct from `SelectionBiasCueExtractor` / `HealthyWorkerSurvivorCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md`.
+
+### MendelianRandomizationWeakCueExtractor
+
+![MendelianRandomizationWeakCueExtractor](assets/demo/mendelian-randomization-weak-cues.gif)
+
+Gap vs Elicit/Consensus/Connected Papers weak Mendelian-randomization cue extractors. Distinct from `InstrumentStrengthCueExtractor` / `GComputationCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md`.
