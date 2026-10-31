@@ -5,7 +5,7 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import uuid4
 
 from pydantic import (
@@ -16,9 +16,12 @@ from pydantic import (
     StringConstraints,
     TypeAdapter,
     ValidationError,
+    field_validator,
+    model_validator,
 )
 
 from retrieval.scope import MAX_DOCUMENT_ID_LENGTH, MAX_DOCUMENT_IDS, DocumentIds, DocumentIdsInput
+from storage.source_context import ContextDocumentIdentity
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
@@ -70,6 +73,64 @@ class PaperCollection(CollectionSelection):
 
     collection_id: CollectionId
     revision: Revision
+
+
+class CollectionEdit(BaseModel):
+    """Exact deltas: omission retains members; neither normalization nor implicit removal."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: CollectionName
+    expected_revision: Revision
+    add_document_ids: tuple[ContextDocumentIdentity, ...] = Field(
+        default=(), max_length=MAX_DOCUMENT_IDS
+    )
+    remove_document_ids: tuple[ContextDocumentIdentity, ...] = Field(
+        default=(), max_length=MAX_DOCUMENT_IDS
+    )
+
+    @field_validator("add_document_ids", "remove_document_ids", mode="before")
+    @classmethod
+    def ordered(cls, value: object) -> object:
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("Changes must be ordered lists or tuples of exact IDs.")
+        return value
+
+    @model_validator(mode="after")
+    def distinct(self) -> Self:
+        added, removed = set(self.add_document_ids), set(self.remove_document_ids)
+        if (
+            len(added) != len(self.add_document_ids)
+            or len(removed) != len(self.remove_document_ids)
+            or added & removed
+        ):
+            raise ValueError("Repeated or overlapping changes are ambiguous.")
+        return self
+
+    def apply_to(self, current: PaperCollection) -> CollectionReplacement:
+        members = set(current.document_ids)
+        if members.intersection(self.add_document_ids) or not set(
+            self.remove_document_ids
+        ).issubset(members):
+            raise CollectionError(
+                "invalid_collection_edit", "Add nonmembers and remove only current members.", 422
+            )
+        if not self.add_document_ids and not self.remove_document_ids and self.name == current.name:
+            raise CollectionError(
+                "collection_edit_unchanged",
+                "Choose a name or membership change before saving.",
+                422,
+            )
+        return CollectionReplacement(
+            name=self.name,
+            expected_revision=self.expected_revision,
+            document_ids=tuple(
+                identifier
+                for identifier in current.document_ids
+                if identifier not in self.remove_document_ids
+            )
+            + self.add_document_ids,
+        )
 
 
 class CollectionSummary(BaseModel):
@@ -314,30 +375,60 @@ class SQLitePaperCollections:
         )
         with self._connection(write=True) as connection:
             self._check_revision(connection, identifier, replacement.expected_revision)
-            if replacement.expected_revision == MAX_REVISION:
-                raise CollectionError(
-                    "collection_revision_exhausted", "Collection revision cannot increase.", 409
-                )
-            self._validate_documents(connection, replacement.document_ids)
-            self._check_name(connection, replacement.name, identifier)
-            collection = PaperCollection(
-                collection_id=identifier,
-                name=replacement.name,
-                document_ids=replacement.document_ids,
-                revision=replacement.expected_revision + 1,
+            return self._replace(connection, identifier, replacement)
+
+    def _validate_replacement(
+        self, connection: sqlite3.Connection, identifier: str, replacement: CollectionReplacement
+    ) -> None:
+        if replacement.expected_revision == MAX_REVISION:
+            raise CollectionError(
+                "collection_revision_exhausted", "Collection revision cannot increase.", 409
             )
-            connection.execute(
-                "UPDATE paper_collections SET name = ?, document_ids = ?, revision = ? "
-                "WHERE collection_id = ? AND revision = ?",
-                (
-                    collection.name,
-                    json.dumps(collection.document_ids),
-                    collection.revision,
-                    identifier,
-                    replacement.expected_revision,
-                ),
-            )
+        self._validate_documents(connection, replacement.document_ids)
+        self._check_name(connection, replacement.name, identifier)
+
+    def _replace(
+        self, connection: sqlite3.Connection, identifier: str, replacement: CollectionReplacement
+    ) -> PaperCollection:
+        self._validate_replacement(connection, identifier, replacement)
+        collection = PaperCollection(
+            collection_id=identifier,
+            name=replacement.name,
+            document_ids=replacement.document_ids,
+            revision=replacement.expected_revision + 1,
+        )
+        connection.execute(
+            "UPDATE paper_collections SET name = ?, document_ids = ?, revision = ? "
+            "WHERE collection_id = ? AND revision = ?",
+            (
+                collection.name,
+                json.dumps(collection.document_ids),
+                collection.revision,
+                identifier,
+                replacement.expected_revision,
+            ),
+        )
         return collection
+
+    def preview_edit(
+        self, collection_id: str, *, changes: CollectionEdit
+    ) -> tuple[PaperCollection, CollectionReplacement]:
+        """Validate a proposed delta without reserving it or writing any state."""
+        payload = CollectionEdit.model_validate(changes.model_dump())
+        with self.resolved_collection(
+            collection_id, expected_revision=payload.expected_revision
+        ) as (connection, current):
+            replacement = payload.apply_to(current)
+            self._validate_replacement(connection, collection_id, replacement)
+            return current, replacement
+
+    def edit(self, collection_id: str, *, changes: CollectionEdit) -> PaperCollection:
+        """Validate all old members and apply explicit deltas in one reserved transaction."""
+        payload = CollectionEdit.model_validate(changes.model_dump())
+        with self.resolved_collection(
+            collection_id, expected_revision=payload.expected_revision, write=True
+        ) as (connection, current):
+            return self._replace(connection, collection_id, payload.apply_to(current))
 
     def delete(self, collection_id: str, *, expected_revision: int) -> None:
         identifier = _COLLECTION_ID.validate_python(collection_id)

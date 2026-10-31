@@ -104,6 +104,17 @@ and optional same-origin Fetch Metadata are required only for its native POST;
 the JSON API stays unchanged. Configure trusted scheme/host/root-path correctly
 for mounted/proxy use. There is no multi-page state or authentication.
 
+The [native collection editor](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md)
+also adds no settings/schema/dependencies. GET requires exact collection ID and
+expected revision; catalog filters affect addition candidates only. It displays
+all 1-100 current members, accepts at most 100 additions and 100 removals with
+a final 1-100-member result, and uses the existing 1-120-character name rule.
+Bounds: 16-KiB query, 512-KiB streamed POST, 204 indexed fields, 1538 decoded
+characters per POST field and 1-MiB escaped HTML. Both preview and save require
+the shared exact-Origin checks. Preview is stateless/read-only; save atomically
+checks the complete old selection and current revision. Proxy/root-path,
+same-origin referrer and local/trusted-use requirements match the builder.
+
 The [native human screening workbench](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md)
 adds no setting, dependency, table or provider change. It uses the configured
 SQLite database, fixed five-entry recent history, 64-KiB query/body limits,
