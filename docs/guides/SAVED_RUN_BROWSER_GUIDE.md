@@ -6,6 +6,11 @@ its recorded question and state, follow citations to captured passages, and
 download the existing JSON, Markdown or offline HTML artifact. No model,
 retrieval, current-corpus read or event write is needed to open saved evidence.
 
+The **Original question contains (literal)** field searches the full first
+PLANNING question, not just its preview. See the
+[complete search guide and measured GIF/still/text](SAVED_QUESTION_SEARCH_GUIDE.md)
+for exact case/Unicode semantics, API/Python usage and URL privacy.
+
 Choose **Human-review notebook** on a run entry or its evidence reader to read
 recorded decisions/comments and exact annotations. The
 [notebook guide](HUMAN_REVIEW_NOTEBOOK_GUIDE.md) covers its independent histories
@@ -31,17 +36,19 @@ It shows history, its next page, a recorded answer, and a frozen source.
    SQLite database that contains your runs. In `/explore`, **Browse saved runs**
    preserves the current catalog's page size, source/title filters and cursor
    as return navigation. Those filters do **not** select runs.
-2. Choose an **Exact recorded state**, or **All recorded states**, and
-   **Runs per page** from 1 to 100. **Apply recorded-state filter** starts at
+2. Optionally enter an **Original question contains (literal)** fragment,
+   choose an **Exact recorded state**, or **All recorded states**, and
+   **Runs per page** from 1 to 100. **Apply run filters** starts at
    the newest creation key, without the previous cursor. States are saved
    facts, not a live-job monitor: `REASONING` can be an interrupted trace.
 3. Inspect the exact run/agent IDs, first event ID, first/last event timestamps,
    event count and original query preview. A preview has at most 300 Unicode
    code points; a separate notice says when text was omitted. A missing query
    and an explicitly saved empty query have different messages.
-4. **Next page** keeps the state, size and catalog return selection.
+4. **Next page** keeps the question, state, size and catalog return selection.
    **Start again with the same selection** removes only the history cursor.
-   **Show all states** explicitly removes state and cursor. New runs appear
+   **Show all states** explicitly removes state and cursor, keeping the question.
+   **Clear question filter** removes question and cursor, keeping state. New runs appear
    when you restart traversal, not in the middle of an older keyset page.
 5. **Inspect saved evidence** validates the exact run before showing a complete
    capture. History does not eagerly export each row or promise that `DONE`
@@ -81,23 +88,26 @@ relative labels such as "a few minutes ago."
 ## HTTP contract
 
 Both new routes are native GET pages returning `text/html; charset=utf-8`.
-The existing `GET /runs` JSON contract, evidence schema and download URLs are
-unchanged. OpenAPI also documents the new routes.
+The default `GET /runs` response shape, evidence schema and download URLs are
+unchanged; its optional `question` filter is shared with native browsing.
+OpenAPI also documents these routes.
 
 | Route / field | Contract |
 | --- | --- |
 | `GET /explore/runs` | A bounded page from `SQLiteRunHistory.list_runs`, not an evidence/body scan per row |
 | `limit` | Default 20; ASCII decimal integer from 1 to 100 |
 | `state` | Omit or send blank for all; otherwise exactly `IDLE`, `PLANNING`, `RETRIEVING`, `REASONING`, `ANSWERING`, `DONE`, or `ERROR` |
+| `question` | Omit or send empty for all questions; otherwise a nonblank case-sensitive literal of 1-200 Unicode code points in the full original question |
 | `cursor` | Omit initially; otherwise positive signed-64-bit first-event ID, 1 through 9223372036854775807 |
 | `GET /explore/run?run_id=...` | Required exact raw run ID, 1-256 Unicode code points; no trimming or normalization |
-| `limit`, `state`, `cursor` on `/explore/run` | Validated history-return selection only; evidence always belongs to the exact `run_id` |
+| `limit`, `state`, `cursor`, `question` on `/explore/run` | Validated history-return selection only; evidence always belongs to the exact `run_id` |
 | `catalog_limit` | Independent original catalog page size, 1-100, default 20 |
 | `source`, `title`, `catalog_cursor` | Original catalog return state; source up to 512, title up to 300, and exact cursor ID up to 128 code points with no outer whitespace |
 | Unknown or duplicate fields | 422, even for return-only fields; no last-value-wins or silently discarded filter |
 | Query bytes | At most 16,384 raw ASGI query-string bytes; malformed UTF-8 fails before store reads |
 
-Only blank `state` explicitly selects all states; only blank `source` and
+Only blank `state` explicitly selects all states; an empty `question` omits
+question filtering (unlike the strict API/Python empty-string error). Only blank `source` and
 `title` omit those catalog filters. Empty cursors, `state=done`, `state=null`,
 decimal/exponent/boolean integer spellings and partial encoded Unicode fail.
 GET has strings, not JSON null. The word `null` can still be an exact run ID.
@@ -140,10 +150,11 @@ Python reader below for their artifacts. NUL-bearing IDs can be discovered as
 JSON strings, but the literal evidence HTML renderer rejects NUL explicitly.
 Control-bearing query previews also fail rather than display replacement text.
 
-NUL/CR/LF in catalog return state cannot round-trip through native text inputs.
+NUL/CR/LF in question or catalog return state cannot round-trip through native text inputs.
 The filter form is omitted with an explanation, while encoded page/evidence/
 return links preserve the values exactly. Reset those filters in the catalog
-before editing. Invalid requests have an explicitly labeled reset route; they
+before editing, or use **Clear question filter** for a control-bearing question.
+Invalid requests have an explicitly labeled reset route; they
 are never relabeled as a successful broader selection.
 
 All generated application paths retain ASGI `root_path`, including nested

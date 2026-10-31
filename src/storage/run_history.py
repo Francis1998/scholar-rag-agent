@@ -4,17 +4,19 @@ import codecs
 import json
 import sqlite3
 from contextlib import closing
+from functools import partial
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
 
-from pydantic import AwareDatetime, BaseModel, Field, ValidationError
+from pydantic import AfterValidator, AwareDatetime, BaseModel, Field, ValidationError
 
 from agent.models import AgentState
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 MAX_QUERY_CHARACTERS = 300
+MAX_QUESTION_CHARACTERS = 200
 MAX_ID_CHARACTERS = 256
 MAX_EVENT_ID = 2**63 - 1
 _QUERY_PREFIX_BYTES = 4 * (MAX_QUERY_CHARACTERS + 1)
@@ -22,6 +24,23 @@ _QUERY_PREFIX_BYTES = 4 * (MAX_QUERY_CHARACTERS + 1)
 PageSize = Annotated[int, Field(strict=True, ge=1, le=MAX_PAGE_SIZE)]
 EventID = Annotated[int, Field(strict=True, ge=1, le=MAX_EVENT_ID)]
 Identity = Annotated[str, Field(strict=True, min_length=1, max_length=MAX_ID_CHARACTERS)]
+
+
+def _literal_question(value: str) -> str:
+    if not value.strip():
+        raise ValueError("The original-question filter cannot be blank.")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError("The original-question filter must contain valid Unicode.") from exc
+    return value
+
+
+QuestionFilter = Annotated[
+    str,
+    Field(strict=True, min_length=1, max_length=MAX_QUESTION_CHARACTERS),
+    AfterValidator(_literal_question),
+]
 
 
 class RunSummary(BaseModel):
@@ -51,6 +70,7 @@ class _PageRequest(BaseModel):
     limit: PageSize = DEFAULT_PAGE_SIZE
     cursor: EventID | None = None
     state: AgentState | None = None
+    question: QuestionFilter | None = None
 
 
 class RunHistoryError(ValueError):
@@ -60,6 +80,16 @@ class RunHistoryError(ValueError):
 
     def __init__(self) -> None:
         super().__init__("Saved run summary data is inconsistent, invalid, or unsupported.")
+
+
+def _question_match(value: bytes, question: str, *, encoding: str) -> int:
+    # Decode the full question, including NULs and the suffix beyond the preview. Invalid
+    # Unicode must survive SQL filtering as an error, not become a nonmatching record.
+    try:
+        original = value.decode(encoding)
+    except UnicodeDecodeError:
+        return -1
+    return int(question in original)
 
 
 _CATALOG_SQL = """
@@ -116,7 +146,15 @@ candidates AS (
                     THEN coalesce(
                         substr(CAST(json_extract(planning.payload, '$.payload.query') AS BLOB),
                                1, :query_bytes), X'') END
-           END AS query_prefix
+           END AS query_prefix,
+           CASE WHEN :question IS NULL THEN 1
+                WHEN json_valid(planning.payload) THEN
+                    CASE WHEN json_type(planning.payload, '$.payload.query') = 'text'
+                         THEN match_original_question(
+                             CAST(json_extract(planning.payload, '$.payload.query') AS BLOB),
+                             :question)
+                         ELSE 0 END
+                ELSE 0 END AS question_match
     FROM runs
     JOIN agent_events AS first ON first.id = runs.first_event_id
     JOIN agent_events AS last ON last.id = runs.last_event_id
@@ -125,9 +163,10 @@ candidates AS (
     LEFT JOIN agent_events AS planning ON planning.id = ts.planning_id
 )
 SELECT first_event_id, event_count, run_id, agent_id, started_at, updated_at,
-       recorded_state, invalid_record, query_prefix
+       recorded_state, invalid_record, query_prefix, question_match
 FROM candidates
-WHERE :state IS NULL OR recorded_state = :state OR invalid_record
+WHERE invalid_record OR question_match < 0
+   OR ((:state IS NULL OR recorded_state = :state) AND question_match > 0)
 ORDER BY first_event_id DESC
 LIMIT :fetch_limit
 """
@@ -157,17 +196,25 @@ class SQLiteRunHistory:
         limit: int = DEFAULT_PAGE_SIZE,
         cursor: int | None = None,
         state: AgentState | None = None,
+        question: str | None = None,
     ) -> RunHistoryPage:
-        """Read one SQLite snapshot; states may change between pagination requests."""
-        options = _PageRequest(limit=limit, cursor=cursor, state=state)
+        """Filter full original questions literally before paging one read-only snapshot."""
+        options = _PageRequest(limit=limit, cursor=cursor, state=state, question=question)
         with closing(sqlite3.connect(self._database_uri, uri=True)) as connection:
             encoding: str = connection.execute("PRAGMA encoding").fetchone()[0]
             connection.row_factory = sqlite3.Row
+            connection.create_function(
+                "match_original_question",
+                2,
+                partial(_question_match, encoding=encoding),
+                deterministic=True,
+            )
             rows = connection.execute(
                 _CATALOG_SQL,
                 {
                     "cursor": options.cursor,
                     "state": options.state,
+                    "question": options.question,
                     "states": json.dumps(list(AgentState)),
                     "fetch_limit": options.limit + 1,
                     "identity_bytes": 4 * (MAX_ID_CHARACTERS + 1),
@@ -176,7 +223,7 @@ class SQLiteRunHistory:
             ).fetchall()
         summaries = []
         for row in rows:
-            if row["invalid_record"]:
+            if row["invalid_record"] or row["question_match"] < 0:
                 raise RunHistoryError()
             record = dict(row)
             for field in ("run_id", "agent_id", "started_at", "updated_at"):

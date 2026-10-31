@@ -174,6 +174,7 @@ def test_independent_paging_retains_both_histories_and_exact_saved_run_return(
         "limit": 2,
         "cursor": MAX_EVENT_ID,
         "state": "DONE",
+        "question": " literal %_\U0001f52c ",
         "catalog_limit": 3,
         "source": "literal ?#/&",
         "title": "Exact title",

@@ -77,10 +77,11 @@ def test_discoverable_native_form_pins_across_pages_and_preserves_history(
 ) -> None:
     api = comparison_api
     for run_id in ("older", "middle", "newer"):
-        _save(api, run_id)
+        _save(api, run_id, query="Synthetic question")
     history_params = {
         "limit": 1,
         "state": "DONE",
+        "question": "Synthetic",
         "source": "synthetic:\0\r\nsource",
         "title": "\r\nliteral",
         "catalog_cursor": "paper/\0",

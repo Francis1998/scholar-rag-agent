@@ -21,6 +21,7 @@ from agent.review_models import AnswerReviewError
 from api.dependencies import AppContainer
 from api.explorer import (
     _CatalogLimit,
+    _empty_filter,
     _error,
     _escaped,
     _identity,
@@ -41,9 +42,11 @@ from storage.run_comparison import RunComparisonError
 from storage.run_history import (
     DEFAULT_PAGE_SIZE,
     MAX_QUERY_CHARACTERS,
+    MAX_QUESTION_CHARACTERS,
     EventID,
     Identity,
     PageSize,
+    QuestionFilter,
     RunHistoryError,
     RunHistoryPage,
 )
@@ -64,6 +67,7 @@ class _HistoryParameters(BaseModel):
     limit: _HistoryLimit = DEFAULT_PAGE_SIZE
     cursor: _HistoryCursor | None = None
     state: Annotated[AgentState | None, BeforeValidator(_all_states)] = None
+    question: Annotated[QuestionFilter | None, BeforeValidator(_empty_filter)] = None
     catalog_limit: _CatalogLimit = DEFAULT_PAGE_SIZE
     source: _OptionalSource = None
     title: _OptionalTitle = None
@@ -74,6 +78,7 @@ class _HistoryParameters(BaseModel):
             "limit": self.limit,
             "cursor": self.cursor,
             "state": self.state,
+            "question": self.question,
             "catalog_limit": self.catalog_limit,
             "source": self.source,
             "title": self.title,
@@ -230,7 +235,9 @@ class _RunExplorerRoute(APIRoute):
                 raw = request.scope.get("query_string", b"")
                 if len(raw) > MAX_QUERY_BYTES:
                     raise RequestValidationError([])
-                if self.path == "/explore/runs/compare" and re.search(rb"%(?![0-9a-fA-F]{2})", raw):
+                if (
+                    self.path == "/explore/runs/compare" or "question" in request.query_params
+                ) and re.search(rb"%(?![0-9a-fA-F]{2})", raw):
                     raise RequestValidationError([])
                 try:
                     unquote_to_bytes(raw).decode("utf-8")
@@ -271,7 +278,8 @@ class _RunExplorerRoute(APIRoute):
                     "Use page size 1-100, an exact uppercase recorded state (or blank for all), "
                     "and a positive first-event-ID cursor up to 9223372036854775807. "
                     "The evidence reader requires an exact run ID of 1-256 Unicode characters. "
-                    "Only blank source/title return filters mean omission. Empty cursors, "
+                    "The question filter is a nonblank literal of 1-200 Unicode code points. "
+                    "Only blank question/source/title fields mean omission. Empty cursors, "
                     "unknown/duplicate fields, invalid UTF-8 and queries over 16384 bytes fail. "
                     "No invalid filter was ignored or selection widened.",
                 )
@@ -346,14 +354,31 @@ def _filters(options: _HistoryParameters, root_path: str) -> Iterator[str]:
         for value in options.parameters().values()
     ):
         yield (
-            "<p>Catalog return filters contain control characters that native inputs cannot "
-            "preserve. Exact page, evidence and return links remain available. "
-            "Reset those filters in the current corpus catalog to edit this form.</p></section>"
+            "<p>Question or catalog return filters contain control characters that native "
+            "inputs cannot preserve. Exact page, evidence and return links remain available. "
+            "Clear the question filter or reset catalog filters to edit this form.</p>"
+            + _link(
+                "clear-question",
+                _url(
+                    root_path + "/explore/runs",
+                    {**options.parameters(), "question": None, "cursor": None},
+                ),
+                "Clear question filter",
+            )
+            + "</section>"
         )
         return
     yield (
         '<form id="run-filters" method="get" '
         f'action="{_escaped(root_path + "/explore/runs")}" autocomplete="off">'
+        '<div><label for="question">Original question contains (literal)</label>'
+        f'<input id="question" name="question" type="text" '
+        f'value="{_escaped(options.question or "")}" aria-describedby="question-help">'
+        f'<p id="question-help">1-{MAX_QUESTION_CHARACTERS} Unicode code points; case-sensitive '
+        "literal substring of the complete first PLANNING question, not just its preview. "
+        "No wildcards, normalization, answer-body search or relevance scoring. "
+        "Leave empty for all questions; nonblank surrounding spaces stay exact. "
+        "Search terms appear in URLs, browser history and server logs.</p></div>"
         '<div><label for="state">Exact recorded state</label>'
         '<select id="state" name="state" aria-describedby="state-help">'
         f'<option value=""{" selected" if options.state is None else ""}>'
@@ -374,13 +399,21 @@ def _filters(options: _HistoryParameters, root_path: str) -> Iterator[str]:
         if value is not None:
             yield f'<input type="hidden" name="{name}" value="{_escaped(str(value))}">'
     yield (
-        '<div class="actions"><button type="submit">Apply recorded-state filter</button>'
+        '<div class="actions"><button type="submit">Apply run filters</button>'
         + _link(
             "all-states",
             _url(
                 root_path + "/explore/runs", {**options.parameters(), "state": None, "cursor": None}
             ),
             "Show all states",
+        )
+        + _link(
+            "clear-question",
+            _url(
+                root_path + "/explore/runs",
+                {**options.parameters(), "question": None, "cursor": None},
+            ),
+            "Clear question filter",
         )
         + "</div></form><p>Submitting starts a new traversal without the old cursor. "
         "Catalog filters are only return navigation, not run filters.</p></section>"
@@ -396,6 +429,9 @@ def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) 
         "Compare saved runs",
     )
     yield from _filters(options, root_path)
+    if options.question is not None:
+        yield "<p>Exact original-question substring (JSON):</p>"
+        yield _identity(options.question, "question-filter")
     yield (
         '<section aria-labelledby="runs"><h2 id="runs">Persisted research runs</h2>'
         f"<p>{len(page.runs)} runs on this page (limit {options.limit}). "
@@ -410,6 +446,8 @@ def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) 
         message = (
             "No matching runs remain after this cursor. Start again with the same selection."
             if options.cursor is not None
+            else "No runs match this original-question and recorded-state selection."
+            if options.question is not None
             else "No runs match this exact recorded-state selection."
             if options.state is not None
             else "No persisted runs in this database. Browsing never creates a run."
@@ -442,6 +480,18 @@ def _history(page: RunHistoryPage, options: _HistoryParameters, root_path: str) 
             else _literal(run.query_summary, "query-preview")
         )
         yield _truncation("Query preview", run.query_truncated, MAX_QUERY_CHARACTERS)
+        if (
+            options.question is not None
+            and run.query_truncated
+            and options.question not in (run.query_summary or "")
+        ):
+            yield (
+                '<p class="question-match-beyond-preview">The complete original question matches, '
+                "but the literal match is not wholly visible in this 300-character preview. "
+                "It extends beyond the preview, possibly across its boundary. "
+                "Inspect saved evidence when available; legacy or incomplete runs may not "
+                "have an exportable capture.</p>"
+            )
         yield _link(
             f"inspect-run-{number}",
             _url(root_path + "/explore/run", {"run_id": run.run_id, **options.parameters()}),
@@ -479,7 +529,7 @@ def explore_runs(request: Request, options: Annotated[_HistoryParameters, Query(
     request.state.saved_run_options = options
     container: AppContainer = request.app.state.container
     page = container.run_history.list_runs(
-        limit=options.limit, cursor=options.cursor, state=options.state
+        limit=options.limit, cursor=options.cursor, state=options.state, question=options.question
     )
     return _page(
         "Saved run browser",

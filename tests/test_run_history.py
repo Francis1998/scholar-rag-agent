@@ -167,6 +167,11 @@ def test_real_api_run_restart_discovery_and_existing_exports(
     assert summary["first_event_id"] == first_id
     assert summary["started_at"].endswith("Z")
     assert summary["updated_at"].endswith("Z")
+    before_search = api.database_path.read_bytes()
+    monkeypatch.setattr(restarted.event_log, "append_event", _no_work)
+    monkeypatch.setattr(restarted.event_log, "append_transition", _no_work)
+    assert _page(api, question="\u7814\u7a76", state="DONE") == page
+    assert api.database_path.read_bytes() == before_search
 
     monkeypatch.setattr(restarted.event_log, "list_events", original_events)
     events = api.client.get(summary["events_url"])
@@ -582,8 +587,9 @@ def test_one_listing_remains_consistent_during_an_independent_sqlite_write(
     assert after["runs"][1]["event_count"] == 2
 
 
+@pytest.mark.parametrize("question", [None, "x" * 200])
 def test_sql_projects_only_bounded_rows_and_scalars(
-    history_api: HistoryAPI, monkeypatch: pytest.MonkeyPatch
+    history_api: HistoryAPI, monkeypatch: pytest.MonkeyPatch, question: str | None
 ) -> None:
     api = history_api
     for number in range(25):
@@ -619,13 +625,14 @@ def test_sql_projects_only_bounded_rows_and_scalars(
         return connect(database, uri=uri, factory=ProjectionConnection)
 
     monkeypatch.setattr(sqlite3, "connect", open_connection)
-    page = _page(api, limit=2)
+    page = _page(api, limit=2, **({} if question is None else {"question": question}))
     assert len(page["runs"]) == 2
     assert page["runs"][0]["query_summary"] == "x" * QUERY_LIMIT
     assert row_counts == [3]
     assert len(statements) == 2
     assert statements[0] == "PRAGMA encoding"
     assert statements[1].lstrip().startswith("WITH")
+    assert question is None or question not in statements[1]
 
 
 @pytest.mark.parametrize("encoding", ["UTF-8", "UTF-16le", "UTF-16be"])
@@ -664,6 +671,8 @@ def test_python_catalog_supports_existing_database_encodings_without_schema_chan
     assert page.runs[0].query_truncated is True
     assert page.runs[0].agent_id == "agent-\u7814\u7a76"
     assert page.runs[0].run_id == "run-\U0001f52c"
+    assert SQLiteRunHistory(path).list_runs(question="\0\U0001f52c") == page
+    assert SQLiteRunHistory(path).list_runs(question="\u5206\u6790").runs == []
     with sqlite3.connect(path) as connection:
         assert (
             connection.execute("SELECT sql FROM sqlite_master ORDER BY name").fetchall()

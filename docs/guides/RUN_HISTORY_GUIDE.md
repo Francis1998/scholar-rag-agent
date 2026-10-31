@@ -5,6 +5,12 @@ query previews and recorded states, then follow the existing events and evidence
 export routes. You do not have to keep an ID from a terminal session or rerun a
 model to find a previous answer.
 
+Use the optional `question` filter to find a case-sensitive literal in the
+**complete original question**, even beyond its preview. The
+[saved-question search guide](SAVED_QUESTION_SEARCH_GUIDE.md) covers API/Python
+bounds, native forms and return navigation, legacy records, privacy and an
+executed synthetic GIF/still/text demonstration. This is not answer-body search.
+
 For a native browser workflow, choose **Browse saved runs** in `/explore`.
 The [saved-run browser guide](SAVED_RUN_BROWSER_GUIDE.md) connects these same
 summaries to a bounded inline frozen-evidence reader, preserving filters and
@@ -154,6 +160,7 @@ metadata, provider payloads, or settings.
 | `limit` | Default **20**, inclusive range **1..100** |
 | `cursor` | Optional positive signed-64-bit integer, **1..9223372036854775807**; exclusive first-event-ID boundary |
 | `state` | Optional exact uppercase `AgentState`: `IDLE`, `PLANNING`, `RETRIEVING`, `REASONING`, `ANSWERING`, `DONE`, or `ERROR` |
+| `question` | Optional nonblank valid-Unicode literal, 1..200 code points; case-sensitive substring of the full earliest PLANNING query, no trimming or normalization |
 
 Response shape (illustrative values; not a claim that this ID exists):
 
@@ -227,7 +234,7 @@ to an older run update its summary without moving its creation key. Following
 the returned cursor therefore does not duplicate or skip the previously
 existing runs. Refresh without a cursor to discover newly created runs.
 
-The latest-state filter is applied **before** pagination, including the one-row
+The latest-state and original-question filters are applied **before** pagination, including the one-row
 lookahead used to determine `next_cursor`. An empty database, exhausted cursor,
 or no matching state returns `{"runs": [], "next_cursor": null}` with HTTP 200.
 An exact full final page also has a null cursor.
@@ -275,10 +282,13 @@ PY
 ```
 
 The keyword-only method is
-`list_runs(*, limit=20, cursor=None, state=None) -> RunHistoryPage`.
+`list_runs(*, limit=20, cursor=None, state=None, question=None) -> RunHistoryPage`.
 `page.runs` contains typed `RunSummary` objects; timestamps are aware datetimes.
 Invalid Python bounds, non-integer limits/cursors (including booleans), or states
 raise Pydantic `ValidationError` before database access.
+The same applies to non-string, blank, oversized or unencodable questions;
+Python `None` means omission. API search requests have strict URL decoding,
+four allowed fields and a 16-KiB wire bound; see the linked search contract.
 
 ## Errors, bounds, and privacy
 
@@ -304,11 +314,15 @@ for evidence downloads. Valid event-only records and legacy traces without a
 planning query are supported, not treated as corruption. Future unknown state
 names are explicit unsupported records, not mapped to `DONE` or `ERROR`.
 
-At most **101 bounded projected rows** enter Python for a request (100 results
+At most **101 bounded projected rows** are materialized for a request (100 results
 plus lookahead). Query text is projected as a bounded byte prefix before decoding
 and character truncation; Unicode and embedded NULs survive. UTF-8 and existing
 UTF-16 SQLite databases are supported. Full evidence snapshots are neither
 loaded into Python nor deserialized by listing; `list_events(None)` is not used.
+When `question` is supplied, a SQL scalar predicate separately decodes each
+complete original question for literal matching; malformed full-question
+Unicode is an explicit error, not a nonmatch. Omitted search keeps prefix-only
+projection behavior. This is not a bound on stored-question decode size.
 The SQLite grouping and transition-validation work **still scales with stored
 events**. Page size and returned fields are bounded, not database scan time,
 database size, retention, or the cost of arbitrarily large transition JSON.

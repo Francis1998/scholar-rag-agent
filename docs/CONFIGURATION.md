@@ -109,6 +109,13 @@ The existing 4-MiB evidence HTML cap includes inline navigation. No dependency,
 provider setting, database table or environment variable is added. See
 [the complete browser/API/Python guide](guides/SAVED_RUN_BROWSER_GUIDE.md).
 
+Optional `question` filtering accepts 1-200 nonblank Unicode code points,
+case-sensitively and literally against the complete first PLANNING question.
+The summary remains 300 code points; no new model/index/schema or environment
+setting is needed. Search API queries also have a 16-KiB wire bound; full
+question decoding and transition checks still scale with saved text/events,
+not page size. See [saved-question search](guides/SAVED_QUESTION_SEARCH_GUIDE.md).
+
 `GET /explore/runs/compare` adds a native baseline/candidate chooser, with
 1-100 choices per page (default 20), JSON-string exact IDs and structured history
 return state. The same 16-KiB query and 1-MiB escaped-page caps apply, plus bounded

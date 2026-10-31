@@ -707,6 +707,14 @@ Pages contain at most 100 summaries (20 by default), ordered by immutable first
 event ID. An exclusive integer keyset cursor and latest-recorded-state filter
 are applied before the one-row pagination lookahead.
 
+The optional `question` filter is a strict, nonblank 1-200-code-point Unicode
+literal. A connection-local SQLite scalar predicate decodes the complete first
+PLANNING question, including suffixes beyond its 300-code-point preview, and
+matches case-sensitively before pagination. SQL values are bound; invalid
+full-question Unicode stays an error sentinel, never a silent nonmatch.
+Only bounded summary rows are returned, but predicate decoding scales with
+question size. No new index/schema or scan deadline is introduced.
+
 One SELECT reads a consistent page; separate pages do not freeze changing states.
 Query prefixes and identifiers are bounded, but grouping and transition checks
 still scale with stored events. Legacy event-only runs have a null recorded state,
@@ -723,6 +731,13 @@ parameters, rejects duplicate/unknown fields and malformed UTF-8, and reuses
 the explorer's static HTML shell with a distinct saved-record footer.
 The current corpus links to this workflow; saved source links never silently
 switch to current source context.
+
+The shared history-return model carries `question` through reader, comparison,
+notebook, human-review and annotation flows, including mounted paths. Only an
+empty native field omits the filter; API/Python empty strings fail. The browser
+explains matches not wholly visible in the unchanged preview. Search does not
+restrict an explicitly selected comparison/reader run or search answer bodies.
+See the [full contract and measured demo](docs/guides/SAVED_QUESTION_SEARCH_GUIDE.md).
 
 `GET /explore/run?run_id=...` uses `container.saved_run_evidence`, a
 `SQLiteEvidenceReader` around `BoundedRunEvents` and `EvidenceExporter`.
