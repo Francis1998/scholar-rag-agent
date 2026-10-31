@@ -20,6 +20,20 @@ ingestion run. Starting with a new temporary path creates an empty corpus.
 Also inspect `result.state`, `result.error`, and grounding warnings: HTTP success
 does not necessarily mean the agent completed successfully.
 
+## A Saved Run Failed or Never Finished
+
+Do not resend `/query` as a diagnostic: that starts a new run and may make paid
+provider calls. Inspect the existing response's `result.state` / `result.error`,
+recover the exact ID through `/runs` or `/explore/runs`, then read its ordered
+events and first terminal transition.
+
+The [failed-run triage guide](guides/FAILED_RUN_TRIAGE_GUIDE.md) distinguishes
+pre-run validation errors, durable `ERROR`, and incomplete history; localizes
+planning/retrieval/context/generation/timeouts; explains provider retries and
+sensitive error text; and supplies executable, credential-free exercises.
+A recorded nonterminal state is not proof that a worker is alive. A later
+successful run never repairs the failed historical record.
+
 ## Port 8000 Is Already In Use
 
 Use another local port, for example `--host 127.0.0.1 --port 8001`, and change
@@ -42,17 +56,24 @@ See the [complete browser/error guide](guides/CORPUS_EXPLORER_GUIDE.md).
 The export endpoint returns 404 for an unknown run, 409 for a run that is
 incomplete, failed, or lacks an evidence snapshot, and 422 for an unsupported
 format. Old event-only runs are not silently reconstructed from today's corpus.
-Inspect the [export guide](guides/EVIDENCE_EXPORT_GUIDE.md) and saved events.
+Use [failed/incomplete-run triage](guides/FAILED_RUN_TRIAGE_GUIDE.md) to classify
+the saved trace, and the [export guide](guides/EVIDENCE_EXPORT_GUIDE.md) for
+format and capture validation.
 If you deliberately run the question again, treat the result as a new run with
 new evidence, not a repair of the historical one.
 
 ## Live Providers Do Not Respond
 
-Live LLM providers are optional. If provider keys are missing, tests and demos use
-the deterministic fake adapter. Set provider keys in `.env` only when live calls
-are required. The [provider model guide](guides/PROVIDER_MODELS_GUIDE.md) explains
-current model IDs and routing; `/query` uses the reasoning route, so changing the
-default-provider setting alone may not select the adapter you expect.
+Live LLM providers are optional. With no model keys configured, the standard
+router selects the deterministic fake adapter. A live adapter failure does not
+fall back to fake. Setting the default provider to `fake` alone does not disable
+a configured Anthropic reasoning route; use the triage guide's explicit offline
+settings for credential-free reproduction. Do not enable keys or add an external
+retry loop just to inspect a saved failure.
+
+The [provider model guide](guides/PROVIDER_MODELS_GUIDE.md) explains current IDs,
+routing, account-access limitations, and internal HTTP retry behavior. Any live
+rerun requires a separate, deliberate request with authorized data and scope.
 
 ## GraphRAG Finds Few Entities
 
