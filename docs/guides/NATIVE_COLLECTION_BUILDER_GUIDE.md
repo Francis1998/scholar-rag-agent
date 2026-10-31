@@ -7,10 +7,13 @@ JSON, JavaScript, model or new storage is needed for this browser workflow.
 This closes the gap between discovering papers and starting a reusable
 screening/search/worksheet selection.
 
-The feature creates metadata only. It does not import papers, edit/rename/delete
-collections, maintain a multi-page cart, screen automatically, authenticate
-reviewers, or change retrieval policy. Membership stores IDs, **not frozen paper
-contents**. The existing JSON API and Python store remain independently usable.
+The builder creates metadata only. The separate
+[native editor](NATIVE_COLLECTION_EDITOR_GUIDE.md) now supports explicit rename
+and add/remove membership with preview and revision-checked save. Neither
+workflow imports/deletes papers, maintains a multi-page cart, screens
+automatically, authenticates reviewers, or changes retrieval policy. Membership
+stores IDs, **not frozen paper contents**. The existing JSON API and Python
+store remain independently usable.
 
 [![Measured explicit creation, atomic failures and restart recovery](../assets/collection-builder.png)](../assets/collection-builder.gif)
 

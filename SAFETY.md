@@ -397,6 +397,33 @@ defense. Inspect saved collections before retrying interrupted writes; there is
 no idempotency token. The original JSON API remains unchanged. See the
 [complete builder contract and privacy limits](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md).
 
+## Explicit native collection editing
+
+`/explore/collections/edit` uses explicit add/remove deltas, not a visible-page
+replacement. All unchecked/off-page members survive. GET and POST preview do
+not write; final explicit POST save validates the current revision and **all
+old members** in the same reserved transaction as replacement. Missing members
+fail even when selected for removal. Stale/repeated saves, duplicate/overlapping
+IDs, unknown/repeated fields, invalid encoding, no-op/empty/over-limit results
+and conflicting names never partially save or silently repair.
+
+Both POST stages reuse exact Origin/Host/Fetch Metadata checks and bounded
+UTF-8 form parsing. Limits are 16-KiB query, 512-KiB streamed body, 204 fields,
+1538 decoded characters per POST field and 1-MiB complete escaped HTML. JSON
+strings preserve exact control-bearing IDs through browser inputs. Shared
+no-store/CSP/escaping/sanitized logging and mount-safe redirects are retained.
+Preview is not a signed token or reservation; direct clients can explicitly
+save valid deltas without visiting it. Authentication and trusted deployment
+boundaries remain the operator's responsibility.
+
+Only collection metadata changes: no documents, chunks, frozen evidence,
+events or human opinions/history are deleted or rewritten. Every successful
+edit, including rename-only, increments revision and makes earlier screening
+stale. Removed-member history remains stored but current-member readers no
+longer expose it until re-added. No model/retrieval/network/event work runs.
+The existing JSON full-replacement API retains its separate recovery contract.
+See the [complete editor guide](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md).
+
 ## Retrieval Preview
 
 Generation-free inspection through `/retrieve` or `AgentRunner.preview` uses the

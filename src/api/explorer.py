@@ -252,6 +252,25 @@ _CREATION_FOOTER = (
     "text, never external links. Other browser tools remain separate explicit actions."
     "</p></footer></body></html>"
 )
+_EDITING_FOOTER = (
+    "</main><footer><h2>Explicit changes, not paper deletion</h2>"
+    "<p>GET and Preview changes never write. Only Save changes updates collection metadata. "
+    "Unchecked and off-page members are retained. Removing membership never deletes documents, "
+    "frozen evidence, events or human decision history. Any saved edit, including a rename, "
+    "increments the collection revision and makes earlier screening decisions stale.</p>"
+    "<p>No models, retrieval, network or agent events run while editing. Normal startup still "
+    "initializes stores and loads indexes. No scripts, cookies, external resources or browser "
+    "storage are used. Preview is not a reservation or a saved draft; final save revalidates "
+    "everything. Repeated stale submissions fail rather than retrying or overwriting.</p>"
+    "<p>Use loopback or your own authentication, access controls and trusted proxy/host setup. "
+    "Same-origin checks are not authentication or protection against direct clients or DNS "
+    "rebinding. Names and IDs may be sensitive: no-store cannot prevent browser history, "
+    "resubmission state, logs or screenshots. Same-origin referrers can reach this server. "
+    "After an interrupted save, inspect the current collection before retrying. "
+    "Exact IDs are JSON strings, never paths or external links; decode their escapes when "
+    "using the unchanged JSON API. Membership binds IDs, not frozen paper contents."
+    "</p></footer></body></html>"
+)
 _SCREENING_FOOTER = (
     "</main><footer><h2>Explicit human opinions, local trusted use only</h2>"
     "<p>Only an explicit form POST records one decision and appends its history. GET never "
@@ -366,6 +385,7 @@ def _page(
     annotation: bool = False,
     review: bool = False,
     creation: bool = False,
+    editing: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -402,7 +422,11 @@ def _page(
             "Choose exact papers on one page, name your selection, then explicitly save it."
         )
         footer = _CREATION_FOOTER
-    writes = screening or annotation or review or creation
+    if editing:
+        subject = "PAPER COLLECTION EDITOR"
+        description = "Choose exact additions/removals, review the changes, then explicitly save."
+        footer = _EDITING_FOOTER
+    writes = screening or annotation or review or creation or editing
     mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
@@ -443,6 +467,7 @@ def _error(
     annotation: bool = False,
     review: bool = False,
     creation: bool = False,
+    editing: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -463,6 +488,7 @@ def _error(
         annotation=annotation,
         review=review,
         creation=creation,
+        editing=editing,
     )
 
 
@@ -854,8 +880,11 @@ def _filters(
     root_path: str,
     *,
     endpoint: str = "/explore",
+    hidden: dict[str, str | int] | None = None,
+    form_id: str | None = None,
 ) -> Iterator[str]:
     catalog_path = _escaped(root_path + endpoint)
+    reset_path = _escaped(_url(root_path + endpoint, hidden or {}))
     yield '<section aria-labelledby="filters"><h2 id="filters">Filter stored papers</h2>'
     if any(character in (source or "") + (title or "") for character in "\0\r\n"):
         yield (
@@ -865,10 +894,13 @@ def _filters(
             + _literal(json.dumps(source), "filter-value")
             + "</dd><dt>Literal title (JSON)</dt><dd>"
             + _literal(json.dumps(title), "filter-value")
-            + f'</dd></dl><a id="reset-filters" href="{catalog_path}">Reset filters</a></section>'
+            + f'</dd></dl><a id="reset-filters" href="{reset_path}">Reset filters</a></section>'
         )
         return
-    yield f'<form method="get" action="{catalog_path}" autocomplete="off">'
+    identifier = f' id="{_escaped(form_id)}"' if form_id else ""
+    yield f'<form{identifier} method="get" action="{catalog_path}" autocomplete="off">'
+    for key, hidden_value in (hidden or {}).items():
+        yield f'<input type="hidden" name="{_escaped(key)}" value="{_escaped(str(hidden_value))}">'
     # Native maxlength counts UTF-16 units, unlike the readers' Unicode codepoint bounds.
     for name, label, value, help_text in (
         (
@@ -898,7 +930,7 @@ def _filters(
         'aria-describedby="limit-help">'
         '<p id="limit-help">1-100 papers or passages per page.</p></div>'
         '<div class="actions"><button type="submit">Apply filters</button>'
-        f'<a id="reset-filters" href="{catalog_path}">Reset filters</a></div></form></section>'
+        f'<a id="reset-filters" href="{reset_path}">Reset filters</a></div></form></section>'
     )
 
 

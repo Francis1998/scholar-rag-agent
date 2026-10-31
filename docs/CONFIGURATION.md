@@ -167,6 +167,14 @@ reuses the document catalog and atomic collection store without new settings:
 Its same-origin POST saves metadata only; GET and pagination never save or
 preserve a multi-page cart. The guide covers Origin/proxy setup and privacy.
 
+The [native editor](guides/NATIVE_COLLECTION_EDITOR_GUIDE.md) uses the same
+catalog/name/identity rules. It requires the exact collection and expected
+revision, always displays full membership for removals, and paginates only
+addition candidates. Up to 100 additions and 100 removals must yield 1-100
+members. Native POST permits at most 204 fields and 512 KiB; GET stays at 16 KiB
+and complete escaped HTML at 1 MiB. Preview/save both require exact same-origin
+headers. No environment setting, server-side draft, dependency or table is added.
+
 ## Screening-history bounds
 
 [Human decision history](guides/SCREENING_HISTORY_GUIDE.md) needs no new dependency,
