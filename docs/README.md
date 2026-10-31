@@ -52,6 +52,7 @@ accumulated feature list in the project README.
 | Reproduce the showcased animation | [Demo](DEMO.md) |
 | Understand what the API actually runs | [Architecture](../ARCHITECTURE.md) |
 | Choose provider models, evaluate explicit overrides, and plan legacy K2 migration | [Provider models, routing, and migration checklist](guides/PROVIDER_MODELS_GUIDE.md) |
+| Inspect every task/fallback before enabling providers and save synthetic fake evidence | [Executable model-routing preflight and provider-free verification](guides/MODEL_ROUTING_PREFLIGHT_GUIDE.md) |
 | Compare labeled retrieval runs and enforce local CI quality gates | [Offline retrieval benchmarks](guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 
 ## Configuration, operation, and contribution

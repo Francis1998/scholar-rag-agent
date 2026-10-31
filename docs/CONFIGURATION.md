@@ -354,6 +354,10 @@ not override a configured Anthropic provider for API answers; it chooses the
 fallback if Anthropic is absent. Even `SCHOLAR_RAG_DEFAULT_MODEL=fake` does not
 force all tasks offline when preferred live providers have keys.
 
+The [executable preflight](guides/MODEL_ROUTING_PREFLIGHT_GUIDE.md) inspects all
+task/fallback decisions with synthetic settings, demonstrates source precedence
+and router rebuild boundaries, and saves provider-free fake evidence.
+
 The family validation applies to application settings only. Direct Python
 `ModelRouter(adapters=..., default_provider=...)` callers can still supply
 custom adapter names, with the existing routing and fallback behavior.
