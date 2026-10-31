@@ -142,16 +142,18 @@ class EvaluationHarness:
 
         Args:
             retrieve_fn: Synchronous callable ``(query, k) -> list[SearchResult]``.
-            k: Cutoff for hit-rate@k and recall@k.
+            k: Positive Python integer cutoff for hit-rate@k and recall@k.
+                Booleans are not accepted; there is no upper bound.
             answers: Optional map of ``case_id -> generated answer`` for
                 faithfulness scoring against retrieved titles and text.
                 Missing entries are unscored (``None``); supplied answers
                 with no content tokens score zero.
 
         Raises:
-            ValueError: If ``k`` is not a positive integer.
+            ValueError: If ``k`` is not a positive integer (excluding booleans),
+                before ``retrieve_fn`` is called.
         """
-        if k <= 0:
+        if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
             raise ValueError("k must be a positive integer")
         scores: list[CaseScore] = []
         for case in self._cases:

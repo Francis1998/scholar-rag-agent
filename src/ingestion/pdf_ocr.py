@@ -1,11 +1,10 @@
 """Optional OCR fallback hook for local PDF text extraction.
 
-``PDFConnector`` uses pypdf character extraction, which fails on scanned pages.
-``PdfOcrHook`` detects too-short extracted text and delegates to an
-:class:`OcrBackend`. ``NullOcrBackend`` is the default no-op (returns empty
-string) so no heavy OCR dependency is required. Swap in Tesseract/PaddleOCR
-adapters later. Local ingestion hook for GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+``PDFConnector`` uses pypdf text extraction and does not invoke this hook.
+Callers explicitly pass extracted text to ``PdfOcrHook``, which delegates
+too-short text to an :class:`OcrBackend`. ``NullOcrBackend`` returns empty text;
+no real OCR engine is included. Inspect the result before persisting a complete
+document, especially when replacing existing evidence.
 """
 
 from __future__ import annotations
@@ -34,9 +33,8 @@ class PdfOcrHook:
 
     ``needs_ocr`` is true when stripped extracted text length is below
     ``min_chars``. ``extract_or_ocr`` returns extracted text when sufficient,
-    otherwise the backend OCR result. Inputs are not mutated. Local hook for
-    GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 ingestion pipelines
-    (not a DOI connector).
+    otherwise the backend OCR result. Inputs are not mutated. This standalone
+    hook is not called by ``PDFConnector`` and does not persist its output.
     """
 
     def __init__(

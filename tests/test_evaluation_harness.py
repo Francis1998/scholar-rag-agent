@@ -1,5 +1,7 @@
 """Tests for EvaluationHarness."""
 
+from unittest.mock import Mock, call
+
 import pytest
 
 from evaluation.harness import CaseScore, EvalCase, EvaluationHarness, HarnessReport
@@ -31,12 +33,66 @@ def test_rejects_case_without_relevant_ids() -> None:
         EvaluationHarness([EvalCase(case_id="c1", query="q", relevant_chunk_ids=frozenset())])
 
 
-def test_rejects_non_positive_k() -> None:
+@pytest.mark.parametrize(
+    "k",
+    [
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(1.0, id="integral-float"),
+        pytest.param(1.5, id="fractional-float"),
+        pytest.param(float("nan"), id="nan"),
+        pytest.param(float("inf"), id="positive-infinity"),
+        pytest.param(float("-inf"), id="negative-infinity"),
+        pytest.param(0, id="zero"),
+        pytest.param(-1, id="negative-integer"),
+        pytest.param("1", id="numeric-string"),
+        pytest.param("invalid", id="nonnumeric-string"),
+        pytest.param("", id="empty-string"),
+        pytest.param(None, id="none"),
+    ],
+)
+def test_rejects_invalid_k_before_retrieval(k: object) -> None:
     harness = EvaluationHarness(
         [EvalCase(case_id="c1", query="q", relevant_chunk_ids=frozenset({"a"}))]
     )
-    with pytest.raises(ValueError, match="k"):
-        harness.evaluate(lambda _q, _k: [], k=0)
+    retrieve = Mock(return_value=[])
+
+    with pytest.raises(ValueError, match=r"^k must be a positive integer$"):
+        harness.evaluate(retrieve, k=k)  # type: ignore[arg-type]
+
+    retrieve.assert_not_called()
+
+
+@pytest.mark.parametrize("k", [1, 5, 101, 10**100])
+def test_positive_k_preserves_callback_order_and_report(k: int) -> None:
+    harness = EvaluationHarness(
+        [
+            EvalCase("first", "first query", frozenset({"a", "b"})),
+            EvalCase("second", "second query", frozenset({"a", "b"})),
+        ]
+    )
+    retrieve = Mock(
+        return_value=[
+            _result("b", "retrieval", score=0.1),
+            _result("a", "hybrid", score=0.9),
+        ]
+    )
+
+    report = harness.evaluate(retrieve, k=k)
+
+    assert retrieve.call_args_list == [call("first query", k), call("second query", k)]
+    expected_ids = ("b",) if k == 1 else ("b", "a")
+    expected_recall = 0.5 if k == 1 else 1.0
+    assert report == HarnessReport(
+        cases=(
+            CaseScore("first", 1.0, expected_recall, None, expected_ids),
+            CaseScore("second", 1.0, expected_recall, None, expected_ids),
+        ),
+        mean_hit_at_k=1.0,
+        mean_recall_at_k=expected_recall,
+        mean_faithfulness=None,
+        k=k,
+    )
 
 
 def test_hit_and_recall_at_k() -> None:
@@ -254,8 +310,12 @@ def test_aggregate_scores_exclude_missing_values_but_include_empty_answers() -> 
 
 def test_evaluate_without_answers_or_references_leaves_both_metrics_unset() -> None:
     harness = EvaluationHarness([EvalCase("c1", "q", frozenset({"a"}))])
-    report = harness.evaluate(lambda _q, _k: [_result("a", "hybrid retrieval")])
+    retrieve = Mock(return_value=[_result("a", "hybrid retrieval")])
 
+    report = harness.evaluate(retrieve)
+
+    retrieve.assert_called_once_with("q", 5)
+    assert report.k == 5
     assert report.cases[0].faithfulness is None
     assert report.mean_faithfulness is None
     assert report.cases[0].reference_coverage is None
