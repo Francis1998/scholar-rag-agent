@@ -39,6 +39,7 @@ from api.screening import router as screening_router
 from api.screening_explorer import router as screening_explorer_router
 from api.screening_report import router as screening_report_router
 from api.search import router as search_router
+from api.validation import sanitized_validation_content
 from api.worksheet_explorer import router as worksheet_explorer_router
 from config import Settings
 
@@ -48,6 +49,16 @@ logger = logging.getLogger(__name__)
 async def _evidence_validation_error(request: Request, exc: RequestValidationError) -> Response:
     """Do not echo unencodable numeric input; leave unrelated validation contracts intact."""
     route = request.scope.get("route")
+    if isinstance(route, APIRoute) and route.path == "/ingest/text":
+        content = sanitized_validation_content(exc)
+        if content is not None:
+            logger.warning("Text ingestion request validation failed: unserializable_diagnostic")
+            return Response(
+                content=content,
+                status_code=422,
+                media_type="application/json",
+                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+            )
     if (
         isinstance(route, APIRoute)
         and route.path in ("/query", "/retrieve")
