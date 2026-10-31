@@ -505,8 +505,9 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
         yield _identity(identifier, "included-document-id")
     yield "</details><h2>Current-corpus tools</h2>"
     yield (
-        "<p>Search and worksheet use all current members, not this status filter or the include "
-        "IDs. They resolve again when used. Worksheet accepts at most 10 members and fails "
+        "<p>Search, retrieval preview and worksheet use all current members, not this status "
+        "filter or the include IDs. They resolve again when used. "
+        "Worksheet accepts at most 10 members and fails "
         "rather than silently dropping extras. Open a paper to choose an exact stored passage "
         "for source context; missing chunks are never guessed.</p>"
         '<nav aria-label="Collection tools">'
@@ -533,6 +534,14 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
             {"collection_id": snapshot.collection_id, **navigation},
         ),
         "Open collection worksheet",
+    )
+    yield _link(
+        "preview-collection",
+        _url(
+            root_path + "/explore/retrieve",
+            {"collection_id": snapshot.collection_id, **navigation},
+        ),
+        "Preview retrieval in all current collection members",
     )
     yield "</nav><h2>Revision-bound downloads</h2>"
     yield (

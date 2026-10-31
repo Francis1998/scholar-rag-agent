@@ -74,6 +74,15 @@ three-passage-per-cell and 30-second worksheet bounds. Browser requests have a
 1 MiB. JSON/Markdown keep their existing 256-KiB limits. These are fixed request
 and output bounds, not provider budgets, and separate submissions rerun retrieval.
 
+The [native retrieval workbench](docs/guides/NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md)
+adds no setting or model change. Its explicit-submit form caps questions at
+2,000 characters, wire bodies/form-opening URLs at 65,536 bytes, unique fields
+at eight, selection/return fields at 16,384 characters, and complete escaped
+HTML at 1 MiB. Existing `/retrieve` scope, evidence policies, phase deadlines
+and capture limits remain authoritative; an oversized view fails without
+truncation or partial sources. These browser-only bounds do not alter JSON API
+or Python defaults.
+
 Saved bibliography exports add no setting or provider requirement. They read
 completed frozen events only, enforce fixed 50-source and 256-KiB-per-format
 bounds, and do not use today's model configuration or corpus to enrich fields.

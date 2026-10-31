@@ -1,0 +1,22 @@
+1. Open controls without running retrieval
+Catalog -> native POST form; opening preview calls: 0.
+Explicit submission preview calls: 1; no JavaScript or saved job.
+Question plus exact JSON IDs, collection or explicit whole-corpus scope.
+
+2. Inspect real prepared passages and policies
+Actual ordered passages: 2; quota: 1 per document.
+Lexical collapse threshold: 0.9; required documents: 3; observed: 2.
+Minimum NOT met; full passages retained, not an empty success.
+API / Python / browser preparation equal: True.
+
+3. Follow exact current sources, not saved runs
+Exact current source opened: True.
+Collection resolved the same context: True.
+Complete text, rank, score, retriever, path, metadata and digests shown.
+Current source reads may change; a preview is not frozen saved evidence.
+
+4. Measure failures and the read-only boundary
+Empty selection: HTTP 422; retrieval failure: HTTP 500.
+Forbidden generation/write calls: 0; agent events: 0.
+External connections: 0; database unchanged: True.
+Temporary corpus removed. Synthetic output illustration, not browser footage.

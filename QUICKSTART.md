@@ -217,6 +217,15 @@ failures are HTTP errors rather than `ERROR` run bodies. See the complete
 [retrieval preview guide](docs/guides/RETRIEVAL_PREVIEW_GUIDE.md) for scope,
 limits, Python usage, privacy, and a measured offline demo.
 
+For the same inspection in a normal browser, choose **Preview retrieval before
+generation** in `/explore`, or open `/explore/retrieve`. Select Whole corpus,
+exact JSON document IDs or one saved collection, optionally set evidence
+policies, then explicitly submit. Opening the form runs nothing. Results show
+complete prepared passages, provenance and minimum-document diagnostics; a
+failed minimum retains evidence, while operational failures are errors.
+No generation or saved run/event writes occur. See the
+[native browser/API/Python guide and reproducible GIF](docs/guides/NATIVE_RETRIEVAL_WORKBENCH_GUIDE.md).
+
 To compare policy choices before any fake/live generation:
 
 ```bash
