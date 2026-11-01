@@ -449,3 +449,4 @@ instructions or evidence of current scientific performance.
 - [CompetingRisksResidualCueExtractor](guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md)
 - [ProtocolAmendmentCueExtractor](guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md)
+- [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md)
