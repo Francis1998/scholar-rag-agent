@@ -450,3 +450,4 @@ instructions or evidence of current scientific performance.
 - [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md)
 - [ProtocolAmendmentCueExtractor](guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md)
 - [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md)
+- [AdaptiveEnrichmentCueExtractor](guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md)
