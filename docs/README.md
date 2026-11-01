@@ -451,3 +451,4 @@ instructions or evidence of current scientific performance.
 - [ProtocolAmendmentCueExtractor](guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md)
 - [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md)
 - [AdaptiveEnrichmentCueExtractor](guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md)
+- [ImmortalTimeResidualCueExtractor](guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)

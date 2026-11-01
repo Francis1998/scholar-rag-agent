@@ -732,6 +732,12 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers collider-bias-op
 
 Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichment cue extractors. Distinct from `SubgroupAnalysisCueExtractor` / `ProtocolAmendmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md`.
 
+### ImmortalTimeResidualCueExtractor
+
+![ImmortalTimeResidualCueExtractor](assets/demo/immortal-time-residual-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers immortal-time residual cue extractors. Distinct from `SurvivorBiasCueExtractor` / `TimeDependentBiasCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
