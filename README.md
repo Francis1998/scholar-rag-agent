@@ -736,6 +736,12 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichm
 
 ![ImmortalTimeResidualCueExtractor](assets/demo/immortal-time-residual-cues.gif)
 
+### AdaptiveRandomizationCueExtractor
+
+![AdaptiveRandomizationCueExtractor](assets/demo/adaptive-randomization-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-randomization cue extractors. Distinct from `AdaptiveDesignCueExtractor` / `AdaptiveEnrichmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md`.
+
 ### InstrumentalVariableExclusionCueExtractor
 
 ![InstrumentalVariableExclusionCueExtractor](assets/demo/instrumental-variable-exclusion-cues.gif)
