@@ -736,6 +736,12 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichm
 
 ![ImmortalTimeResidualCueExtractor](assets/demo/immortal-time-residual-cues.gif)
 
+### InstrumentalVariableExclusionCueExtractor
+
+![InstrumentalVariableExclusionCueExtractor](assets/demo/instrumental-variable-exclusion-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers instrumental-variable exclusion cue extractors. Distinct from `InstrumentalVariableStrengthCueExtractor` / `InstrumentStrengthCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md`.
+
 Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers immortal-time residual cue extractors. Distinct from `SurvivorBiasCueExtractor` / `TimeDependentBiasCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 ## License
