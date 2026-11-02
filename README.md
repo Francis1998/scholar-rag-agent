@@ -736,6 +736,12 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichm
 
 ![ImmortalTimeResidualCueExtractor](assets/demo/immortal-time-residual-cues.gif)
 
+### ClusterCrossoverResidualCueExtractor
+
+![ClusterCrossoverResidualCueExtractor](assets/demo/cluster-crossover-residual-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers cluster-crossover residual cue extractors. Distinct from `ClusterRandomizationCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 ### AdaptiveRandomizationCueExtractor
 
 ![AdaptiveRandomizationCueExtractor](assets/demo/adaptive-randomization-cues.gif)
