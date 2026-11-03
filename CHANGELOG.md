@@ -5,6 +5,8 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `FalsificationTestResidualCueExtractor` (`retrieval/falsification_test_residual_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers falsification-test residual cue extractors. Distinct from `NegativeControlOutcomeCueExtractor` / `PlaceboTestCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 - `MediationPathResidualCueExtractor` (`retrieval/mediation_path_residual_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers mediation-path residual cue extractors. Distinct from `MediationAnalysisCueExtractor` / `MediationBiasCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 - `PrincipalStratumResidualCueExtractor` (`retrieval/principal_stratum_residual_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers principal-stratum residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
