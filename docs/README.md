@@ -452,6 +452,7 @@ instructions or evidence of current scientific performance.
 - [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md)
 - [AdaptiveEnrichmentCueExtractor](guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md)
 - [ImmortalTimeResidualCueExtractor](guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
+- [PrincipalStratumResidualCueExtractor](guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [ClusterCrossoverResidualCueExtractor](guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [AdaptiveRandomizationCueExtractor](guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md)
 - [InstrumentalVariableExclusionCueExtractor](guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md)

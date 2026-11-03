@@ -5,6 +5,8 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `PrincipalStratumResidualCueExtractor` (`retrieval/principal_stratum_residual_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers principal-stratum residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 - `ClusterCrossoverResidualCueExtractor` (`retrieval/cluster_crossover_residual_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers cluster-crossover residual cue extractors. Distinct from `ClusterRandomizationCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 - `AdaptiveRandomizationCueExtractor` (`retrieval/adaptive_randomization_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-randomization cue extractors. Distinct from `AdaptiveDesignCueExtractor` / `AdaptiveEnrichmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md`.
 - `InstrumentalVariableExclusionCueExtractor` (`retrieval/instrumental_variable_exclusion_cues.py`): offline cue extractor. Gap vs Elicit/Consensus/Connected Papers instrumental-variable exclusion cue extractors. Distinct from `InstrumentalVariableStrengthCueExtractor` / `InstrumentStrengthCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md`.
