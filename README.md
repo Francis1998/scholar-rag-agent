@@ -743,6 +743,13 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichm
 
 Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers principal-stratum residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
+
+### MediationPathResidualCueExtractor
+
+![MediationPathResidualCueExtractor](assets/demo/mediation-path-residual-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers mediation-path residual cue extractors. Distinct from `MediationAnalysisCueExtractor` / `MediationBiasCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 ### ClusterCrossoverResidualCueExtractor
 
 ![ClusterCrossoverResidualCueExtractor](assets/demo/cluster-crossover-residual-cues.gif)
