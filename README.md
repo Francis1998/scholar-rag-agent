@@ -777,6 +777,13 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers instrumental-var
 
 Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers immortal-time residual cue extractors. Distinct from `SurvivorBiasCueExtractor` / `TimeDependentBiasCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
+
+### TwinStudiesResidualCueExtractor
+
+![TwinStudiesResidualCueExtractor](assets/demo/twin-studies-residual-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers twin-studies residual cue extractors. Distinct from `MendelianRandomizationCueExtractor` / `MendelianRandomizationWeakCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
