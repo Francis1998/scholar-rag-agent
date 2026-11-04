@@ -5,6 +5,8 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `InstrumentalVariableWeakResidualCueExtractor` (`src/retrieval/instrumental_variable_weak_residual_cues.py`): offline weak-IV residual cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers weak-IV residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `InstrumentalVariableStrengthCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
 - `DoseResponseResidualCueExtractor` (`src/retrieval/dose_response_residual_cues.py`): offline dose-response residual cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers dose-response residual cue extractors. Distinct from `DoseResponseCueExtractor` / `SurrogateEndpointCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 - `TwinStudiesResidualCueExtractor` (`src/retrieval/twin_studies_residual_cues.py`): offline twin-studies residual cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers twin-studies residual cue extractors. Distinct from `MendelianRandomizationCueExtractor` / `MendelianRandomizationWeakCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
