@@ -455,6 +455,7 @@ instructions or evidence of current scientific performance.
 - [PrincipalStratumResidualCueExtractor](guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [MediationPathResidualCueExtractor](guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [TwinStudiesResidualCueExtractor](guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
+- [DoseResponseResidualCueExtractor](guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [FalsificationTestResidualCueExtractor](guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [ClusterCrossoverResidualCueExtractor](guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [AdaptiveRandomizationCueExtractor](guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md)
