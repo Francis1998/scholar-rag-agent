@@ -5,6 +5,9 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `HeapingBiasResidualCueExtractor` (`src/retrieval/heaping_bias_residual_cues.py`): offline cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers heaping-bias residual cue extractors. Distinct from `MeasurementErrorBiasCueExtractor` / `SurveyModeEffectCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
+
 - `InstrumentalVariableWeakResidualCueExtractor` (`src/retrieval/instrumental_variable_weak_residual_cues.py`): offline weak-IV residual cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers weak-IV residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `InstrumentalVariableStrengthCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 - `DoseResponseResidualCueExtractor` (`src/retrieval/dose_response_residual_cues.py`): offline dose-response residual cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers dose-response residual cue extractors. Distinct from `DoseResponseCueExtractor` / `SurrogateEndpointCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
