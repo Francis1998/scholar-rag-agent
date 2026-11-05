@@ -799,6 +799,13 @@ Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers dose-response re
 Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers heaping-bias residual cue extractors. Distinct from `MeasurementErrorBiasCueExtractor` / `SurveyModeEffectCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 
+### AttritionResidualCueExtractor
+
+![AttritionResidualCueExtractor](assets/demo/attrition-residual-cues.gif)
+
+Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers attrition residual cue extractors. Distinct from `LossToFollowupBiasCueExtractor` / `InformativeCensoringCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
+
 ### InstrumentalVariableWeakResidualCueExtractor
 
 ![InstrumentalVariableWeakResidualCueExtractor](assets/demo/instrumental-variable-weak-residual-cues.gif)
