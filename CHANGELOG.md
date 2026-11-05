@@ -5,6 +5,9 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `SelectionBiasResidualCueExtractor` (`src/retrieval/selection_bias_residual_cues.py`): offline cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers selection-bias residual cue extractors. Distinct from `SelectionBiasCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
+
+
 - `AttritionResidualCueExtractor` (`src/retrieval/attrition_residual_cues.py`): offline cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers attrition residual cue extractors. Distinct from `LossToFollowupBiasCueExtractor` / `InformativeCensoringCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
 
