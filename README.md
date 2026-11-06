@@ -22,6 +22,9 @@ service on loopback for local, trusted use.
 
 **New:** `HealthyWorkerResidualCueExtractor` residual cue extractor (gap vs Elicit/Consensus/Connected Papers healthy-worker residual cue extractors; stack GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
 
+
+**New:** `EValueResidualCueExtractor` residual cue extractor (gap vs Elicit/Consensus/Connected Papers E-value residual cue extractors; stack GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
+
 ## Start offline
 
 With Python 3.11+ and [uv](https://docs.astral.sh/uv/) installed:
