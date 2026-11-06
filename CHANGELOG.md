@@ -5,6 +5,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+- `HealthyWorkerResidualCueExtractor` (`src/retrieval/healthy_worker_residual_cues.py`): offline residual cue extractor. Gap vs Elicit/Consensus/Connected Papers healthy-worker residual cue extractors. Distinct from `HealthyWorkerEffectCueExtractor` / `HealthyWorkerSurvivorCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
 - `ColliderStratificationResidualCueExtractor` (`src/retrieval/collider_stratification_residual_cues.py`): offline residual cue extractor. Gap vs Elicit/Consensus/Connected Papers collider-stratification residual cue extractors. Distinct from `ColliderStratificationCueExtractor` / `ColliderBiasInteractionCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
 - `SelectionBiasResidualCueExtractor` (`src/retrieval/selection_bias_residual_cues.py`): offline cue extractor (never network). Gap vs Elicit/Consensus/Connected Papers selection-bias residual cue extractors. Distinct from `SelectionBiasCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. See `docs/guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
 
