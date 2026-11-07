@@ -16,14 +16,13 @@ The API/browser workflows below are integrated; [offline cue extractors](#offlin
 and most catalog extensions need explicit Python wiring. Keep this unauthenticated
 service on loopback for local, trusted use.
 
-
-**New:** `ColliderStratificationResidualCueExtractor` residual cue extractor (gap vs Elicit/Consensus/Connected Papers collider-stratification residual cue extractors; stack GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
-
-
-**New:** `HealthyWorkerResidualCueExtractor` residual cue extractor (gap vs Elicit/Consensus/Connected Papers healthy-worker residual cue extractors; stack GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
-
-
-**New:** `EValueResidualCueExtractor` residual cue extractor (gap vs Elicit/Consensus/Connected Papers E-value residual cue extractors; stack GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2). See `docs/guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md`.
+Recent offline helpers include
+[`ColliderStratificationResidualCueExtractor`](docs/guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md),
+[`HealthyWorkerResidualCueExtractor`](docs/guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md),
+and [`EValueResidualCueExtractor`](docs/guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md).
+These lexical pattern matchers make no model calls and do not calculate effects,
+diagnose bias, or validate findings. See the [extension catalog](docs/README.md)
+and [actual runtime stack and provider choices](#what-actually-runs).
 
 ## Start offline
 
@@ -562,23 +561,27 @@ For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
 
-The **2026-10-28 America/Los_Angeles** catalog recheck leaves all selected
-defaults unchanged:
+The **2026-11-06 America/Los_Angeles** review of indexed official catalogs leaves
+all selected defaults unchanged. Direct page retrieval was blocked by DNS
+resolution; the [provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md) records the
+source dates and preserves the earlier direct-read and compatibility checks.
 
 | Provider | Repository default | Current official guidance |
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model): Astra for highest intelligence, `gpt-6.1-sol` for balanced near-Astra performance, `gpt-6.1-terra` for efficient visual/writing work, and `gpt-6-luna` for speed and cost-sensitive volume. These are provider descriptions, not implemented vision/tools or measured tradeoffs here. |
 | Anthropic | `claude-sonnet-5-5` | [Claude catalog](https://platform.claude.com/docs/en/models/overview): generally recommends `claude-opus-5-5`, with `claude-fable-5-1` for demanding long-horizon reasoning and `claude-haiku-5-5` for latency-sensitive work. Sonnet remains this bounded text adapter's selection. |
-| Google | `gemini-3.8-flash` | [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) is the flagship; Flash remains the repository's SPEED-route default. |
-| Kimi | `kimi-k3.1-pro` | [K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md): K3.1 Pro, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
+| Google | `gemini-3.8-flash` | [Gemini catalog](https://aistudio.google.com/docs/models): `gemini-4-argon` is the flagship; Flash remains the repository's SPEED-route default. |
+| Kimi | `kimi-k3.1-pro` | [Kimi catalog](https://platform.kimi.ai/docs/models): K3.1 Pro is the latest flagship, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
 
 Use the [selection and migration checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
 for an explicit Terra text override, bounded evaluation, saved provider/model
 evidence, and rollback. Kimi's [K2 notice](docs/guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
-restricts newly registered users starting **2026-10-31**, not existing users
-under that immediate restriction, and plans all-K2 retirement by the end of
-December 2026 without an exact guaranteed date. Check legacy overrides; the
-repository's K3.1 default already needs no migration.
+now names `kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and `kimi-k2.6` as
+unavailable to newly registered users; users registered **before November 1,
+2026** can continue using those IDs pending expected retirement in **late
+December 2026**. The earlier October 31 review date is not the registration
+cutoff. Already discontinued K2/moonshot IDs are not revived by this notice.
+Check legacy overrides; the repository's K3.1 default already needs no migration.
 
 These remain stateless, single-turn text adapters: OpenAI and Kimi use Chat
 Completions, Anthropic Messages, and Gemini `generateContent`. Selecting another
