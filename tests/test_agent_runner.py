@@ -642,6 +642,41 @@ async def test_agent_runner_surfaces_cancellation_journal_failure(
 
 
 @pytest.mark.parametrize("phase", ["retrieval", "reasoning"])
+async def test_agent_runner_preserves_operation_timeout_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
+) -> None:
+    runner, _ = _build_runner(tmp_path)
+    failure = TimeoutError("provider read timed out after 0.01s")
+    retrieve = AsyncMock(wraps=runner._executor.retrieve)
+    answer = AsyncMock(wraps=runner._executor.answer)
+    if phase == "retrieval":
+        retrieve.side_effect = failure
+    else:
+        answer.side_effect = failure
+    monkeypatch.setattr(runner._executor, "retrieve", retrieve)
+    monkeypatch.setattr(runner._executor, "answer", answer)
+
+    result = await runner.run("Summarize literature on GraphRAG.")
+
+    assert result.state == AgentState.ERROR
+    assert result.error == str(failure)
+    retrieve.assert_awaited_once()
+    if phase == "reasoning":
+        answer.assert_awaited_once()
+    else:
+        answer.assert_not_awaited()
+    events = SQLiteEventLog(tmp_path / "agent.sqlite3").list_events(result.run_id)
+    transitions = [
+        event["payload"] for event in events if event["event_type"] == "state_transition"
+    ]
+    expected_states = ["PLANNING", "RETRIEVING"]
+    if phase == "reasoning":
+        expected_states.append("REASONING")
+    assert [event["to_state"] for event in transitions] == [*expected_states, "ERROR"]
+    assert events[-1]["payload"]["payload"] == {"error": str(failure)}
+
+
+@pytest.mark.parametrize("phase", ["retrieval", "reasoning"])
 async def test_agent_runner_keeps_timeouts_distinct_from_cancellation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, phase: str
 ) -> None:
