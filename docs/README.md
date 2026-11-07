@@ -462,6 +462,7 @@ instructions or evidence of current scientific performance.
 - [HealthyWorkerResidualCueExtractor](guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [SyntheticDiffInDiffResidualCueExtractor](guides/SYNTHETIC_DIFF_IN_DIFF_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [LeftTruncationResidualCueExtractor](guides/LEFT_TRUNCATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
+- [NegativeControlExposureResidualCueExtractor](guides/NEGATIVE_CONTROL_EXPOSURE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [EValueResidualCueExtractor](guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [SelectionBiasResidualCueExtractor](guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [InstrumentalVariableWeakResidualCueExtractor](guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
