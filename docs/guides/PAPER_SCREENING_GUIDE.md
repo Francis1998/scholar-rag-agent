@@ -25,7 +25,9 @@ our existing collections saved membership, but did not save human screening
 decisions before retrieval.
 
 This implementation is original, model-free metadata management. It does not
-implement ASReview's active learning or claim PaperQA's research performance.
+claim PaperQA's research performance. An opt-in, read-only
+[most-likely-relevant-first ordering](SCREENING_PRIORITIZATION_GUIDE.md) trained on
+current includes/excludes is separate and never records a decision.
 The opt-in `PrismaScreeningChecklist` still produces advisory, always-pending
 rows; it is not connected to these decisions. Saved-answer reviews judge an
 answer after generation and remain a separate feature.
@@ -101,7 +103,8 @@ time. This queue remains latest-only. Each new successful submission also append
 the identical record transactionally to the separate
 [decision-history reader](SCREENING_HISTORY_GUIDE.md), with no legacy backfill.
 
-Queue order is saved collection-member order, not relevance ranking. Use
+Queue order is saved collection-member order, not relevance ranking; the separate
+`GET /collections/{collection_id}/screening-priority` ordering is opt-in. Use
 `status=unscreened` or another status to filter items and send `next_cursor` as
 `cursor` for the next page. Counts and included IDs always cover the entire
 current collection, not just that page or status filter. An unknown cursor is

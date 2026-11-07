@@ -315,6 +315,24 @@ _SCREENING_FOOTER = (
     "Decode quotes/escapes when a raw ID is needed. Prior opinions are never rewritten "
     "by this form; legacy gaps remain explicit.</p></footer></body></html>"
 )
+_PRIORITY_FOOTER = (
+    "</main><footer><h2>An ordering, never a decision</h2>"
+    "<p>This GET page reads one snapshot and orders papers that still need a human decision. "
+    "It never records, changes or suggests include, exclude or unsure, and never changes "
+    "membership, retrieval selection, the default collection order or decision history. "
+    "Scores come from a local TF-IDF and Naive Bayes model trained only on current include "
+    "and exclude decisions; they are uncalibrated, not recall estimates or scientific "
+    "judgments. A high rank can create automation bias: screen every paper yourself.</p>"
+    "<p>No network, model download, retrieval, generation, cache or event write occurs. "
+    "Normal startup still initializes stores and loads indexes. Top terms are normalized "
+    "words from stored titles and text prefixes and can reveal fragments of paper text.</p>"
+    "<p>No scripts, external resources, analytics, cookies or browser storage are used. There "
+    "is no authentication or tenant isolation; keep the app on loopback or behind your own "
+    "access controls. IDs can remain in URLs and history; no-store cannot prevent saving or "
+    "screenshots.</p>"
+    "<p>IDs are JSON strings: decode quotes and escapes before using a raw ID. Reread this "
+    "page after each decision; separate reads are not one snapshot.</p></footer></body></html>"
+)
 _ANNOTATION_FOOTER = (
     "</main><footer><h2>Frozen evidence, explicit human opinions</h2>"
     "<p>Opening and previewing never write. Only Save annotation appends one immutable opinion "
@@ -409,6 +427,7 @@ def _page(
     creation: bool = False,
     editing: bool = False,
     retrieval: bool = False,
+    prioritization: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -453,6 +472,10 @@ def _page(
         subject = "RETRIEVAL PREVIEW"
         description = "Submit a question, inspect prepared passages, and decide before generation."
         footer = _RETRIEVAL_FOOTER
+    if prioritization:
+        subject = "SCREENING PRIORITIZATION"
+        description = "Order papers that still need your decision; the order never decides."
+        footer = _PRIORITY_FOOTER
     writes = screening or annotation or review or creation or editing
     mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
@@ -496,6 +519,7 @@ def _error(
     creation: bool = False,
     editing: bool = False,
     retrieval: bool = False,
+    prioritization: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -518,6 +542,7 @@ def _error(
         creation=creation,
         editing=editing,
         retrieval=retrieval,
+        prioritization=prioritization,
     )
 
 

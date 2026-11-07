@@ -71,6 +71,7 @@ The original JSON endpoints and response shapes are unchanged:
 | `PUT /collections/{collection_id}/screening/{document_id:path}` | Existing explicit JSON submission and `ScreeningReview` response, with no new Origin requirement. |
 | `GET /collections/{collection_id}/screening` | Existing revision-bound queue, counts and explicit included IDs. |
 | `GET /collections/{collection_id}/screening/history` | Existing exact query-selected, paginated append-only history. |
+| `GET /explore/screening-priority` | Separate opt-in, read-only queue ordering pending members most likely relevant first; its cards link to this form. See the [prioritization guide](SCREENING_PRIORITIZATION_GUIDE.md). |
 
 `selection` is one JSON object containing the three exact GET selectors and
 optional structured `collection_return`. The native hidden value is ASCII JSON
@@ -78,8 +79,9 @@ so embedded slashes, dot segments, CR/LF, NUL and Unicode identities survive
 HTML form normalization. GET links encode raw IDs in query values, never
 interpolate them into paths. Decode JSON only once. Unknown or duplicate fields
 are rejected both in URL encoding and within the JSON selection/return state.
-There is no arbitrary `return_to`, external redirect, active-learning queue or
-batch write. Root-path and mounted deployments retain their local prefix.
+There is no arbitrary `return_to`, external redirect or batch write. The form's
+**Most likely relevant first** link opens the separate read-only prioritized queue;
+the form itself never reorders, preselects or records a decision. Root-path and mounted deployments retain their local prefix.
 
 For protocol inspection, this local example is an **explicit write**. Replace
 all selectors/revisions with those you just inspected. Use the native form for
@@ -244,7 +246,9 @@ consulted on **2026-10-24**, is **workflow inspiration only**: interactive human
 screening, revisable labels and local/privacy-conscious review informed the
 missing browser-write step. No code, assets or prose were copied. This is not
 parity, an endorsement, a dependency, active learning or a claim to ASReview's
-validation. No new connector or automatic prioritization is included.
+validation. No new connector is included. Opt-in, read-only prioritization lives in
+the separate [screening prioritization guide](SCREENING_PRIORITIZATION_GUIDE.md);
+it orders papers and never decides.
 
 The surrounding current agentic-RAG stack remains Python, FastAPI/Pydantic,
 SQLite, explicit evidence contracts and optional provider-routed generation.

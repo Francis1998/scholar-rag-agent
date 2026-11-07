@@ -608,6 +608,19 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
             ),
             filter_status or "All members",
         )
+    yield '</nav><nav aria-label="Optional screening order">'
+    yield _link(
+        "screening-priority",
+        _url(
+            root_path + "/explore/screening-priority",
+            {
+                "collection_id": snapshot.collection_id,
+                "collection_revision": snapshot.collection_revision,
+                "collection_return": options.token(),
+            },
+        ),
+        "Most likely relevant first (opt-in order of papers still needing your decision)",
+    )
     yield "</nav>"
     yield (
         f"<p>{min(len(selected), options.limit)} members on this page, in saved membership order. "

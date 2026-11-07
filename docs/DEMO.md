@@ -44,6 +44,19 @@ This is a **measured-output Pillow illustration, not browser footage** or
 scientific validation. The static preview is opt-in animation, with an
 [exact text alternative](assets/human-screening-workbench.txt).
 
+## Screening prioritization
+
+[![Executed synthetic screening prioritization, not browser footage](assets/screening-priority.png)](assets/screening-priority.gif)
+
+The [complete browser/API/Python guide](guides/SCREENING_PRIORITIZATION_GUIDE.md)
+reproduces the cold-start response, twelve simulated fixture labels recorded
+through the real screening API, the learned JSON order, the opt-in browser queue
+and the unchanged decision form, plus a ten-shuffle simulation on 100 synthetic
+papers. Reads leave database bytes unchanged and run no models or network. This is
+a **generated illustration of executed output**, not browser footage or a
+benchmark on real literature; the [measured transcript](assets/screening-priority.txt)
+is the text alternative.
+
 ## Native saved-run comparison workbench
 
 [![Measured synthetic comparison preview, not browser footage](assets/saved-run-comparison-workbench.png)](assets/saved-run-comparison-workbench.gif)

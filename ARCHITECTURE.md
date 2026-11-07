@@ -647,6 +647,22 @@ does not alter opaque document IDs or catalog/queue behavior. See
 [Screening exports](docs/guides/SCREENING_EXPORT_GUIDE.md) for format and privacy
 limits; this snapshot does not version paper contents or authenticate reviewers.
 
+`storage.screening_priority.prioritize_screening` reads one `resolved_collection`
+snapshot: the queue's statuses/reviews plus each member's 300-character title prefix
+and 4,000-character stored-text prefix through the bounded encoding-aware decoder.
+A pure-Python ranker (sublinear-tf, smoothed-idf, L2-normalized TF-IDF over current
+members; class-balanced multinomial Naive Bayes with Laplace alpha 1 and uniform
+priors) trains only on current includes/excludes and orders unscreened/stale members
+by log-odds, ties by document ID; unsure members are ranked separately. Without one
+include and one exclude it returns saved order and no scores. The immutable
+`ScreeningPriority` model validates counts, ranks and score presence and is capped at
+512 KiB. `GET /collections/{collection_id}/screening-priority` (outside the screening
+PUT wildcard) and the GET-only `/explore/screening-priority` page expose it; the
+collection detail page and the screening form link to it. No table, cache, model,
+network, write or event is added; the default queue order is unchanged. The pure
+`simulate_screening` replays known labels with the same ranking for WSS@95 and recall
+curves. See the [prioritization guide](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md).
+
 `api.collection_explorer` adds GET `/explore/collections` and `/explore/collection`
 without a storage implementation or schema change. Discovery uses
 `SQLitePaperCollections.list_collections`; detail decodes the existing bounded
