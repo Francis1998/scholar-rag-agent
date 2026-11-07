@@ -32,6 +32,7 @@ from storage.saved_bibliography import (
     SavedBibliography,
     SQLiteSavedBibliography,
 )
+from tests.test_bibtex_export import PARSERS, UNBALANCED_TITLES, decode_bibtex_text, parse_bibtex
 from tests.test_run_comparison import ComparisonAPI, _save, _source
 
 
@@ -303,6 +304,30 @@ def test_untrusted_unicode_metadata_uses_public_formatter_without_enrichment(
     assert "x-header" not in response.headers
     assert response.headers["content-disposition"] == 'attachment; filename="bibliography.bib"'
     assert "\u7814\u7a76".encode() in response.content
+
+
+@PARSERS
+@pytest.mark.parametrize("title", UNBALANCED_TITLES)
+def test_bibtex_download_keeps_unbalanced_title_braces_inside_one_field(
+    bibliography_api: ComparisonAPI, title: str, backslash_escapes: bool
+) -> None:
+    sources = [
+        _source("hostile", document_id="hostile-paper", title=title, metadata={"year": "2024"}),
+        _source("next", document_id="next-paper", title="Next paper", metadata={"year": "2023"}),
+    ]
+    _save(bibliography_api, "saved", sources, answer=_answer(sources))
+
+    response = _get(bibliography_api, "saved", "bibtex")
+
+    assert response.status_code == 200, response.text
+    entries = parse_bibtex(response.text, backslash_escapes=backslash_escapes)
+    assert [(kind, key, sorted(fields)) for kind, key, fields in entries] == [
+        ("misc", "hostile_paper", ["title", "year"]),
+        ("misc", "next_paper", ["title", "year"]),
+    ]
+    assert decode_bibtex_text(entries[0][2]["title"]) == title
+    assert entries[1][2] == {"title": "Next paper", "year": "2023"}
+    assert _report(bibliography_api).sources[0].title == title
 
 
 def test_blank_title_placeholder_is_explicit(bibliography_api: ComparisonAPI) -> None:
