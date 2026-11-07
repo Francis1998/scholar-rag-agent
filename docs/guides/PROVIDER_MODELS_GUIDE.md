@@ -1,18 +1,24 @@
 # Provider Models and Compatibility
 
-The official [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model),
-[Astra model page](https://developers.openai.com/api/docs/models/gpt-6-astra),
-[Anthropic](https://platform.claude.com/docs/en/models/overview) catalog,
-[Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) and
-[Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) guides,
-and [Kimi model list](https://platform.kimi.ai/docs/models.md)
-were read directly **2026-10-31 America/Los_Angeles**. This is a current catalog
-check, not a new migration or inference test; separately dated model-specific
-contracts below retain their original check dates.
+**Catalog review: 2026-11-06 America/Los_Angeles.** The official
+[OpenAI models](https://developers.openai.com/api/docs/models) and
+[GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model),
+[Anthropic catalog](https://platform.claude.com/docs/en/models/overview),
+[Gemini catalog](https://aistudio.google.com/docs/models), and
+[Kimi model list](https://platform.kimi.ai/docs/models) were rechecked through
+indexed official-page excerpts, all crawled on **2026-11-06 UTC**.
+Direct HTTP retrieval failed DNS resolution in this review environment; the
+indexed review is not a successful live-page fetch. The last recorded direct
+catalog read remains **2026-10-31 America/Los_Angeles**. This is not a new
+migration or inference test; separately dated model-specific contracts below
+retain their original check dates.
+
 OpenAI positions `gpt-6-astra` for highest
 intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
 `gpt-6.1-terra` for efficient visual reasoning, computer use, and writing,
 and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
+Its catalog lists **GPT-6-Cyber** under specialized cybersecurity models, not
+the general-purpose starting recommendation; it is not a new RAG default here.
 Anthropic generally recommends `claude-opus-5-5`, lists `claude-fable-5-1` for
 demanding reasoning and long-horizon agents, and includes `claude-sonnet-5-5`
 and `claude-haiku-5-5` in its current lineup.
@@ -57,7 +63,7 @@ account and workload.
 | OpenAI | `gpt-6-astra` | Highest-intelligence selection in the [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
 | Google | `gemini-3.8-flash` | Retained [Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) for the existing SPEED route, not Google's latest overall model. The Argon catalog update does not change this selection. |
-| Moonshot | `kimi-k3.1-pro` | Recommended latest flagship in the [K3.1 Pro quickstart](https://platform.kimi.ai/docs/guide/kimi-k3-1-pro-quickstart.md). Both K3.1 variants retain K3's documented parameter constraints; the existing stateless text payload needs no changes. |
+| Moonshot | `kimi-k3.1-pro` | Latest flagship in the [current catalog](https://platform.kimi.ai/docs/models). The separately dated K3.1 contract check below covers both variants' K3 parameter constraints; this catalog review changes no payload. |
 
 The current [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model)
 also positions `gpt-6.1-sol` for balancing speed, cost, and intelligence with
@@ -106,16 +112,21 @@ does not establish this account's access or live payload compatibility.
 
 ### Kimi legacy overrides and retirement notice
 
-The [Kimi model list](https://platform.kimi.ai/docs/models.md), checked
-**2026-10-31 America/Los_Angeles**, distinguishes today's access restriction
-from a later planned retirement:
+The **2026-11-06 America/Los_Angeles** indexed review of the
+[Kimi model list](https://platform.kimi.ai/docs/models) exposes a page update
+dated **2026-11-04** and a crawl dated **2026-11-06 UTC**. Its notice names
+`kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and `kimi-k2.6`:
 
 | Timing | Affected users/models |
 | --- | --- |
-| Starting **2026-10-31** (today's check date) | K2-series models are no longer available to **newly registered users**. Existing users are unaffected by this immediate access restriction. |
-| **Planned by the end of December 2026** | Kimi plans to retire **all K2-series models**. This is a planned window, not a guaranteed exact retirement date. |
+| Current access restriction | These three IDs are no longer available to **newly registered users**. Users registered **before November 1, 2026** can continue using them pending retirement. |
+| **Expected in late December 2026** | The notice gives this retirement window for each of the three IDs, not a guaranteed exact date or continued support for every historical K2 model. |
 
-These notices do not supersede the separately recorded past discontinuations:
+The earlier **2026-10-31 America/Los_Angeles** entry recorded a direct catalog
+check, not the registration cutoff. Use the current model-specific notice above
+instead of treating that review date as the access boundary.
+
+This notice does not supersede the separately recorded past discontinuations:
 the original `kimi-k2` family on **2026-05-25** (the old local default was
 `kimi-k2`, not a preview-suffixed ID), and `kimi-k2.5` / `moonshot-v1` on
 **2026-08-31**. Do not interpret the new transition window as restored support

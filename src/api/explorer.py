@@ -196,9 +196,9 @@ _RUN_FOOTER = (
 )
 _WORKSHEET_FOOTER = (
     "</main><footer><h2>Inspection, not synthesis or a saved run</h2>"
-    "<p>Each submission builds a new worksheet from the current corpus. Choosing JSON or "
-    "Markdown and submitting again reruns retrieval; separate submissions are not one frozen "
-    "result. No worksheet, run, answer, collection edit or agent event is saved.</p>"
+    "<p>Each submission builds a new worksheet from the current corpus. Choosing JSON, "
+    "Markdown or CSV and submitting again reruns retrieval; separate submissions are not one "
+    "frozen result. No worksheet, run, answer, collection edit or agent event is saved.</p>"
     "<p>Local retrieval and reranking run for each question/paper cell, but no live or fake "
     "generation runs. Generative retrieval is rejected, not replaced. Normal application "
     "startup still initializes stores and loads indexes.</p>"

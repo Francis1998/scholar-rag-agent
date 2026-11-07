@@ -85,7 +85,7 @@ class _Form(BaseModel):
     document_ids: str = Field(default="", max_length=MAX_FIELD_CHARACTERS)
     collection_id: str = Field(default="", max_length=36)
     passages_per_cell: _PassageCount = 2
-    format: Literal["html", "json", "markdown"] = "html"
+    format: Literal["html", "json", "markdown", "csv"] = "html"
     navigation: str = Field(default="{}", max_length=MAX_FIELD_CHARACTERS)
 
     def worksheet_request(self) -> WorksheetRequest:
@@ -137,7 +137,7 @@ _FAILURES = {
         422,
         "Use 1-5 nonblank questions (one per line, at most 500 characters each), exactly one "
         "selection (a JSON array of 1-10 document IDs or one collection ID), 1-3 passages, "
-        "and html/json/markdown output. Blank lines, unknown/duplicate fields, invalid UTF-8, "
+        "and html/json/markdown/csv output. Blank lines, unknown/duplicate fields, invalid UTF-8, "
         "malformed percent encoding, invalid return state, and POST query fields are rejected. "
         "No input is echoed and no scope is widened.",
     ),
@@ -161,7 +161,7 @@ _FAILURES = {
     "context_preparation_timeout": (504, "The existing context preparation deadline was exceeded."),
     "worksheet_too_large": (
         413,
-        "Complete JSON or Markdown exceeds 262,144 bytes. Reduce questions, papers or passages.",
+        "A complete worksheet export exceeds 262,144 bytes. Reduce questions, papers or passages.",
     ),
     "worksheet_html_too_large": (
         413,
@@ -269,19 +269,22 @@ def _form(fields: _Form, navigation: _CatalogReturn, root_path: str) -> Iterator
         f'<input id="passages_per_cell" name="passages_per_cell" type="number" min="1" max="3" '
         f'value="{fields.passages_per_cell}" required inputmode="numeric"></div>'
         '<div><label for="format">Output for this submission</label>'
-        '<select id="format" name="format">'
+        '<select id="format" name="format" aria-describedby="export-help">'
     )
     for value, label in (
         ("html", "Browser HTML"),
         ("json", "JSON download"),
         ("markdown", "Markdown"),
+        ("csv", "CSV download"),
     ):
         selected = " selected" if fields.format == value else ""
         yield f'<option value="{value}"{selected}>{label}</option>'
     yield (
         '</select></div><div class="actions"><button type="submit">Inspect selected papers</button>'
-        '</div><p class="worksheet-input">Each submission builds a new worksheet. '
+        '</div><p id="export-help" class="worksheet-input">Each submission builds a new worksheet. '
         "Export submissions rerun retrieval, not a saved/frozen result. "
+        "CSV prefixes every text value with an apostrophe for spreadsheet safety; "
+        "use JSON for unprefixed text. "
         "Up to 50 cells, 30 seconds, 800 excerpt characters per passage. "
         "Nothing is saved on the server.</p></form>"
     )
@@ -411,7 +414,7 @@ router = APIRouter(route_class=_WorksheetRoute, tags=["Research worksheet browse
     "/explore/worksheet",
     response_class=HTMLResponse,
     responses={
-        200: {"description": "Native form/worksheet, or an existing JSON/Markdown attachment"},
+        200: {"description": "Native form/worksheet, or a JSON/Markdown/CSV attachment"},
         404: {"description": "Exact collection not found"},
         405: {"description": "Only GET and read-only POST are supported"},
         409: {"description": "Invalid/stale scope, generative retrieval or unrepresentable HTML"},
@@ -471,15 +474,21 @@ async def explore_worksheet(request: Request) -> Response:
         container: AppContainer = request.app.state.container
         result = await container.worksheets.build(payload)
         if fields.format != "html":
-            markdown = fields.format == "markdown"
+            if fields.format == "csv":
+                content = result.to_csv()
+            else:
+                content = result.to_markdown() if fields.format == "markdown" else result.to_json()
+            extension = "md" if fields.format == "markdown" else fields.format
             return Response(
-                content=result.to_markdown() if markdown else result.to_json(),
-                media_type="text/markdown" if markdown else "application/json",
+                content=content,
+                media_type={
+                    "json": "application/json",
+                    "markdown": "text/markdown",
+                    "csv": "text/csv",
+                }[fields.format],
                 headers={
                     **_HEADERS,
-                    "Content-Disposition": 'attachment; filename="worksheet.'
-                    + ("md" if markdown else "json")
-                    + '"',
+                    "Content-Disposition": f'attachment; filename="worksheet.{extension}"',
                 },
             )
 

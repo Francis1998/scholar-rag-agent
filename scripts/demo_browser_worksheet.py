@@ -2,6 +2,8 @@
 
 import argparse
 import asyncio
+import csv
+import io
 import json
 import socket
 from collections.abc import Iterator
@@ -29,7 +31,7 @@ QUESTIONS = ("What retrieval methods are described?", "What limitations should I
 PANEL_TITLES = (
     "1. Open a native worksheet from the corpus",
     "2. Inspect every question / paper cell",
-    "3. Follow exact current-source links",
+    "3. Download spreadsheet-safe CSV",
     "4. Measure the read-only boundary",
 )
 
@@ -132,7 +134,7 @@ def run_demo(output_dir: Path) -> str:
             for identifier, title, text in (
                 (
                     SELECTED_ID,
-                    "Synthetic lexical methods",
+                    "=Synthetic lexical methods",
                     "Original synthetic note, not a publication or result. Retrieval uses terms. "
                     "Literal <script>not executable</script> & cafe\u0301 \u7814\u7a76. "
                     + "A score does not establish scientific support. "
@@ -149,6 +151,17 @@ def run_demo(output_dir: Path) -> str:
         ]
         container.document_store.add_documents(
             [Document(**chunk.model_dump(exclude={"chunk_id"})) for chunk in chunks], chunks
+        )
+        container.document_store.add_documents(
+            [
+                Document(
+                    document_id="zz-metadata-only",
+                    title="Synthetic paper without chunks",
+                    text="",
+                    source="synthetic:browser-worksheet",
+                )
+            ],
+            [],
         )
         container.hybrid_retriever.add_chunks(chunks)
         container.graph_builder.index_chunks(chunks)
@@ -185,7 +198,7 @@ def run_demo(output_dir: Path) -> str:
                 "worksheet.html": html.content,
                 "source.html": source.content,
             }
-            for fmt, extension in (("json", "json"), ("markdown", "md")):
+            for fmt, extension in (("json", "json"), ("markdown", "md"), ("csv", "csv")):
                 response = client.post(page.form_action, data={**fields, "format": fmt})
                 response.raise_for_status()
                 artifacts["worksheet." + extension] = response.content
@@ -197,7 +210,20 @@ def run_demo(output_dir: Path) -> str:
                 "/research/worksheet", json=payload.model_dump(mode="json", exclude_none=True)
             )
             api_response.raise_for_status()
+            api_csv = client.post(
+                "/research/worksheet?format=csv",
+                json=payload.model_dump(mode="json", exclude_none=True),
+            )
+            api_csv.raise_for_status()
             python_result = asyncio.run(container.worksheets.build(payload))
+            csv_rows = list(csv.DictReader(io.StringIO(api_csv.text, newline="")))
+            empty_csv = client.post(
+                page.form_action,
+                data={**fields, "document_ids": '["zz-metadata-only"]', "format": "csv"},
+            )
+            empty_csv.raise_for_status()
+            artifacts["no-passages.csv"] = empty_csv.content
+            empty_rows = list(csv.DictReader(io.StringIO(empty_csv.text, newline="")))
             selected = client.post(
                 page.form_action,
                 data={
@@ -234,6 +260,37 @@ def run_demo(output_dir: Path) -> str:
                 and api_response.content == artifacts["worksheet.json"]
                 and worksheet.to_markdown().encode() == artifacts["worksheet.md"]
             ),
+            "csv_api_python_browser_equal": (
+                api_csv.content == artifacts["worksheet.csv"] == python_result.to_csv().encode()
+            ),
+            "csv_rows": len(csv_rows),
+            "empty_csv_rows": len(empty_rows),
+            "csv_no_passages_retained": (
+                len(empty_rows) == len(QUESTIONS)
+                and all(
+                    row["status"] == "'no_passages" and row["chunk_id"] == "" for row in empty_rows
+                )
+            ),
+            "csv_formula_prefix_reversible": (
+                csv_rows[0]["title"] == "'" + chunks[0].title
+                and csv_rows[0]["title"][1:] == chunks[0].title
+            ),
+            "csv_exact_excerpts_and_diagnostics": all(
+                record["excerpt"] == "'" + passage.excerpt
+                and record["text_sha256"] == "'" + passage.text_sha256
+                and record["excerpt_truncated"] == str(passage.excerpt_truncated).lower()
+                and record["passages_omitted"] == str(cell.passages_omitted)
+                for record, (cell, passage) in zip(
+                    csv_rows,
+                    [
+                        (cell, passage)
+                        for row in worksheet.rows
+                        for cell in row.cells
+                        for passage in cell.passages
+                    ],
+                    strict=True,
+                )
+            ),
             "collection_same_cells": collection_result.rows == worksheet.rows,
             "restart_html_identical": reopened.content == html.content,
             "database_bytes_unchanged": database.read_bytes() == before,
@@ -269,9 +326,12 @@ def run_demo(output_dir: Path) -> str:
                 "Every cell exposes source IDs, score, path and full-text digest.\n"
                 "Retrieval passages are not answers, confidence estimates or findings.",
                 f"{PANEL_TITLES[2]}\n"
-                f"Exact current-source context: {checks['source_context_exact_id']}.\n"
-                f"API / Python / browser exports equal: {checks['api_python_browser_equal']}.\n"
-                f"Collection resolves the same cells: {checks['collection_same_cells']}.\n"
+                f"CSV rows: {checks['csv_rows']}; separate no-passages rows: "
+                f"{checks['empty_csv_rows']}.\n"
+                f"API / Python / browser CSV equal: {checks['csv_api_python_browser_equal']}.\n"
+                f"Formula-prefix roundtrip: {checks['csv_formula_prefix_reversible']}; "
+                f"exact text / flags: {checks['csv_exact_excerpts_and_diagnostics']}.\n"
+                "Text is apostrophe-prefixed, not raw JSON text. No cells silently dropped.\n"
                 "Each export submission reruns retrieval; it is not a frozen download.",
                 f"{PANEL_TITLES[3]}\n"
                 f"Forbidden model/write calls: {sum(counts.values())}; "
@@ -281,7 +341,7 @@ def run_demo(output_dir: Path) -> str:
                 f"Database unchanged: {checks['database_bytes_unchanged']}; "
                 f"unchanged-corpus restart identical: {checks['restart_html_identical']}.\n"
                 f"HTML: {len(html.content)} bytes; JSON: {len(artifacts['worksheet.json'])}; "
-                f"Markdown: {len(artifacts['worksheet.md'])}.\n"
+                f"CSV: {len(artifacts['worksheet.csv'])}.\n"
                 "Temporary corpus removed. Original synthetic data; no scientific results.",
             )
         )
