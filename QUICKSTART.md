@@ -78,7 +78,11 @@ Both `/query` and `/retrieve` require a nonblank string. Empty or whitespace-onl
 questions, including Unicode whitespace, return HTTP 422 before planning,
 retrieval, model calls, or agent-event writes. Validation preserves nonblank input;
 the existing analyzer still trims outer whitespace in observations, plans, and
-generation prompts.
+generation prompts. Unpaired Unicode surrogate escapes (such as `"\ud800"`) and
+non-finite JSON numbers (`NaN`, `Infinity`) in the question, scope, or evidence
+fields also return HTTP 422, never a server error: such a diagnostic keeps its
+location, type, and message but omits raw `input`/`ctx`, and these sanitized
+errors use `Cache-Control: no-store`. Other validation details are unchanged.
 
 To search only selected papers, pass their returned IDs in `document_ids` on
 `/query`. Omit the field for the whole corpus; an empty list or explicit `null`

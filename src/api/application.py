@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _evidence_validation_error(request: Request, exc: RequestValidationError) -> Response:
-    """Do not echo unencodable numeric input; leave unrelated validation contracts intact."""
+    """Never fail to encode a 422; leave unrelated validation contracts intact."""
     route = request.scope.get("route")
     if isinstance(route, APIRoute) and route.path == "/ingest/text":
         content = sanitized_validation_content(exc)
@@ -89,15 +89,27 @@ async def _evidence_validation_error(request: Request, exc: RequestValidationErr
             headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
         )
     errors = exc.errors()
-    if not any(error["loc"][:2] == ("body", "near_duplicate_threshold") for error in errors):
-        return await request_validation_exception_handler(request, exc)
-    logger.warning("Evidence request validation failed: near_duplicate_threshold")
+    threshold = any(error["loc"][:2] == ("body", "near_duplicate_threshold") for error in errors)
     detail = [
         {key: error[key] for key in ("loc", "type", "msg")}
         if error["loc"][:2] == ("body", "near_duplicate_threshold")
         else error
         for error in errors
     ]
+    # JSON NaN/Infinity or unpaired surrogate escapes in any other field (for example a
+    # /query question) cannot be rendered by the default handler; sanitize only those.
+    content = sanitized_validation_content(exc, errors=detail)
+    if content is not None:
+        logger.warning("Request validation failed: unserializable_diagnostic")
+        return Response(
+            content=content,
+            status_code=422,
+            media_type="application/json",
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+        )
+    if not threshold:
+        return await request_validation_exception_handler(request, exc)
+    logger.warning("Evidence request validation failed: near_duplicate_threshold")
     return JSONResponse(
         {"detail": jsonable_encoder(detail)},
         status_code=422,

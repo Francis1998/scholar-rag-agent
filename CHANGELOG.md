@@ -356,6 +356,17 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- `/query` and `/retrieve` returned a plain-text HTTP 500 instead of the
+  documented 422 when a JSON request contained a non-finite number (`NaN`,
+  `Infinity`, as emitted by Python's default `json.dumps`) or an unpaired
+  surrogate escape (such as `"\ud800"`) in `query`, `document_ids`,
+  `collection_id`, `max_chunks_per_document`, or `min_evidence_documents`: the
+  default FastAPI handler could not encode the rejected input. The application
+  validation handler now applies the existing `/ingest/text` sanitization to
+  any such diagnostic (location, type, and message only; `Cache-Control:
+  no-store`), still before planning, retrieval, model calls, or event writes.
+  Encodable diagnostics and the `near_duplicate_threshold` redaction are
+  unchanged. See the [query validation notes](QUICKSTART.md).
 - Complete-document ingestion now removes superseded chunks and graph evidence
   for existing document IDs, including content-derived new chunk IDs, shorter
   revisions, and blank Python replacements. Staged dense/BM25 updates preserve
