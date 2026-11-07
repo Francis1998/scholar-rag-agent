@@ -1,6 +1,7 @@
 """Opt-in most-likely-relevant-first browser queue beside the existing decision forms."""
 
 import json
+import sqlite3
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlencode, urlsplit
 
@@ -11,9 +12,12 @@ from fastapi.testclient import TestClient
 from scripts.demo_corpus_explorer import browsing_guards
 from starlette.types import Message, Scope
 
+from api import explorer, screening_explorer
 from api.explorer import _decode_collection_return
+from retrieval.models import Document
 from storage.paper_collections import CollectionError, PaperCollection
 from storage.paper_screening import ScreeningSubmission
+from storage.screening_priority import ScreeningPriority
 from tests.test_collection_explorer import detail_url
 from tests.test_corpus_explorer import (
     HOSTILE,
@@ -332,3 +336,73 @@ async def test_query_byte_bound_at_asgi_boundary(api: ExplorerAPI, size: int, st
         "Use an exact collection_id" if status == 422 else "The URL exceeds 65536 bytes",
     )
     assert api.path.read_bytes() == before
+
+
+def test_no_training_terms_and_fully_decided_queues_are_explicit(api: ExplorerAPI) -> None:
+    api.container.document_store.add_documents(
+        [
+            Document(document_id=identifier, title=title, text="", source="synthetic:edge")
+            for identifier, title in (("a", "The of and"), ("b", "Is it 2024"), ("c", "Grounded"))
+        ],
+        [],
+    )
+    collection = api.container.paper_collections.create(name="Edge", document_ids=["a", "b", "c"])
+    for identifier, decision in (("a", "include"), ("b", "exclude")):
+        api.container.paper_screening.submit(
+            collection.collection_id,
+            identifier,
+            ScreeningSubmission(
+                collection_revision=1,
+                expected_decision_revision=0,
+                decision=decision,  # type: ignore[arg-type]
+                reason="Synthetic human opinion.",
+            ),
+        )
+    root = api.page(queue_url(collection))
+    assert values(root, "model-status") == ["no_training_terms"]
+    assert identities(root) == ["c"] and not root.by_class("priority-score")
+    api.container.paper_screening.submit(
+        collection.collection_id,
+        "c",
+        ScreeningSubmission(
+            collection_revision=1,
+            expected_decision_revision=0,
+            decision="include",
+            reason="Synthetic human opinion.",
+        ),
+    )
+    done = api.page(queue_url(collection))
+    assert not done.by_class("priority-item")
+    assert "No unscreened or stale members remain" in done.text()
+
+
+def test_storage_html_size_and_unrepresentable_text_fail_closed(
+    api: ExplorerAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    collection = seed(api)
+    url = queue_url(collection)
+    response = api.client.get(url)
+    monkeypatch.setattr(explorer, "MAX_HTML_BYTES", len(response.content))
+    assert api.client.get(url).content == response.content
+    monkeypatch.setattr(explorer, "MAX_HTML_BYTES", len(response.content) - 1)
+    failure(api.client.get(url), 413, "The complete escaped page exceeds 1 MiB")
+    monkeypatch.undo()
+    real = ScreeningPriority.model_validate_json(
+        api.client.get(
+            f"/collections/{collection.collection_id}/screening-priority",
+            params={"collection_revision": 1},
+        ).content
+    )
+    item = real.items[0].model_copy(update={"title": "nul\0title"})
+    monkeypatch.setattr(
+        screening_explorer,
+        "prioritize_screening",
+        Mock(return_value=real.model_copy(update={"items": (item, *real.items[1:])})),
+    )
+    failure(api.client.get(url), 409, "Saved text cannot be displayed faithfully")
+    monkeypatch.setattr(
+        screening_explorer,
+        "prioritize_screening",
+        Mock(side_effect=sqlite3.OperationalError("PRIVATE_database_detail")),
+    )
+    failure(api.client.get(url), 503, "Screening storage is unavailable")
