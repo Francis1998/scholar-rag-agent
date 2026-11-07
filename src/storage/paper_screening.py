@@ -23,6 +23,7 @@ from pydantic import (
 )
 
 from retrieval.scope import MAX_DOCUMENT_IDS
+from storage.csv_export import csv_cell
 from storage.document_catalog import (
     MAX_SOURCE_CHARACTERS,
     MAX_TITLE_CHARACTERS,
@@ -206,17 +207,6 @@ class _ExportOptions(BaseModel):
     format: ScreeningExportFormat = "json"
 
 
-def _csv_cell(value: str | int | bool | None) -> str | int:
-    # Uniform prefixes are reversible and protect even whitespace/control-led formulas.
-    if isinstance(value, str):
-        return "'" + value
-    if value is None:
-        return ""
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return value
-
-
 def _csv_export(result: ScreeningExport) -> bytes:
     output = io.StringIO(newline="")
     fields = (
@@ -271,7 +261,7 @@ def _csv_export(result: ScreeningExport) -> bytes:
             "review_reason": review.reason if review else None,
             "review_updated_at": review.updated_at.isoformat() if review else None,
         }
-        writer.writerow({field: _csv_cell(value) for field, value in row.items()})
+        writer.writerow({field: csv_cell(value) for field, value in row.items()})
     return output.getvalue().encode("utf-8")
 
 

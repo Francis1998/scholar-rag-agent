@@ -4,8 +4,9 @@ Inspect the same questions against each selected ingested paper, without
 generating answers. The native `/explore/worksheet` browser form and
 `POST /research/worksheet` JSON API run the existing retrieval preview separately
 for each question/paper pair. Inspect the browser grid and exact source links or
-download JSON/Markdown. This prevents a global top-k result list from leaving a
-selected paper unrepresented merely because another paper ranks higher.
+download JSON/Markdown or spreadsheet-safe CSV. This prevents a global top-k
+result list from leaving a selected paper unrepresented merely because another
+paper ranks higher.
 
 **A cell contains retrieved passages, not a scientific conclusion.** Lexical
 hash vectors, BM25, co-mention traversal, and lexical reranking can return weak
@@ -45,6 +46,19 @@ that those projects implement this exact worksheet. No peer code was copied,
 and this local lexical workflow does not claim their model quality or feature
 parity.
 
+### Why spreadsheet export
+
+Primary sources checked on **2026-11-06 America/Los_Angeles**:
+[ASReview LAB's workflow](https://github.com/asreview/asreview#the-asreview-lab-workflow)
+includes exporting labeled datasets, and its v3 notes explicitly discuss retaining
+duplicate records in exports. [PaperQA2](https://github.com/Future-House/paper-qa#paperqa2-algorithm)
+separates evidence gathering from answer generation. These motivate a portable
+table that does not silently omit selected papers, including cells with no
+returned passages. They are inspiration, **not claims of CSV schema, formula
+protection, active-learning, or model-quality parity**. No peer code was copied.
+The gap here was taking an existing generation-free worksheet into a spreadsheet
+without manually flattening JSON or losing provenance.
+
 ## Native browser workflow
 
 Start the isolated loopback service from the [Quickstart](../../QUICKSTART.md)
@@ -66,7 +80,9 @@ it does not read the corpus or run retrieval.
 4. Follow **Read current source context** or the paper link to inspect the exact
    stored IDs. These links read today's corpus; they do not freeze old passages.
    The catalog return selection and application mount prefix remain intact.
-5. Select JSON or Markdown and submit to download using the existing serializers.
+5. Select **CSV download**, JSON or Markdown and submit to download.
+   CSV prepends one apostrophe to every text value, including ordinary titles
+   and IDs; read the [CSV contract](#spreadsheet-safe-csv-contract) before importing.
    **Every submission reruns retrieval.** A later export is not guaranteed to
    equal an earlier HTML result if corpus/index contents change. No worksheet,
    run ID, answer, collection edit or event is saved.
@@ -85,7 +101,7 @@ continue using `POST /research/worksheet`. The six form fields are `questions`,
 return URL. Duplicate/unknown fields and malformed percent/UTF-8 encoding fail.
 The streaming body limit is 65,536 bytes, URL limit 16,384 bytes and decoded
 field limit 16,384 characters. Browser HTML must fit 1,048,576 UTF-8 bytes;
-JSON/Markdown retain the existing 262,144-byte limits. No partial cells are
+JSON/Markdown/CSV each have a 262,144-byte limit. No partial cells are
 returned to fit a limit.
 
 The error table below also applies to the browser. Additionally, an unsupported
@@ -95,30 +111,34 @@ The browser returns sanitized HTML errors, not downloads or raw diagnostics.
 
 ### Reproduce the native-form demonstration
 
-[![Executed synthetic native-form output illustration](../assets/browser-worksheet.png)](../assets/browser-worksheet.gif)
+[![Executed synthetic worksheet and spreadsheet-export illustration](../assets/worksheet-csv.png)](../assets/worksheet-csv.gif)
 
 The still preview links to four panels rendered from executed output. This is an
 original synthetic-output illustration, **not browser screenshots, a recording
-or a scientific result**.
+or a scientific result**. [Text alternative](../assets/worksheet-csv.txt).
+This CSV demonstration was executed on **2026-11-06 America/Los_Angeles**.
 
 ```bash
 BROWSER_WORKSHEET_DIR="$(mktemp -d)/native-worksheet"
 uv run python -m scripts.demo_browser_worksheet --output-dir "$BROWSER_WORKSHEET_DIR"
 uv run python -m scripts.create_browser_worksheet_gif \
   --transcript "$BROWSER_WORKSHEET_DIR/transcript.txt" \
-  --output "$BROWSER_WORKSHEET_DIR/browser-worksheet.gif"
+  --output "$BROWSER_WORKSHEET_DIR/worksheet-csv.gif"
 ```
 
 The demo opens actual native controls, follows catalog/document prefill and
 exact Unicode/slash source IDs, submits two questions against two selected
 papers, and saves `catalog.html`, `form.html`, `worksheet.html`, `source.html`,
-`worksheet.json`, `worksheet.md`, `checks.json` and `transcript.txt`. The renderer
+`worksheet.json`, `worksheet.md`, `worksheet.csv`, `no-passages.csv`, `checks.json`
+and `transcript.txt`. The renderer
 adds a GIF and same-name PNG. Opening the saved HTML shows the captured page,
 but its local links/forms require the original service and are not a portable
 offline evidence reader.
 
 Measured checks require four cells, visible excerpt truncation, API/Python/browser
-export parity on unchanged data, identical HTML after restart, collection
+export parity (including CSV) on unchanged data, reversible escaping of a
+formula-like title, exact CSV excerpts/digests/flags, two retained `no_passages`
+rows from a separate metadata-only paper, identical HTML after restart, collection
 parity, and rejection of empty scope. Generation, event, mutation and external
 connection guards must remain at zero; database bytes must stay unchanged.
 Explicit offline settings ignore ambient environment/dotenv keys, no public
@@ -192,8 +212,8 @@ curl --fail-with-body --silent --show-error \
   }'
 ```
 
-The default format is `json`; the only alternative is `markdown`. Successful
-responses are attachments named `worksheet.json` or `worksheet.md`, with
+The default format is `json`; alternatives are `markdown` and `csv`. Successful
+responses are attachments named `worksheet.json`, `worksheet.md` or `worksheet.csv`, with
 `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Save only a
 successful response; HTTP error bodies are diagnostics, not partial worksheets.
 The native browser described above is an alternative front end to the same
@@ -222,10 +242,108 @@ match the exact chunk ID. Some path-normalizing identifiers have no safe
 inspection URL and return `null`; use Python storage inspection for those.
 These links read the current corpus, not frozen historical text.
 
+## Spreadsheet-safe CSV contract
+
+Use the browser's **CSV download** output or the same JSON request with
+`POST /research/worksheet?format=csv`. The response is `text/csv; charset=utf-8`,
+an attachment named `worksheet.csv`. For example, after replacing the IDs:
+
+```bash
+curl --fail --silent --show-error \
+  'http://127.0.0.1:8000/research/worksheet?format=csv' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "questions": ["What methods are described?", "What limitations are discussed?"],
+    "document_ids": ["FIRST_DOCUMENT_ID", "SECOND_DOCUMENT_ID"],
+    "passages_per_cell": 2
+  }' > worksheet.csv
+```
+
+Check curl's exit status: a failed request is not a worksheet. Redirection may
+leave an empty file. Never overwrite an artifact you need to retain. A collection
+request uses `collection_id` instead of `document_ids`, exactly as with JSON.
+
+The CSV uses UTF-8 **without a BOM**, comma separators, CRLF record endings,
+double-quoted fields, and doubled embedded quotes. Embedded commas, CR/LF,
+Unicode and control characters are retained, not stripped. Import explicitly
+as UTF-8/comma-delimited text in Excel, LibreOffice Calc or another spreadsheet;
+disable automatic formula/type conversion where available. Application-specific
+import behavior may hide the apostrophe, display it, alter newlines or discard
+control characters. No live spreadsheet application compatibility test is claimed.
+Keep the original download and use a CSV parser or JSON when exact text matters.
+
+There is **one row per returned passage**; a cell without passages still has
+one row. Order is question order, normalized first-seen paper order, then passage
+order. Questions may repeat: use the **1-based** `question_number` and
+`document_number` together to identify a cell, not question text. `passage_number`
+is 1-based within that cell; `rank` retains the actual preview rank. There are at
+most 150 data rows (50 cells with three passages), subject to the byte limit.
+Counts and scores remain retrieval diagnostics, never scientific findings.
+
+| Columns | Meaning and CSV type |
+| --- | --- |
+| `schema_version`, `csv_text_encoding`, `kind` | Text: worksheet `1.0`, encoding `apostrophe-prefix-v1`, `retrieval_passages` |
+| `collection_id` | Nullable text; absent for explicit ID selections |
+| `passages_per_cell` | Integer requested limit |
+| `limits_json`, `warnings_json` | Text containing complete JSON object/array |
+| `question_number`, `question` | Integer position and exact question text |
+| `document_number`, `document_id`, `inspection_url` | Integer position, exact cell ID, nullable current-source inspection URL |
+| `status`, `preview_source_count`, `passages_omitted` | Text status and integer counts; not recomputed from CSV rows |
+| `configuration_json` | Text containing the complete effective preview configuration |
+| `passage_number`, `passage_document_id`, `chunk_id` | Nullable position and exact passage identities |
+| `rank`, `score`, `retriever`, `path_json` | Nullable integer, finite number, text, and text containing a JSON array |
+| `title`, `title_truncated`, `source`, `source_truncated` | Nullable bounded text prefixes and boolean flags |
+| `excerpt`, `excerpt_truncated`, `text_characters`, `text_sha256` | Nullable excerpt/flag plus full-text character count/digest |
+
+Worksheet metadata and cell configuration are repeated on each row so a copied
+row retains its interpretation and provenance. All passage columns are blank
+for `no_passages`; cell status, metadata and diagnostics are still present.
+An unavailable inspection URL is blank, not an invented link. Existing excerpt,
+title and source prefix limits and omission counts remain explicit: CSV performs
+**no additional clipping or omission**.
+
+### Formula safety and exact roundtripping
+
+CSV quoting alone does not prevent spreadsheet formulas. The shared screening
+export rule prepends **exactly one ASCII apostrophe to every string**, even an
+empty string, strings already starting with an apostrophe, and strings starting
+with whitespace/control characters before `=`, `+`, `-` or `@`. For example,
+`=1+1` is stored as `'=1+1`, and `'literal` as `''literal`. Headers are fixed,
+not user-provided. Numbers are unprefixed; booleans are unprefixed `true`/`false`.
+Null is an empty field; the empty string is a field containing one apostrophe.
+
+Thus CSV values are **not identical to unprefixed JSON text**. To recover a
+text column, parse the CSV first, distinguish blank/null from apostrophe/empty
+text, then remove exactly one leading apostrophe, never `lstrip("'")`.
+Decode `*_json` columns only after removing that prefix. Do not remove prefixes
+and re-export to a spreadsheet: that would restore formula risk.
+
+```python
+import csv
+import json
+
+with open("worksheet.csv", encoding="utf-8", newline="") as stream:
+    for row in csv.DictReader(stream):
+        question = row["question"][1:]  # Required text, always prefixed.
+        excerpt = None if row["excerpt"] == "" else row["excerpt"][1:]
+        configuration = json.loads(row["configuration_json"][1:])
+        print(int(row["question_number"]), question, excerpt, configuration["max_source_docs"])
+```
+
+The complete encoded CSV, including headers, quotes, prefixes and CRLF, must fit
+262,144 bytes or fail with `worksheet_too_large` (HTTP 413 / Python `WorksheetError`).
+Repeated metadata can make CSV exceed its cap even when JSON/Markdown fit;
+those existing formats still work unchanged. The service retains its existing
+JSON-and-Markdown build validation; CSV is additionally checked **only when
+requested**. Reduce questions, papers or passages rather than expecting partial
+success. Use JSON for canonical structured storage. There is no CSV import,
+saved worksheet, new model/connector/dependency, automatic screening, or
+retrieval-policy comparison workbench in this feature.
+
 ## Complete offline Python example
 
 This standalone example ignores ambient settings and does not require the API
-server. It writes two artifacts into the current directory and refuses existing
+server. It writes three artifacts into the current directory and refuses existing
 filenames. Run it in a fresh working directory with the package installed:
 
 ```bash
@@ -240,7 +358,7 @@ from api.application import create_app
 from scripts.demo_retrieval_preview import offline_settings
 
 async def main():
-    for name in ("worksheet.json", "worksheet.md"):
+    for name in ("worksheet.json", "worksheet.md", "worksheet.csv"):
         if Path(name).exists():
             raise FileExistsError(f"Refusing to overwrite {name}")
     with TemporaryDirectory(prefix="worksheet-example-") as temporary:
@@ -266,8 +384,9 @@ async def main():
             for name, content in (
                 ("worksheet.json", worksheet.to_json()),
                 ("worksheet.md", worksheet.to_markdown()),
+                ("worksheet.csv", worksheet.to_csv()),
             ):
-                with Path(name).open("x", encoding="utf-8") as output:
+                with Path(name).open("x", encoding="utf-8", newline="") as output:
                     output.write(content)
 
 asyncio.run(main())
@@ -290,11 +409,13 @@ external task cancellation propagates instead of producing an empty worksheet.
 | Resolved papers | At most 10, with at most 50 question/paper cells |
 | Returned passages | 1-3 per cell, default 2, within the existing preview source cap |
 | Excerpts | At most 800 characters each; truncation is explicit |
-| Downloads | Each rendering must fit 262,144 UTF-8 bytes; both are checked before success |
-| Deadline | 30 seconds overall, including selection, cell previews, and export validation |
+| Downloads | JSON and Markdown must each fit 262,144 UTF-8 bytes during build; requested CSV must also fit |
+| Deadline | 30 seconds for construction, including selection, cell previews and JSON/Markdown validation |
 
 The deadline is cooperative, not CPU/process preemption; the existing per-phase
-preview timeouts still apply. No shared runner setting is mutated. Every cell
+preview timeouts still apply. Requested CSV serialization follows construction
+synchronously with its own byte check, not an additional timed retrieval phase.
+No shared runner setting is mutated. Every cell
 uses the existing planner, scope enforcement, retrieval, reranking, and evidence
 capture. Generative HyDE is rejected rather than silently replaced.
 
@@ -303,7 +424,7 @@ capture. Generative HyDE is rejected rather than silently replaced.
 | 422 | Invalid/ambiguous/missing selection, unknown explicit document IDs, invalid format or bounds |
 | 404 | Unknown saved collection |
 | 409 | Invalid/stale collection, selected documents disappeared, or generative retrieval configured |
-| 413 | Either serialized rendering is too large; reduce papers, questions, or passages |
+| 413 | A required serialized rendering is too large; reduce papers, questions, or passages |
 | 500 | A cell failed or its provenance was inconsistent; no partial worksheet returned |
 | 503 | Selection storage unavailable |
 | 504 | Overall or preview phase timeout |
@@ -334,11 +455,22 @@ Observe-Decide-Act planner/preview path, FastAPI, Pydantic, HTTPX, and SQLite,
 with deterministic lexical hash vectors, BM25, and co-mention traversal.
 It does not require LangGraph, a learned embedding model, or a new provider SDK.
 
-Official catalogs were rechecked on **2026-10-12 America/Los_Angeles**:
-GPT-6 Astra with 6.1 Sol/Luna alternatives, Claude Opus 5.5/Fable 5.1/Haiku 5.5
-alongside the selected Sonnet 5.5 default, Gemini 3.8 Flash GA, and Kimi K3.
-These models concern optional subsequent
-generation, not worksheet execution. See the source-linked
+For this CSV addition, **indexed primary-source documentation was checked on
+2026-11-06 America/Los_Angeles**, not live inference or authenticated catalog
+APIs. Direct OpenAI page retrieval failed DNS resolution; the official indexed
+catalog supplied the following current context:
+
+| Provider primary source | Current catalog context checked |
+| --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/models) | Recommends GPT-6 Astra for complex reasoning/coding; GPT-6.1 Sol, GPT-6.1 Terra and GPT-6 Luna alternatives |
+| [Anthropic](https://platform.claude.com/docs/en/models/overview) | Recommends Claude Opus 5.5 for most workloads and Fable 5.1 for demanding long-horizon work; also lists Sonnet 5.5 and Haiku 5.5 |
+| [Google](https://aistudio.google.com/docs/models) | Lists Gemini 4 Argon as flagship and Gemini 3.8 Flash |
+| [Kimi](https://platform.kimi.ai/docs/models) | Lists K3.1 Pro and K3.1 Pro Highspeed; K3 is previous-generation. K2.7 Code/K2.6 are restricted to users registered before November 1, with retirement expected late December 2026 |
+
+These are documentation observations, not compatibility, entitlement, model
+quality or benchmark claims. This PR changes **no configured model defaults**.
+Models concern optional subsequent generation, not worksheet execution.
+See the source-linked
 [provider guide](PROVIDER_MODELS_GUIDE.md) for configured defaults, endpoint and
 thinking-budget limits, and the difference between catalog checks and live API
 entitlement.
@@ -349,7 +481,7 @@ and identifiers. CSP, no-store, nosniff and no-referrer cannot prevent saving,
 printing, screenshots or unauthorized access to an exposed local service.
 
 For a portfolio demonstration, retain the synthetic HTML, JSON, Markdown,
-checks, transcript and reproduced GIF together. Show the actual form and grid,
+CSV, checks, transcript and reproduced GIF together. Show the actual form and grid,
 follow an exact source, and explain why separate export submissions may differ.
 The original API demo also illustrates global-top-1 versus per-paper retrieval.
 State what a human must verify next; do not present the generated illustration

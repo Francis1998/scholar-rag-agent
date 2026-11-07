@@ -1,0 +1,24 @@
+1. Open a native worksheet from the corpus
+Executed catalog -> paper -> prefilled form; exact Unicode / slash ID retained.
+Native POST form; no JavaScript, provider request, or saved worksheet.
+The catalog return link preserves its original page size.
+
+2. Inspect every question / paper cell
+Questions: 2; papers: 2; cells: 4.
+Excerpt truncation displayed: True (800 characters).
+Every cell exposes source IDs, score, path and full-text digest.
+Retrieval passages are not answers, confidence estimates or findings.
+
+3. Download spreadsheet-safe CSV
+CSV rows: 4; separate no-passages rows: 2.
+API / Python / browser CSV equal: True.
+Formula-prefix roundtrip: True; exact text / flags: True.
+Text is apostrophe-prefixed, not raw JSON text. No cells silently dropped.
+Each export submission reruns retrieval; it is not a frozen download.
+
+4. Measure the read-only boundary
+Forbidden model/write calls: 0; agent events: 0.
+External connections: 0; empty selection: HTTP 422.
+Database unchanged: True; unchanged-corpus restart identical: True.
+HTML: 21828 bytes; JSON: 5867; CSV: 8170.
+Temporary corpus removed. Original synthetic data; no scientific results.

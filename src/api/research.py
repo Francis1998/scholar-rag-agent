@@ -53,7 +53,12 @@ router = APIRouter(route_class=_ResearchRoute)
     "/research/worksheet",
     response_model=ResearchWorksheet,
     responses={
-        200: {"content": {"text/markdown": {"schema": {"type": "string"}}}},
+        200: {
+            "content": {
+                "text/markdown": {"schema": {"type": "string"}},
+                "text/csv": {"schema": {"type": "string"}},
+            }
+        },
         404: {"description": "Unknown collection"},
         409: {
             "description": "Invalid/stale collection, disappeared papers, or generative retrieval"
@@ -68,13 +73,16 @@ router = APIRouter(route_class=_ResearchRoute)
 async def research_worksheet(
     request: Request,
     payload: WorksheetRequest,
-    format: Literal["json", "markdown"] = "json",
+    format: Literal["json", "markdown", "csv"] = "json",
 ) -> Response:
     """Inspect each question against each selected paper; never run an answering agent."""
     container: AppContainer = request.app.state.container
     try:
         result = await container.worksheets.build(payload)
-        content = result.to_markdown() if format == "markdown" else result.to_json()
+        if format == "csv":
+            content = result.to_csv()
+        else:
+            content = result.to_markdown() if format == "markdown" else result.to_json()
     except (WorksheetError, CollectionError) as exc:
         logger.warning("Research worksheet failed: %s", exc.code)
         detail: dict[str, object] = {"code": exc.code, "message": str(exc)}
@@ -86,10 +94,12 @@ async def research_worksheet(
             if exc.document_index is not None:
                 detail["document_index"] = exc.document_index
         raise HTTPException(status_code=exc.status_code, detail=detail, headers=_HEADERS) from exc
-    extension = "md" if format == "markdown" else "json"
+    extension = "md" if format == "markdown" else format
     return Response(
         content=content,
-        media_type="text/markdown" if format == "markdown" else "application/json",
+        media_type={"json": "application/json", "markdown": "text/markdown", "csv": "text/csv"}[
+            format
+        ],
         headers={
             **_HEADERS,
             "Content-Disposition": f'attachment; filename="worksheet.{extension}"',

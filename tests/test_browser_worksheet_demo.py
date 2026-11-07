@@ -25,6 +25,7 @@ def test_executed_native_form_demo_and_reproducible_illustration(
     checks = json.loads((output / "checks.json").read_bytes())
     assert checks["cells"] == 4
     assert checks["questions"] == checks["papers"] == 2
+    assert checks["csv_rows"] == 4 and checks["empty_csv_rows"] == 2
     assert checks["agent_events"] == checks["external_connection_calls"] == 0
     assert not any(checks["forbidden_call_counts"].values())
     assert all(value for value in checks.values() if isinstance(value, bool))
@@ -32,6 +33,7 @@ def test_executed_native_form_demo_and_reproducible_illustration(
     worksheet = ResearchWorksheet.model_validate_json((output / "worksheet.json").read_bytes())
     assert len(worksheet.rows) == 2
     assert worksheet.to_markdown() == (output / "worksheet.md").read_text()
+    assert worksheet.to_csv().encode() == (output / "worksheet.csv").read_bytes()
     html = (output / "worksheet.html").read_text()
     assert WorksheetPage(html).form_action == "/explore/worksheet"
     assert "EXCLUDED_MARKER" not in html
