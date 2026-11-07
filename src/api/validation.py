@@ -1,14 +1,18 @@
 """Preserve validation details without echoing unencodable diagnostic values."""
 
 import json
+from collections.abc import Sequence
+from typing import Any
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 
 
-def sanitized_validation_content(exc: RequestValidationError) -> str | None:
+def sanitized_validation_content(
+    exc: RequestValidationError, *, errors: Sequence[Any] | None = None
+) -> str | None:
     """Encode repaired diagnostics, or defer to the normal handler when all are safe."""
-    detail: list[dict[str, object]] = jsonable_encoder(exc.errors())
+    detail: list[dict[str, object]] = jsonable_encoder(exc.errors() if errors is None else errors)
     sanitized = False
     for index, error in enumerate(detail):
         try:
