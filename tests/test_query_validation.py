@@ -1,5 +1,6 @@
 """Query boundaries reject invalid input before work without rewriting valid questions."""
 
+import json
 from pathlib import Path
 from typing import NoReturn
 from unittest.mock import AsyncMock, Mock, call
@@ -37,6 +38,37 @@ NONSTRING_QUERIES = [
     pytest.param({}, id="object"),
 ]
 PADDED_QUERY = "\t \u00a0What  does GraphRAG connect? caf\u00e9 \u7814\u7a76\u2003\n"
+# Raw JSON bodies: Python json.dumps emits NaN/Infinity by default, and JavaScript
+# JSON.stringify escapes unpaired surrogates (for example after UTF-16 truncation).
+UNENCODABLE_REQUESTS = [
+    pytest.param('{"query": "PRIVATE_QUERY_\\ud800"}', "query", id="query-high-surrogate"),
+    pytest.param('{"query": "PRIVATE_QUERY_\\udfff"}', "query", id="query-low-surrogate"),
+    pytest.param('{"query": NaN}', "query", id="query-nan"),
+    pytest.param('{"query": -Infinity}', "query", id="query-negative-infinity"),
+    pytest.param(
+        '{"query": "GraphRAG", "document_ids": ["PRIVATE_ID_\\ud83d"]}',
+        "document_ids",
+        id="document-id-surrogate",
+    ),
+    pytest.param(
+        '{"query": "GraphRAG", "document_ids": [Infinity]}', "document_ids", id="document-id-inf"
+    ),
+    pytest.param(
+        '{"query": "GraphRAG", "collection_id": "PRIVATE_COLLECTION_\\udc00"}',
+        "collection_id",
+        id="collection-id-surrogate",
+    ),
+    pytest.param(
+        '{"query": "GraphRAG", "max_chunks_per_document": NaN}',
+        "max_chunks_per_document",
+        id="quota-nan",
+    ),
+    pytest.param(
+        '{"query": "GraphRAG", "min_evidence_documents": Infinity}',
+        "min_evidence_documents",
+        id="minimum-infinity",
+    ),
+]
 
 
 def deny_network(*args: object, **kwargs: object) -> NoReturn:
@@ -108,6 +140,84 @@ def test_http_invalid_query_is_422_before_any_work(
     for spy in [run, preview, *activity_spies]:
         spy.assert_not_called()
     assert container.event_log.list_events() == []
+
+
+@pytest.mark.parametrize("endpoint", ["/query", "/retrieve"])
+@pytest.mark.parametrize(("body", "field"), UNENCODABLE_REQUESTS)
+def test_http_unencodable_input_is_sanitized_422_before_any_work(
+    query_app: FastAPI,
+    activity_spies: list[Mock],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    endpoint: str,
+    body: str,
+    field: str,
+) -> None:
+    container: AppContainer = query_app.state.container
+    run = AsyncMock(wraps=container.runner.run)
+    preview = AsyncMock(wraps=container.runner.preview)
+    monkeypatch.setattr(container.runner, "run", run)
+    monkeypatch.setattr(container.runner, "preview", preview)
+
+    with TestClient(query_app, raise_server_exceptions=False) as client:
+        response = client.post(
+            endpoint,
+            content=body.encode("ascii"),
+            headers={"Content-Type": "application/json"},
+        )
+        assert response.status_code == 422, response.text
+        assert client.get("/runs").json() == {"runs": [], "next_cursor": None}
+
+    errors = response.json()["detail"]
+    assert errors
+    assert all(error["loc"][:2] == ["body", field] for error in errors)
+    assert all(set(error) == {"loc", "type", "msg"} for error in errors)
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    json.dumps(response.json(), allow_nan=False).encode("utf-8")
+    assert "PRIVATE" not in response.text
+    assert "PRIVATE" not in caplog.text
+    assert "unserializable_diagnostic" in caplog.text
+    for spy in [run, preview, *activity_spies]:
+        spy.assert_not_called()
+    assert container.event_log.list_events() == []
+
+
+@pytest.mark.parametrize("endpoint", ["/query", "/retrieve"])
+def test_http_unencodable_query_keeps_other_validation_contracts(
+    query_app: FastAPI, activity_spies: list[Mock], endpoint: str
+) -> None:
+    ordinary = {"min_evidence_documents": 0, "max_chunks_per_document": 0}
+    with TestClient(query_app, raise_server_exceptions=False) as client:
+        control = client.post(endpoint, json={"query": "GraphRAG", **ordinary})
+        response = client.post(
+            endpoint,
+            content=json.dumps(
+                {"query": "PRIVATE_QUERY_\ud800", **ordinary, "near_duplicate_threshold": "0.8"}
+            ).encode("ascii"),
+            headers={"Content-Type": "application/json"},
+        )
+
+    assert control.status_code == 422, control.text
+    assert response.status_code == 422, response.text
+    errors = response.json()["detail"]
+    # Ordinary diagnostics keep FastAPI's normal input/ctx details.
+    expected = control.json()["detail"]
+    assert any("input" in error and "ctx" in error for error in expected)
+    assert [error for error in errors if error["loc"][1] in ordinary] == expected
+    assert [error for error in errors if error["loc"][1] == "query"] == [
+        {
+            "loc": ["body", "query"],
+            "type": "string_unicode",
+            "msg": "Input should be a valid string, unable to parse raw data as a unicode string",
+        }
+    ]
+    threshold = [error for error in errors if error["loc"][1] == "near_duplicate_threshold"]
+    assert threshold
+    assert all(set(error) == {"loc", "type", "msg"} for error in threshold)
+    assert "PRIVATE" not in response.text
+    for spy in activity_spies:
+        spy.assert_not_called()
 
 
 @pytest.mark.parametrize("entrypoint", ["run", "preview"])
