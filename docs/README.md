@@ -93,7 +93,8 @@ lexical or metadata heuristics. Their labels are advisory, not proof of factual
 support, study quality, causality, novelty, or completeness. Connector calls may
 need network access, service credentials, and permission to use the returned text.
 
-Older guides and their generated animations retain historical model names and
+Guide prose names the provider flagships verified on 2026-11-07, but generated
+animations for older guides may still show historical model names and
 illustrative examples. Use the dated, source-linked
 [provider model guide](guides/PROVIDER_MODELS_GUIDE.md) for current defaults and
 routing; an old provider name in a helper guide is not a compatibility promise.

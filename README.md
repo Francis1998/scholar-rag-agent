@@ -623,8 +623,9 @@ additional `/query` stages or clinical assessments. Browse the
 [categorized cue guides](docs/README.md#clinical-and-statistical-evidence-cues)
 for study-design, outcome, statistical, and reporting cues. Each guide retains
 its usage examples and illustration; these heuristics do not validate findings.
-Older model names in helper guides and illustrations are historical, not current
-defaults or compatibility promises; use the [provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
+Helper-guide prose names the provider flagships verified on 2026-11-07; older
+illustrations may still show historical model names, which are not current
+defaults or compatibility promises. Use the [provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
 
 Existing cue illustrations remain available without interrupting the introduction:
 
