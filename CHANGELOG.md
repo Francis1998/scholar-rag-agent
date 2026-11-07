@@ -357,6 +357,17 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
+  downloads) escaped every brace as `\{`/`\}`, but BibTeX and Biber count every
+  brace, even after a backslash. An unmatched brace in captured metadata therefore
+  ended its field early or swallowed later fields and entries. For example, the
+  title `Sets } , author = "Injected Person"` produced a forged `author` field,
+  a truncated title, and a lost `year`. Matched pairs keep the existing escapes
+  (`{DNA}` becomes `\{DNA\}`). An unmatched brace now becomes the balanced LaTeX
+  group `{\textbraceleft}` or `{\textbraceright}`, so every field keeps the same
+  boundaries for brace-counting tools and for importers that treat `\{` as an
+  escape. JSON provenance still keeps the raw captured values. See the
+  [BibTeX brace rules](docs/guides/BIBTEX_EXPORT_GUIDE.md#braces-and-backslashes-in-field-values).
 - `/query` and `/retrieve` returned a plain-text HTTP 500 instead of the
   documented 422 when a JSON request contained a non-finite number (`NaN`,
   `Infinity`, as emitted by Python's default `json.dumps`) or an unpaired

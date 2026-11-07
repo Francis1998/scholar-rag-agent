@@ -42,10 +42,35 @@ exports and noncolliding collection keys retain their existing form. Export a
 whole bibliography in one collection call rather than concatenating separate
 single-record exports, which cannot coordinate their keys.
 
+## Braces and backslashes in field values
+
+Every field value is written inside braces. BibTeX and Biber end a value at the
+brace that balances its opening brace, and they count every `{` and `}`, even
+one after a backslash. The exporter therefore:
+
+- doubles each backslash;
+- writes a matched pair of literal braces as escaped braces, as before:
+  `Analysis of {DNA} repair` becomes `Analysis of \{DNA\} repair`;
+- writes an unmatched brace as the balanced LaTeX group `{\textbraceleft}` or
+  `{\textbraceright}`, which prints a literal brace.
+
+Untrusted metadata therefore cannot end a field early, forge another field
+such as `author`, or swallow the following fields and entries:
+
+```text
+title:  Sets } , author = {Injected Person
+BibTeX: title = {Sets {\textbraceright} , author = {\textbraceleft}Injected Person},
+```
+
+The rule applies to every exported field. Importers that instead treat `\{`
+and `\}` as escaped characters read exactly the same field boundaries.
+Verbatim fields such as biblatex's `doi` and `url` show escapes and groups
+literally, so compare them with the original metadata.
+
 ## Metadata limitations
 
 The exporter uses supplied metadata, not a verified citation registry. Author
 and year parsing remain heuristic; review imported references in your reference
-manager before publication. Backslashes and braces in field values are escaped,
-but this is not a LaTeX sandbox or a guarantee that arbitrary metadata is safe
-to compile. No DOI, author, publication status, or scientific claim is verified.
+manager before publication. The brace handling above keeps entries structurally
+intact, but this is not a LaTeX sandbox or a guarantee that arbitrary metadata is
+safe to compile. No DOI, author, publication status, or scientific claim is verified.
