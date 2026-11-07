@@ -1,0 +1,33 @@
+1. Cold start keeps your saved order
+GET /collections/{id}/screening-priority?collection_revision=1 -> HTTP 200
+"model_status": "needs_include_and_exclude", "ordering": "collection_order"
+"counts": unscreened 100, include 0, exclude 0
+First items: rag-code-04, grounded-rag-09; "score": null
+Saved collection order is kept; no score is invented before one include
+and one exclude exist.
+
+2. Learn only from your include/exclude decisions
+12 simulated fixture labels recorded explicitly via PUT, plus 1 unsure.
+"model_status": "ready", "training_relevant": 11, "training_irrelevant": 1
+"feature_terms": 128; the unsure paper is not a label and is listed apart.
+#1 closed-book-qa-09 score 0.540: linked, questions, directions
+#2 citation-recommendation-05 score 0.532: citation, answer, scientific
+#3 table-qa-04 score 0.529: work, questions, answering
+With 1 exclude, near misses sharing query words rank high; each
+exclude you record retrains the next order. Nothing was decided for you.
+
+3. Opt-in browser queue beside the decision forms
+/explore/collection keeps saved order; its opt-in link opened the queue page.
+Rank 1 card: "synthetic-closed-book-qa-09", status unscreened,
+score 0.540, log-odds +0.159, terms linked +0.013, questions +0.013
+Its link opens the existing /explore/screening form; decision blank: True.
+Browser order equals JSON order: True; reads changed database bytes: False.
+Forbidden calls: 0; restarted app returned identical JSON: True.
+
+4. Simulated reviewer: prioritized vs saved order
+Synthetic templated set: 100 papers, 20 relevant (easier than real reviews).
+Seed 0: 19/20 relevant after 26 papers prioritized vs 86 in saved order.
+WSS@95: 0.69 vs 0.09.
+10 shuffled orders, median (range) to 19/20: 25.5 (24-32) vs 94 (86-99).
+Longest exclude run before the last relevant (prioritized): up to 10.
+A simulation on synthetic labels, not a recall guarantee for your review.

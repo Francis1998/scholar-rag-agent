@@ -47,6 +47,10 @@ No key, new setting, migration, browser package, or front-end framework is neede
    **Open explicit human screening form** opens a separate, revision-bound
    write surface: inspect the paper, choose a decision and supply your own reason.
    The workbench preserves this collection return state and never changes membership.
+   The opt-in **Most likely relevant first** link opens a separate read-only queue of
+   still-pending members ordered by a local model trained on your current
+   includes/excludes; this detail page keeps saved membership order. See the
+   [prioritization guide](SCREENING_PRIORITIZATION_GUIDE.md).
 3. Choose **Read this exact paper / choose source context**. The existing passage
    reader selects an exact document; its source links select exact stored chunks.
    Back links preserve collection status, member/list pagination and catalog
@@ -90,6 +94,7 @@ an empty list with `collection_id` or an omitted scope.
 | `/collections/{id}/screening?collection_revision=N` | Existing paged JSON screening queue, counts and current include IDs. |
 | `/collections/{id}/screening/export?collection_revision=N&format=json` | Complete JSON; use `format=csv` for spreadsheet-safe CSV. |
 | `/collections/{id}/screening-report?collection_revision=N&format=json` | Complete human progress report and exact-reason audit groups; use `format=markdown` for literal Markdown. |
+| `/collections/{id}/screening-priority?collection_revision=N` | Read-only JSON order of unscreened/stale members, most likely relevant first once one include and one exclude exist; never a decision. |
 | `/collections/{id}/duplicates?collection_revision=N&format=json` | Existing complete duplicate report; use `format=markdown` for literal Markdown. |
 
 Browser return-only fields are `catalog_limit`, `source`, `title` and

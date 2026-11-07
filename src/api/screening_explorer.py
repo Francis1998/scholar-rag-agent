@@ -28,6 +28,7 @@ from api.explorer import (
     _page,
     _PageTooLargeError,
     _return_pairs,
+    _truncation,
     _UnrepresentableTextError,
     _url,
 )
@@ -39,6 +40,7 @@ from api.native_forms import (
     require_urlencoded,
     unsigned_decimal,
 )
+from storage.document_catalog import MAX_TITLE_CHARACTERS
 from storage.paper_collections import MAX_REVISION, CollectionError, CollectionId, Revision
 from storage.paper_screening import (
     MAX_REASON_CHARACTERS,
@@ -47,9 +49,16 @@ from storage.paper_screening import (
     ScreeningHistory,
     ScreeningSubmission,
 )
+from storage.screening_priority import (
+    MAX_FEATURE_TEXT_CHARACTERS,
+    PriorityItem,
+    ScreeningPriority,
+    prioritize_screening,
+)
 from storage.source_context import ContextDocumentIdentity
 
 PATH = "/explore/screening"
+PRIORITY_PATH = "/explore/screening-priority"
 MAX_FORM_BYTES = 65_536
 MAX_QUERY_BYTES = 65_536
 HISTORY_LIMIT = 5
@@ -94,6 +103,35 @@ class _Selection(BaseModel):
 
 class _Open(_Selection):
     saved_revision: _Revision | None = None
+
+
+class _PriorityOpen(BaseModel):
+    """One exact collection revision; return state must name that same revision."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    collection_id: CollectionId
+    collection_revision: _Revision
+    collection_return: _CollectionReturnToken | None = None
+
+    @model_validator(mode="after")
+    def matching_return(self) -> Self:
+        if self.collection_return is not None:
+            navigation = _decode_collection_return(self.collection_return)
+            if (
+                navigation.collection_id != self.collection_id
+                or navigation.collection_revision != self.collection_revision
+            ):
+                raise ValueError("Return state must match this exact collection revision.")
+        return self
+
+    def navigation(self) -> str:
+        return (
+            self.collection_return
+            or _CollectionReturn(
+                collection_id=self.collection_id, collection_revision=self.collection_revision
+            ).token()
+        )
 
 
 class _Form(BaseModel):
@@ -155,13 +193,54 @@ def _failure(status: int, code: str, root_path: str) -> HTMLResponse:
     )
 
 
+_PRIORITY_FAILURES = {
+    **_FAILURES,
+    "invalid_screening_priority_request": (
+        "Use an exact collection_id, a positive integer collection_revision and optional "
+        "return state for that same revision. Unknown/duplicate fields, malformed encoding, "
+        "invalid UTF-8 and GET bodies are rejected. Nothing was recorded."
+    ),
+    "screening_priority_request_too_large": ("The URL exceeds 65536 bytes. Nothing was recorded."),
+    "screening_priority_method": (
+        "The prioritized queue is read with GET. Record a decision only through the explicit "
+        "human screening form. Nothing was recorded."
+    ),
+    "screening_priority_too_large": (
+        "The complete ordering exceeds 524288 UTF-8 bytes. No partial ordering is shown."
+    ),
+    "invalid_screening_priority": (
+        "The screening snapshot could not be ordered consistently. Nothing was saved or repaired."
+    ),
+    "invalid_document_record": (
+        "A current member's stored title or text is invalid. Nothing was repaired; use the "
+        "JSON/Python readers to inspect it."
+    ),
+}
+
+
+def _priority_failure(status: int, code: str, root_path: str) -> HTMLResponse:
+    return _error(
+        status,
+        code,
+        "Prioritized screening queue unavailable",
+        _PRIORITY_FAILURES.get(code, "The ordering could not be read. No success is reported."),
+        navigation=_link(
+            "back-to-collections", root_path + "/explore/collections", "Reopen a saved collection"
+        ),
+        prioritization=True,
+    )
+
+
 class _ScreeningExplorerRoute(APIRoute):
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.methods is not None and scope["method"] not in self.methods:
-            response = _failure(
-                405, "screening_form_method", scope.get("root_path", "").rstrip("/")
-            )
-            response.headers["Allow"] = "GET, POST"
+            root_path = scope.get("root_path", "").rstrip("/")
+            if self.path == PRIORITY_PATH:
+                response = _priority_failure(405, "screening_priority_method", root_path)
+                response.headers["Allow"] = "GET"
+            else:
+                response = _failure(405, "screening_form_method", root_path)
+                response.headers["Allow"] = "GET, POST"
             await response(scope, receive, send)
             return
         await super().handle(scope, receive, send)
@@ -184,6 +263,18 @@ def _fragments(
         "screening-history",
         _url(root_path + "/explore/screening-history", selection.parameters()),
         "Inspect all retained decision history",
+    )
+    yield _link(
+        "screening-priority",
+        _url(
+            root_path + PRIORITY_PATH,
+            {
+                "collection_id": selection.collection_id,
+                "collection_revision": selection.collection_revision,
+                "collection_return": selection.navigation(),
+            },
+        ),
+        "Most likely relevant first: reopen the prioritized queue",
     )
     yield "</nav>"
     yield _literal(history.collection_name, "collection-name")
@@ -356,3 +447,197 @@ async def explore_screening(request: Request) -> Response:
         return _failure(409, "html_text_not_representable", root_path)
     except (ValueError, RecursionError):
         return _failure(422, "invalid_screening_form", root_path)
+
+
+def _priority_item(
+    item: PriorityItem, prefix: str, options: _PriorityOpen, root_path: str
+) -> Iterator[str]:
+    yield (
+        f'<article class="priority-item"><h3>Rank <span class="priority-rank">{item.rank}</span>'
+        "</h3>"
+    )
+    yield _identity(item.document_id, "document-id")
+    yield _literal(item.title, "member-title")
+    yield _truncation("Title", item.title_truncated, MAX_TITLE_CHARACTERS)
+    yield f'<p>Human screening status: <strong class="member-status">{item.status}</strong>.</p>'
+    if item.score is None or item.log_odds is None:
+        yield '<p class="priority-unscored">No score: the ordering model is not trained.</p>'
+    else:
+        yield (
+            "<p>Relevance score (uncalibrated Naive Bayes P(relevant)): "
+            f'<strong class="priority-score">{item.score:.3f}</strong>; log-odds '
+            f'<span class="priority-log-odds">{item.log_odds:+.3f}</span>.</p>'
+        )
+        if item.top_terms:
+            yield '<p>Top terms pushing toward relevant:</p><ul class="top-terms">'
+            for term in item.top_terms:
+                yield (
+                    f'<li><code class="top-term" translate="no">{_escaped(term.term)}</code> '
+                    f'<span class="term-contribution">+{term.contribution:.3f}</span></li>'
+                )
+            yield "</ul>"
+        else:
+            yield "<p>No term in this paper pushes it toward relevant.</p>"
+    navigation = options.navigation()
+    yield _link(
+        f"{prefix}screen-member-{item.rank}",
+        _url(
+            root_path + PATH,
+            {
+                "collection_id": options.collection_id,
+                "collection_revision": options.collection_revision,
+                "document_id": item.document_id,
+                "collection_return": navigation,
+            },
+        ),
+        "Open explicit human screening form",
+    )
+    yield _link(
+        f"{prefix}read-member-{item.rank}",
+        _url(
+            root_path + "/explore/document",
+            {"document_id": item.document_id, "collection_return": navigation},
+        ),
+        "Read this exact paper / choose source context",
+    )
+    yield "</article>"
+
+
+def _priority_fragments(
+    priority: ScreeningPriority, options: _PriorityOpen, root_path: str
+) -> Iterator[str]:
+    yield '<nav aria-label="Screening navigation">'
+    yield _collection_link(options.navigation(), root_path)
+    yield _link(
+        "priority-json",
+        _url(
+            f"{root_path}/collections/{priority.collection_id}/screening-priority",
+            {"collection_revision": priority.collection_revision},
+        ),
+        "Read this ordering as JSON (a separate read)",
+    )
+    yield "</nav>"
+    yield _literal(priority.collection_name, "collection-name")
+    yield _identity(priority.collection_id, "collection-id")
+    yield (
+        f"<p>Collection revision: {priority.collection_revision}; current members: "
+        f"{priority.total_documents}.</p>"
+        '<p class="notice" id="priority-guarantee">Ordering only. Nothing on this page records, '
+        "changes or suggests a decision. Open each paper, read it and decide yourself: a high "
+        "score is not an include and a low score is not an exclude. The collection page keeps "
+        "its saved membership order.</p>"
+    )
+    counts = priority.counts
+    if priority.model_status == "ready":
+        yield (
+            '<p id="model-status">Model status: <strong class="model-status">ready</strong>. '
+            f"Trained on {priority.training_relevant} current include(s) and "
+            f"{priority.training_irrelevant} current exclude(s) using "
+            f"{priority.feature_terms} feature terms. Papers needing a decision are ordered "
+            "most likely relevant first.</p>"
+        )
+    elif priority.model_status == "needs_include_and_exclude":
+        yield (
+            '<p id="model-status">Model status: <strong class="model-status">'
+            "needs_include_and_exclude</strong>. Record at least one current include and one "
+            f"current exclude (now {counts.include} and {counts.exclude}). Until then papers "
+            "stay in saved collection order and no score is invented.</p>"
+        )
+    else:
+        yield (
+            '<p id="model-status">Model status: <strong class="model-status">'
+            "no_training_terms</strong>. Your labeled papers contain no usable terms, so papers "
+            "stay in saved collection order and no score is invented.</p>"
+        )
+    yield "<h2>Current human screening counts (all members)</h2><dl>"
+    for status, count in counts.model_dump().items():
+        yield f'<dt>{status}</dt><dd id="count-{status}">{count}</dd>'
+    yield "</dl>"
+    order = (
+        "most likely relevant first"
+        if priority.ordering == "most_likely_relevant_first"
+        else "saved collection order"
+    )
+    yield f"<h2>Papers needing your decision: {len(priority.items)}, {order}</h2>"
+    yield (
+        "<p>Unscreened and stale members. A stale member's earlier opinion belongs to an older "
+        "collection revision and is not a training label.</p>"
+    )
+    if not priority.items:
+        yield "<p>No unscreened or stale members remain. Nothing was hidden.</p>"
+    for item in priority.items:
+        yield from _priority_item(item, "", options, root_path)
+    yield f"<h2>Unsure papers: {len(priority.unsure_items)}, ranked separately</h2>"
+    yield "<p>Your unsure decisions stay unsure; they are neither labels nor hidden.</p>"
+    if not priority.unsure_items:
+        yield "<p>No current unsure decisions.</p>"
+    for item in priority.unsure_items:
+        yield from _priority_item(item, "unsure-", options, root_path)
+    method = priority.method
+    yield (
+        "<h2>How this order is computed</h2><details><summary>Method and limits</summary>"
+        f"<p>Features: {_escaped(method.features)}</p>"
+        f"<p>Weighting: {_escaped(method.weighting)}</p>"
+        f"<p>Classifier: {_escaped(method.classifier)} Laplace alpha = {method.alpha}.</p>"
+        f"<p>Class prior: {_escaped(method.class_prior)}</p>"
+        f"<p>Score: {_escaped(method.score)}</p>"
+        f"<p>Ties: {_escaped(method.tie_break)}</p>"
+        f"<p>Only the title and the first {MAX_FEATURE_TEXT_CHARACTERS} characters of stored "
+        "text are read; nothing is sent anywhere.</p>"
+        '<p id="stopping-signal">No stopping signal is shown. Decisions keep per-paper '
+        "revisions and wall-clock times, not a reliable global decision order, so a count of "
+        "consecutive excludes since the last include would not be honest. When to stop "
+        "screening remains your judgment; prioritization gives no recall guarantee.</p>"
+        "</details>"
+    )
+
+
+def _priority_page(container: AppContainer, options: _PriorityOpen, root_path: str) -> HTMLResponse:
+    priority = prioritize_screening(
+        container.paper_screening,
+        options.collection_id,
+        collection_revision=options.collection_revision,
+    )
+    return _page(
+        "Most likely relevant first",
+        _priority_fragments(priority, options, root_path),
+        prioritization=True,
+    )
+
+
+@router.get(
+    PRIORITY_PATH,
+    response_class=HTMLResponse,
+    responses={
+        404: {"description": "Exact collection not found"},
+        405: {"description": "Only GET is supported; nothing is recorded"},
+        409: {"description": "Stale revision, missing member or invalid saved data/HTML text"},
+        413: {"description": "URL, complete ordering or escaped HTML exceeds its bound"},
+        422: {"description": "Invalid exact collection, revision, return state or fields"},
+        503: {"description": "Existing collection or screening storage unavailable"},
+    },
+)
+async def explore_screening_priority(request: Request) -> Response:
+    """Opt-in most-likely-relevant-first queue; read-only, never a decision or suggestion."""
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    try:
+        raw_query = request.scope.get("query_string", b"")
+        if len(raw_query) > MAX_QUERY_BYTES:
+            raise FormTooLargeError()
+        if await read_body(request, max_bytes=MAX_FORM_BYTES):
+            raise ValueError("GET cannot accept a body.")
+        options = _PriorityOpen.model_validate(parse_fields(raw_query, max_fields=3))
+        container: AppContainer = request.app.state.container
+        return await run_in_threadpool(_priority_page, container, options, root_path)
+    except CollectionError as exc:
+        return _priority_failure(exc.status_code, exc.code, root_path)
+    except sqlite3.Error:
+        return _priority_failure(503, "screening_storage_unavailable", root_path)
+    except FormTooLargeError:
+        return _priority_failure(413, "screening_priority_request_too_large", root_path)
+    except _PageTooLargeError:
+        return _priority_failure(413, "html_page_too_large", root_path)
+    except _UnrepresentableTextError:
+        return _priority_failure(409, "html_text_not_representable", root_path)
+    except (ValueError, RecursionError):
+        return _priority_failure(422, "invalid_screening_priority_request", root_path)

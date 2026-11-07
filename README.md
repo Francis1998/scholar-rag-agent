@@ -64,6 +64,7 @@ PDF-upload UI.
 | Screen papers before choosing evidence | Save human include/exclude/unsure decisions, resume the queue, and explicitly preview current included IDs | [Human paper screening](docs/guides/PAPER_SCREENING_GUIDE.md) |
 | Retrieve only current human-included papers | Pass a revision-checked `screened_collection` directly to preview/query; reject empty or stale selections without widening scope | [API/Python handoff, full guide and executed GIF](docs/guides/SCREENED_COLLECTION_GUIDE.md) |
 | Record a human screening decision in a normal browser | Open an exact member/revision, read local paper/source links, explicitly submit a reasoned opinion, and recover append-only history after restart | [Native screening workbench: user/API/Python/portfolio guide](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md) |
+| Screen the most likely relevant papers first | Opt in to a local TF-IDF + Naive Bayes order of still-pending members, learned from your current includes/excludes, with per-paper scores and contributing terms; it never decides | [Screening prioritization: browser/API/Python guide, simulation and executed GIF](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md) |
 | Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Save an auditable human screening progress report | Download complete JSON/literal Markdown with resolved/pending totals and exact exclusion-reason membership, derived from one export without models or writes | [Human progress report: browser/API/Python/portfolio guide and executed illustration](docs/guides/SCREENING_REPORT_GUIDE.md) |
@@ -147,6 +148,30 @@ not parity or a dependency. The [complete guide and offline demo](docs/guides/HU
 reproduce this **measured-output illustration, not browser footage**.
 The still makes animation opt-in; an [exact text alternative](docs/assets/human-screening-workbench.txt)
 is available.
+
+## Screen the most likely relevant papers first
+
+[![Executed synthetic screening prioritization: cold start, learned order, browser queue and simulation](docs/assets/screening-priority.png)](docs/assets/screening-priority.gif)
+
+On a saved collection, choose **Most likely relevant first** to open an opt-in,
+read-only queue of the members still needing your decision. A deterministic,
+offline TF-IDF + multinomial Naive Bayes model learns only from your current
+include and exclude decisions; each card shows its rank, score and contributing
+terms beside a link to the unchanged decision form.
+`GET /collections/{collection_id}/screening-priority?collection_revision=N` returns
+the same order as JSON. Before one include and one exclude exist, saved order is
+kept and no score is invented. Nothing records, changes or suggests a decision.
+
+On a templated synthetic set (100 papers, 20 relevant, mostly near misses), a
+simulated reviewer found 19 of 20 relevant papers after a median of 25.5 papers in
+prioritized order versus 94 in saved order across ten shuffles (median WSS@95 0.695
+vs 0.01). That is synthetic evidence of the mechanism, not a recall guarantee, and no
+stopping signal is reported because stored decisions have no reliable global order.
+The [complete guide](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md) gives exact
+formulas, the API, cold start, limits and an ASReview/Covidence/Rayyan comparison.
+The opt-in GIF is a **generated illustration of executed output**, not browser
+footage; the [measured transcript](docs/assets/screening-priority.txt) is the text
+alternative.
 
 ## Browse papers and passages without generating
 
@@ -593,7 +618,8 @@ Earlier Kimi and Sonnet migration checks are dated separately in the provider gu
 explicit `kimi-k3` rollback overrides remain available.
 Routing and budgets are unchanged. Catalog guidance is not a repository
 benchmark, account-entitlement check, or live inference verification.
-Human screening progress reports use none of these models or provider endpoints.
+Human screening progress reports and screening prioritization use none of these models or
+provider endpoints.
 Gemini `CONTINUATION` hops fail explicitly instead of becoming completed
 answers; there is no long-decode loop or increase to the current 60-second
 HTTPX timeouts and default reasoning deadline.
