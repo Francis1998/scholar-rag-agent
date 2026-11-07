@@ -28,6 +28,7 @@ must be a positive integer.
 
 ```python
 from retrieval.query_decomposition import QueryDecomposer
+from retrieval.rrf import reciprocal_rank_fusion
 
 parts = QueryDecomposer().decompose(
     "graph neural networks for molecules and sparse retrieval for ranking",
