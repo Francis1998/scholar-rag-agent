@@ -43,6 +43,27 @@ wheel modules. The tests check `config`, its API/router consumers, and all three
 console entry points. Ingest and evaluation run locally; the API server is mocked
 so the check neither calls a provider nor starts a long-running server.
 
+## Guide Demo GIFs
+
+Retrieval-helper and source-connector guides embed GIFs that
+`scripts/render_guide_demos.py` renders from a real run of the guide's own
+`python` example. Never hand-edit or stub these images:
+
+```bash
+uv run python scripts/render_guide_demos.py --print --only bibtex-export.gif  # transcript only
+uv run python scripts/render_guide_demos.py --only bibtex-export.gif          # re-render one GIF
+uv run python scripts/render_guide_demos.py --check                           # all GIFs current?
+```
+
+When you change a guide example or the module behind it, re-render its GIF and
+commit both. To add a demo, register a `GuideDemo` in `DEMOS`: sample input goes
+in `setup`, prints in `show`, and connector demos add `Route`s that serve
+payloads already recorded in `tests/test_connectors.py` (no live API calls). An
+exception, any stderr output, or a request without a recorded fixture aborts the
+render; fix the guide or fixture rather than the transcript.
+`tests/test_demo_gifs_real.py` fails if any GIF referenced from README/docs
+Markdown is missing, not a valid GIF, smaller than 200x100 px, or under 2 KB.
+
 ## Coding Standards
 
 - Python 3.11+
@@ -67,4 +88,4 @@ Do not push bulk documentation or workflow rewrites directly to `main`. Use a br
 type: feat | fix | docs | refactor | test | chore
 ```
 
-*Updated: 2026-10-04*
+*Updated: 2026-11-07*
