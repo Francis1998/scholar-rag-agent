@@ -179,9 +179,13 @@ def test_mount_prefixes_on_forms_sources_exports_and_errors(
                 assert not path or path.startswith(prefix + "/")
             for native_form in root.by_tag("form"):
                 assert native_form.attrs["action"].startswith(prefix + "/")
-        downloaded = client.post(prefix + ENDPOINT, data={**controls(result), "format": "json"})
-        assert downloaded.status_code == 200
-        assert downloaded.json()["documents"][0]["document_id"] == "../paper/\u7814?&"
+        for fmt in ("json", "csv"):
+            downloaded = client.post(prefix + ENDPOINT, data={**controls(result), "format": fmt})
+            assert downloaded.status_code == 200
+            if fmt == "json":
+                assert downloaded.json()["documents"][0]["document_id"] == "../paper/\u7814?&"
+            else:
+                assert downloaded.headers["content-disposition"].endswith('"worksheet.csv"')
 
 
 async def test_all_outputs_reuse_service_and_exports_and_collection_scope(
@@ -201,6 +205,7 @@ async def test_all_outputs_reuse_service_and_exports_and_collection_scope(
         ("html", "text/html", None),
         ("json", "application/json", expected.to_json()),
         ("markdown", "text/markdown", expected.to_markdown()),
+        ("csv", "text/csv", expected.to_csv()),
     ):
         response = api.client.post(ENDPOINT, data={**fields, "format": fmt})
         assert response.status_code == 200
@@ -215,7 +220,7 @@ async def test_all_outputs_reuse_service_and_exports_and_collection_scope(
             )
         else:
             assert identities(ExplorerDOM(response.text).root, "cell-document-id") == ["b", "a"]
-    assert build.await_count == 3
+    assert build.await_count == 4
     assert all(call.args == (request,) for call in build.await_args_list)
 
 

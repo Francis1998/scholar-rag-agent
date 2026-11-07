@@ -262,8 +262,8 @@ To inspect the same questions against each selected paper, choose **Build
 research worksheet** in `/explore` or open `/explore/worksheet`. Enter one question
 per line and either a JSON array of exact document IDs or one saved collection
 ID. A document page can prefill its ID. Submit for browser inspection or
-JSON/Markdown; each submission reads the current corpus again, without generation,
-new run events or saved worksheets. An empty selection fails instead of searching
+JSON/Markdown/spreadsheet-safe CSV; each submission reads the current corpus
+again, without generation, new run events or saved worksheets. An empty selection fails instead of searching
 everything. `POST /research/worksheet` remains the JSON API.
 The [complete worksheet guide](docs/guides/RESEARCH_WORKSHEET_GUIDE.md) explains
 the question-by-paper grid, exact source links, bounds and offline demonstrations.

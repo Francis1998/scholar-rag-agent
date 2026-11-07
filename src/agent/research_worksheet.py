@@ -1,6 +1,8 @@
 """Bounded per-question, per-paper retrieval inspection without generation or persistence."""
 
 import asyncio
+import csv
+import io
 import json
 from typing import Annotated, Literal, Self
 
@@ -19,6 +21,7 @@ from agent.markdown import literal_block
 from agent.retrieval_preview import RetrievalPreview, RetrievalPreviewError
 from agent.runner import AgentRunner
 from retrieval.scope import DocumentIds
+from storage.csv_export import csv_cell
 from storage.document_catalog import MAX_SOURCE_CHARACTERS, MAX_TITLE_CHARACTERS, Identity
 from storage.document_chunks import ChunkIdentity, document_chunks_url
 from storage.paper_collections import CollectionError, CollectionId, SQLitePaperCollections
@@ -230,6 +233,95 @@ class ResearchWorksheet(_WorksheetModel):
             )
             + "\n"
         )
+
+    def to_csv(self) -> str:
+        """One row per passage, or one empty-passage row per cell; prefix every text value."""
+        output = io.StringIO(newline="")
+        writer = csv.writer(output, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+        writer.writerow(
+            (
+                "schema_version",
+                "csv_text_encoding",
+                "kind",
+                "collection_id",
+                "passages_per_cell",
+                "limits_json",
+                "warnings_json",
+                "question_number",
+                "question",
+                "document_number",
+                "document_id",
+                "inspection_url",
+                "status",
+                "preview_source_count",
+                "passages_omitted",
+                "configuration_json",
+                "passage_number",
+                "passage_document_id",
+                "chunk_id",
+                "rank",
+                "score",
+                "retriever",
+                "path_json",
+                "title",
+                "title_truncated",
+                "source",
+                "source_truncated",
+                "excerpt",
+                "excerpt_truncated",
+                "text_characters",
+                "text_sha256",
+            )
+        )
+        metadata = (
+            self.schema_version,
+            "apostrophe-prefix-v1",
+            self.kind,
+            self.collection_id,
+            self.passages_per_cell,
+            self.limits.model_dump_json(),
+            json.dumps(self.warnings, ensure_ascii=False, separators=(",", ":")),
+        )
+        for question_number, row in enumerate(self.rows, 1):
+            for document_number, (document, cell) in enumerate(
+                zip(self.documents, row.cells, strict=True), 1
+            ):
+                context = (
+                    *metadata,
+                    question_number,
+                    row.question,
+                    document_number,
+                    cell.document_id,
+                    document.inspection_url,
+                    cell.status,
+                    cell.preview_source_count,
+                    cell.passages_omitted,
+                    cell.configuration.model_dump_json(),
+                )
+                for passage_number, passage in enumerate(cell.passages or (None,), 1):
+                    values = (
+                        (
+                            passage_number,
+                            passage.document_id,
+                            passage.chunk_id,
+                            passage.rank,
+                            passage.score,
+                            passage.retriever,
+                            json.dumps(passage.path, ensure_ascii=False, separators=(",", ":")),
+                            passage.title,
+                            passage.title_truncated,
+                            passage.source,
+                            passage.source_truncated,
+                            passage.excerpt,
+                            passage.excerpt_truncated,
+                            passage.text_characters,
+                            passage.text_sha256,
+                        )
+                        if passage is not None
+                        else (None,) * 15
+                    )
+                    writer.writerow(csv_cell(value) for value in (*context, *values))
+        return _bounded(output.getvalue())
 
     def to_markdown(self) -> str:
         """Use static table labels and literal blocks for every untrusted string."""
