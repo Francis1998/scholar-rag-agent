@@ -17,7 +17,7 @@ class AuthorCountBooster:
     (int-like) or inferred by splitting ``authors`` on commas/semicolons/
     ``and``. Counts in ``[min_authors, max_authors]`` (default 2..12) score
     ``1.0``; others score ``0.2``. Local postprocessor (not a DOI connector)
-    for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines.
+    for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines.
     """
 
     def __init__(

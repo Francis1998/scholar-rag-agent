@@ -4,8 +4,8 @@
 
 Use this guide when wiring Crossref funded-works search into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-Crossref REST API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+Crossref REST API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why Crossref works by funder
 
@@ -58,5 +58,5 @@ Funder-id forms accepted: bare digits (`100000001`), `10.13039/{id}`,
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `crossref`, `funder`, `grants`, `doi`, `llm`, `python`

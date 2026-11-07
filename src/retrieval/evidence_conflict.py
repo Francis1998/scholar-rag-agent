@@ -8,7 +8,7 @@ emits SUPPORT/PARTIAL/REFUSE decisions over ``SearchResult`` hits) — this
 module returns an inspectable conflict list with left/right snippet indices.
 Fills a Consensus / Elicit conflicting-evidence view gap with offline,
 deterministic heuristics (no LLM call). Optional later adjudication can use
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -94,8 +94,8 @@ class EvidenceConflictDetector:
     """Detect opposing claims across evidence snippets.
 
     Pairwise lexical polarity scan for Consensus/Elicit-style conflicting
-    evidence views. Offline detector for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Consensus/Elicit conflicting-evidence gap.
+    evidence views. Offline detector for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Consensus/Elicit conflicting-evidence gap.
     Distinct from :class:`~retrieval.self_rag_reflection_gate.SelfRagReflectionGate`.
     """
 

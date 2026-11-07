@@ -5,8 +5,8 @@
 Use `ParentDocumentExpander` when retrieval should search small child chunks but
 generation needs the surrounding parent document. Expansion is an in-memory,
 deterministic lookup with no network or LLM dependency. Optional stages
-elsewhere in the stack can send expanded evidence to GPT-5.5 / Claude Sonnet
-4.6 / Gemini 3.x / Kimi K2.
+elsewhere in the stack can send expanded evidence to GPT-6 Astra / Claude
+Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Parent store contract
 

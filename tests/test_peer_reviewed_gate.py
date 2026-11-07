@@ -74,4 +74,4 @@ def test_does_not_mutate_inputs() -> None:
 
 
 def test_docstring_mentions_frontier_models() -> None:
-    assert "GPT-5.5" in (PeerReviewedGate.__doc__ or "")
+    assert "GPT-6 Astra" in (PeerReviewedGate.__doc__ or "")

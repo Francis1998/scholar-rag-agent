@@ -7,7 +7,7 @@ Offline only — distinct from :class:`~retrieval.citation_graph.CitationGraphIn
 :class:`~retrieval.contradiction_cluster.ContradictionClusterFinder`
 (claim polarity clusters). Fills a ResearchRabbit / Semantic Scholar
 co-citation browsing gap without an LLM or network call. Optional later
-narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ class CoCitationCluster:
 class CoCitationClusterFinder:
     """Cluster papers that co-cite overlapping neighbor sets.
 
-    Offline co-citation clusters for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — ResearchRabbit/Semantic Scholar
+    Offline co-citation clusters for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — ResearchRabbit/Semantic Scholar
     co-citation gap. Distinct from
     :class:`~retrieval.citation_graph.CitationGraphIndex` (edge expansion)
     and :class:`~retrieval.contradiction_cluster.ContradictionClusterFinder`

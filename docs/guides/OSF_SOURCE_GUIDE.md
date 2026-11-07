@@ -4,7 +4,7 @@
 
 Use this guide when wiring Open Science Framework (OSF) into
 **scholar-rag-agent**. The agent can route downstream synthesis through
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 2.5 / Kimi K2 when enabled, but the OSF
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the OSF
 connector itself is deterministic JSON — no LLM required to list matching
 preprints and registrations.
 

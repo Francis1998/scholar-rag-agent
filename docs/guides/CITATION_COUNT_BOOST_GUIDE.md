@@ -6,8 +6,8 @@
 relevance score with a batch-normalized `log1p(citation_count)` signal. It is
 inspired by LlamaIndex metadata boost and Haystack score-boost postprocessors
 (not a DOI connector), but is fully local and deterministic from chunk
-metadata. Re-ranked evidence can then feed GPT-5.5, Claude Sonnet 4.6,
-Gemini 3.x, or Kimi K2.
+metadata. Re-ranked evidence can then feed GPT-6 Astra, Claude Opus 5.5,
+Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## How scoring works
 

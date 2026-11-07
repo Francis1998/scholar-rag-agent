@@ -8,7 +8,7 @@ plain text blocks using scholarly caption patterns (`Figure 1: ...`,
 
 Fills a PaperQA / Unstructured figure-extraction gap for RAG with a local,
 deterministic caption indexer (no LLM or layout model). Indexed captions can
-feed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 grounding. Distinct
+feed GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro grounding. Distinct
 from `PdfOcrHook` and from live DOI connectors.
 
 ## Usage

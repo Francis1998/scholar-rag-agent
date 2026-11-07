@@ -3,8 +3,8 @@
 ![Dryad connector demo](../assets/dryad_source.gif)
 
 Use this guide when wiring Dryad into **scholar-rag-agent**. The agent can
-route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2 when enabled, but the Dryad connector itself is deterministic JSON; no
+route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro when enabled, but the Dryad connector itself is deterministic JSON; no
 LLM is required to list matching research datasets.
 
 ## Why Dryad
@@ -55,4 +55,4 @@ for document in documents:
 - Datasets without a title are skipped rather than raising.
 - No API key is required for public Dryad search.
 - Prefer frontier models for downstream synthesis over raw dataset metadata:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

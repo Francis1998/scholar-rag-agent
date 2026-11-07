@@ -2,7 +2,7 @@
 
 ![TimeDecayGate demo](../assets/time-decay-gate.gif)
 
-Local retrieval postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+Local retrieval postprocessor for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines (not a DOI connector).
 
 Inspired by Haystack/Elasticsearch temporal decay postprocessors and LlamaIndex freshness rerankers. Multiplies relevance by ``0.5 ** (age_days / half_life_days)`` using ``published_at`` / ``year`` / ``date`` metadata (default half-life 365 days), then re-ranks.
 

@@ -3,8 +3,8 @@
 OpenAlex topics nest under subfield → field → domain. Popular scholarly RAG
 pipelines (paper-qa, llama-index OpenAlex loaders) often need the full taxonomy
 path, not just the leaf topic. This connector searches topics and normalizes
-hierarchy ancestry into :class:`Document` records for synthesis with GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+hierarchy ancestry into :class:`Document` records for synthesis with GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

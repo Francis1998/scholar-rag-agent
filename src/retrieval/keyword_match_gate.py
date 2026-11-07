@@ -15,8 +15,8 @@ class KeywordMatchGate:
     filters. Coverage is ``|query ∩ doc| / |query|`` (empty query → keep all).
     Distinct from :class:`~retrieval.term_coverage_boost.TermCoverageBooster`
     (soft boost) and :class:`~retrieval.cross_encoder_gate.CrossEncoderGate`.
-    Inputs are not mutated. Local postprocessor for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+    Inputs are not mutated. Local postprocessor for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines (not a DOI connector).
     """
 
     def __init__(self, min_coverage: float = 0.5) -> None:

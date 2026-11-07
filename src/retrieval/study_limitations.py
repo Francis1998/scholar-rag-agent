@@ -8,7 +8,7 @@ Never calls the network. Distinct from
 disclosures), and :class:`~retrieval.method_extract_card.MethodExtractCard`
 (PICO / study-design cards). Fills an Elicit / Consensus / SciSpace /
 PaperQA limitation-cue surfacing gap without an LLM call. Optional later
-narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -95,8 +95,8 @@ class StudyLimitationCue:
 class StudyLimitationCueExtractor:
     """Extract study-limitation cues from abstract/discussion text offline.
 
-    Offline heuristic limitation-cue scan for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit/Consensus/SciSpace/PaperQA
+    Offline heuristic limitation-cue scan for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit/Consensus/SciSpace/PaperQA
     limitation-cue gap. Distinct from
     :class:`~retrieval.sample_size_hint.SampleSizeHintExtractor`,
     :class:`~retrieval.conflict_of_interest.ConflictOfInterestFlagger`, and

@@ -4,8 +4,8 @@
 
 Use this guide when wiring OpenAlex concept ancestor hierarchy into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-OpenAlex API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+OpenAlex API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why OpenAlex concepts ancestors
 
@@ -58,5 +58,5 @@ Concept-id forms accepted: bare `C####`, and `https://openalex.org/C####`.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `openalex`, `concepts`, `taxonomy`, `ancestors`, `llm`, `python`

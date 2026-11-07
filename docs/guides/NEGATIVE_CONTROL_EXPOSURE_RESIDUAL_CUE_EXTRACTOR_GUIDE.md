@@ -5,7 +5,7 @@
 Offline residual cue extractor.
 Gap vs Elicit/Consensus/Connected Papers negative-control exposure residual cue extractors. Distinct from `NegativeControlOutcomeCueExtractor` / `ResidualConfoundingCueExtractor`.
 
-Stack: **GPT-6.1 / Claude Sonnet 5.5 / Gemini 3.x / Kimi K3**.
+Stack: **GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro**.
 
 ## Usage
 

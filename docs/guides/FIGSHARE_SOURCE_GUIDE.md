@@ -3,7 +3,7 @@
 ![Scholar RAG Agent demo](../assets/demo.gif)
 
 Use this guide when wiring Figshare into **scholar-rag-agent**. The agent can
-route enrichment through GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
+route enrichment through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro
 when enabled, but the Figshare connector itself is deterministic JSON — no LLM
 required to list matching research outputs.
 

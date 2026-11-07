@@ -3,7 +3,7 @@
 Offline lexicon matching plus nearby ``dataset`` heuristics surfaces
 benchmarks such as ImageNet, CIFAR, MIMIC, SQuAD, GLUE, and PubMedQA without
 a network call. Fills a PapersWithCode dataset-surfacing gap. Optional later
-narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 Distinct from live PapersWithCode connectors and from generic keyword boosters
 that do not canonicalize dataset names.
@@ -100,7 +100,7 @@ class DatasetMentionReport:
 class DatasetMentionIndexer:
     """Index dataset mentions via lexicon and nearby ``dataset`` cues.
 
-    Offline indexer for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
+    Offline indexer for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro
     pipelines — PapersWithCode-style dataset surfacing without network access.
     Matches a curated lexicon (ImageNet, CIFAR, MIMIC, SQuAD, GLUE, PubMedQA,
     and related benchmarks) and optional nearby ``dataset`` / ``benchmark`` /

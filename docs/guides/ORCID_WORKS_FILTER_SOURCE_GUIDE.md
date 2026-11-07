@@ -3,8 +3,8 @@
 ![ORCID works filter connector demo](../assets/orcid_works_filter_source.gif)
 
 Use this guide when wiring ORCID year/type-filtered works into
-**scholar-rag-agent**. The agent can route downstream synthesis through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, but this connector itself is
+**scholar-rag-agent**. The agent can route downstream synthesis through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but this connector itself is
 deterministic JSON; no LLM is required to filter public ORCID work summaries.
 
 ## Why ORCID works filter
@@ -86,5 +86,5 @@ filtered = asyncio.run(
 - ORCID records are author-maintained bibliographic summaries and usually do not
   expose abstracts; the connector synthesizes searchable descriptor text for
   retrieval.
-- Prefer frontier models for downstream synthesis: **GPT-5.5**, **Claude Sonnet 4.6**,
-  **Gemini 3.x**, **Kimi K2**.
+- Prefer frontier models for downstream synthesis: **GPT-6 Astra**, **Claude Opus 5.5**,
+  **Gemini 4 Argon**, **Kimi K3.1 Pro**.

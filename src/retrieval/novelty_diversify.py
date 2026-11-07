@@ -25,7 +25,7 @@ class NoveltyDiversifier:
     ``novelty = 1.0``. Empty token sets only match other empty sets at
     similarity ``1.0``. Results receive updated scores and
     ``retriever="novelty_diversify"``. Inputs are not mutated. Local retrieval
-    postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
+    postprocessor for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro
     pipelines (not a DOI connector).
     """
 

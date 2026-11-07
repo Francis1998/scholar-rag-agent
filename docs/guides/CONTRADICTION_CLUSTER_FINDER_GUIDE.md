@@ -10,8 +10,8 @@ passages need topical overlap plus negation words (`not`, `no`, `never`,
 `tension_score` in `[0, 1]`, and per-passage labels.
 
 Fills an Elicit conflicting-evidence table gap with deterministic heuristics
-(no LLM or network call). Clusters can seed GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 synthesis. Distinct from `ClaimSupportScorer` (per-passage
+(no LLM or network call). Clusters can seed GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro synthesis. Distinct from `ClaimSupportScorer` (per-passage
 support strength) and `ClaimVerificationGate` (answer-level claim
 groundedness). Also distinct from `EvidenceConflictDetector` (pairwise snippet
 polarity without a claim).

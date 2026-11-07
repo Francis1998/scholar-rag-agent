@@ -3,8 +3,8 @@
 Offline heuristics scan title/abstract for host URLs (github.com, gitlab,
 bitbucket) and phrases such as ``code available``, ``source code``, and
 ``implementation``. Fills a PapersWithCode / Semantic Scholar code-link gap
-without an LLM or network call. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+without an LLM or network call. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 Distinct from :class:`~retrieval.open_access_prefer.OpenAccessPreferencer`
 (OA metadata preference) and from DOI/Unpaywall connectors. Accepts
@@ -51,8 +51,8 @@ class CodeAvailabilityBoosted:
 class CodeAvailabilityBooster:
     """Boost SearchResult-like hits that advertise public code.
 
-    Offline postprocessor for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines — PapersWithCode / Semantic Scholar code-link gap.
+    Offline postprocessor for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+    Kimi K3.1 Pro pipelines — PapersWithCode / Semantic Scholar code-link gap.
     Blends prior relevance with a code-availability signal:
 
     ```text

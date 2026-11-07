@@ -8,8 +8,8 @@ effects, trim-and-fill). Never calls the network.
 
 Distinct from `HeterogeneityI2HintExtractor`, `RiskOfBiasCueExtractor`, and
 `EffectSizeHintExtractor`. Fills an Elicit / Consensus / SciSpace / PaperQA
-publication-bias gap. Optional later narrative: **GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2**.
+publication-bias gap. Optional later narrative: **GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro**.
 
 ## Usage
 

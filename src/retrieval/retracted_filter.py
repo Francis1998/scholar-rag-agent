@@ -20,8 +20,8 @@ class RetractedFilter:
       survivor exists; if every row is retracted, keep inputs unchanged.
     * ``mode="demote"``: blend scores with demote signal ``0.1`` vs ``1.0``.
 
-    Local postprocessor (not a DOI connector) for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines.
+    Local postprocessor (not a DOI connector) for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines.
     """
 
     def __init__(self, alpha: float = 0.5, mode: str = "filter") -> None:

@@ -9,8 +9,8 @@ It never drops rows and never calls the network.
 Distinct from `RetractedFilter`, which filters or demotes `SearchResult` hits
 via per-row metadata, and from live OpenAlex retraction connectors. Fills a
 Semantic Scholar / OpenAlex retraction-signal gap with an offline stub.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 
 ## Usage
 

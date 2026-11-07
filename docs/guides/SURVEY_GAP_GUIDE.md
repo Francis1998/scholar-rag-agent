@@ -9,7 +9,7 @@ Distinct from `RelatedWorksComposer`, which *discovers* themes by clustering
 titles/abstracts — this module checks whether caller-specified themes are
 actually covered. Fills an Elicit / ResearchRabbit theme-coverage gap with
 offline, deterministic Jaccard scoring (no LLM call). Optional later narrative
-can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Usage
 

@@ -67,4 +67,4 @@ def test_does_not_mutate_inputs() -> None:
 
 
 def test_docstring_mentions_frontier_models() -> None:
-    assert "Kimi K2" in (MetadataEqualsGate.__doc__ or "")
+    assert "Kimi K3.1 Pro" in (MetadataEqualsGate.__doc__ or "")

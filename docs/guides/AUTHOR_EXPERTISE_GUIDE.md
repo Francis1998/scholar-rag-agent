@@ -7,8 +7,8 @@ proxy**: log-normalized max author publication count blended with topic/keyword
 Jaccard overlap against a caller-provided topic query.
 
 Fills a Semantic Scholar influential-citation / OpenAlex author-topics gap with
-offline heuristics (no LLM or network call). Ranked lists can seed GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 synthesis. Distinct from citation-count
+offline heuristics (no LLM or network call). Ranked lists can seed GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro synthesis. Distinct from citation-count
 boosters that ignore author identity.
 
 ## Usage

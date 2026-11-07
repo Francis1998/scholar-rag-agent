@@ -3,8 +3,8 @@
 Offline lexical overlap and claim-term coverage heuristics produce per-passage
 support strength labels (``supported`` / ``partial`` / ``unsupported``). Fills
 an Elicit / Semantic Scholar claim-table gap without an LLM or network call.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 
 Distinct from :class:`~retrieval.claim_verification_gate.ClaimVerificationGate`
 (answer-level claim groundedness) and
@@ -43,7 +43,7 @@ class ClaimSupportScorer:
 
     Blends claim-term coverage with Jaccard overlap to rank evidence passages
     by how strongly they support a caller-provided claim. Offline scorer for
-    GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines — Elicit /
+    GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit /
     Semantic Scholar claim-table gap. Distinct from
     :class:`~retrieval.claim_verification_gate.ClaimVerificationGate`
     (answer groundedness) and

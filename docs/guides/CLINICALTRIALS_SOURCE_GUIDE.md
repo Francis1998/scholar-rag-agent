@@ -3,8 +3,8 @@
 ![ClinicalTrials.gov connector demo](../assets/clinicaltrials_source.gif)
 
 Use this guide when wiring ClinicalTrials.gov into **scholar-rag-agent**. The
-agent can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 when enabled, but the ClinicalTrials.gov connector itself
+agent can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the ClinicalTrials.gov connector itself
 is deterministic JSON; no LLM is required to list matching trial registrations.
 
 ## Why ClinicalTrials.gov
@@ -58,4 +58,4 @@ for document in documents:
 - Studies without a title or NCT ID are skipped rather than raising.
 - No API key is required for public ClinicalTrials.gov API v2 search.
 - Prefer frontier models for downstream synthesis over raw registry metadata:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

@@ -118,8 +118,8 @@ class CitationGraphExpander:
     Inspired by Semantic Scholar citation-graph expansion and PaperQA-style
     related-paper gathering. Operates entirely on an in-memory
     :class:`CitationGraphIndex` (no network). Distinct from entity multi-hop
-    GraphRAG. Local expander for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines (not a DOI connector).
+    GraphRAG. Local expander for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+    Kimi K3.1 Pro pipelines (not a DOI connector).
     """
 
     def __init__(

@@ -4,8 +4,8 @@
 
 Use this guide when venue retrieval needs sources filtered by their OpenAlex host
 organization (publisher). Discovery is deterministic HTTP against the public
-OpenAlex API; optional downstream synthesis can use GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+OpenAlex API; optional downstream synthesis can use GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why host-organization sources
 

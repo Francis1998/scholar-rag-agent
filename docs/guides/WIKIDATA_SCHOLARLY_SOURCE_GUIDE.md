@@ -3,8 +3,8 @@
 ![Wikidata scholarly connector demo](../assets/wikidata_scholarly_source.gif)
 
 Use this guide when wiring Wikidata scholarly entities into **scholar-rag-agent**.
-The agent can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 when enabled, but the Wikidata connector itself is
+The agent can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the Wikidata connector itself is
 deterministic JSON; no LLM is required to discover scholarly entities.
 
 ## Why Wikidata scholarly
@@ -78,4 +78,4 @@ documents = asyncio.run(WikidataScholarlyConnector().search("Q210272", max_resul
 - Blank queries and non-positive `max_results` short-circuit with no HTTP call.
 - No API key is required for public Wikidata Action API or scholarly SPARQL.
 - Prefer frontier models for downstream synthesis over Wikidata summaries:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

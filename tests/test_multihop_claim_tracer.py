@@ -97,17 +97,17 @@ def test_trace_many_and_markdown_mentions_gap() -> None:
     assert len(traces) == 2
     markdown = traces[0].to_markdown()
     assert "PaperQA claim-verification UI gap" in markdown
-    assert "GPT-5.5" in markdown
-    assert "Claude Sonnet 4.6" in markdown
-    assert "Gemini 3.x" in markdown
-    assert "Kimi K2" in markdown
+    assert "GPT-6 Astra" in markdown
+    assert "Claude Opus 5.5" in markdown
+    assert "Gemini 4 Argon" in markdown
+    assert "Kimi K3.1 Pro" in markdown
 
 
 def test_docstring_distinguishes_siblings_and_models() -> None:
     doc = MultiHopClaimTracer.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+    assert "GPT-6 Astra" in doc
+    assert "Claude Opus 5.5" in doc
+    assert "Gemini 4 Argon" in doc
+    assert "Kimi K3.1 Pro" in doc
     assert "gate" in doc.lower()
     assert "PaperQA" in doc

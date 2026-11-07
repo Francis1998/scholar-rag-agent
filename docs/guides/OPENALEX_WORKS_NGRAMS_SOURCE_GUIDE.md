@@ -4,7 +4,7 @@
 
 Use this guide to retrieve statistically salient phrases for one OpenAlex work.
 Discovery uses deterministic HTTP against the public OpenAlex API; optional
-downstream synthesis can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+downstream synthesis can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why work n-grams
 

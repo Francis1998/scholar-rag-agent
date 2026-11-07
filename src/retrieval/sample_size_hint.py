@@ -5,8 +5,8 @@ deterministic ``N=`` / ``n =`` / ``sample size of`` cues. Never calls the
 network. Distinct from :class:`~retrieval.method_extract_card.MethodExtractCard`
 (PICO / study-design cards without sample-size N). Fills an Elicit /
 Consensus / SciSpace sample-size surfacing gap without an LLM call.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -45,8 +45,8 @@ class SampleSizeHint:
 class SampleSizeHintExtractor:
     """Extract sample-size (N=) hints from abstract text offline.
 
-    Offline heuristic sample-size extractor for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit/Consensus/SciSpace sample-size
+    Offline heuristic sample-size extractor for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit/Consensus/SciSpace sample-size
     gap. Distinct from :class:`~retrieval.method_extract_card.MethodExtractCard`
     (study-design cues without N). Never mutates inputs and never calls the
     network.

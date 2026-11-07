@@ -8,8 +8,8 @@ such as `code available`, `source code`, and `implementation`. Each row
 includes a blended `score`, a `code_signal`, and human-readable `reasons`.
 
 Fills a PapersWithCode / Semantic Scholar code-link gap with offline heuristics
-(no LLM or network call). Boosted evidence can seed GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 synthesis. Distinct from `OpenAccessPreferencer` (OA
+(no LLM or network call). Boosted evidence can seed GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro synthesis. Distinct from `OpenAccessPreferencer` (OA
 metadata preference); this module looks for code-availability language, not
 open-access flags.
 

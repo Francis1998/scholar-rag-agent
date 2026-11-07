@@ -4,7 +4,7 @@ Crossref works can be filtered by resource type (journal-article,
 proceedings-article, book-chapter, ...). Popular scholarly RAG loaders often
 expose type facets that the base Crossref connector lacks. This connector
 searches ``/works`` with a ``filter=type:...`` clause and normalizes hits for
-agentic synthesis with GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+agentic synthesis with GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

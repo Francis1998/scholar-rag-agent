@@ -4,8 +4,8 @@
 
 Use this guide when wiring ORCID iD → public work summaries into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-ORCID API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+ORCID API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why ORCID works summaries
 
@@ -58,5 +58,5 @@ Non-ORCID queries return an empty list without calling the API.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `orcid`, `works`, `identifiers`, `llm`, `python`

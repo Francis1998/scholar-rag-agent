@@ -5,8 +5,8 @@
 `SentenceWindowExpander` widens each retrieved chunk with neighboring
 sentences from the full document text stored in chunk metadata. It is inspired
 by LlamaIndex `SentenceWindowNodeParser` / sentence-window retrieval, but is
-fully local and deterministic. Expanded evidence can then feed GPT-5.5,
-Claude Sonnet 4.6, Gemini 3.x, or Kimi K2 for grounded synthesis.
+fully local and deterministic. Expanded evidence can then feed GPT-6 Astra,
+Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro for grounded synthesis.
 
 ## How it differs from related stages
 

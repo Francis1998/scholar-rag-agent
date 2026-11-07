@@ -6,8 +6,8 @@ Produces an inspectable claim path for literature synthesis. Distinct from
 refuse gate), and
 :class:`~retrieval.citation_graph.CitationGraphExpander` (citation-edge
 expansion). Fills a PaperQA-style claim verification UI gap with a local,
-deterministic hop report. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+deterministic hop report. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ class ClaimTrace:
             f"**Claim:** {self.claim}",
             "",
             "_Deterministic multi-hop claim path. Optional narrative can use "
-            "GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 "
+            "GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro "
             "(PaperQA claim-verification UI gap)._",
             "",
         ]
@@ -82,8 +82,8 @@ class MultiHopClaimTracer:
     Not a retrieval gate: always returns a report/path rather than filtering
     hits. Hop 0 is the claim; hop 1+ are supporting spans ranked by lexical
     overlap; final hops surface cited document identities from chunk
-    metadata / citation markers. Local tracer for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — PaperQA claim verification UI gap.
+    metadata / citation markers. Local tracer for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — PaperQA claim verification UI gap.
     """
 
     def __init__(

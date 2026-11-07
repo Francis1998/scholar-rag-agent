@@ -6,7 +6,7 @@
 ranked `SearchResult` / `Document` lists. It fills a PaperQA-style review
 synthesis gap: evidence is organized into Background, Methods, Findings,
 Limitations, and Synthesis sections without calling an LLM. Optional later
-narrative drafting can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative drafting can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 Distinct from retrieval gates and live DOI connectors.
 
 ## Usage

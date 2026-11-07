@@ -9,7 +9,7 @@ OR / HR / RR / AUC) and
 :class:`~retrieval.p_value_hint.PValueHintExtractor` (p-value cues).
 Fills an Elicit / Consensus / SciSpace / PaperQA confidence-interval
 surfacing gap without an LLM call. Optional later narrative can use
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -71,8 +71,8 @@ class ConfidenceIntervalHint:
 class ConfidenceIntervalHintExtractor:
     """Extract 95% CI / confidence interval numeric hints offline.
 
-    Offline heuristic CI extractor for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit/Consensus/SciSpace/PaperQA
+    Offline heuristic CI extractor for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit/Consensus/SciSpace/PaperQA
     confidence-interval gap. Distinct from
     :class:`~retrieval.effect_size_hint.EffectSizeHintExtractor` and
     :class:`~retrieval.p_value_hint.PValueHintExtractor`. Never mutates

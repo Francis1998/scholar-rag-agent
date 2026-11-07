@@ -3,8 +3,8 @@
 ![Semantic Scholar recommendations demo](../assets/s2_recommendations.gif)
 
 Use this guide when expanding a known paper into nearby literature with
-**scholar-rag-agent**. The agent can route downstream synthesis through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, while the Semantic
+**scholar-rag-agent**. The agent can route downstream synthesis through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, while the Semantic
 Scholar recommendations connector itself is deterministic JSON - no LLM is
 required to fetch related paper metadata.
 

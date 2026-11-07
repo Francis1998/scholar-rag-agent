@@ -3,8 +3,8 @@
 Composes a structured Related Works outline by clustering paper
 title/abstract/year records into themes via keyword overlap. Fills an
 Elicit / PaperQA related-work generation gap with offline, reproducible
-scaffolding (no LLM call). Optional later prose drafting can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. Distinct from
+scaffolding (no LLM call). Optional later prose drafting can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. Distinct from
 :class:`~retrieval.literature_review_outline.LiteratureReviewOutliner`
 (section-type routing) and from retrieval gates.
 """
@@ -54,8 +54,8 @@ class RelatedWorksOutline:
         lines.append("")
         lines.append(
             "_Deterministic Related Works scaffolding from title/abstract/year "
-            "keyword overlap. Optional narrative drafting can use GPT-5.5 / "
-            "Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 (Elicit/PaperQA "
+            "keyword overlap. Optional narrative drafting can use GPT-6 Astra / "
+            "Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro (Elicit/PaperQA "
             "related-work generation gap)._"
         )
         for section in self.sections:
@@ -82,8 +82,8 @@ class RelatedWorksComposer:
 
     Papers are greedy-clustered by Jaccard overlap of meaningful title+abstract
     terms. Each cluster becomes a theme section named from its top shared
-    keywords. Offline scaffolding for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 — Elicit/PaperQA related-work generation gap.
+    keywords. Offline scaffolding for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro — Elicit/PaperQA related-work generation gap.
     """
 
     def __init__(

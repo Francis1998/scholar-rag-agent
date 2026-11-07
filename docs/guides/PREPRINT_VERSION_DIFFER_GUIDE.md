@@ -11,8 +11,8 @@ Status values include `same_work_preprint_older`, `published_preferred`,
 `preprint_only`, and `unknown`.
 
 Fills a Semantic Scholar / ResearchRabbit version-diff gap with deterministic
-heuristics (no LLM or network call). Diffs can seed GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 synthesis. Distinct from `PreprintDemoter` (retrieval soft
+heuristics (no LLM or network call). Diffs can seed GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro synthesis. Distinct from `PreprintDemoter` (retrieval soft
 demotion of preprint hits); this module compares caller-supplied metadata pairs.
 
 ## Usage

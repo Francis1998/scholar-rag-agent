@@ -3,7 +3,7 @@
 Fills a PaperQA-style review synthesis gap: PaperQA can gather paper evidence,
 but this module builds a structured outline of sections from ranked
 ``SearchResult`` / ``Document`` lists without calling an LLM. Optional later
-narrative drafting can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative drafting can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 Distinct from retrieval gates and from live DOI connectors.
 """
 
@@ -77,8 +77,8 @@ class LiteratureReviewOutline:
         lines.append("")
         lines.append(
             "_Deterministic outline from ranked evidence. Optional narrative "
-            "synthesis can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / "
-            "Kimi K2 (PaperQA-style review synthesis gap)._"
+            "synthesis can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / "
+            "Kimi K3.1 Pro (PaperQA-style review synthesis gap)._"
         )
         for section in self.sections:
             lines.append("")
@@ -117,7 +117,7 @@ class LiteratureReviewOutliner:
     ``section`` / ``section_type`` metadata matches a known heading, the paper
     is placed there; otherwise papers are distributed round-robin across
     sections in rank order. Inputs are not mutated. Outline-only module for
-    GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines — does not
+    GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines — does not
     generate narrative prose (PaperQA review synthesis gap).
     """
 

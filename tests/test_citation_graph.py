@@ -156,10 +156,10 @@ def test_does_not_mutate_inputs() -> None:
 
 def test_docstring_mentions_frontier_models() -> None:
     doc = CitationGraphExpander.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+    assert "GPT-6 Astra" in doc
+    assert "Claude Opus 5.5" in doc
+    assert "Gemini 4 Argon" in doc
+    assert "Kimi K3.1 Pro" in doc
 
 
 def test_hop_decay_halves_after_one_hop() -> None:

@@ -10,7 +10,7 @@ surnames never merge.
 This module replaces a redundant VenuePrestigeCalibrator: `VenueTierBooster`
 already maps venues to prestige tiers with soft score blending. Fills an
 OpenAlex / Semantic Scholar author-disambiguation hint gap. Optional later
-narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Usage
 

@@ -3,8 +3,8 @@
 ![Crossref Funder Registry connector demo](../assets/crossref_funder_source.gif)
 
 Use this guide when wiring the Crossref Open Funder Registry into
-**scholar-rag-agent**. The agent can route downstream synthesis through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, but the funder connector
+**scholar-rag-agent**. The agent can route downstream synthesis through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the funder connector
 itself is deterministic JSON — no LLM is required to list matching funding
 organizations.
 
@@ -73,4 +73,4 @@ for document in documents:
 - Funders without a usable preferred name are skipped rather than raised.
 - No API key is required for public Funder Registry search.
 - Prefer frontier models for downstream grant-aware synthesis over raw registry
-  rows: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  rows: **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

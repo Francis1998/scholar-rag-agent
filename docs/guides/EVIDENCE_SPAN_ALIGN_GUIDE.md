@@ -6,8 +6,8 @@
 offsets in each retrieved `SearchResult` text. It provides deterministic
 highlighting metadata similar to evidence extraction stages in Haystack-style
 pipelines, without asking an LLM to reproduce or quote source text. Highlighted
-evidence can later be shown to GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi
-K2 while preserving exact source offsets.
+evidence can later be shown to GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi
+K3.1 Pro while preserving exact source offsets.
 
 ## Span contract
 
