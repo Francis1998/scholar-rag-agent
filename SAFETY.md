@@ -12,6 +12,12 @@ They are cooperative timeouts, not process-level limits that preempt blocking
 CPU work. Runtime failures return an `ERROR` run with an `error` field; `/query`
 callers must inspect the body even when the HTTP response succeeds.
 
+Only expiration of the phase deadline adds the phase-labelled `timed out after`
+diagnostic. An operation's own `TimeoutError` (including a subclass or an error
+raised during cancellation cleanup) is preserved, and its original message is
+saved in the run result and terminal `ERROR` event. Deadline cancellation still
+waits for the operation's cleanup; external task cancellation still propagates.
+
 Both timeouts must be finite: `NaN`, positive/negative infinity, and overflow
 such as `1e999` are invalid. `Settings` and environment/`.env` values must be at
 least one second and are validated at startup, before storage/provider setup.
