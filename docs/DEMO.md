@@ -357,6 +357,25 @@ the plan and a cited placeholder answer; it does not synthesize scientific
 findings, and its database is removed on exit. The
 [Quickstart](../QUICKSTART.md) starts a separate, persistent API workspace.
 
+## Retrieval-helper and source-connector guide demos
+
+Guides for the offline retrieval, evaluation, and memory helpers and for the
+scholarly source connectors embed demos rendered by
+`scripts/render_guide_demos.py`. Each one runs the guide's own `python` example
+verbatim in a subprocess (`PYTHONPATH=src`, scrubbed environment, sockets
+disabled); a visible grey harness adds sample input and prints results, and the
+GIF shows the code and the captured stdout. Connector demos never reach a live
+API: `httpx.MockTransport` serves the recorded payloads from
+`tests/test_connectors.py`, and any request without one aborts the render.
+
+```bash
+uv run python scripts/render_guide_demos.py --print --only bibtex-export.gif
+uv run python scripts/render_guide_demos.py --only bibtex-export.gif
+```
+
+These are **generated illustrations of executed output** on synthetic or
+recorded input, not screen recordings or evidence about real literature.
+
 ## Historical illustrations
 
 Earlier assets remain available at their original paths:

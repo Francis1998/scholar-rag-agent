@@ -17,13 +17,15 @@ category filtering on date-range requests. This connector complements the
 general `BioRxivConnector` by targeting category-shaped queries and the API's
 `collection` response field.
 
-Category-filtered discovery:
+Category-filtered discovery for underscore category names such as `cell_biology`
+(the last 30 days):
 
 ```text
 GET https://api.biorxiv.org/details/biorxiv/2025-06-01/2025-07-01?category=cell_biology
 ```
 
-Recent-post window (client-side title/abstract filter):
+Recent-post window for free text such as the example's `cell biology`
+(client-side title/abstract/category filter):
 
 ```text
 GET https://api.biorxiv.org/details/biorxiv/100
