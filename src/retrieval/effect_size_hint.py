@@ -5,8 +5,8 @@ relative risk (RR) / AUC numeric hints from title/abstract text via
 deterministic phrase cues. Never calls the network. Distinct from
 :class:`~retrieval.sample_size_hint.SampleSizeHintExtractor` (N= sample-size
 integers). Fills an Elicit / Consensus / SciSpace / PaperQA effect-size
-surfacing gap without an LLM call. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+surfacing gap without an LLM call. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -73,8 +73,8 @@ class EffectSizeHint:
 class EffectSizeHintExtractor:
     """Extract Cohen's d / OR / HR / RR / AUC hints from abstracts offline.
 
-    Offline heuristic effect-size extractor for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit/Consensus/SciSpace/PaperQA
+    Offline heuristic effect-size extractor for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit/Consensus/SciSpace/PaperQA
     effect-size gap. Distinct from
     :class:`~retrieval.sample_size_hint.SampleSizeHintExtractor` (sample-size
     N). Never mutates inputs and never calls the network.

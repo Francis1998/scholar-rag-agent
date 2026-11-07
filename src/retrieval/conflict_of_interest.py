@@ -5,8 +5,8 @@ interests, financial disclosures, advisory/consultant language) and returns
 advisory flags with reasons. Never calls the network. Distinct from
 :mod:`retrieval.funding_disclosure` (funder/grant cues). Fills a Scite /
 Elicit / Consensus conflict-of-interest surfacing gap without an LLM call.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -77,8 +77,8 @@ class ConflictOfInterestFlag:
 class ConflictOfInterestFlagger:
     """Flag conflict-of-interest / disclosure cues in paper text offline.
 
-    Offline heuristic COI-disclosure scan for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Scite/Elicit/Consensus COI-cue gap.
+    Offline heuristic COI-disclosure scan for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Scite/Elicit/Consensus COI-cue gap.
     Distinct from :class:`~retrieval.funding_disclosure.FundingDisclosureFlagger`
     (funder/grant cues). Never mutates inputs and never calls the network.
     """

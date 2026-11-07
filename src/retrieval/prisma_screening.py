@@ -5,7 +5,7 @@ inclusion/exclusion criteria and paper metadata. Decisions always remain
 ``pending`` — this module never auto-includes or auto-excludes papers.
 Fills a Covidence / Elicit / Rayyan PRISMA screening-checklist gap with
 offline, reproducible scaffolding (no LLM call). Optional later narrative
-can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ class PrismaScreeningRow:
 class PrismaScreeningChecklist:
     """Build HITL PRISMA-style screening checklist rows offline.
 
-    Offline screening checklist builder for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Covidence/Elicit/Rayyan PRISMA HITL gap.
+    Offline screening checklist builder for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Covidence/Elicit/Rayyan PRISMA HITL gap.
     Lexical inclusion/exclusion hits are advisory cues only; ``decision`` is
     always ``pending``. Never auto-includes or auto-excludes papers. Never
     mutates inputs and never calls the network.

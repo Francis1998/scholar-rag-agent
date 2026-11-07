@@ -41,8 +41,8 @@ class AgenticChunkBoundarySplitter:
     then merged with a neighbor when the merge still fits under
     ``max_chars``. Despite the "agentic" name, no LLM or network call is
     used: this is pure, deterministic text splitting meant to feed
-    agent-ready retrieval chunks for **GPT-5.5**, **Claude Sonnet 4.6**,
-    **Gemini 3.x**, or **Kimi K2** downstream synthesis.
+    agent-ready retrieval chunks for **GPT-6 Astra**, **Claude Opus 5.5**,
+    **Gemini 4 Argon**, or **Kimi K3.1 Pro** downstream synthesis.
     """
 
     def __init__(self, max_chars: int = 1200, min_chars: int = 200) -> None:

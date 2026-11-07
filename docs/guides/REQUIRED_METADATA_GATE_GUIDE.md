@@ -8,7 +8,7 @@ configured set of chunk metadata keys. It is inspired by Haystack
 presence/non-empty check with no network or LLM call. Unlike
 `TemporalFreshnessCutoff`, which interprets date-shaped fields, this gate only
 verifies that each required key exists with a non-empty string value. Surviving
-evidence can then feed GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+evidence can then feed GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## How filtering works
 

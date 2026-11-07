@@ -120,9 +120,9 @@ def test_reads_abstract_metadata_on_search_result() -> None:
 
 def test_docstring_mentions_frontier_models_and_gap() -> None:
     doc = CodeAvailabilityBooster.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+    assert "GPT-6 Astra" in doc
+    assert "Claude Opus 5.5" in doc
+    assert "Gemini 4 Argon" in doc
+    assert "Kimi K3.1 Pro" in doc
     assert "PapersWithCode" in doc or "Semantic Scholar" in doc
     assert "OpenAccessPreferencer" in doc

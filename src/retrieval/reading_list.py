@@ -3,7 +3,7 @@
 Deterministic heuristics combine citation-count authority, publication-year
 freshness, and batch-relative keyword novelty. Fills a Zotero / ResearchRabbit
 unread-triage gap without an LLM or network call. Optional later narrative can
-use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 Distinct from :class:`~retrieval.freshness.FreshnessBooster`,
 :class:`~retrieval.novelty_diversify.NoveltyDiversifier`, and
@@ -39,8 +39,8 @@ class PrioritizedPaper:
 class ReadingListPrioritizer:
     """Rank unread papers by novelty x authority heuristics.
 
-    Offline reading-list triage for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines — Zotero / ResearchRabbit unread-triage gap. Composes
+    Offline reading-list triage for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+    Kimi K3.1 Pro pipelines — Zotero / ResearchRabbit unread-triage gap. Composes
     citation-count authority with year freshness and keyword novelty into a
     multiplicative ``priority_score``. Distinct from
     :class:`~retrieval.freshness.FreshnessBooster`,

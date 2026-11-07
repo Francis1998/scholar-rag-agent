@@ -5,7 +5,7 @@
 Use `ContextualCompressor` after retrieval to keep query-relevant evidence while
 removing unrelated sentences from each chunk. Compression is deterministic,
 dependency-free, and local. Optional LLM stages elsewhere in the stack can use
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 after the bounded context is
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro after the bounded context is
 assembled.
 
 ## How extraction works

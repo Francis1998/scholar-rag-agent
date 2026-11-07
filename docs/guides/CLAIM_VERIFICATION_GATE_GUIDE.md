@@ -6,8 +6,8 @@
 the response is shown to a user. Inspired by RAGAS faithfulness and TruLens
 groundedness checks, it splits the answer into claim sentences and scores each
 claim with deterministic lexical overlap. No LLM or network call is required.
-Verified answers can then be refined or explained with GPT-5.5, Claude Sonnet
-4.6, Gemini 3.x, or Kimi K2.
+Verified answers can then be refined or explained with GPT-6 Astra, Claude
+Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## How verification works
 

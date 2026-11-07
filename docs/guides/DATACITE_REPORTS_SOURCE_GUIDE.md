@@ -4,8 +4,8 @@
 
 Use this guide when wiring DataCite research-report DOIs into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-DataCite JSON:API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+DataCite JSON:API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why DataCite reports
 
@@ -52,5 +52,5 @@ bounded `page[size]`, then normalizes report DOI attributes.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `datacite`, `reports`, `doi`, `grey-literature`, `llm`, `python`

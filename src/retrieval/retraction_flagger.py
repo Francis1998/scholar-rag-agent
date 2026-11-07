@@ -6,7 +6,7 @@ flags without dropping rows or calling the network. Distinct from
 :class:`~retrieval.retracted_filter.RetractedFilter` (which filters or demotes
 ``SearchResult`` hits via per-row metadata). Fills a Semantic Scholar /
 OpenAlex retraction-signal gap with an offline stub (no LLM call). Optional
-later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ class RetractionFlag:
 class RetractionWatchFlagger:
     """Flag papers against a caller-supplied offline retraction set.
 
-    Offline advisory flagger for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-    Kimi K2 pipelines — Semantic Scholar/OpenAlex retraction-signal gap.
+    Offline advisory flagger for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+    Kimi K3.1 Pro pipelines — Semantic Scholar/OpenAlex retraction-signal gap.
     Distinct from :class:`~retrieval.retracted_filter.RetractedFilter` and from
     live OpenAlex retraction connectors. Never mutates inputs and never drops
     papers; unmatched rows return ``matched=False`` with ``status=\"clear\"``.

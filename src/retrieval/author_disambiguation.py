@@ -6,7 +6,7 @@ Replaces a redundant VenuePrestigeCalibrator because
 :class:`~retrieval.venue_tier_boost.VenueTierBooster` already maps venues to
 prestige tiers with soft score blending. Fills an OpenAlex / Semantic Scholar
 author-disambiguation hint gap without an LLM call. Optional later narrative
-can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ class _ParsedName:
 class AuthorNameDisambiguationHint:
     """Group near-duplicate author strings offline.
 
-    Offline author-name disambiguation hints for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — OpenAlex/Semantic Scholar author-merge
+    Offline author-name disambiguation hints for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — OpenAlex/Semantic Scholar author-merge
     gap. Distinct from :class:`~retrieval.venue_tier_boost.VenueTierBooster`
     (venue prestige tiers already covered) and from network ORCID connectors.
     Never mutates inputs.

@@ -5,7 +5,7 @@
 Offline cue extractor for scholarly evidence screening.
 Gap vs Elicit/Consensus/Connected Papers spin / p-hacking / forking-paths cue extractors. Distinct from `NoveltyBiasCueExtractor` / `PublicationBiasCueExtractor`.
 
-Optional polish via **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2**.
+Optional polish via **GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro**.
 
 ## Usage
 

@@ -3,7 +3,7 @@
 Offline heuristics partition passages into supporting vs contradicting clusters
 using negation/antonym cues and claim-term overlap. Fills an Elicit
 conflicting-evidence table gap without an LLM or network call. Optional later
-narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 Distinct from :class:`~retrieval.claim_support.ClaimSupportScorer` (per-passage
 support strength) and
@@ -101,8 +101,8 @@ class ContradictionClusterResult:
 class ContradictionClusterFinder:
     """Cluster passages that lexically conflict on a claim.
 
-    Offline claim-tension clusters for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit conflicting-evidence table gap.
+    Offline claim-tension clusters for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit conflicting-evidence table gap.
     Passages with high claim overlap and no negation/antonym cues are
     supporting; passages with negation (``not``/``no``/``never``/``fail*``/
     ``contradict*``) or antonym polarity plus topical overlap are

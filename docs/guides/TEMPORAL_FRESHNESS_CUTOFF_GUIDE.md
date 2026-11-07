@@ -6,8 +6,8 @@
 configured maximum age before they ever reach synthesis. It is inspired by
 LlamaIndex's `TemporalRetriever` recency filter and Haystack-style metadata
 freshness filters, but requires no network call or LLM: age is computed
-purely from chunk metadata. Surviving evidence can then be handed to GPT-5.5,
-Claude Sonnet 4.6, Gemini 3.x, or Kimi K2 for grounded synthesis.
+purely from chunk metadata. Surviving evidence can then be handed to GPT-6 Astra,
+Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro for grounded synthesis.
 
 ## How it differs from `FreshnessBooster`
 

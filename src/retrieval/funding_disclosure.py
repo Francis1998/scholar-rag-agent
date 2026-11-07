@@ -4,8 +4,8 @@ Scans local text fields for funder cues (NIH, NSF, ERC, ``funded by``, grant
 numbers) and returns advisory flags with reasons. Never calls the network.
 Distinct from :mod:`ingestion.crossref_funder` (Crossref Funder Registry
 connector). Fills a Scite / Elicit / Consensus funding-disclosure surfacing
-gap without an LLM call. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+gap without an LLM call. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -57,8 +57,8 @@ class FundingDisclosureFlag:
 class FundingDisclosureFlagger:
     """Flag funding cues in abstract/acknowledgements text offline.
 
-    Offline heuristic funding-disclosure scan for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Scite/Elicit/Consensus funding-cue gap.
+    Offline heuristic funding-disclosure scan for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Scite/Elicit/Consensus funding-cue gap.
     Distinct from Crossref Funder Registry ingestion
     (:mod:`ingestion.crossref_funder`). Never mutates inputs and never calls
     the network.

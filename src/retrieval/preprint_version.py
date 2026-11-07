@@ -3,8 +3,8 @@
 Deterministic heuristics inspect version labels (v1/v2), publication-year
 delta, and venue presence to classify the relationship between a preprint row
 and a published row. Fills a Semantic Scholar / ResearchRabbit version-diff gap
-without an LLM or network call. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+without an LLM or network call. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 Distinct from :class:`~retrieval.preprint_demote.PreprintDemoter` (retrieval
 soft demotion of preprint hits). This module is a version-comparison helper
@@ -44,7 +44,7 @@ class PreprintVersionDiff:
 class PreprintVersionDiffer:
     """Compare preprint and published metadata for the same scholarly work.
 
-    Offline helper for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
+    Offline helper for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro
     pipelines — Semantic Scholar / ResearchRabbit version-diff gap. Uses
     version labels, year delta, and venue presence. Distinct from
     :class:`~retrieval.preprint_demote.PreprintDemoter` (which demotes preprint

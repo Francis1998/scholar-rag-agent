@@ -3,8 +3,8 @@
 ![Crossref members connector demo](../assets/crossref_members_source.gif)
 
 Use this guide when wiring Crossref members into **scholar-rag-agent**. The agent
-can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2 when enabled, but the members connector itself is deterministic JSON —
+can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro when enabled, but the members connector itself is deterministic JSON —
 no LLM is required to list matching publishers and registrants.
 
 ## Why Crossref members
@@ -69,4 +69,4 @@ for document in documents:
 - Members without a usable primary name are skipped rather than raised.
 - No API key is required for public member search.
 - Prefer frontier models for downstream publisher-aware synthesis over raw member
-  rows: **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  rows: **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

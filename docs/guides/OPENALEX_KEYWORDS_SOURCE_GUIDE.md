@@ -4,7 +4,7 @@
 
 Use this guide when wiring OpenAlex **keywords** into **scholar-rag-agent**.
 Discovery is deterministic HTTP against the public OpenAlex keywords API —
-enrichment with GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 is optional
+enrichment with GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro is optional
 after documents are collected.
 
 ## Why OpenAlex keywords
@@ -49,5 +49,5 @@ and prefixed ids (`keywords/machine-learning`) resolve directly.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `openalex`, `keywords`, `arxiv`, `pubmed`, `llm`, `python`

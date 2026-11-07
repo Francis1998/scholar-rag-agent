@@ -7,8 +7,8 @@ registered DOIs. This connector queries the public JSON:API endpoint at
 registry's bibliographic metadata.
 
 DOI-shaped queries use the API's ``doi`` filter; other text uses its general
-``query`` filter. Prefer frontier models for downstream synthesis: GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+``query`` filter. Prefer frontier models for downstream synthesis: GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

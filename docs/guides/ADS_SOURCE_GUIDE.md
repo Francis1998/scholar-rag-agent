@@ -3,7 +3,7 @@
 ![NASA ADS connector demo](../assets/ads_source.gif)
 
 Use this guide when wiring NASA ADS into **scholar-rag-agent**. The agent can
-route enrichment through GPT-5.5 / Claude Sonnet 4.6 / Gemini 2.5 / Kimi K2 when
+route enrichment through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when
 enabled, but the ADS connector itself is deterministic JSON — no LLM required to
 list matching bibliographic records.
 

@@ -21,8 +21,8 @@ class TermCoverageBooster:
     where ``coverage = |query ∩ doc| / |query|`` (empty query → ``1.0``).
     Distinct from :class:`~retrieval.lexical_overlap_boost.LexicalOverlapBooster`
     (symmetric Jaccard) and :class:`~retrieval.cross_encoder_gate.CrossEncoderGate`
-    (hard drop). Inputs are not mutated. Local postprocessor for GPT-5.5 /
-    Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+    (hard drop). Inputs are not mutated. Local postprocessor for GPT-6 Astra /
+    Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines (not a DOI connector).
     """
 
     def __init__(self, alpha: float = 0.4) -> None:

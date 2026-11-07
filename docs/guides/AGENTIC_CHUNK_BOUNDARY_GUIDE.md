@@ -8,8 +8,8 @@ It is inspired by LlamaIndex's sentence-window parsing, Chonkie's recursive
 chunkers, and LangChain's `MarkdownHeaderTextSplitter`. Despite the
 "agentic" name, it requires no LLM or network call: splitting is pure and
 deterministic, which is what makes the resulting chunks safe inputs for
-downstream agent tool calls and retrieval indexing feeding **GPT-5.5**,
-**Claude Sonnet 4.6**, **Gemini 3.x**, or **Kimi K2**.
+downstream agent tool calls and retrieval indexing feeding **GPT-6 Astra**,
+**Claude Opus 5.5**, **Gemini 4 Argon**, or **Kimi K3.1 Pro**.
 
 ## How it differs from `TextChunker`
 

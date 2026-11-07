@@ -11,7 +11,7 @@ Search requests use the documented URL form:
 Free-text queries default to keyword (``kw``) matching. Fielded Grist queries such
 as ``ga:"Wellcome Trust"``, ``gid:083611``, ``pi:smith``, or ``title:cancer`` are
 passed through unchanged. Prefer frontier models for downstream synthesis:
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

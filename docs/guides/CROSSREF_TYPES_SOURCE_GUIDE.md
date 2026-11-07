@@ -1,6 +1,6 @@
 # Crossref Types Source Guide
 
-Search Crossref works with a `filter=type:...` facet — a common gap vs base Crossref connectors in scholarly RAG stacks. Prefer **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2** for synthesis.
+Search Crossref works with a `filter=type:...` facet — a common gap vs base Crossref connectors in scholarly RAG stacks. Prefer **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro** for synthesis.
 
 ![Demo](../assets/crossref_types_source.gif)
 

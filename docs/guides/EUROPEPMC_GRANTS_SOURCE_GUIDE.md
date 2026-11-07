@@ -4,7 +4,7 @@
 
 Use this guide when wiring Europe PMC **GRIST grants** into **scholar-rag-agent**.
 Discovery is deterministic HTTP against the public Grist API — enrichment with
-GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 is optional after documents
+GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro is optional after documents
 are collected.
 
 ## Why Europe PMC grants
@@ -49,5 +49,5 @@ Free-text keywords and fielded Grist queries (`ga:`, `gid:`, `pi:`, `title:`,
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `europepmc`, `grants`, `funding`, `arxiv`, `pubmed`, `llm`, `python`

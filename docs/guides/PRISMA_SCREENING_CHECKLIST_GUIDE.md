@@ -8,8 +8,8 @@ Lexical criterion hits are advisory cues only. Every row keeps
 `decision="pending"` — this module never auto-includes or auto-excludes papers.
 
 Fills a Covidence / Elicit / Rayyan PRISMA screening-checklist gap with
-deterministic scaffolding. Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+deterministic scaffolding. Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Usage
 

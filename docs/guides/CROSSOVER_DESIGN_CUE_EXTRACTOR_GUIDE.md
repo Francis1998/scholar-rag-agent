@@ -5,7 +5,7 @@
 Offline evidence-methods cue extractor for crossover / Latin-square / ABAB
 designs. Never network I/O. Gap vs Elicit / Consensus / CONSORT crossover.
 
-Optional later polish via **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2**.
+Optional later polish via **GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro**.
 
 Distinct from `ClusterRandomizationCueExtractor` and `WashoutPeriodCueExtractor`.
 

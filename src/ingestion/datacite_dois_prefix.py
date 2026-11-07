@@ -10,8 +10,8 @@ queries are sent as free text, optionally constrained by a configured default
 prefix. This connector is distinct from general DataCite search, reports, and
 related-identifier enrichment.
 
-Prefer frontier models for downstream synthesis: GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+Prefer frontier models for downstream synthesis: GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

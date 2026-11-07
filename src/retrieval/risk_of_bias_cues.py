@@ -11,7 +11,7 @@ calls the network. Distinct from
 :class:`~retrieval.method_extract_card.MethodExtractCard`
 (PICO / study-design cards). Fills an Elicit / Consensus / SciSpace /
 PaperQA Cochrane risk-of-bias surfacing gap without an LLM call. Optional
-later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -93,8 +93,8 @@ class RiskOfBiasCue:
 class RiskOfBiasCueExtractor:
     """Extract Cochrane-style risk-of-bias cues from paper text offline.
 
-    Offline heuristic RoB domain scan for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 pipelines — Elicit/Consensus/SciSpace/PaperQA
+    Offline heuristic RoB domain scan for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro pipelines — Elicit/Consensus/SciSpace/PaperQA
     Cochrane risk-of-bias gap. Distinct from
     :class:`~retrieval.study_limitations.StudyLimitationCueExtractor`,
     :class:`~retrieval.conflict_of_interest.ConflictOfInterestFlagger`, and

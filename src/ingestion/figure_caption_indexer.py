@@ -4,7 +4,7 @@ Extracts caption lines that match scholarly PDF patterns such as
 ``Figure 1: ...`` / ``Fig. 2. ...`` and ``Table 3: ...``. Fills a
 PaperQA / Unstructured figure-extraction gap for RAG with a local,
 deterministic caption indexer (no LLM or layout model). Indexed captions
-can feed GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 grounding.
+can feed GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro grounding.
 Distinct from PDF OCR hooks and live DOI connectors.
 """
 
@@ -34,7 +34,7 @@ class FigureCaptionIndexer:
 
     Scans line-oriented text for caption markers and returns stable
     :class:`FigureCaption` records ordered by appearance. Offline indexer for
-    GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 RAG pipelines —
+    GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro RAG pipelines —
     PaperQA/Unstructured figure-extraction gap.
     """
 

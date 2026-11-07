@@ -83,16 +83,16 @@ def test_markdown_mentions_gap_and_models() -> None:
     )
     markdown = outline.to_markdown()
     assert "Elicit/PaperQA related-work generation gap" in markdown
-    assert "GPT-5.5" in markdown
-    assert "Claude Sonnet 4.6" in markdown
-    assert "Gemini 3.x" in markdown
-    assert "Kimi K2" in markdown
+    assert "GPT-6 Astra" in markdown
+    assert "Claude Opus 5.5" in markdown
+    assert "Gemini 4 Argon" in markdown
+    assert "Kimi K3.1 Pro" in markdown
 
 
 def test_docstring_mentions_frontier_models_and_gap() -> None:
     doc = RelatedWorksComposer.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+    assert "GPT-6 Astra" in doc
+    assert "Claude Opus 5.5" in doc
+    assert "Gemini 4 Argon" in doc
+    assert "Kimi K3.1 Pro" in doc
     assert "Elicit" in doc or "PaperQA" in doc

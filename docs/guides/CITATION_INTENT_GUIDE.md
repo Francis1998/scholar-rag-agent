@@ -7,7 +7,7 @@ citation-aware ranking. It assigns `background`, `method`, `result`,
 `comparison`, or `unknown` with deterministic keyword and phrase rules, then
 can copy that intent into each result's chunk metadata. It complements
 `CitationGrounder`, which validates claims after retrieval. Optional downstream
-stages can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+stages can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Classification rules
 

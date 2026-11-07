@@ -3,8 +3,8 @@
 ![OpenAlex institutions connector demo](../assets/openalex_institutions_source.gif)
 
 Use this guide when wiring OpenAlex institutions into **scholar-rag-agent**. The agent
-can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2 when enabled, but the institutions connector itself is deterministic JSON; no
+can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro when enabled, but the institutions connector itself is deterministic JSON; no
 LLM is required to discover research organizations.
 
 ## Why OpenAlex institutions
@@ -80,4 +80,4 @@ documents = asyncio.run(OpenAlexInstitutionsConnector().search("I136199984", max
   sources before treating them as authoritative.
 - Untitled institution records are skipped rather than raised.
 - Prefer frontier models for downstream synthesis over institution summaries:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

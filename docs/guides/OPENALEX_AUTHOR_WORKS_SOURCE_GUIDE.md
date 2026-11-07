@@ -4,8 +4,8 @@
 
 Use this guide when wiring OpenAlex author → works citation blends into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-OpenAlex API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+OpenAlex API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why OpenAlex author works
 
@@ -64,5 +64,5 @@ Author-id forms accepted: bare `A####`, and `https://openalex.org/A####`.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `openalex`, `authors`, `citations`, `bibliometrics`, `llm`, `python`

@@ -6,7 +6,7 @@
 and before answer generation. Inspired by Self-RAG reflection tokens and
 LangGraph gating patterns, it produces an inspectable `SUPPORT`, `PARTIAL`, or
 `REFUSE` decision without an LLM or network call. Accepted evidence can then be
-sent to GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+sent to GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## Decision policy
 

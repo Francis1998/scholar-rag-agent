@@ -4,7 +4,7 @@
 
 Use this guide when wiring NCBI **MeSH** descriptors into **scholar-rag-agent**.
 Discovery is deterministic HTTP against E-utilities (`db=mesh`) — enrichment
-with GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 is optional after
+with GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro is optional after
 documents are collected.
 
 ## Why PubMed MeSH
@@ -42,5 +42,5 @@ Optional `NCBI_API_KEY` (or constructor `api_key`) raises E-utilities rate limit
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `pubmed`, `mesh`, `biomedical`, `llm`, `python`

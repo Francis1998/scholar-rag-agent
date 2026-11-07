@@ -68,8 +68,8 @@ def test_never_mutates_input() -> None:
 
 def test_docstring_mentions_frontier_models_and_gap() -> None:
     doc = FundingDisclosureFlagger.__doc__ or ""
-    assert "GPT-5.5" in doc
-    assert "Claude Sonnet 4.6" in doc
-    assert "Gemini 3.x" in doc
-    assert "Kimi K2" in doc
+    assert "GPT-6 Astra" in doc
+    assert "Claude Opus 5.5" in doc
+    assert "Gemini 4 Argon" in doc
+    assert "Kimi K3.1 Pro" in doc
     assert "Crossref" in doc or "crossref_funder" in doc or "Scite" in doc or "Elicit" in doc

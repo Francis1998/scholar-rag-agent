@@ -62,4 +62,4 @@ def test_does_not_mutate_inputs() -> None:
 
 
 def test_docstring_mentions_frontier_models() -> None:
-    assert "Claude Sonnet 4.6" in (KeywordMatchGate.__doc__ or "")
+    assert "Claude Opus 5.5" in (KeywordMatchGate.__doc__ or "")

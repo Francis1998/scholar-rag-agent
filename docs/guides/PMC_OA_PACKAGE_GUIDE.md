@@ -3,8 +3,8 @@
 ![PMC OA package connector demo](../assets/pmc_oa_package.gif)
 
 Use this guide when wiring NCBI PMC Open Access package link discovery into
-**scholar-rag-agent**. The agent can route enrichment through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, but the PMC OA package
+**scholar-rag-agent**. The agent can route enrichment through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the PMC OA package
 connector itself is deterministic HTTP plus XML parsing; no LLM is required to
 resolve package or PDF download URLs.
 

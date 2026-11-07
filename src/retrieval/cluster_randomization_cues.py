@@ -4,8 +4,8 @@ Detects advisory cluster-randomized / stepped-wedge / ICC cues from
 title/abstract/methods via deterministic patterns. Never calls the network.
 Distinct from AllocationConcealmentCueExtractor and SampleSizeHintExtractor.
 Fills an Elicit / Consensus / CONSORT-cluster gap.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

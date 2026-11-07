@@ -3,8 +3,8 @@
 ![DataCite related identifiers connector demo](../assets/datacite_related_source.gif)
 
 Use this guide when wiring DataCite related-identifier enrichment into
-**scholar-rag-agent**. The agent can route downstream synthesis through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, but this connector itself is
+**scholar-rag-agent**. The agent can route downstream synthesis through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but this connector itself is
 deterministic JSON; no LLM is required to discover related DOI links.
 
 ## Why DataCite related identifiers
@@ -63,4 +63,4 @@ for document in documents:
   treating them as authoritative relationships.
 - Records without titles are skipped rather than raised.
 - Prefer frontier models for downstream synthesis over related-identifier summaries:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

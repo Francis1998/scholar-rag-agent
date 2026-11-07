@@ -3,8 +3,8 @@
 Deterministic ranking using per-author publication counts and topic/keyword
 overlap with a caller-provided topic query. Fills a Semantic Scholar
 influential-citation / OpenAlex author-topics gap with offline heuristics
-(no LLM or network call). Optional later narrative can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+(no LLM or network call). Optional later narrative can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ class RankedPaper:
 class AuthorExpertiseRanker:
     """Rank papers by author publication count and topic overlap.
 
-    Offline ranker for GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2
+    Offline ranker for GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro
     pipelines — Semantic Scholar influential-citation / OpenAlex author-topics
     gap. Deterministic: identical inputs and ``topic_query`` always yield the
     same ordering. Distinct from citation-count boosters that ignore author

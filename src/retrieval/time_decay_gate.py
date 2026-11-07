@@ -25,8 +25,8 @@ class TimeDecayGate:
     treated as age ``0``. Distinct from :class:`~retrieval.freshness.FreshnessBooster`
     (blended normalized relevance) and
     :class:`~retrieval.recency_half_life.RecencyHalfLifeBooster` (year-only
-    alpha blend). Inputs are not mutated. Local postprocessor for GPT-5.5 /
-    Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 pipelines (not a DOI connector).
+    alpha blend). Inputs are not mutated. Local postprocessor for GPT-6 Astra /
+    Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro pipelines (not a DOI connector).
     """
 
     def __init__(

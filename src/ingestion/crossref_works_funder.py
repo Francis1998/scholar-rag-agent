@@ -11,8 +11,8 @@ DOI URL), the connector applies ``filter=funder:{id}``. Free-text queries use
 returned. Distinct from ``crossref_funder.py``, which resolves funder registry
 entities rather than funded works.
 
-Prefer frontier models for downstream synthesis: GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+Prefer frontier models for downstream synthesis: GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

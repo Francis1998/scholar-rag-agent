@@ -6,8 +6,8 @@
 answering a query before synthesis. It is inspired by LlamaIndex answerability
 checks and Self-RAG "can answer?" gates, but requires no network call or LLM:
 scores are pure term overlap via `retrieval.sparse.meaningful_terms`. Accepted
-evidence can then be handed to GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or
-Kimi K2 for grounded synthesis.
+evidence can then be handed to GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or
+Kimi K3.1 Pro for grounded synthesis.
 
 ## How scoring works
 

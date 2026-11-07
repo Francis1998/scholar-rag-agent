@@ -7,7 +7,7 @@ sub-queries. Inspired by LlamaIndex and Haystack multi-query patterns, the
 splitter is local and deterministic: it uses conjunctions and question marks
 rather than an LLM. The original query is always preserved as the first item so
 fusion stages can keep a full-question baseline. Downstream synthesis can still
-use GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+use GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## Split heuristics
 

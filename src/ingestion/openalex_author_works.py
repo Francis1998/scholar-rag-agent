@@ -10,8 +10,8 @@ Normalizes each work with citation metadata (``source_type=openalex_author_works
 to fill the OpenAlex authors ↔ works citations blend gap. Distinct from
 ``openalex_authors.py`` (author profiles) and ``openalex.py`` (single-work fetch).
 
-Prefer frontier models for downstream synthesis: GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+Prefer frontier models for downstream synthesis: GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

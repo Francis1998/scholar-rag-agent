@@ -8,8 +8,8 @@ the network. Distinct from
 :class:`~retrieval.risk_of_bias_cues.RiskOfBiasCueExtractor`, and
 :class:`~retrieval.effect_size_hint.EffectSizeHintExtractor`.
 Fills an Elicit / Consensus / SciSpace / PaperQA publication-bias gap.
-Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2.
+Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

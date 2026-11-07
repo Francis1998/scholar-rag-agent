@@ -8,8 +8,8 @@ heuristics. Results are ranked by support strength and labeled
 `supported` / `partial` / `unsupported`.
 
 Fills an Elicit / Semantic Scholar claim-table gap with deterministic scoring
-(no LLM or network call). Support labels can seed GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 synthesis. Distinct from `ClaimVerificationGate` (answer
+(no LLM or network call). Support labels can seed GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro synthesis. Distinct from `ClaimVerificationGate` (answer
 claim groundedness) and `CitationGroundednessScorer` (inline citation-marker
 grounding).
 

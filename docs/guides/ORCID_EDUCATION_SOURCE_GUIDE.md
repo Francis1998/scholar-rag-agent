@@ -4,8 +4,8 @@
 
 Use this guide when wiring researcher education affiliations into
 **scholar-rag-agent**. The connector performs deterministic public ORCID JSON
-requests; optional downstream synthesis can use GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+requests; optional downstream synthesis can use GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why ORCID education
 
@@ -55,5 +55,5 @@ for matching profiles.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `orcid`, `education`, `affiliations`, `ror`, `researchers`, `llm`, `python`

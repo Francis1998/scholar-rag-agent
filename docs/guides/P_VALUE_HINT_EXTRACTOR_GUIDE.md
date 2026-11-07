@@ -10,8 +10,8 @@ matched cue string. It never calls the network.
 Distinct from `EffectSizeHintExtractor` (Cohen's d / OR / HR / RR / AUC) and
 `SampleSizeHintExtractor` (N= sample-size integers). Fills an Elicit /
 Consensus / SciSpace / PaperQA p-value surfacing gap with deterministic
-heuristics. Optional later narrative can use GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+heuristics. Optional later narrative can use GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Usage
 

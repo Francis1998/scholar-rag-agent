@@ -3,8 +3,8 @@
 ![Crossref Event Data connector demo](../assets/crossref_events_source.gif)
 
 Use this guide when wiring Crossref Event Data into **scholar-rag-agent**. The
-agent can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 when enabled, but the Event Data connector itself is
+agent can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro when enabled, but the Event Data connector itself is
 deterministic JSON; no LLM is required to discover altmetric-style mentions.
 
 ## Why Crossref Event Data
@@ -85,4 +85,4 @@ for document in documents:
 - Events without a subject title or synthesizable descriptor are skipped rather
   than raised.
 - Prefer frontier models for downstream synthesis over raw event mentions:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

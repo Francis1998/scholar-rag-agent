@@ -7,8 +7,8 @@ reduction / risk difference numeric hints. Never calls the network.
 
 Distinct from `NumberNeededToTreatHintExtractor`, `EffectSizeHintExtractor`,
 and `PValueHintExtractor`. Fills an Elicit / Consensus / SciSpace / PaperQA
-ARR gap. Optional later narrative: **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2**.
+ARR gap. Optional later narrative: **GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro**.
 
 ## Usage
 

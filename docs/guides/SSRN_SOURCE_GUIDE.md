@@ -3,8 +3,8 @@
 ![SSRN preprint connector demo](../assets/ssrn_source.gif)
 
 Use this guide when wiring SSRN preprints into **scholar-rag-agent**. The agent
-can route downstream synthesis through GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x /
-Kimi K2 when enabled, but the SSRN connector itself is deterministic Crossref JSON
+can route downstream synthesis through GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon /
+Kimi K3.1 Pro when enabled, but the SSRN connector itself is deterministic Crossref JSON
 — no LLM is required to discover matching abstracts.
 
 ## Why SSRN via Crossref
@@ -75,4 +75,4 @@ documents = asyncio.run(SsrnConnector().search("10.2139/ssrn.3537853", max_resul
   page before treating them as authoritative.
 - Works outside the `10.2139` prefix are filtered out on single-DOI lookups.
 - Prefer frontier models for downstream synthesis over raw preprint metadata:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

@@ -6,7 +6,7 @@
 relevance score with Jaccard overlap between the query and each chunk. It is
 inspired by hybrid BM25 boost / Haystack keyword-boost stages, but is fully
 local and deterministic via `retrieval.sparse.meaningful_terms`. Re-ranked
-evidence can then feed GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+evidence can then feed GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## How scoring works
 

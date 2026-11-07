@@ -4,8 +4,8 @@
 
 Use this guide when wiring Europe PMC's preprint-only search into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-Europe PMC REST API; optional downstream synthesis can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+Europe PMC REST API; optional downstream synthesis can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why Europe PMC preprints
 
@@ -55,5 +55,5 @@ client-side and excludes anything other than `PPR`.
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `europepmc`, `preprints`, `ppr`, `biorxiv`, `medrxiv`, `llm`, `python`

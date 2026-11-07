@@ -4,8 +4,8 @@
 
 Use this guide when DataCite discovery must be scoped to a DOI registration
 prefix. Discovery is deterministic HTTP against the public DataCite JSON:API;
-optional downstream synthesis can use GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+optional downstream synthesis can use GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 
 ## Why DOI-prefix search
 

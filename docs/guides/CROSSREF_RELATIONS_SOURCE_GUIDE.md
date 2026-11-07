@@ -3,8 +3,8 @@
 ![Crossref relations connector demo](../assets/crossref_relations_source.gif)
 
 Use this guide when wiring Crossref works relation enrichment into
-**scholar-rag-agent**. The agent can route downstream synthesis through GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 when enabled, but this connector itself is
+**scholar-rag-agent**. The agent can route downstream synthesis through GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro when enabled, but this connector itself is
 deterministic JSON; no LLM is required to discover Crossref relation types.
 
 ## Why Crossref relations
@@ -73,4 +73,4 @@ work = asyncio.run(CrossrefRelationsConnector().search("10.5555/example", max_re
 - Works without a usable title are skipped rather than raised.
 - No API key is required for public works search.
 - Prefer frontier models for downstream synthesis over raw relation summaries:
-  **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, **Kimi K2**.
+  **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, **Kimi K3.1 Pro**.

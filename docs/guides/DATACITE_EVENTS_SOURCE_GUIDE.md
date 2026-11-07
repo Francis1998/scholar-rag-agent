@@ -4,8 +4,8 @@
 
 Use this guide when wiring DataCite citation and usage events into
 **scholar-rag-agent**. Discovery is deterministic HTTP against the public
-DataCite Event Data API; enrichment with GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2 is optional after documents are collected.
+DataCite Event Data API; enrichment with GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro is optional after documents are collected.
 
 ## Why DataCite Event Data
 
@@ -52,5 +52,5 @@ DOI-shaped input uses `GET /events?doi=...`; other text uses the API's general
 
 ## Suggested repo metadata
 
-- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 reasoning.
+- **Description:** Agentic scholarly RAG with multi-source ingestion, hybrid retrieval, and GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro reasoning.
 - **Topics:** `rag`, `scholarly`, `datacite`, `citations`, `events`, `doi`, `research-data`, `llm`, `python`

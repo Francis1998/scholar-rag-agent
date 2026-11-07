@@ -7,7 +7,7 @@ Inspired by Adaptive RAG and Self-RAG retrieval tokens, it returns `RETRIEVE`
 or `SKIP` from deterministic lexical cues before any index lookup. This is
 distinct from `SelfRagReflectionGate`, which evaluates evidence quality
 *after* retrieval. When retrieval proceeds, downstream synthesis can use
-GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## Decision policy
 

@@ -4,7 +4,7 @@
 
 Gap fill vs Elasticsearch/Haystack coverage boosts distinct from symmetric Jaccard lexical overlap.
 
-Works with GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 scholarly RAG pipelines.
+Works with GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro scholarly RAG pipelines.
 Not a DOI connector.
 
 ## Usage

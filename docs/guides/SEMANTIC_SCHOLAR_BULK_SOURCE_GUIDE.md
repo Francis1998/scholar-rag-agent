@@ -1,6 +1,6 @@
 # Semantic Scholar Bulk Source Guide
 
-Batch-resolve many Semantic Scholar paper ids in one request — a gap vs single-id fetchers in popular scholarly RAG stacks (paper-qa, llama-index). Downstream synthesis works best with **GPT-5.5**, **Claude Sonnet 4.6**, **Gemini 3.x**, and **Kimi K2**.
+Batch-resolve many Semantic Scholar paper ids in one request — a gap vs single-id fetchers in popular scholarly RAG stacks (paper-qa, llama-index). Downstream synthesis works best with **GPT-6 Astra**, **Claude Opus 5.5**, **Gemini 4 Argon**, and **Kimi K3.1 Pro**.
 
 ![Demo](../assets/semantic_scholar_bulk_source.gif)
 

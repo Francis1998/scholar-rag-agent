@@ -5,7 +5,7 @@
 Offline residual cue extractor.
 Gap vs Elicit/Consensus/Connected Papers healthy-worker residual cue extractors. Distinct from `HealthyWorkerEffectCueExtractor` / `HealthyWorkerSurvivorCueExtractor`.
 
-Stack: **GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2**.
+Stack: **GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro**.
 
 ## Usage
 

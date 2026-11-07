@@ -5,7 +5,7 @@ ids in one request — a common gap vs single-id fetchers used by paper-qa and
 llama-index scholarly loaders. This connector accepts comma/whitespace/newline
 separated paper ids (or DOI:/ARXIV: prefixed ids), posts them to the bulk
 endpoint, and normalizes each hit into a :class:`Document` for agentic RAG
-pipelines synthesizing with GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+pipelines synthesizing with GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

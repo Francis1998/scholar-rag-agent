@@ -7,8 +7,8 @@ from paper titles, abstracts, and years. Papers are greedily clustered into
 themes by keyword Jaccard overlap — fully offline and deterministic.
 
 Fills an Elicit / PaperQA related-work generation gap with reproducible
-scaffolding (no LLM call). Optional later prose drafting can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2. Distinct from
+scaffolding (no LLM call). Optional later prose drafting can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. Distinct from
 `LiteratureReviewOutliner` (section-type routing of ranked hits) and from
 retrieval gates.
 

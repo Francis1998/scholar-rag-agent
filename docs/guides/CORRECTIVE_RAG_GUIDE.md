@@ -5,7 +5,7 @@
 Use `CorrectiveRagGate` after retrieval to prevent weak evidence from flowing
 directly into synthesis. The gate is local and deterministic: it grades lexical
 query coverage without a network or LLM call. Optional downstream stages can
-use GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2 after the gate accepts
+use GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro after the gate accepts
 context.
 
 ## How grading works

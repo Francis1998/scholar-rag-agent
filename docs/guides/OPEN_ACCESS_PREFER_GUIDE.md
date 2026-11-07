@@ -7,7 +7,7 @@ blending an OA signal into the score or by soft-filtering closed hits when any
 OA evidence exists. It is inspired by LlamaIndex/Haystack metadata
 postprocessors and Unpaywall / OpenAlex OA preference in scholarly search, but
 is a local retrieval postprocessor (not a DOI connector). Preferred evidence
-can then feed GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or Kimi K2.
+can then feed GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or Kimi K3.1 Pro.
 
 ## How preference works
 

@@ -6,8 +6,8 @@
 draft answer actually point to evidence that supports the sentence they
 appear in. It is inspired by RAGAS `context_precision` and TruLens
 groundedness metrics, and requires no LLM or network call. Verified answers
-can be refined or explained with GPT-5.5, Claude Sonnet 4.6, Gemini 3.x, or
-Kimi K2.
+can be refined or explained with GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, or
+Kimi K3.1 Pro.
 
 ## How it differs from `ClaimVerificationGate`
 

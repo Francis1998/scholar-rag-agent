@@ -8,8 +8,8 @@ The connector also accepts DOI prefixes through the endpoint's ``prefix``
 parameter, while prioritizing client-id filtering so it remains distinct from
 ``datacite_dois_prefix.py``. Free text can be scoped to a configured client.
 
-Prefer frontier models for downstream synthesis: GPT-5.5 / Claude Sonnet 4.6 /
-Gemini 3.x / Kimi K2.
+Prefer frontier models for downstream synthesis: GPT-6 Astra / Claude Opus 5.5 /
+Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations

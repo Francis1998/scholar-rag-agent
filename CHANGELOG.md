@@ -405,6 +405,7 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Demo GIF gallery and deterministic local demo scripts.
 
 ### Changed
+- Guides, README cue-extractor entries, module docstrings, and three rendered markdown outputs (`LiteratureReviewOutline`, `RelatedWorksOutline`, and `ClaimTrace.to_markdown`) no longer advertise the retired "GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x (or 2.5) / Kimi K2" stack. They now name the provider flagships verified on 2026-11-07: GPT-6 Astra, Claude Opus 5.5, Gemini 4 Argon, and Kimi K3.1 Pro (825 changed lines across 446 files). The 41 test modules that pinned the old names in docstrings and footers assert the current names instead. `tests/test_docs_model_stack_current.py` now fails if retired names (GPT-5.5, GPT-4o, Claude Sonnet/Opus 4.x, Kimi K2, Gemini 2.5) reappear in README/docs prose or `src`/`scripts` sources.
 - README restored to project-specific use cases, demos, architecture, and setup instructions.
 - CI matrix aligned with the Python 3.11+ package requirement.
 - Utility scripts and docs corrected to avoid generated placeholder APIs.

@@ -6,8 +6,8 @@ themes. Distinct from
 :class:`~retrieval.related_works.RelatedWorksComposer` (which *discovers*
 themes by clustering) — this module *audits* coverage against expected themes.
 Fills an Elicit / ResearchRabbit theme-coverage gap with offline, reproducible
-scoring (no LLM call). Optional later narrative drafting can use GPT-5.5 /
-Claude Sonnet 4.6 / Gemini 3.x / Kimi K2.
+scoring (no LLM call). Optional later narrative drafting can use GPT-6 Astra /
+Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro.
 """
 
 from __future__ import annotations
@@ -49,8 +49,8 @@ class SurveyGapFinder:
     For each ``expected_themes`` entry, computes the best Jaccard overlap
     between the theme's meaningful terms and each paper's title+abstract terms.
     Themes whose best score falls below ``coverage_threshold`` are marked
-    ``missing=True``. Offline checklist for GPT-5.5 / Claude Sonnet 4.6 /
-    Gemini 3.x / Kimi K2 — Elicit/ResearchRabbit theme-coverage gap.
+    ``missing=True``. Offline checklist for GPT-6 Astra / Claude Opus 5.5 /
+    Gemini 4 Argon / Kimi K3.1 Pro — Elicit/ResearchRabbit theme-coverage gap.
     Distinct from :class:`~retrieval.related_works.RelatedWorksComposer`.
     """
 
