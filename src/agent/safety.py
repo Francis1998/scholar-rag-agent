@@ -71,8 +71,11 @@ class CancellationToken:
 
 
 async def with_timeout(awaitable: Awaitable[T], timeout_seconds: float, label: str) -> T:
-    """Run an awaitable with a labelled timeout error."""
+    """Label phase deadlines without replacing the operation's own timeout errors."""
+    operation = asyncio.ensure_future(awaitable)
     try:
-        return await asyncio.wait_for(awaitable, timeout=timeout_seconds)
+        return await asyncio.wait_for(operation, timeout=timeout_seconds)
     except TimeoutError as exc:
+        if operation.done() and not operation.cancelled() and operation.exception() is exc:
+            raise
         raise TimeoutError(f"{label} timed out after {timeout_seconds:.1f}s") from exc
