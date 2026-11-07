@@ -460,6 +460,7 @@ instructions or evidence of current scientific performance.
 - [AttritionResidualCueExtractor](guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [ColliderStratificationResidualCueExtractor](guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [HealthyWorkerResidualCueExtractor](guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
+- [SyntheticDiffInDiffResidualCueExtractor](guides/SYNTHETIC_DIFF_IN_DIFF_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [EValueResidualCueExtractor](guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
 - [SelectionBiasResidualCueExtractor](guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
 - [InstrumentalVariableWeakResidualCueExtractor](guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
