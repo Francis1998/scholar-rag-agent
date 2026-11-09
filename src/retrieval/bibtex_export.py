@@ -31,11 +31,35 @@ _ALLOWED_TYPES = frozenset(
         "unpublished",
     }
 )
+# Brace-free control words in a balanced group, so even unmatched braces stay inside the field.
+_UNMATCHED_BRACES = {"{": "{\\textbraceleft}", "}": "{\\textbraceright}"}
 
 
 def _escape(value: str) -> str:
-    """Escape BibTeX special characters in field values."""
-    return value.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
+    """Escape field text so BibTeX's brace counting cannot end a field early.
+
+    BibTeX and Biber count every brace, even after a backslash: matched pairs keep the
+    ``\\{``/``\\}`` escapes, while an unmatched brace becomes a balanced LaTeX group.
+    """
+    unmatched: set[int] = set()
+    opened: list[int] = []
+    for index, character in enumerate(value):
+        if character == "{":
+            opened.append(index)
+        elif character == "}":
+            if opened:
+                opened.pop()
+            else:
+                unmatched.add(index)
+    unmatched.update(opened)
+    return "".join(
+        _UNMATCHED_BRACES[character]
+        if index in unmatched
+        else "\\" + character
+        if character in "\\{}"
+        else character
+        for index, character in enumerate(value)
+    )
 
 
 def _first_meta(metadata: dict[str, str], fields: Sequence[str]) -> str:

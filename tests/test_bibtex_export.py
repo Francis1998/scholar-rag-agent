@@ -9,6 +9,96 @@ from retrieval.bibtex_export import BibTeXExporter
 from retrieval.models import Chunk, Document, SearchResult
 
 CollectionKind = Literal["documents", "chunks", "results"]
+_ENTRY = re.compile(r"@([A-Za-z]+)\s*\{\s*([^\s,{}]+)\s*,")
+_FIELD = re.compile(r"\s*([A-Za-z][\w-]*)\s*=\s*")
+_SEPARATOR = re.compile(r"\s*([,}])")
+_ESCAPE = re.compile(r"\{\\textbrace(left|right)\}|\\([\\{}])")
+# Every title has at least one brace without a partner; several also try to forge fields.
+UNBALANCED_TITLES = [
+    pytest.param("Sets } , author = {Injected Person", id="close-then-braced-author"),
+    pytest.param('Sets } , author = "Injected Person"', id="close-then-quoted-author"),
+    pytest.param("Unclosed { brace", id="unclosed-brace"),
+    pytest.param("} leading and trailing {", id="reversed-pair"),
+    pytest.param("{nested {DNA}} }", id="balanced-group-then-extra-close"),
+    pytest.param("literal \\} after a backslash", id="backslash-before-brace"),
+]
+PARSERS = pytest.mark.parametrize(
+    "backslash_escapes", [False, True], ids=["bibtex-brace-counting", "backslash-escaping"]
+)
+
+
+def _field_value(text: str, position: int, backslash_escapes: bool) -> tuple[str, int]:
+    opening = text[position : position + 1]
+    if opening.isdigit():
+        number = re.compile(r"\d+").match(text, position)
+        assert number is not None
+        return number.group(0), number.end()
+    if opening not in {"{", '"'}:
+        raise ValueError(f"Illegal field value at {position}: {text[position : position + 40]!r}")
+    depth = 0
+    index = position + 1
+    while index < len(text):
+        character = text[index]
+        if backslash_escapes and character == "\\":
+            index += 2
+            continue
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            if depth == 0:
+                if opening == "{":
+                    return text[position + 1 : index], index + 1
+                raise ValueError(f"Unbalanced brace in a quoted value at {index}")
+            depth -= 1
+        elif character == '"' and opening == '"' and depth == 0:
+            return text[position + 1 : index], index + 1
+        index += 1
+    raise ValueError(f"Unterminated field value starting at {position}")
+
+
+def parse_bibtex(
+    text: str, *, backslash_escapes: bool = False
+) -> list[tuple[str, str, dict[str, str]]]:
+    """Read entries like BibTeX/Biber, which count every brace even after a backslash.
+
+    ``backslash_escapes`` instead models importers that treat ``\\{``/``\\}`` as literal
+    characters. As in BibTeX, text between entries is ignored and any "@" starts an entry.
+    """
+    entries = []
+    position = 0
+    while (start := text.find("@", position)) >= 0:
+        header = _ENTRY.match(text, start)
+        if header is None:
+            raise ValueError(f"Malformed entry at {start}: {text[start : start + 40]!r}")
+        fields: dict[str, str] = {}
+        position = header.end()
+        while True:
+            field = _FIELD.match(text, position)
+            if field is None:
+                raise ValueError(
+                    f"Expected a field at {position}: {text[position : position + 40]!r}"
+                )
+            name = field.group(1).lower()
+            if name in fields:
+                raise ValueError(f"Repeated field {name!r}")
+            fields[name], position = _field_value(text, field.end(), backslash_escapes)
+            separator = _SEPARATOR.match(text, position)
+            if separator is None:
+                raise ValueError(
+                    f"Expected , or }} at {position}: {text[position : position + 40]!r}"
+                )
+            position = separator.end()
+            if separator.group(1) == "}":
+                break
+        entries.append((header.group(1).lower(), header.group(2), fields))
+    return entries
+
+
+def decode_bibtex_text(value: str) -> str:
+    """Invert the exporter's text escapes to compare a parsed field with its source."""
+    return _ESCAPE.sub(
+        lambda match: {"left": "{", "right": "}"}.get(match.group(1), match.group(2)), value
+    )
 
 
 def _document(**kwargs: str) -> Document:
@@ -88,6 +178,68 @@ def test_export_chunk_escapes_braces() -> None:
     exporter = BibTeXExporter()
     entry = exporter.export_chunk(_chunk(title="A {braced} title", document_id="doc-brace"))
     assert "title = {A \\{braced\\} title}" in entry
+
+
+@PARSERS
+def test_balanced_braces_keep_their_existing_escapes(backslash_escapes: bool) -> None:
+    title = "Analysis of {DNA} and {{nested}} repair"
+    entry = BibTeXExporter().export_chunk(_chunk(title=title, document_id="doc-dna"))
+    assert "title = {Analysis of \\{DNA\\} and \\{\\{nested\\}\\} repair}" in entry
+    [(_, _, fields)] = parse_bibtex(entry, backslash_escapes=backslash_escapes)
+    assert decode_bibtex_text(fields["title"]) == title
+
+
+@PARSERS
+@pytest.mark.parametrize("title", UNBALANCED_TITLES)
+def test_unbalanced_title_braces_cannot_end_fields_or_swallow_entries(
+    title: str, backslash_escapes: bool
+) -> None:
+    bibliography = BibTeXExporter().export_chunks(
+        [
+            _chunk(chunk_id="c1", document_id="hostile", title=title, year="2024"),
+            _chunk(chunk_id="c2", document_id="next", title="Next paper", year="2023"),
+        ]
+    )
+
+    entries = parse_bibtex(bibliography, backslash_escapes=backslash_escapes)
+
+    assert [(kind, key, sorted(fields)) for kind, key, fields in entries] == [
+        ("misc", "hostile", ["title", "year"]),
+        ("misc", "next", ["title", "year"]),
+    ]
+    assert decode_bibtex_text(entries[0][2]["title"]) == title
+    assert entries[0][2]["year"] == "2024"
+    assert entries[1][2] == {"title": "Next paper", "year": "2023"}
+
+
+@PARSERS
+def test_every_field_keeps_unbalanced_braces_inside_its_own_value(
+    backslash_escapes: bool,
+) -> None:
+    hostile = 'x } , note = "Injected" , y {'
+    entry = BibTeXExporter().export_document(
+        _document(
+            document_id="paper-1",
+            title=f"Title {hostile}",
+            authors=f"Ada Lovelace and {hostile}",
+            year="2024",
+            journal=f"Journal {hostile}",
+            doi=f"10.1000/{hostile}",
+            url=f"https://example.org/{hostile}",
+        )
+    )
+
+    [(kind, _, fields)] = parse_bibtex(entry, backslash_escapes=backslash_escapes)
+
+    assert kind == "article"
+    assert {name: decode_bibtex_text(value) for name, value in fields.items()} == {
+        "title": f"Title {hostile}",
+        "author": f"Ada Lovelace and {hostile}",
+        "year": "2024",
+        "journal": f"Journal {hostile}",
+        "doi": f"10.1000/{hostile}",
+        "url": f"https://example.org/{hostile}",
+    }
 
 
 def test_export_results_dedupes_by_highest_score() -> None:
