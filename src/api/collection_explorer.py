@@ -402,6 +402,18 @@ def _list(page: CollectionPage, options: _ListParameters, root_path: str) -> Ite
             ),
             "Edit collection name and membership",
         )
+        yield _link(
+            f"reviewer-screening-{index}",
+            _url(
+                root_path + "/explore/reviewer-screening",
+                {
+                    "collection_id": collection.collection_id,
+                    "collection_revision": collection.revision,
+                    "collection_return": detail.token(),
+                },
+            ),
+            "Screen independently under your own reviewer label",
+        )
         yield "</article>"
     params = options.parameters()
     yield _pagination(
@@ -620,6 +632,22 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
             },
         ),
         "Most likely relevant first (opt-in order of papers still needing your decision)",
+    )
+    yield '</nav><nav aria-label="Independent dual-reviewer screening">'
+    dual: dict[str, str | int | None] = {
+        "collection_id": snapshot.collection_id,
+        "collection_revision": snapshot.collection_revision,
+        "collection_return": options.token(),
+    }
+    yield _link(
+        "reviewer-screening",
+        _url(root_path + "/explore/reviewer-screening", dual),
+        "Screen independently under your own reviewer label (blind by default)",
+    )
+    yield _link(
+        "screening-conflicts",
+        _url(root_path + "/explore/screening-conflicts", dual),
+        "Team view: reviewer progress, conflicts, resolutions and agreement",
     )
     yield "</nav>"
     yield (

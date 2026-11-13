@@ -10,6 +10,7 @@ from agent.markdown import literal_block
 from retrieval.scope import MAX_DOCUMENT_IDS
 from storage import paper_screening
 from storage.document_catalog import Identity
+from storage.dual_screening import DualReviewSummary, report_summary, summary_markdown
 from storage.paper_collections import CollectionError, CollectionId, Revision
 from storage.paper_screening import (
     Reason,
@@ -166,6 +167,8 @@ class ScreeningReport(BaseModel):
     resolved_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
     needs_review_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
     exclusion_reasons: tuple[ExclusionReasonGroup, ...] = Field(max_length=MAX_DOCUMENT_IDS)
+    # Present only when named reviewers or resolutions exist; omitted from JSON otherwise.
+    dual_review: DualReviewSummary | None = None
 
     @model_validator(mode="after")
     def consistent(self) -> Self:
@@ -189,7 +192,10 @@ class ScreeningReport(BaseModel):
             ) from exc
 
     def to_json(self) -> str:
-        return _bounded(_json(self._validated()) + "\n")
+        data = self._validated().model_dump(mode="json")
+        if data["dual_review"] is None:
+            del data["dual_review"]
+        return _bounded(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
 
     def to_markdown(self) -> str:
         report = self._validated()
@@ -241,6 +247,8 @@ class ScreeningReport(BaseModel):
                     ),
                 ]
             )
+        if report.dual_review is not None:
+            sections.append(summary_markdown(report.dual_review))
         sections.extend(
             [
                 "## Complete source snapshot for audit\n",
@@ -261,10 +269,14 @@ class _ReportOptions(BaseModel):
     format: ScreeningReportFormat = "json"
 
 
-def build_screening_report(snapshot: ScreeningExport) -> ScreeningReport:
+def build_screening_report(
+    snapshot: ScreeningExport, dual_review: DualReviewSummary | None = None
+) -> ScreeningReport:
     """Pure, strict derivation from a complete export; no files, models, network or database."""
     validated, content = _validated_snapshot(snapshot)
-    return ScreeningReport.model_validate({"snapshot": validated, **_summary(validated, content)})
+    return ScreeningReport.model_validate(
+        {"snapshot": validated, **_summary(validated, content), "dual_review": dual_review}
+    )
 
 
 def export_screening_report(
@@ -281,7 +293,14 @@ def export_screening_report(
     download = screening.export_results(
         options.collection_id, collection_revision=options.collection_revision, format="json"
     )
-    report = build_screening_report(ScreeningExport.model_validate_json(download.content))
+    snapshot = ScreeningExport.model_validate_json(download.content)
+    dual_review = report_summary(
+        screening,
+        options.collection_id,
+        collection_revision=options.collection_revision,
+        expected_default={item.document_id: item.review for item in snapshot.items},
+    )
+    report = build_screening_report(snapshot, dual_review)
     content = report.to_json() if options.format == "json" else report.to_markdown()
     extension = "json" if options.format == "json" else "md"
     return ScreeningDownload(

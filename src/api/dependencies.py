@@ -27,6 +27,7 @@ from storage.corpus_drift import SQLiteCorpusDrift
 from storage.document_catalog import SQLiteDocumentCatalog
 from storage.document_chunks import SQLiteDocumentChunks
 from storage.document_store import SQLiteDocumentStore
+from storage.dual_screening import SQLiteDualScreening
 from storage.event_log import SQLiteEventLog
 from storage.evidence_annotations import SQLiteEvidenceAnnotations
 from storage.evidence_export import EvidenceExporter, SQLiteEvidenceReader
@@ -67,6 +68,7 @@ class AppContainer:
         self.paper_collections = SQLitePaperCollections(database_path)
         self.collection_duplicates = SQLiteCollectionDuplicates(database_path)
         self.paper_screening = SQLitePaperScreening(database_path)
+        self.dual_screening = SQLiteDualScreening(self.paper_screening, database_path)
         self.graph_store = SQLiteGraphStore(database_path)
         self.llm = RoutingLLMAdapter(build_model_router(settings))
         self.hybrid_retriever = HybridRetriever(
