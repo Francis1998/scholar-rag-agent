@@ -2,8 +2,10 @@
 
 Guides, module docstrings, and rendered markdown footers used to advertise
 "GPT-5.5 / Claude Sonnet 4.6 / Gemini 3.x / Kimi K2" long after providers moved
-to GPT-6, Claude 5.5, Gemini 4, and Kimi K3.1. Historical records (CHANGELOG,
-daily improvement and PR logs) are exempt; tests are not scanned.
+to GPT-6, Claude 5.5, Gemini 4, and Kimi K3.1. Claude Fable 5.2 superseded
+Fable 5.1 on 2026-11-09, so 5.1 may only be named as its predecessor.
+Historical records (CHANGELOG, daily improvement and PR logs) are exempt;
+tests are not scanned.
 """
 
 from __future__ import annotations
@@ -17,6 +19,8 @@ RETIRED_PROSE = re.compile(
     r"\bGPT-5\.5\b|\bGPT-4o\b|\bClaude\s+(?:Sonnet|Opus)\s+4\.\d\b"
     r"|\bSonnet\s+4\.6\b|\bKimi\s+K2\b(?!\.\d)|\bGemini\s+2\.5\b"
 )
+SUPERSEDED_FABLE = re.compile(r"\bFable\s+5\.1\b|\bclaude-fable-5-1\b")
+CURRENT_FABLE = re.compile(r"\bFable\s+5\.2\b|\bclaude-fable-5-2\b")
 
 EXEMPT = {
     Path("CHANGELOG.md"),
@@ -51,3 +55,15 @@ def test_no_retired_model_stack_in_prose() -> None:
     ]
 
     assert offenders == [], "retired model names in prose:\n" + "\n".join(offenders[:40])
+
+
+def test_superseded_fable_is_named_only_beside_its_successor() -> None:
+    """Lineup prose must not present Claude Fable 5.1 as the current Fable model."""
+    offenders = [
+        f"{path.relative_to(ROOT)}:{lineno}: {line.strip()[:120]}"
+        for path in _prose_files()
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if SUPERSEDED_FABLE.search(line) and not CURRENT_FABLE.search(line)
+    ]
+
+    assert offenders == [], "Fable 5.1 named as current:\n" + "\n".join(offenders[:40])

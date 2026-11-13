@@ -507,6 +507,8 @@ async def test_kimi_explicit_models_keep_stateless_http_contract(
         "claude-sonnet-4-6",
         "claude-haiku-4-5",
         "claude-opus-5-5",
+        "claude-fable-5-2",
+        "claude-haiku-5-5",
         "claude-fable-5-1",
         "custom-anthropic-model",
         "claude-sonnet-5-custom",
@@ -539,6 +541,67 @@ async def test_anthropic_overrides_use_only_exact_model_controls(
     assert len(requests) == 1
     assert response.text == "Grounded answer [c1]."
     assert response.model_name == model
+
+
+@pytest.mark.parametrize("model", ["gemini-4-carbon", "gemini-4-hydrogen", "gemini-4-argon"])
+async def test_gemini_4_speed_overrides_keep_provider_default_thinking(
+    model: str, llm_request: LLMRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Gemini 4 IDs get no sampling or thinking level, so provider defaults apply.
+
+    Hydrogen defaults to ``high`` and rejects ``minimal``; Carbon and Argon default
+    to ``medium``. None of them may receive ``temperature``/``topP``/``topK``.
+    """
+    monkeypatch.setenv("GEMINI_API_KEY", "test-provider-key")
+    monkeypatch.setenv("SCHOLAR_RAG_GEMINI_MODEL", model)
+    adapter = build_model_router(Settings(_env_file=None)).route(TaskType.SPEED)
+    assert isinstance(adapter, GeminiAdapter)
+    llm_request = llm_request.model_copy(update={"task_type": TaskType.SPEED})
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "modelVersion": "server-reported-version",
+                "candidates": [
+                    {
+                        "finishReason": "STOP",
+                        "content": {
+                            "parts": [
+                                {"thought": True, "text": "Private thinking, not answer text."},
+                                {"text": "Grounded answer [c1]."},
+                            ]
+                        },
+                    }
+                ],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        response = await adapter.generate(llm_request)
+
+    [request] = requests
+    assert request.url.path == f"/v1beta/models/{model}:generateContent"
+    assert not request.url.query
+    assert request.headers["x-goog-api-key"] == "test-provider-key"
+    assert json.loads(request.content) == {
+        "contents": [
+            {
+                "parts": [
+                    {"text": f"Context:\n{llm_request.context}\n\nQuestion:\n{llm_request.prompt}"}
+                ]
+            }
+        ]
+    }
+    assert response == LLMResponse(
+        text="Grounded answer [c1].",
+        citation_chunk_ids=["c1"],
+        raw_provider="gemini",
+        model_name=model,
+    )
 
 
 @pytest.mark.parametrize(
