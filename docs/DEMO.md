@@ -57,6 +57,18 @@ a **generated illustration of executed output**, not browser footage or a
 benchmark on real literature; the [measured transcript](assets/screening-priority.txt)
 is the text alternative.
 
+## Independent dual-reviewer screening
+
+[![Executed synthetic dual-reviewer screening, not browser footage](assets/dual-reviewer-screening.png)](assets/dual-reviewer-screening.gif)
+
+The [complete browser/API/Python guide](guides/DUAL_REVIEWER_SCREENING_GUIDE.md)
+reproduces two simulated reviewers screening 12 synthetic papers blind through the
+real API, the refused team view, per-paper lifting, an explicit unblinding, three
+conflicts, two append-only resolutions and the agreement report (kappa 0.532, 95% CI
+0.103 to 0.962, PABAK 0.625). No models or network run. This is a **generated
+illustration of executed output**, not browser footage; the
+[measured transcript](assets/dual-reviewer-screening.txt) is the text alternative.
+
 ## Native saved-run comparison workbench
 
 [![Measured synthetic comparison preview, not browser footage](assets/saved-run-comparison-workbench.png)](assets/saved-run-comparison-workbench.gif)

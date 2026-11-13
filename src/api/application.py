@@ -23,6 +23,8 @@ from api.comparisons import router as comparisons_router
 from api.corpus_drift import router as corpus_drift_router
 from api.dependencies import create_container
 from api.documents import router as documents_router
+from api.dual_screening import router as dual_screening_router
+from api.dual_screening_explorer import router as dual_screening_explorer_router
 from api.evidence import router as evidence_router
 from api.explorer import router as explorer_router
 from api.notebook_export import router as notebook_export_router
@@ -139,11 +141,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(collection_creation_router)
     application.include_router(collection_editing_router)
     application.include_router(screening_explorer_router)
+    application.include_router(dual_screening_explorer_router)
     application.include_router(collections_router)
     application.include_router(collection_duplicates_router)
     application.include_router(screening_router)
     application.include_router(screening_report_router)
     application.include_router(screening_priority_router)
+    application.include_router(dual_screening_router)
     application.include_router(evidence_router)
     application.include_router(bibliography_router)
     application.include_router(runs_router)

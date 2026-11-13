@@ -333,6 +333,27 @@ _PRIORITY_FOOTER = (
     "<p>IDs are JSON strings: decode quotes and escapes before using a raw ID. Reread this "
     "page after each decision; separate reads are not one snapshot.</p></footer></body></html>"
 )
+_DUAL_REVIEW_FOOTER = (
+    "</main><footer><h2>Independent human opinions, pseudonymous labels</h2>"
+    "<p>Only an explicit form POST records one reviewer decision, one resolution or one "
+    "protocol change; GET never writes. Resolutions are appended beside the reviewer "
+    "decisions they resolve and never rewrite them. Nothing here retrieves, generates, runs a "
+    "model or writes agent events, and no decision is suggested or preselected.</p>"
+    "<p>Reviewer labels are pseudonymous workflow names, not authenticated identities: use "
+    "codes such as r1 or reviewer-b, never names, emails or other personal data. Blind mode "
+    "is a guard against accidental unblinding, not access control. Anyone who can reach this "
+    "unauthenticated service can open another label's page or the unlabeled default pages, "
+    "and the database itself is not blinded.</p>"
+    "<p>Keep the app on loopback or behind your own access controls with trusted host/proxy "
+    "configuration. Exact Origin checks block cross-origin browser form submissions, not "
+    "direct clients, malicious local processes or DNS rebinding. POST keeps reasons out of "
+    "redirect URLs, not browser resubmission state or logs; labels and IDs remain in URLs. "
+    "These pages use same-origin referrer policy. No-store cannot prevent saving or "
+    "screenshots.</p>"
+    "<p>No scripts, external resources, analytics, cookies or browser storage are used. Exact "
+    "IDs are JSON strings: decode quotes and escapes once. Separate reads are not one frozen "
+    "snapshot; reread after every write.</p></footer></body></html>"
+)
 _ANNOTATION_FOOTER = (
     "</main><footer><h2>Frozen evidence, explicit human opinions</h2>"
     "<p>Opening and previewing never write. Only Save annotation appends one immutable opinion "
@@ -428,6 +449,7 @@ def _page(
     editing: bool = False,
     retrieval: bool = False,
     prioritization: bool = False,
+    dual_review: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -476,7 +498,11 @@ def _page(
         subject = "SCREENING PRIORITIZATION"
         description = "Order papers that still need your decision; the order never decides."
         footer = _PRIORITY_FOOTER
-    writes = screening or annotation or review or creation or editing
+    if dual_review:
+        subject = "INDEPENDENT DUAL REVIEW"
+        description = "Screen blind under your own label; unblind deliberately to resolve."
+        footer = _DUAL_REVIEW_FOOTER
+    writes = screening or annotation or review or creation or editing or dual_review
     mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
@@ -520,6 +546,7 @@ def _error(
     editing: bool = False,
     retrieval: bool = False,
     prioritization: bool = False,
+    dual_review: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -543,6 +570,7 @@ def _error(
         editing=editing,
         retrieval=retrieval,
         prioritization=prioritization,
+        dual_review=dual_review,
     )
 
 

@@ -48,6 +48,9 @@ PDF-upload UI.
 
 ## Choose a workflow
 
+New: two or more reviewers can [screen the same collection blind under pseudonymous
+labels, resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
+
 | What you can do | Integrated path | Next guide |
 | --- | --- | --- |
 | Explore a corpus you own or may process | Ingest text, ask a question, inspect source IDs and snippets | [Quickstart](QUICKSTART.md) |
@@ -65,6 +68,7 @@ PDF-upload UI.
 | Retrieve only current human-included papers | Pass a revision-checked `screened_collection` directly to preview/query; reject empty or stale selections without widening scope | [API/Python handoff, full guide and executed GIF](docs/guides/SCREENED_COLLECTION_GUIDE.md) |
 | Record a human screening decision in a normal browser | Open an exact member/revision, read local paper/source links, explicitly submit a reasoned opinion, and recover append-only history after restart | [Native screening workbench: user/API/Python/portfolio guide](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md) |
 | Screen the most likely relevant papers first | Opt in to a local TF-IDF + Naive Bayes order of still-pending members, learned from your current includes/excludes, with per-paper scores and contributing terms; it never decides | [Screening prioritization: browser/API/Python guide, simulation and executed GIF](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md) |
+| Screen with two independent, blind reviewers | Record decisions under pseudonymous labels, stay blind to others until you decide each paper, list conflicts, append resolutions that become final decisions, and report Cohen's kappa with a 95% CI, PABAK and PRISMA-style counts | [Dual-reviewer screening: browser/API/Python guide and executed GIF](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md) |
 | Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
 | Save an auditable human screening progress report | Download complete JSON/literal Markdown with resolved/pending totals and exact exclusion-reason membership, derived from one export without models or writes | [Human progress report: browser/API/Python/portfolio guide and executed illustration](docs/guides/SCREENING_REPORT_GUIDE.md) |
@@ -172,6 +176,33 @@ formulas, the API, cold start, limits and an ASReview/Covidence/Rayyan compariso
 The opt-in GIF is a **generated illustration of executed output**, not browser
 footage; the [measured transcript](docs/assets/screening-priority.txt) is the text
 alternative.
+
+## Screen independently with two blind reviewers
+
+[![Executed synthetic dual-reviewer screening: blind queues, conflicts, an append-only resolution and Cohen's kappa](docs/assets/dual-reviewer-screening.png)](docs/assets/dual-reviewer-screening.gif)
+
+On a saved collection, each person chooses **Screen independently under your own
+reviewer label** and decides every paper under a pseudonymous label such as `r1`.
+Blind mode is on by default: until you decide a paper, your queue, decision form,
+history and prioritized order reveal nothing about other reviewers' decisions on it,
+and the team views are refused. A lead then turns blind mode off deliberately,
+reviews the **conflicts** and records an **append-only resolution** that becomes the
+paper's final decision without rewriting either reviewer's decision.
+
+`GET /collections/{collection_id}/screening-agreement` reports confusion counts,
+observed agreement, Cohen's kappa with a 95% CI (Fleiss-Cohen-Everitt standard error),
+PABAK and the Landis-Koch band (with its caveat) as JSON, Markdown or CSV, and the
+existing progress report gains PRISMA-style team counts. In the synthetic demo two
+reviewers agree on 9 of 12 papers: kappa 0.532 (95% CI 0.103 to 0.962), PABAK 0.625;
+resolving two conflicts leaves those numbers unchanged. Existing unlabeled decisions
+keep working as the reviewer `default` through additive tables.
+
+The [complete guide](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md) covers exactly what
+blind mode hides and when it lifts, the API, formulas, limits and a Covidence, Rayyan,
+ASReview and Cochrane/PRISMA comparison. Labels are not authentication and blind mode is
+not access control. The opt-in GIF is a **generated illustration of executed output**,
+not browser footage; the [measured transcript](docs/assets/dual-reviewer-screening.txt)
+is the text alternative. No models, retrieval or network calls are involved.
 
 ## Browse papers and passages without generating
 

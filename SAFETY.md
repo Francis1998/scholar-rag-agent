@@ -357,6 +357,31 @@ resubmission state, logs or screenshots. No scripts/external assets, models,
 retrieval or agent events run. See the [complete native browser, API and
 Python contract](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md).
 
+### Independent dual-reviewer screening
+
+Reviewer labels are **pseudonymous workflow names, not identities**. The validator only
+accepts 1-32 lowercase ASCII letters, digits, `.`, `_` and `-`, so names with spaces and
+email addresses are rejected rather than normalized; do not encode a person in a label
+and keep any label-to-person mapping outside this tool. `default` is reserved for
+existing unlabeled decisions. Reasons and resolution rationales are append-only: later
+edits do not erase earlier text, so never enter credentials or personal data.
+
+Blind mode is a **guard against accidental unblinding, not access control**. While it is
+on, reviewer responses omit every other reviewer's decision, reason, revision, timestamp,
+existence, conflict, resolution and team outcome for members the reviewer has not
+decided at the current collection revision, and team routes return 409. There is no
+authentication: anyone who can reach the service can request another label's pages, the
+unlabeled `default` pages or read SQLite directly. The `blinded` flag records only what
+the server enforced for that label at write time, not what a person saw. Turning blind
+mode off is an explicit, revision-checked protocol write; requests cannot unblind.
+
+Resolutions never rewrite or delete reviewer decisions and never change kappa; outdated
+resolutions stay visible. Agreement statistics, Landis-Koch bands and PRISMA-style counts
+describe recorded human opinions, not scientific validity or a PRISMA flow diagram. No
+model, retrieval, network or agent event is involved, and native writes reuse the same
+Origin, encoding and size checks as the screening workbench. See the
+[dual-reviewer guide](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
+
 ## Read-only collection browser
 
 `/explore/collections` and `/explore/collection` expose existing metadata, not

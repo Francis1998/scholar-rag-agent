@@ -70,6 +70,7 @@ ID and numeric revision; untrusted names never enter headers.
 | `exclusion_reasons` | Only members whose **current status** is `exclude`; each group has original `reason`, `count` and exact `document_ids` |
 | `snapshot.included_document_ids` | Only current includes; stale includes are never activated |
 | `snapshot_sha256` | SHA-256 of the complete source export's UTF-8 bytes: `snapshot.model_dump_json(indent=2) + "\n"` |
+| `dual_review` | Present only when the collection has labeled reviewer decisions or resolutions: protocol, per-label progress and, once blind mode is off, team counts, conflicts and agreement; see the [dual-reviewer guide](DUAL_REVIEWER_SCREENING_GUIDE.md#prisma-style-counts-and-the-progress-report) |
 
 Reasons group by **exact Python/Unicode string equality**. Case, whitespace,
 multiline text and normalization forms are not folded, trimmed or merged.
@@ -91,6 +92,9 @@ The existing `SQLitePaperScreening.export_results(..., format="json")` runs
 once per report request. It validates and reads all membership, current labels
 and latest reviews in one bounded SQLite transaction. Serialization and grouping
 use only those copied values; no second collection, queue or history read occurs.
+Only when labeled reviewer decisions or resolutions exist, the optional `dual_review`
+section is read in a second snapshot immediately afterwards; the report fails with 409
+`screening_report_snapshot_changed` if the unlabeled decisions differ between the two.
 
 Collection revisions bind name/membership, **not later decision edits or corpus
 contents**. Two downloads at the same revision can legitimately differ after
