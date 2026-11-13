@@ -43,9 +43,10 @@ Preview retrieves without any live or fake generator or event writes.
 For optional live generation, consult the dated, official-source-linked
 [provider guide](PROVIDER_MODELS_GUIDE.md) for current model choices and defaults. The
 [official Claude catalog](https://platform.claude.com/docs/en/models/overview),
-rechecked **2026-09-22**, recommends Opus 5.5 for most workloads and Fable 5.1
-for demanding reasoning and long-horizon agentic work. Collections make no
-model-default changes, availability promises, or inference-quality claims.
+rechecked **2026-11-12**, recommends Opus 5.5 for most workloads and
+Fable 5.2 (superseding Fable 5.1) for demanding reasoning and long-horizon
+agentic work. Collections make no model-default changes, availability promises,
+or inference-quality claims.
 
 ## Fresh offline setup
 

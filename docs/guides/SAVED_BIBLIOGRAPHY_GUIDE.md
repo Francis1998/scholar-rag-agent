@@ -449,7 +449,7 @@ not PaperQA's metadata fetching or generation pipeline.
 The runtime remains custom Observe-Decide-Act with FastAPI, Pydantic, HTTPX,
 SQLite, lexical hash vectors/BM25, and lexical reranking, not learned semantic
 embeddings or a new agent framework. The [provider guide](PROVIDER_MODELS_GUIDE.md)
-records the 2026-09-29 official model-catalog check and compatibility caveats.
-Existing defaults and provider payloads are unchanged; in particular, selecting
-Sonnet 5.5 is not a validated migration of the retained Sonnet 5 thinking/output
-budget contract. Bibliography export calls no model of either version.
+records the dated official model-catalog checks, most recently on 2026-11-12, and
+compatibility caveats, including the Sonnet 5.5 thinking/output budget contract
+of the current Anthropic default. Bibliography export calls no model and changes
+no default or provider payload.

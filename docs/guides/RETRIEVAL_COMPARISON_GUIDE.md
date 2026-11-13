@@ -324,8 +324,9 @@ actually have reference judgments and want retrieval metrics.
 
 No model is called here. Optional **subsequent generation** uses the unchanged
 defaults and routing documented in the [provider guide](PROVIDER_MODELS_GUIDE.md).
-Its **2026-10-08 America/Los_Angeles** catalog-only refresh covers GPT-6 Astra
-(flagship), GPT-6.1 Sol (intelligence/cost), GPT-6 Luna (high volume);
-Anthropic Fable 5.1, Opus 5.5, Sonnet 5.5 and the additional Haiku 5.5 option;
-Gemini 3.8 Flash GA; and Kimi K3. This does not change selected defaults,
-redate migration-contract checks, or claim live inference/account entitlement.
+Its **2026-11-12 America/Los_Angeles** catalog-only refresh covers GPT-6 Astra
+(flagship), GPT-6.1 Sol (intelligence/cost), GPT-6.1 Terra, GPT-6 Luna (high volume);
+Anthropic Fable 5.2 (new), Opus 5.5, Sonnet 5.5 and the additional Haiku 5.5 option;
+Gemini 4 Carbon, Argon, and Hydrogen plus Gemini 3.8 Flash; and Kimi K3.1 Pro.
+This does not change selected defaults, redate migration-contract checks, or
+claim live inference/account entitlement.

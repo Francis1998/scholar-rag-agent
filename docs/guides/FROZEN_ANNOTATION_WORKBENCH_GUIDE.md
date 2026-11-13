@@ -273,13 +273,13 @@ claims. All captured source text and screenshots here are original synthetic wor
 
 The surrounding stack remains Python 3.11+, FastAPI/Pydantic, SQLite, explicit
 frozen-evidence contracts and optional routed generation. Model catalogs checked
-**2026-10-27, America/Los_Angeles**: [OpenAI](https://developers.openai.com/api/docs/models.md)
+**2026-11-12, America/Los_Angeles**: [OpenAI](https://developers.openai.com/api/docs/models.md)
 lists GPT-6 Astra flagship, GPT-6.1 Sol balanced, GPT-6 Luna volume, and GPT-6.1
 Terra as another catalog option (not a release-date or live-compatibility claim);
 [Anthropic](https://platform.claude.com/docs/en/models/overview) lists Opus 5.5
-recommended, Fable 5.1 demanding, and Sonnet/Haiku 5.5;
-[Google](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) lists Gemini
-4 Argon flagship; [Kimi](https://platform.kimi.ai/docs/models) lists Kimi K3.1
+recommended, Fable 5.2 demanding (superseding Fable 5.1), and Sonnet/Haiku 5.5;
+[Google](https://aistudio.google.com/docs/models) lists Gemini 4 Carbon, Argon,
+and the new Hydrogen; [Kimi](https://platform.kimi.ai/docs/models) lists Kimi K3.1
 Pro/highspeed flagship. The selected live defaults remain **GPT-6 Astra,
 Sonnet 5.5, Gemini 3.8 Flash for SPEED, and Kimi K3.1 Pro**; catalog alternatives
 are not claims of tested adapter compatibility or newly selected endpoints.

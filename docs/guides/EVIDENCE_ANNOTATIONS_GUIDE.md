@@ -363,10 +363,11 @@ and [ASReview's persistent screening notes](https://asreview.readthedocs.io/en/l
 These are inspiration, not dependencies, copied implementations/assets, or
 claims of equivalent UI, automation, active learning, or semantic validation.
 
-Today's official catalog check is recorded separately in the
+The latest official catalog check, on **2026-11-12**, is recorded separately in the
 [provider guide](PROVIDER_MODELS_GUIDE.md): OpenAI `gpt-6-astra` / `gpt-6.1-sol` /
-`gpt-6-luna`, Anthropic Sonnet 5.5 / Opus 5.5 / Fable 5.1, GA Gemini 3.8 Flash,
-and Kimi K3. Defaults and separately dated migration-contract checks are
-unchanged, including Sonnet 5.5's no-tools `between_tools` / medium-effort path.
+`gpt-6-luna`, Anthropic Sonnet 5.5 / Opus 5.5 / Fable 5.2, Gemini 4 Carbon /
+Argon / Hydrogen and Gemini 3.8 Flash, and Kimi K3.1 Pro. Defaults and
+separately dated migration-contract checks are unchanged, including
+Sonnet 5.5's no-tools `between_tools` / medium-effort path.
 Annotations require no provider or credentials; catalog documentation does not
 establish live inference compatibility or account entitlement.

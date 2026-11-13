@@ -229,8 +229,8 @@ without tools this preserves text-only output within the unchanged
 `max_tokens=1024` cap. This cap is not enough for every answer. To roll back,
 set `SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5` and restart the application:
 that exact legacy ID still receives `thinking: {"type": "disabled"}` and no
-effort override. All other IDs receive neither control, not a compatibility
-guarantee for arbitrary models.
+effort override. All other IDs, including `claude-fable-5-2`, receive neither
+control, not a compatibility guarantee for arbitrary models.
 
 API synthesis requests use REASONING routing, preferring Anthropic when its key
 is configured. SPEED prefers Gemini, COST prefers Kimi, and DEFAULT uses
@@ -244,10 +244,15 @@ Gemini/Kimi providers still handle SPEED/COST.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were checked again on **2026-10-28 America/Los_Angeles**;
-Google now names `gemini-4-argon` as its latest flagship, while this repository
-retains `gemini-3.8-flash` for its SPEED route. OpenAI's `gpt-6.1-terra` is an
-optional text-model override here, not a replacement for `gpt-6-astra`.
+All four official model catalogs were read again on **2026-11-12 America/Los_Angeles**.
+Anthropic now lists `claude-fable-5-2`, which supersedes `claude-fable-5-1`. Google
+lists `gemini-4-carbon` (its strongest reasoning model), `gemini-4-argon`, and the
+new `gemini-4-hydrogen`, its recommended upgrade from Gemini 3.8 Flash. This
+repository retains `claude-sonnet-5-5` for REASONING and `gemini-3.8-flash` for
+its SPEED route; Fable 5.2 and Hydrogen are opt-in overrides, as explained in the
+[defaults decision](docs/guides/PROVIDER_MODELS_GUIDE.md#defaults-decision-for-the-2026-11-12-lineup).
+OpenAI's `gpt-6.1-terra` is an optional text-model override here, not a
+replacement for `gpt-6-astra`.
 Its tool calling requires Responses; selecting the ID does not add Responses,
 image input, or tools to this adapter. The
 [selection checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
@@ -279,8 +284,10 @@ Gemini still uses `generateContent`, not the current Interactions quickstart.
 Google rejects unrestricted standard keys; auth keys and appropriately restricted
 standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 Setting an API key header does not migrate the endpoint or the key's permissions.
-An Argon model override does not add long-decode continuation or adopt Google's
-longer timeout recommendations. HTTPX network-operation timeouts remain 60 seconds;
+A Gemini 4 (Carbon, Argon, or Hydrogen) model override does not add long-decode
+continuation or adopt Google's longer timeout recommendations. It sends no
+thinking level, so each model's documented default applies (`high` for Hydrogen,
+`medium` for Carbon and Argon). HTTPX network-operation timeouts remain 60 seconds;
 the reasoning-phase deadline remains 60 seconds by default, including retries
 and waits. See the same compatibility notes before choosing an alternative.
 

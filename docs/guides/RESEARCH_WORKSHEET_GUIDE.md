@@ -457,15 +457,15 @@ It does not require LangGraph, a learned embedding model, or a new provider SDK.
 
 For this CSV addition, **indexed primary-source documentation was checked on
 2026-11-06 America/Los_Angeles**, not live inference or authenticated catalog
-APIs. Direct OpenAI page retrieval failed DNS resolution; the official indexed
-catalog supplied the following current context:
+APIs. The catalogs were read directly again on **2026-11-12 America/Los_Angeles**;
+the table shows that current context:
 
 | Provider primary source | Current catalog context checked |
 | --- | --- |
 | [OpenAI](https://developers.openai.com/api/docs/models) | Recommends GPT-6 Astra for complex reasoning/coding; GPT-6.1 Sol, GPT-6.1 Terra and GPT-6 Luna alternatives |
-| [Anthropic](https://platform.claude.com/docs/en/models/overview) | Recommends Claude Opus 5.5 for most workloads and Fable 5.1 for demanding long-horizon work; also lists Sonnet 5.5 and Haiku 5.5 |
-| [Google](https://aistudio.google.com/docs/models) | Lists Gemini 4 Argon as flagship and Gemini 3.8 Flash |
-| [Kimi](https://platform.kimi.ai/docs/models) | Lists K3.1 Pro and K3.1 Pro Highspeed; K3 is previous-generation. K2.7 Code/K2.6 are restricted to users registered before November 1, with retirement expected late December 2026 |
+| [Anthropic](https://platform.claude.com/docs/en/models/overview) | Recommends Claude Opus 5.5 for most workloads and Claude Fable 5.2 (superseding Fable 5.1) for demanding long-horizon work; also lists Sonnet 5.5 and Haiku 5.5 |
+| [Google](https://aistudio.google.com/docs/models) | Lists Gemini 4 Carbon (strongest reasoning), Gemini 4 Argon, the new Gemini 4 Hydrogen (recommended upgrade from 3.8 Flash), and Gemini 3.8 Flash |
+| [Kimi](https://platform.kimi.ai/docs/models) | Lists K3.1 Pro and K3.1 Pro Highspeed; K3 is previous-generation. K2.7 Code/K2.6 are closed to new users, with retirement of all K2 models planned by the end of December 2026 |
 
 These are documentation observations, not compatibility, entitlement, model
 quality or benchmark claims. This PR changes **no configured model defaults**.

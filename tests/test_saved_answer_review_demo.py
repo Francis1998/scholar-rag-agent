@@ -139,7 +139,7 @@ def test_guide_discovery_and_comparative_limits_are_explicit() -> None:
         "https://docs.langchain.com/langsmith/annotation-queues",
         "2026-10-27",
         "GPT-6 Astra",
-        "Claude Fable 5.1",
+        "Claude Fable 5.2",
         "Opus 5.5",
         "Sonnet 5.5",
         "Haiku 5.5",

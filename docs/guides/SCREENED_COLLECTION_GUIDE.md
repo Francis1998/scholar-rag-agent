@@ -30,13 +30,13 @@ hand-written Observe -> Decide -> Act state machine. Selection itself has no
 model calls; `/retrieve` has neither fake/live generation nor event writes.
 `/query` uses the existing routed generator and durable evidence capture.
 
-Official catalogs were rechecked **2026-10-26 America/Los_Angeles**:
-[OpenAI](https://developers.openai.com/api/docs/guides/latest-model) lists
+Official catalogs were rechecked **2026-11-12 America/Los_Angeles**:
+[OpenAI](https://developers.openai.com/api/docs/models) lists
 GPT-6 Astra, GPT-6.1 Sol, and GPT-6 Luna;
-[Anthropic](https://platform.claude.com/docs/en/models/overview) lists Fable 5.1
+[Anthropic](https://platform.claude.com/docs/en/models/overview) lists Fable 5.2 (superseding Fable 5.1)
 and Opus/Sonnet/Haiku 5.5;
-[Google](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) identifies
-Gemini 4 Argon as its flagship; and
+[Google](https://aistudio.google.com/docs/models) lists Gemini 4 Carbon, Argon,
+and the new Hydrogen; and
 [Kimi](https://platform.kimi.ai/docs/get-your-api-key.md) recommends K3.1 Pro,
 with a Highspeed variant. This feature changes none of the selected
 `gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`, and `kimi-k3.1-pro`

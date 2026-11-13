@@ -385,14 +385,14 @@ state machine, not LangGraph or a hosted vector database.
 All live adapters are stateless, single-turn text adapters. Selecting a model
 ID adds no tools, streaming, multimodal input, or reasoning-state replay.
 The selected defaults remain unchanged. Official documentation reviewed
-**2026-10-30 America/Los_Angeles** provides catalog context, not live inference:
+**2026-11-12 America/Los_Angeles** provides catalog context, not live inference:
 
 | Official source | Relevant distinction |
 | --- | --- |
 | [OpenAI model catalog](https://developers.openai.com/api/docs/models.md) | Astra is the flagship; Sol, Terra, and Luna have different documented positioning, not measured tradeoffs here. |
 | [GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra.md) | Text Chat Completions is supported; tools require Responses. Its reasoning-effort options do not create an effort setting in this repository. |
-| [Anthropic model overview](https://platform.claude.com/docs/en/models/overview) | Generally recommends Opus 5.5 and lists Fable/Sonnet/Haiku; this repository still selects Sonnet 5.5. |
-| [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon) | Latest flagship; the existing SPEED choice remains Gemini 3.8 Flash, not an automatic upgrade. |
+| [Anthropic model overview](https://platform.claude.com/docs/en/models/overview) | Generally recommends Opus 5.5 and lists Fable 5.2 (new), Sonnet 5.5, and Haiku 5.5; this repository still selects Sonnet 5.5. |
+| [Gemini models](https://aistudio.google.com/docs/models) | Lists Gemini 4 Carbon, Argon, and Hydrogen; [Hydrogen](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) is Google's recommended upgrade from 3.8 Flash, but the existing SPEED choice remains Gemini 3.8 Flash, not an automatic upgrade. |
 | [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md) | Recommends K3.1 Pro and describes a high-speed variant; the variant is not an automatic fallback. |
 
 This review does not redate earlier migration-contract checks in the
