@@ -174,6 +174,35 @@ def test_export_document_article_with_doi() -> None:
     assert "doi = {10.1000/xyz}" in entry
 
 
+@pytest.mark.parametrize(
+    ("authors", "expected"),
+    [
+        # bioRxiv/medRxiv connectors store the API's "Family, Initials; ..." string verbatim.
+        pytest.param("Doe, J.; Smith, A.", ["Doe, J.", "Smith, A."], id="biorxiv-list"),
+        pytest.param(
+            "Moss, T. J.; Piha-Paul, S.; Mills Shaw, K. R.",
+            ["Moss, T. J.", "Piha-Paul, S.", "Mills Shaw, K. R."],
+            id="biorxiv-compound-names",
+        ),
+        pytest.param("Lee, B.", ["Lee, B."], id="biorxiv-single-author"),
+        pytest.param("Doe, J. | Smith, A.", ["Doe, J.", "Smith, A."], id="pipe-separated"),
+        pytest.param(
+            "Doe, J.-P., Smith, A. B.", ["Doe, J.-P.", "Smith, A. B."], id="comma-only-initials"
+        ),
+        pytest.param(
+            "Ada Lovelace, Alan Turing", ["Ada Lovelace", "Alan Turing"], id="comma-full-names"
+        ),
+        pytest.param("Lovelace A, Hopper G", ["Lovelace A", "Hopper G"], id="europe-pmc-string"),
+    ],
+)
+def test_author_lists_keep_family_given_names_together(authors: str, expected: list[str]) -> None:
+    entry = BibTeXExporter().export_document(_document(authors=authors, year="2024"))
+
+    [(_, _, fields)] = parse_bibtex(entry)
+
+    assert decode_bibtex_text(fields["author"]).split(" and ") == expected
+
+
 def test_export_chunk_escapes_braces() -> None:
     exporter = BibTeXExporter()
     entry = exporter.export_chunk(_chunk(title="A {braced} title", document_id="doc-brace"))
