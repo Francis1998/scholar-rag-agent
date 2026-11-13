@@ -237,13 +237,16 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-10-28 America/Los_Angeles** four-provider catalog recheck,
+for the **2026-11-12 America/Los_Angeles** four-provider catalog review and
+[verified lineup](guides/PROVIDER_MODELS_GUIDE.md#model-lineup-verified-2026-11-12),
 the separate **2026-10-24 America/Los_Angeles** Kimi K3.1 migration-contract check,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
-and model-specific limitations. Google's latest flagship is now `gemini-4-argon`;
-the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol,
-6.1 Terra, and Anthropic Haiku 5.5 are catalog alternatives, not live
-adapter-compatibility claims. OpenAI documents Chat Completions without tools
+and model-specific limitations. Google's Gemini 4 lineup is now `gemini-4-carbon`,
+`gemini-4-argon`, and the new `gemini-4-hydrogen`, its recommended upgrade from
+3.8 Flash; the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol,
+6.1 Terra, Anthropic Haiku 5.5 and Fable 5.2, and Gemini 4 Hydrogen are catalog
+alternatives, not live adapter-compatibility claims. OpenAI documents Chat
+Completions without tools
 for [6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) and
 [6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra); tool use
 requires Responses, which this adapter does not implement. Terra's supported
@@ -252,7 +255,8 @@ Selecting Terra adds no vision, computer use, or reasoning-state replay.
 All selected defaults, including `kimi-k3.1-pro`, endpoints, routing, and budgets remain unchanged by
 this catalog recheck.
 
-Selecting Argon does not implement its long-decode loop or background execution.
+Selecting a Gemini 4 model (Carbon, Argon, or Hydrogen) does not implement its
+long-decode loop or background execution, and sends no thinking level.
 Google recommends longer client timeouts for that workload; this repository
 keeps 60-second HTTPX network-operation timeouts and a 60-second reasoning-phase
 deadline by default, including retries and waits. A slow or unfinished response
@@ -277,8 +281,9 @@ without up-front thinking or beta headers. Sonnet 5.5 rejects the older
 The output cap remains `max_tokens=1024` per attempt; no token-budget or effort
 environment setting is added. Longer answers can still be explicitly truncated
 and fail rather than trigger a larger-budget call or automatic continuation.
-The catalog's generally recommended Opus 5.5 and demanding-work Fable 5.1 use
-always-on thinking, which can exhaust this total budget before final answer text.
+The catalog's generally recommended Opus 5.5 and demanding-work Fable 5.2 (superseding Fable 5.1)
+use always-on thinking, which can exhaust this total budget before final answer
+text; Fable 5.2 defaults to `high` effort.
 
 To restore the previous Sonnet contract:
 
@@ -288,7 +293,8 @@ export SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5
 
 Restart the application after changing settings. That exact ID retains
 `thinking: {"type": "disabled"}` without an effort override. All other older,
-custom, Opus, or Fable IDs receive neither Sonnet-specific control.
+custom, Opus, or Fable IDs, including `claude-fable-5-2`, receive neither
+Sonnet-specific control.
 To return to the new default, remove overrides from both the environment and
 `.env`, or explicitly set `claude-sonnet-5-5`; explicit `Settings(...)` arguments
 still take precedence. Neither these settings nor offline contract tests check

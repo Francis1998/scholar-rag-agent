@@ -1,15 +1,15 @@
 # Provider Models and Compatibility
 
-**Catalog review: 2026-11-06 America/Los_Angeles.** The official
-[OpenAI models](https://developers.openai.com/api/docs/models) and
-[GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model),
-[Anthropic catalog](https://platform.claude.com/docs/en/models/overview),
-[Gemini catalog](https://aistudio.google.com/docs/models), and
-[Kimi model list](https://platform.kimi.ai/docs/models) were rechecked through
-indexed official-page excerpts, all crawled on **2026-11-06 UTC**.
-Direct HTTP retrieval failed DNS resolution in this review environment; the
-indexed review is not a successful live-page fetch. The last recorded direct
-catalog read remains **2026-10-31 America/Los_Angeles**. This is not a new
+**Catalog review: 2026-11-12 America/Los_Angeles.** The official
+[OpenAI models](https://developers.openai.com/api/docs/models),
+[Anthropic models overview](https://platform.claude.com/docs/en/models/overview) and
+[Claude Fable 5.2 page](https://platform.claude.com/docs/en/models/fable-5-2/overview),
+[Gemini models](https://aistudio.google.com/docs/models),
+[What's new in Gemini 4 Hydrogen](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen),
+[Gemini pricing](https://aistudio.google.com/docs/pricing), and
+[Kimi model list](https://platform.kimi.ai/docs/models) were read directly on
+**2026-11-12**. This replaces the indexed-excerpt review of 2026-11-06, when
+direct retrieval failed DNS resolution. This is not a new
 migration or inference test; separately dated model-specific contracts below
 retain their original check dates.
 
@@ -19,21 +19,26 @@ intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
 and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
 Its catalog lists **GPT-6-Cyber** under specialized cybersecurity models, not
 the general-purpose starting recommendation; it is not a new RAG default here.
-Anthropic generally recommends `claude-opus-5-5`, lists `claude-fable-5-1` for
-demanding reasoning and long-horizon agents, and includes `claude-sonnet-5-5`
-and `claude-haiku-5-5` in its current lineup.
-Google identifies **Gemini 4 Argon (`gemini-4-argon`)** as its latest flagship,
-not Gemini 3.8 Flash. Kimi recommends **`kimi-k3.1-pro`** as its latest flagship
-and lists `kimi-k3.1-pro-highspeed` as the optional high-speed variant.
+Anthropic generally recommends `claude-opus-5-5` and now lists
+**`claude-fable-5-2`** (released 2026-11-09; supersedes `claude-fable-5-1`) for
+demanding reasoning and long-horizon agentic work, alongside `claude-sonnet-5-5`
+and `claude-haiku-5-5`. Google's Gemini 4 family is **Gemini 4 Carbon
+(`gemini-4-carbon`)**, its strongest reasoning model; **Gemini 4 Argon
+(`gemini-4-argon`)**, its efficient frontier reasoning model; and **Gemini 4
+Hydrogen (`gemini-4-hydrogen`)**, released 2026-11-12 as the fast agentic model
+that Google recommends as the upgrade from Gemini 3.8 Flash. Kimi recommends
+**`kimi-k3.1-pro`** as its latest flagship and lists `kimi-k3.1-pro-highspeed`
+as the optional high-speed variant.
 
 This catalog recheck changes no runtime defaults, endpoints, routing, or budgets.
 The existing selections remain `gpt-6-astra`, `claude-sonnet-5-5`,
-`gemini-3.8-flash` for the SPEED route, and `kimi-k3.1-pro`.
-Anthropic's general Opus 5.5 recommendation
-does not replace this repository's selected Sonnet 5.5 text-adapter default.
+`gemini-3.8-flash` for the SPEED route, and `kimi-k3.1-pro`; the
+[defaults decision](#defaults-decision-for-the-2026-11-12-lineup) explains each role.
+Anthropic's general Opus 5.5 recommendation and its Fable 5.2 model
+do not replace this repository's selected Sonnet 5.5 text-adapter default.
 The other providers' catalog alternatives are not new payload-compatibility
-tests or default migrations. In particular, Argon's long-decode and latency recommendations
-are not implemented by selecting its model ID; see [Gemini limitations](#google-gemini).
+tests or default migrations. In particular, Gemini 4 long-decode and latency recommendations
+are not implemented by selecting a model ID; see [Gemini limitations](#google-gemini).
 Saved-run inspection requires none of these providers. The
 [failed-run triage guide](FAILED_RUN_TRIAGE_GUIDE.md) demonstrates why a provider
 HTTP 200 can still become a durable `ERROR`, how internal retries differ from
@@ -56,13 +61,74 @@ checks and existing offline HTTPX contract tests are
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.
 
+## Model Lineup Verified 2026-11-12
+
+Prices are standard paid-tier list prices in USD per 1M input / output tokens,
+as published on 2026-11-12. They are dated observations with scheduled changes,
+not cost estimates for this repository's requests.
+
+| Provider | Model ID | Official positioning | List price |
+| --- | --- | --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/models) | `gpt-6-astra` | Flagship for complex reasoning and coding; **repository default** | $10 / $50 |
+| OpenAI | `gpt-6.1-sol` | Near-Astra performance at lower cost | $2 / $10 |
+| OpenAI | `gpt-6.1-terra` | Fast, efficient visual reasoning, computer use, and writing | $1 / $5 |
+| OpenAI | `gpt-6-luna` | Most efficient model for focused, high-volume work | $0.10 / $0.50 |
+| [Anthropic](https://platform.claude.com/docs/en/models/overview) | [`claude-fable-5-2`](https://platform.claude.com/docs/en/models/fable-5-2/overview) | **New 2026-11-09.** Demanding reasoning and long-horizon agentic work; 1M context, 128K output. Supersedes `claude-fable-5-1` ($10 / $50). | $8 / $40 |
+| Anthropic | `claude-opus-5-5` | Recommended starting point for most workloads | $4 / $20 |
+| Anthropic | `claude-sonnet-5-5` | Best combination of speed and intelligence; **repository default** | $2 / $10 |
+| Anthropic | `claude-haiku-5-5` | High-volume, latency-sensitive tasks | from $0.10 / $0.50 |
+| [Google](https://aistudio.google.com/docs/models) | `gemini-4-carbon` | Strongest reasoning model; thinking `low`, `medium` (default), `high` | $2 / $10 through 2026-11-30, then $4 / $20 |
+| Google | `gemini-4-argon` | Efficient Gemini 4 frontier reasoning; thinking `low`, `medium` (default), `high` | $2 / $10 through 2026-11-30, then $4 / $20 |
+| Google | [`gemini-4-hydrogen`](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) | **New 2026-11-12.** Fast agentic workhorse; Google's recommended upgrade from Gemini 3.8 Flash; thinking `low`, `medium`, `high` (default), `xhigh` | $1.50 / $7.50 |
+| Google | `gemini-3.8-flash` | Stable previous-generation Flash; **repository SPEED default** | $0.75 / $3.75 through 2026-12-31, then $1.50 / $7.50 |
+| Google | `gemini-3.5-flash-lite` | Fastest, lowest-cost model | $0.30 / $2.50 |
+| [Kimi](https://platform.kimi.ai/docs/models) | `kimi-k3.1-pro` | Flagship with a 1,048,576-token context; **repository default** | $2 / $10 |
+| Kimi | `kimi-k3.1-pro-highspeed` | Same intelligence at about 2-3x the speed | $4 / $20 |
+| Kimi | `kimi-k3` | Previous-generation flagship | $3 / $15 |
+
+Google prices come from its [pricing page](https://aistudio.google.com/docs/pricing),
+and Kimi prices from its [pricing page](https://platform.kimi.ai/docs/pricing/chat).
+All Gemini 4 models share one 1,048,576-token window for input, thinking, and
+output. Effective **2026-12-01**, Google automatically routes requests for the
+deprecated `gemini-2.5-pro` to `gemini-3.8-flash` and `gemini-2.5-flash` to
+`gemini-3.5-flash-lite`. An explicit override naming either 2.5 ID would still be
+recorded as the requested `model_name`, not the model that served it; replace
+such overrides deliberately. Kimi's K2 series is closed to new users and due to
+retire by the end of December 2026; see the
+[K2 notice](#kimi-legacy-overrides-and-retirement-notice).
+
+### Defaults decision for the 2026-11-12 lineup
+
+Each route keeps its default; new models are opt-in overrides:
+
+| Route (provider) | Default kept | Why |
+| --- | --- | --- |
+| REASONING, used by all `/query` synthesis (Anthropic) | `claude-sonnet-5-5` | Fable 5.2 and Opus 5.5 always think (default effort `high` and `medium`) inside this adapter's fixed `max_tokens=1024`, so they are more likely to fail with `answer was truncated`. Fable 5.2 also costs 4x Sonnet 5.5 per token. Sonnet 5.5 keeps its tested `between_tools` / `medium` contract. |
+| SPEED (Gemini) | `gemini-3.8-flash` | Google recommends Hydrogen as the upgrade, but its migration checklist notes that Hydrogen defaults to `high` thinking rather than `medium`. This adapter sends no thinking level, so swapping the ID would make the SPEED route think longer at 2x the per-token price through 2026-12-31. Gemini 3.8 Flash remains a stable listed model. |
+| COST (Kimi) | `kimi-k3.1-pro` | Still Kimi's flagship; the K2 retirement does not affect it. |
+| DEFAULT and fallbacks (OpenAI unless configured) | `gpt-6-astra` | Still OpenAI's flagship starting recommendation. |
+
+Revisit the SPEED default before **2027-01-01**, when Gemini 3.8 Flash's list
+price rises to Hydrogen's. A deliberate migration should pin an explicit
+thinking level in the request and add contract tests rather than only change the ID.
+To evaluate the new models now, set explicit overrides and restart. These
+commands set no credential and make no request:
+
+```bash
+export SCHOLAR_RAG_GEMINI_MODEL=gemini-4-hydrogen
+export SCHOLAR_RAG_ANTHROPIC_MODEL=claude-fable-5-2
+```
+
+Follow the [selection and migration checklist](#selection-and-migration-checklist)
+for bounded evaluation, saved provider/model evidence, and rollback.
+
 ## Selected Defaults
 
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
 | OpenAI | `gpt-6-astra` | Highest-intelligence selection in the [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
-| Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.1 for demanding work; neither replaces this Sonnet choice. |
-| Google | `gemini-3.8-flash` | Retained [Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) for the existing SPEED route, not Google's latest overall model. The Argon catalog update does not change this selection. |
+| Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.2 (superseding Fable 5.1) for demanding work; neither replaces this Sonnet choice. |
+| Google | `gemini-3.8-flash` | Retained [Flash model](https://aistudio.google.com/docs/models) for the existing SPEED route, not Google's latest overall model. Google recommends `gemini-4-hydrogen` as its upgrade; it stays an opt-in override (see the [defaults decision](#defaults-decision-for-the-2026-11-12-lineup)). |
 | Moonshot | `kimi-k3.1-pro` | Latest flagship in the [current catalog](https://platform.kimi.ai/docs/models). The separately dated K3.1 contract check below covers both variants' K3 parameter constraints; this catalog review changes no payload. |
 
 The current [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model)
@@ -95,7 +161,7 @@ without editing source. They are nonblank, whitespace-trimmed strings; see
 ### Optional GPT-6.1 Terra
 
 The [Terra model page](https://developers.openai.com/api/docs/models/gpt-6.1-terra),
-rechecked **2026-10-30 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
+rechecked **2026-11-12 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
 It documents text/image input, text output, and both Chat Completions and
 Responses, but **tool calling requires Responses**. Its reasoning efforts are
 `none`, `low`, `medium` (default), `high`, `xhigh`, and `max`.
@@ -112,19 +178,20 @@ does not establish this account's access or live payload compatibility.
 
 ### Kimi legacy overrides and retirement notice
 
-The **2026-11-06 America/Los_Angeles** indexed review of the
-[Kimi model list](https://platform.kimi.ai/docs/models) exposes a page update
-dated **2026-11-04** and a crawl dated **2026-11-06 UTC**. Its notice names
-`kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and `kimi-k2.6`:
+The **2026-11-12 America/Los_Angeles** direct read of the
+[Kimi model list](https://platform.kimi.ai/docs/models) still lists
+`kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and `kimi-k2.6` under deprecated
+models, and Kimi's [pricing notice](https://platform.kimi.ai/docs/pricing/chat)
+covers the whole K2 series:
 
 | Timing | Affected users/models |
 | --- | --- |
-| Current access restriction | These three IDs are no longer available to **newly registered users**. Users registered **before November 1, 2026** can continue using them pending retirement. |
-| **Expected in late December 2026** | The notice gives this retirement window for each of the three IDs, not a guaranteed exact date or continued support for every historical K2 model. |
+| Current access restriction, starting **2026-10-31** | K2 series models are no longer available to **newly registered users**. Users registered **before November 1, 2026** can continue using them pending retirement. |
+| **By the end of December 2026** | Kimi plans to retire all K2 series models; the model list expects each of the three IDs to go in late December 2026. This is not a guaranteed exact date or continued support for every historical K2 model. |
 
-The earlier **2026-10-31 America/Los_Angeles** entry recorded a direct catalog
-check, not the registration cutoff. Use the current model-specific notice above
-instead of treating that review date as the access boundary.
+An earlier **2026-10-31 America/Los_Angeles** entry in this guide recorded a
+direct catalog check. The access boundary is the registration rule above, not
+that review date.
 
 This notice does not supersede the separately recorded past discontinuations:
 the original `kimi-k2` family on **2026-05-25** (the old local default was
@@ -417,7 +484,7 @@ which ID is the configured default:
 | --- | --- | --- |
 | `claude-sonnet-5-5` (default or explicit override) | `{"type": "between_tools"}` | `{"effort": "medium"}` |
 | `claude-sonnet-5` (explicit rollback) | `{"type": "disabled"}` | Omitted |
-| All other IDs, including older/custom Sonnet, Opus, and Fable | Omitted | Omitted |
+| All other IDs, including `claude-fable-5-2`, `claude-opus-5-5`, `claude-haiku-5-5`, and older/custom Sonnet, Opus, and Fable IDs | Omitted | Omitted |
 
 The guide's [up-front thinking section](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide#turn-off-up-front-thinking)
 states that `between_tools` produces only text **when no tools are sent**. It
@@ -435,11 +502,23 @@ failover; transient HTTP/transport retries retain their existing bounded policy.
 
 The [catalog](https://platform.claude.com/docs/en/models/overview) generally
 recommends [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview)
-and positions Fable 5.1 for demanding work. Both use always-on adaptive thinking;
+and positions [Fable 5.2](https://platform.claude.com/docs/en/models/fable-5-2/overview)
+for demanding work; Fable 5.2 supersedes Fable 5.1. Both use always-on adaptive thinking;
 the [Opus migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide)
-does not permit disabling it. Those IDs receive neither Sonnet-specific control,
-but retain the 1024-token total budget, which thinking can consume before final
-answer text. An arbitrary ID override is not a universal compatibility migration.
+does not permit disabling it. The
+[Fable 5.2 migration guide](https://platform.claude.com/docs/en/models/fable-5-2/migration-guide)
+(checked **2026-11-12 America/Los_Angeles**) returns HTTP 400 for
+`thinking: {"type": "disabled"}`, manual extended thinking, and assistant prefill,
+and says to omit `temperature`, `top_p`, and `top_k`. Those IDs receive neither
+Sonnet-specific control and no sampling fields.
+Fable 5.2 therefore gets the same plain payload as Fable 5.1 and Opus 5.5;
+changing the ID is the whole adapter-side migration. They retain the 1024-token
+total budget, which thinking can consume before final answer text. Fable 5.2
+defaults to `high` effort (Opus 5.5: `medium`), and Anthropic warns that a small
+`max_tokens` can stop after thinking with no text; this adapter then reports
+`answer was truncated` instead of raising the budget or lowering effort.
+Fable 5.2 also requires 30-day data retention for the calling organization.
+An arbitrary ID override is not a universal compatibility migration.
 Evaluate endpoint support, account access, and budget/quality for your workload.
 
 For rollback, set `SCHOLAR_RAG_ANTHROPIC_MODEL=claude-sonnet-5` and restart the
@@ -467,11 +546,26 @@ documents Argon REST calls and a client-side continuation loop. That loop,
 streaming, and Interactions background execution are not implemented here.
 The new finish-reason guard rejects unfinished hops; it does not enable long decode.
 
+Gemini 4 Carbon and Hydrogen were checked **2026-11-12 America/Los_Angeles**.
+The [Hydrogen guide](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
+says `gemini-4-hydrogen` is served by both `generateContent` and the Interactions
+API. It defaults to `high` thinking, adds `xhigh`, and rejects `minimal`;
+[Carbon](https://aistudio.google.com/docs/whats-new-gemini-4-carbon) and Argon
+default to `medium` and cap at `high`. Google asks callers to remove
+`temperature`, `top_p`, and `top_k`. This adapter sends no generation
+configuration at all, so every Gemini 4 ID gets no sampling values and no
+thinking level: each model's documented default applies, and no thinking-level
+setting is added. A non-streaming REST hop holds up to 32,768 tokens on Carbon
+and Argon and 65,536 on Hydrogen; a longer answer ends in the `CONTINUATION`
+hop rejected above. Hydrogen does not support explicit context caching, which
+this adapter never requests. Carbon and Argon are paid-tier only, and Carbon
+spends more thinking tokens per turn than Argon.
+
 Google's Argon migration checklist recommends client timeouts of at least
 15 minutes for hard prompts; the generateContent long-decode guide recommends a
 20-minute HTTP read timeout. This repository instead retains **60-second HTTPX
 network-operation timeouts** and a **60-second reasoning-phase deadline by
-default**, including retries and waits. Slow Argon overrides can therefore time
+default**, including retries and waits. Slow Argon or Carbon overrides can therefore time
 out or return an explicit response error rather than a completed answer.
 No timeout, output-budget, thinking-level, endpoint, SDK, or selected-default
 change is made. Catalog presence and offline HTTPX regressions do not establish
@@ -579,7 +673,10 @@ custom IDs reaching routed payloads/URLs, mocked HTTP request/response contracts
 multipart answer extraction without thought text, and unchanged routing/fakes.
 Sonnet regressions check exact model-specific controls, unchanged headers and
 budget, legacy rollback, and the absence of those controls for unknown/Opus/Fable
-IDs. A real local runner using mocked HTTPX and SQLite confirms that the saved
+IDs, including `claude-fable-5-2` and `claude-haiku-5-5`. Gemini 4 Carbon, Argon,
+and Hydrogen overrides on the SPEED route keep the exact `contents`-only body,
+with no sampling fields or thinking level.
+A real local runner using mocked HTTPX and SQLite confirms that the saved
 generation model matches the requested wire ID, not a provider-reported alias.
 Kimi regressions cover K3.1 Pro defaults through AppContainer for every task type,
 dotenv/environment/explicit precedence, the high-speed variant, legacy `kimi-k3`

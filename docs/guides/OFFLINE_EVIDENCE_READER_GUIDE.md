@@ -274,11 +274,12 @@ Review content and rights before sharing; CSP is not a privacy filter.
 
 Reader labels come only from saved generation records. A missing model remains
 “Not recorded”; no current default is substituted or retrospectively verified.
-The **2026-10-06 America/Los_Angeles** documentation-only check still selects
-GPT-6 Astra, Claude Sonnet 5.5, Gemini 3.8 Flash and Kimi K3 in this repository.
+The **2026-11-12 America/Los_Angeles** documentation-only check still selects
+GPT-6 Astra, Claude Sonnet 5.5, Gemini 3.8 Flash and Kimi K3.1 Pro in this repository.
 OpenAI additionally lists 6.1 Sol as a balance choice and Luna for cost-sensitive
-work; Anthropic's general Opus 5.5 recommendation does not change our Sonnet
-choice. See the source-linked [provider guide](PROVIDER_MODELS_GUIDE.md).
+work; Anthropic's general Opus 5.5 recommendation, its new Fable 5.2, and Google's
+new Gemini 4 Hydrogen do not change these choices. See the source-linked
+[provider guide](PROVIDER_MODELS_GUIDE.md).
 This is not a live inference, entitlement, latency or accuracy test, and does
 not change separately dated migration checks, defaults or routing.
 

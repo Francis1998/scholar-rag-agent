@@ -369,17 +369,19 @@ and popularity counts are dated observations rather than quality evidence.
 The actual stack remains custom Observe -> Decide -> Act orchestration,
 Pydantic, FastAPI, HTTPX, and SQLite, **not LangGraph**.
 
-The four official model catalogs were also rechecked on
-**2026-10-04 America/Los_Angeles**:
+The four official model catalogs were last rechecked on
+**2026-11-12 America/Los_Angeles**:
 [OpenAI](https://developers.openai.com/api/docs/models.md) lists `gpt-6-astra`,
-`gpt-6.1-sol`, and `gpt-6-luna`;
+`gpt-6.1-sol`, `gpt-6.1-terra`, and `gpt-6-luna`;
 [Anthropic](https://platform.claude.com/docs/en/models/overview) lists
-`claude-fable-5-1`, `claude-opus-5-5`, and `claude-sonnet-5-5`, with a general
-Opus recommendation;
-[Google](https://ai.google.dev/gemini-api/docs/latest-model) lists
-`gemini-3.8-flash` as GA; and
-[Kimi](https://platform.kimi.ai/docs/models) lists `kimi-k3`, with K2.5 and
-`moonshot-v1` discontinued on August 31.
+`claude-fable-5-2` (superseding `claude-fable-5-1`), `claude-opus-5-5`,
+`claude-sonnet-5-5`, and `claude-haiku-5-5`, with a general Opus recommendation;
+[Google](https://aistudio.google.com/docs/models) lists `gemini-4-carbon`,
+`gemini-4-argon`, the new `gemini-4-hydrogen`, and `gemini-3.8-flash`; and
+[Kimi](https://platform.kimi.ai/docs/models) lists `kimi-k3.1-pro`,
+`kimi-k3.1-pro-highspeed`, and `kimi-k3`. Its K2.7 Code and K2.6 IDs are closed
+to new users and due to retire by the end of December 2026; K2.5 and
+`moonshot-v1` were discontinued on August 31.
 
 This catalog-only refresh does not alter selected defaults, redate migration
 checks, run paid/live inference, or establish account entitlement. Literal

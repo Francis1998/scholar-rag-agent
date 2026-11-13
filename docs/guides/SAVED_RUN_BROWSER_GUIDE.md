@@ -355,8 +355,10 @@ Official model pages were rechecked the same day:
 [Anthropic](https://platform.claude.com/docs/en/models/overview),
 [Gemini Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash),
 and [Kimi](https://platform.kimi.ai/docs/overview.md).
-Selected defaults remain `gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`
-and `kimi-k3`. The newer lower-cost `gpt-6.1-sol` is an alternative, with
+Selected defaults are now `gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`
+and `kimi-k3.1-pro`; the **2026-11-12 America/Los_Angeles** catalog review adds
+Claude Fable 5.2 and Gemini 4 Carbon/Hydrogen only as opt-in alternatives.
+The newer lower-cost `gpt-6.1-sol` is an alternative, with
 Chat Completions limited to no-tool use and Responses required for tools;
 it does not support `none`/`minimal` reasoning effort. This is a catalog-only
 check, **not live account, inference, performance or budget verification**.

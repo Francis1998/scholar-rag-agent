@@ -161,8 +161,9 @@ The explicit demo settings ignore inherited provider keys, `.env`, and ambient
 database settings. The fake adapter used by the final query only exercises the
 plumbing. The reader itself never needs a provider. For optional live generation,
 the [provider guide](PROVIDER_MODELS_GUIDE.md) documents the current chosen
-GPT-6 Astra, Claude Sonnet 5, Gemini 3.8 Flash, and Kimi K3 defaults, newer Claude
-alternatives, dated official sources, and account/payload limits.
+GPT-6 Astra, Claude Sonnet 5.5, Gemini 3.8 Flash, and Kimi K3.1 Pro defaults,
+newer alternatives such as Claude Fable 5.2 and Gemini 4 Hydrogen, dated official
+sources, and account/payload limits.
 
 ## Bounds, pagination, errors, and privacy
 
