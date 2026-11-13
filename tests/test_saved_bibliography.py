@@ -330,6 +330,33 @@ def test_bibtex_download_keeps_unbalanced_title_braces_inside_one_field(
     assert _report(bibliography_api).sources[0].title == title
 
 
+def test_bibtex_download_escapes_latex_text_but_keeps_doi_and_url_verbatim(
+    bibliography_api: ComparisonAPI,
+) -> None:
+    metadata = {
+        "journal": "Science & Society",
+        "year": "2024",
+        "doi": "10.1007/978-3-030-58452-8_13",
+        "url": "https://example.org/a%20b?x=1&y=2#sec_3",
+    }
+    source = _source("one", document_id="paper-1", title="95% CI for R&D_x", metadata=metadata)
+    _save(bibliography_api, "saved", [source], answer=_answer([source]))
+
+    response = _get(bibliography_api, "saved", "bibtex")
+
+    assert response.status_code == 200, response.text
+    [(_, _, fields)] = parse_bibtex(response.text)
+    assert fields == {
+        "title": "95\\% CI for R\\&D\\_x",
+        "year": "2024",
+        "journal": "Science \\& Society",
+        "doi": metadata["doi"],
+        "url": metadata["url"],
+    }
+    report = _report(bibliography_api)
+    assert (report.sources[0].title, report.sources[0].metadata) == (source.chunk.title, metadata)
+
+
 def test_blank_title_placeholder_is_explicit(bibliography_api: ComparisonAPI) -> None:
     _save(bibliography_api, "saved", [_source("one", title=" \n", metadata={})])
     report = _report(bibliography_api)
