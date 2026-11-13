@@ -524,7 +524,8 @@ def test_fifty_sources_and_citations_inclusive_then_fail_without_truncation(
     _error(bibliography_api, 409, "invalid_run_record")
 
 
-@pytest.mark.parametrize(("unit", "growth"), [("a", 2), ("\u00e9", 4), ("\\", 6)])
+# Per-unit JSON bytes: metadata plus BibTeX, where a backslash becomes {\textbackslash}.
+@pytest.mark.parametrize(("unit", "growth"), [("a", 2), ("\u00e9", 4), ("\\", 2 + 17)])
 def test_exact_json_wire_byte_limit_includes_metadata_bibtex_warnings_and_newline(
     bibliography_api: ComparisonAPI, unit: str, growth: int
 ) -> None:

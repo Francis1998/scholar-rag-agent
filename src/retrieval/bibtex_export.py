@@ -34,13 +34,30 @@ _ALLOWED_TYPES = frozenset(
 )
 # Brace-free control words in a balanced group, so even unmatched braces stay inside the field.
 _UNMATCHED_BRACES = {"{": "{\\textbraceleft}", "}": "{\\textbraceright}"}
+# LaTeX text-mode escapes; multi-letter control words use the same balanced, brace-free groups.
+_LATEX_TEXT = {
+    "\\": "{\\textbackslash}",
+    "%": "\\%",
+    "&": "\\&",
+    "#": "\\#",
+    "$": "\\$",
+    "_": "\\_",
+    "~": "{\\textasciitilde}",
+    "^": "{\\textasciicircum}",
+}
+_ALREADY_ESCAPED = frozenset("%&#$_")
+# biblatex types doi as verbatim and url as a URI; styles typeset both with \url, not as text.
+_VERBATIM_FIELDS = frozenset({"doi", "url"})
 
 
-def _escape(value: str) -> str:
-    """Escape field text so BibTeX's brace counting cannot end a field early.
+def _escape(value: str, *, verbatim: bool = False) -> str:
+    """Escape one field value for BibTeX's brace counting and, in text fields, for LaTeX.
 
     BibTeX and Biber count every brace, even after a backslash: matched pairs keep the
     ``\\{``/``\\}`` escapes, while an unmatched brace becomes a balanced LaTeX group.
+    Verbatim fields otherwise only double backslashes. Text fields escape
+    ``\\ % & # $ _ ~ ^`` so they typeset literally, keeping an already escaped
+    ``\\%``, ``\\&``, ``\\#``, ``\\$`` or ``\\_`` as written.
     """
     unmatched: set[int] = set()
     opened: list[int] = []
@@ -53,14 +70,23 @@ def _escape(value: str) -> str:
             else:
                 unmatched.add(index)
     unmatched.update(opened)
-    return "".join(
-        _UNMATCHED_BRACES[character]
-        if index in unmatched
-        else "\\" + character
-        if character in "\\{}"
-        else character
-        for index, character in enumerate(value)
-    )
+    escaped: list[str] = []
+    index = 0
+    while index < len(value):
+        character = value[index]
+        if index in unmatched:
+            escaped.append(_UNMATCHED_BRACES[character])
+        elif character in "{}":
+            escaped.append("\\" + character)
+        elif verbatim:
+            escaped.append("\\\\" if character == "\\" else character)
+        elif character == "\\" and value[index + 1 : index + 2] in _ALREADY_ESCAPED:
+            escaped.append(value[index : index + 2])
+            index += 1
+        else:
+            escaped.append(_LATEX_TEXT.get(character, character))
+        index += 1
+    return "".join(escaped)
 
 
 def _first_meta(metadata: dict[str, str], fields: Sequence[str]) -> str:
@@ -164,7 +190,9 @@ def _format_entry(
     url = meta.get("url", "").strip() or meta.get("landing_url", "").strip()
     if url:
         fields.append(("url", url))
-    body = ",\n".join(f"  {key} = {{{_escape(value)}}}" for key, value in fields)
+    body = ",\n".join(
+        f"  {key} = {{{_escape(value, verbatim=key in _VERBATIM_FIELDS)}}}" for key, value in fields
+    )
     return f"@{entry_type}{{{cite},\n{body}\n}}"
 
 
@@ -207,6 +235,7 @@ class BibTeXExporter:
     Collections deduplicate exact ``document_id`` values and assign unique
     citation keys. First wins for documents/chunks; highest score wins for
     search results. Inputs are not mutated and no model or network is used.
+    Text fields are LaTeX-escaped; ``doi`` and ``url`` stay verbatim for ``\\url``.
     """
 
     def export_document(self, document: Document) -> str:
