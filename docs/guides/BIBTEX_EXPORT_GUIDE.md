@@ -74,3 +74,12 @@ and year parsing remain heuristic; review imported references in your reference
 manager before publication. The brace handling above keeps entries structurally
 intact, but this is not a LaTeX sandbox or a guarantee that arbitrary metadata is
 safe to compile. No DOI, author, publication status, or scientific claim is verified.
+
+Author strings that already contain `" and "` (case-insensitively) are kept as
+written. When a semicolon or pipe is present, only semicolons and pipes separate
+names, so the bioRxiv/medRxiv form `Doe, J.; Smith, A.` exports as
+`Doe, J. and Smith, A.` (two authors in BibTeX's `Family, Given` form).
+Otherwise commas separate names (`Ada Lovelace, Alan Turing`), except that a
+list whose every second part is only initials keeps `Family, Initials` pairs
+together: `Lee, B.` is one author. A comma-only `Family, Given` name with a full
+given name, such as `Lovelace, Ada`, is still read as two names.

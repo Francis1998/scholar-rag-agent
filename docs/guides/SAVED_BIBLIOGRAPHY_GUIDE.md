@@ -259,9 +259,14 @@ automatic conversion from DOI to URL is performed.
 
 The existing exporter picks the first nonblank value per group and trims it
 for formatting; the JSON preserves the chosen chunk's raw values and keys.
-Authors already containing `" and "` (case-insensitively) are kept; otherwise
-commas, semicolons, and pipes are split into BibTeX `and` separators. This
-heuristic can mishandle `Family, Given` names and corporate authors. An explicit
+Authors already containing `" and "` (case-insensitively) are kept. Otherwise,
+semicolons and pipes separate names whenever either is present, so commas stay
+inside `Family, Given` names: the bioRxiv/medRxiv string `Doe, J.; Smith, A.`
+becomes `Doe, J. and Smith, A.`. Without them, commas separate names, except
+that a list whose every second part is only initials is read as
+`Family, Initials` pairs (`Lee, B.` stays one author; `Doe, J., Lee, B.` is
+two). This heuristic can still mishandle comma-only `Family, Given` names with
+full given names (such as `Lovelace, Ada`) and corporate authors. An explicit
 year is reduced to its first 19xx/20xx match when present, otherwise kept
 verbatim; only when no explicit year is present are the date fields searched
 for a 19xx/20xx year. This is not name disambiguation or date validation.

@@ -358,6 +358,18 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
+  downloads) split author strings at every comma as well as at semicolons, so
+  `Family, Given` names fell apart. The bioRxiv/medRxiv connectors store the
+  API's `Doe, J.; Smith, A.` verbatim, which exported as
+  `author = {Doe and J. and Smith and A.}`: four authors named `Doe`, `J.`,
+  `Smith`, and `A.`, while a single author `Ng, C.` became two. When a semicolon
+  or pipe is present, only semicolons and pipes now separate names
+  (`Doe, J. and Smith, A.`), and a comma-only list whose every second part is
+  only initials keeps its `Family, Initials` pairs (`Ng, C.` stays one author).
+  Comma-separated full names such as `Ada Lovelace, Alan Turing` and Europe PMC
+  strings such as `Lovelace A, Hopper G` still split at commas. See the
+  [author rules](docs/guides/BIBTEX_EXPORT_GUIDE.md#metadata-limitations).
+- BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
   downloads) escaped every brace as `\{`/`\}`, but BibTeX and Biber count every
   brace, even after a backslash. An unmatched brace in captured metadata therefore
   ended its field early or swallowed later fields and entries. For example, the

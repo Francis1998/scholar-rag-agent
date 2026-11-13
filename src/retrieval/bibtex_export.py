@@ -15,6 +15,7 @@ from retrieval.models import Chunk, Document, SearchResult
 _NON_KEY = re.compile(r"[^a-zA-Z0-9]+")
 _DOI_FIELDS = ("doi", "paper_doi", "work_doi")
 _AUTHOR_FIELDS = ("authors", "author")
+_NAME_SEPARATORS = re.compile(r"[;|]")
 _YEAR_FIELDS = ("year", "published_year", "publication_year")
 _VENUE_FIELDS = ("journal", "venue", "container_title", "booktitle")
 _TYPE_FIELDS = ("entry_type", "bibtex_type", "publication_type", "type")
@@ -92,13 +93,29 @@ def _entry_type(metadata: dict[str, str]) -> str:
     return "article" if _first_meta(metadata, _VENUE_FIELDS) else "misc"
 
 
+def _initials(part: str) -> bool:
+    """Return whether ``part`` is only given-name initials, such as ``J.`` or ``J.-P.``."""
+    letters = part.replace(".", " ").replace("-", " ").split()
+    return bool(letters) and all(len(letter) == 1 and letter.isupper() for letter in letters)
+
+
 def _authors_field(metadata: dict[str, str]) -> str:
+    """Join author names with BibTeX ``and``, keeping ``Family, Given`` names whole."""
     raw = _first_meta(metadata, _AUTHOR_FIELDS)
     if not raw:
         return ""
     if " and " in raw.lower():
         return raw
-    parts = [part.strip() for part in re.split(r"[,;|]", raw) if part.strip()]
+    if _NAME_SEPARATORS.search(raw):
+        # Semicolons/pipes separate names (bioRxiv: "Doe, J.; Smith, A."); commas stay inside.
+        parts = [part.strip() for part in _NAME_SEPARATORS.split(raw) if part.strip()]
+    else:
+        parts = [part.strip() for part in raw.split(",") if part.strip()]
+        if len(parts) % 2 == 0 and all(_initials(given) for given in parts[1::2]):
+            # Initials are never a whole name, so "Doe, J., Lee, B." is two Family, Given pairs.
+            parts = [
+                f"{family}, {given}" for family, given in zip(parts[::2], parts[1::2], strict=True)
+            ]
     if len(parts) <= 1:
         return raw
     return " and ".join(parts)
