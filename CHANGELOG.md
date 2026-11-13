@@ -359,6 +359,21 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
+  downloads) wrote TeX special characters into text fields unescaped and doubled
+  backslashes, so typesetting a downloaded bibliography failed or silently lost
+  text. `%` commented out the rest of a field (with biblatex,
+  `File ended while scanning use of \field` and an empty bibliography), and `&`
+  and `#` stopped LaTeX (`Misplaced alignment tab character &`). `$`, `_`, and
+  `^` switched to or required math mode, `~` printed as a space, a doubled
+  backslash became a line break, and an already escaped `R\&D` became `R\\&D`.
+  Text fields (`title`, `author`, `year`, and `journal` or `booktitle`) now
+  write `\%`, `\&`, `\#`, `\$`, `\_`, `{\textasciitilde}`,
+  `{\textasciicircum}`, and `{\textbackslash}`. An already escaped `\%`, `\&`,
+  `\#`, `\$`, or `\_` is kept as written, and the brace balancing is unchanged.
+  `doi` and `url` stay verbatim, as biblatex and `\url` expect, so DOIs such as
+  `10.1007/978-3-030-58452-8_13` and URLs with `%`, `&`, or `#` remain usable.
+  See [LaTeX special characters](docs/guides/BIBTEX_EXPORT_GUIDE.md#latex-special-characters).
+- BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
   downloads) split author strings at every comma as well as at semicolons, so
   `Family, Given` names fell apart. The bioRxiv/medRxiv connectors store the
   API's `Doe, J.; Smith, A.` verbatim, which exported as

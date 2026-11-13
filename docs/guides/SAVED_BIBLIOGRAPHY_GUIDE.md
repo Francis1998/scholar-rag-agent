@@ -286,18 +286,24 @@ placeholder and this feature adds a warning. There is no invented publication
 metadata or current-corpus enrichment.
 
 **Treat the file as untrusted data, not executable LaTeX.** The formatter
-doubles backslashes and keeps every field's braces balanced: a matched pair such
-as `{DNA}` becomes `\{DNA\}`, and an unmatched brace becomes `{\textbraceleft}`
-or `{\textbraceright}`. BibTeX and Biber count every brace, even after a
+keeps every field's braces balanced: a matched pair such as `{DNA}` becomes
+`\{DNA\}`, and an unmatched brace becomes `{\textbraceleft}` or
+`{\textbraceright}`. BibTeX and Biber count every brace, even after a
 backslash, so a captured title such as `Sets } , author = {Injected Person`
 cannot end its field early, forge an `author` field, or swallow later entries.
 Importers that treat `\{` as an escaped brace see the same fields, and the JSON
 keeps the raw captured values (see the
 [exporter's brace rules](BIBTEX_EXPORT_GUIDE.md#braces-and-backslashes-in-field-values)).
-This is not a complete TeX sanitizer: percent signs, ampersands, underscores,
-other TeX metacharacters, arbitrary URLs, and imported commands need downstream
-review. Do not compile or execute imported BibTeX/LaTeX to inspect it. The
-service does not do so.
+Text fields (`title`, `author`, `year`, and `journal` or `booktitle`) also
+escape TeX special characters, so `95% CI for R&D` downloads as
+`95\% CI for R\&D` and typesets as captured. `#`, `$`, and `_` become `\#`,
+`\$`, and `\_`; `~`, `^`, and `\` become `{\textasciitilde}`,
+`{\textasciicircum}`, and `{\textbackslash}`. An already escaped `\%`, `\&`,
+`\#`, `\$`, or `\_` is kept as written. `doi` and `url` stay verbatim for URL
+typesetting, with only the brace rules and doubled backslashes (see
+[LaTeX special characters](BIBTEX_EXPORT_GUIDE.md#latex-special-characters)).
+Do not compile or execute imported BibTeX/LaTeX to inspect it. The service does
+not do so.
 
 ## Fixed bounds, deterministic behavior, and failures
 

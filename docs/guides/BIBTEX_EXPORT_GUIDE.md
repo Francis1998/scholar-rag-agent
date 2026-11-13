@@ -48,7 +48,9 @@ Every field value is written inside braces. BibTeX and Biber end a value at the
 brace that balances its opening brace, and they count every `{` and `}`, even
 one after a backslash. The exporter therefore:
 
-- doubles each backslash;
+- writes a backslash as `{\textbackslash}` in text fields and doubles it in the
+  verbatim `doi` and `url` fields (see
+  [LaTeX special characters](#latex-special-characters));
 - writes a matched pair of literal braces as escaped braces, as before:
   `Analysis of {DNA} repair` becomes `Analysis of \{DNA\} repair`;
 - writes an unmatched brace as the balanced LaTeX group `{\textbraceleft}` or
@@ -67,13 +69,53 @@ and `\}` as escaped characters read exactly the same field boundaries.
 Verbatim fields such as biblatex's `doi` and `url` show escapes and groups
 literally, so compare them with the original metadata.
 
+## LaTeX special characters
+
+BibTeX copies field text into the `.bbl` file that LaTeX typesets, so raw TeX
+special characters in captured metadata used to break the bibliography. `%`
+commented out the rest of the field (with biblatex, the whole bibliography could
+disappear), `&` and `#` stopped LaTeX with errors, `$`, `_`, and `^` switched to
+or required math mode, `~` printed as a space, and a doubled backslash became a
+line break. Text fields (`title`, `author`, `year`, and `journal` or
+`booktitle`) therefore escape them, so each prints as the captured character:
+
+| Captured | Written in text fields |
+| --- | --- |
+| `%` `&` `#` `$` `_` | `\%` `\&` `\#` `\$` `\_` |
+| `~` | `{\textasciitilde}` |
+| `^` | `{\textasciicircum}` |
+| `\` | `{\textbackslash}` |
+
+An already escaped `\%`, `\&`, `\#`, `\$`, or `\_` is kept as written, so
+`R\&D` stays `R\&D` instead of becoming `R\\&D`. Every other backslash is
+literal text, including one before a brace or a command name. LaTeX markup such
+as `$\alpha$` therefore prints as captured instead of rendering as math; edit
+such entries in your reference manager if you want math.
+
+`doi` and `url` stay verbatim. biblatex types `doi` as a verbatim field and
+`url` as a URI field and typesets both with URL commands such as `\url`; BibTeX
+styles that print them, for example natbib's `plainnat`, use `\url` and `\doi`.
+A raw `%`, `&`, `#`, `_`, or `~` is correct there, while a pre-escaped `\%` would
+print its backslash and break the link. Only the brace rules above, with doubled
+backslashes, apply to these two fields:
+
+```text
+title:  Effect sizes with 95% CI for R&D
+BibTeX: title = {Effect sizes with 95\% CI for R\&D},
+doi:    10.1007/978-3-030-58452-8_13
+BibTeX: doi = {10.1007/978-3-030-58452-8_13},
+url:    https://example.org/search?q=a%20b&lang=en#sec_2
+BibTeX: url = {https://example.org/search?q=a%20b&lang=en#sec_2}
+```
+
 ## Metadata limitations
 
 The exporter uses supplied metadata, not a verified citation registry. Author
 and year parsing remain heuristic; review imported references in your reference
-manager before publication. The brace handling above keeps entries structurally
-intact, but this is not a LaTeX sandbox or a guarantee that arbitrary metadata is
-safe to compile. No DOI, author, publication status, or scientific claim is verified.
+manager before publication. The escaping above keeps entries structurally intact
+and prints captured text literally. It does not turn LaTeX math, HTML tags, or
+other markup in metadata into formatting. No DOI, author, publication status, or
+scientific claim is verified.
 
 Author strings that already contain `" and "` (case-insensitively) are kept as
 written. When a semicolon or pipe is present, only semicolons and pipes separate

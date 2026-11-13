@@ -12,7 +12,16 @@ CollectionKind = Literal["documents", "chunks", "results"]
 _ENTRY = re.compile(r"@([A-Za-z]+)\s*\{\s*([^\s,{}]+)\s*,")
 _FIELD = re.compile(r"\s*([A-Za-z][\w-]*)\s*=\s*")
 _SEPARATOR = re.compile(r"\s*([,}])")
-_ESCAPE = re.compile(r"\{\\textbrace(left|right)\}|\\([\\{}])")
+_ESCAPE = re.compile(
+    r"\{\\text(braceleft|braceright|backslash|asciitilde|asciicircum)\}|\\([\\{}%&#$_])"
+)
+_ESCAPED_TEXT = {
+    "braceleft": "{",
+    "braceright": "}",
+    "backslash": "\\",
+    "asciitilde": "~",
+    "asciicircum": "^",
+}
 # Every title has at least one brace without a partner; several also try to forge fields.
 UNBALANCED_TITLES = [
     pytest.param("Sets } , author = {Injected Person", id="close-then-braced-author"),
@@ -96,9 +105,7 @@ def parse_bibtex(
 
 def decode_bibtex_text(value: str) -> str:
     """Invert the exporter's text escapes to compare a parsed field with its source."""
-    return _ESCAPE.sub(
-        lambda match: {"left": "{", "right": "}"}.get(match.group(1), match.group(2)), value
-    )
+    return _ESCAPE.sub(lambda match: _ESCAPED_TEXT.get(match.group(1), match.group(2)), value)
 
 
 def _document(**kwargs: str) -> Document:
@@ -242,10 +249,16 @@ def test_unbalanced_title_braces_cannot_end_fields_or_swallow_entries(
 
 
 @PARSERS
+@pytest.mark.parametrize(
+    "hostile",
+    [
+        pytest.param('x } , note = "Injected" , y {', id="forged-field"),
+        pytest.param("x \\} 50% & # $ _ ~ ^ , note = {Injected} , y { \\", id="latex-specials"),
+    ],
+)
 def test_every_field_keeps_unbalanced_braces_inside_its_own_value(
-    backslash_escapes: bool,
+    backslash_escapes: bool, hostile: str
 ) -> None:
-    hostile = 'x } , note = "Injected" , y {'
     entry = BibTeXExporter().export_document(
         _document(
             document_id="paper-1",
@@ -269,6 +282,78 @@ def test_every_field_keeps_unbalanced_braces_inside_its_own_value(
         "doi": f"10.1000/{hostile}",
         "url": f"https://example.org/{hostile}",
     }
+
+
+@pytest.mark.parametrize(
+    ("raw", "escaped"),
+    [
+        pytest.param("95% CI", "95\\% CI", id="percent-starts-comment"),
+        pytest.param("R&D", "R\\&D", id="ampersand-alignment-tab"),
+        pytest.param("C# code", "C\\# code", id="hash-macro-parameter"),
+        pytest.param("$5 cost", "\\$5 cost", id="dollar-math-shift"),
+        pytest.param("x_1", "x\\_1", id="underscore-subscript"),
+        pytest.param("~2 nm", "{\\textasciitilde}2 nm", id="tilde-nonbreaking-space"),
+        pytest.param("x^2", "x{\\textasciicircum}2", id="caret-superscript"),
+        pytest.param("C:\\temp", "C:{\\textbackslash}temp", id="backslash-command"),
+    ],
+)
+def test_text_fields_escape_latex_special_characters(raw: str, escaped: str) -> None:
+    entry = BibTeXExporter().export_document(
+        _document(title=f"Title {raw}", authors=f"Ada {raw}", year=f"n.d. {raw}", journal=raw)
+    )
+
+    [(_, _, fields)] = parse_bibtex(entry)
+
+    assert fields == {
+        "title": f"Title {escaped}",
+        "author": f"Ada {escaped}",
+        "year": f"n.d. {escaped}",
+        "journal": escaped,
+    }
+
+
+def test_doi_and_url_stay_verbatim_while_text_fields_escape() -> None:
+    doi = "10.1007/978-3-030-58452-8_13"
+    url = "https://example.org/search?q=a%20b&lang=en#sec_2~x^y$"
+    entry = BibTeXExporter().export_document(
+        _document(
+            title="Proc. 50% & more", journal="Workshop & Co.", type="conference", doi=doi, url=url
+        )
+    )
+
+    [(kind, _, fields)] = parse_bibtex(entry)
+
+    assert kind == "inproceedings"
+    assert fields == {
+        "title": "Proc. 50\\% \\& more",
+        "booktitle": "Workshop \\& Co.",
+        "doi": doi,
+        "url": url,
+    }
+
+
+@pytest.mark.parametrize(
+    ("raw", "escaped"),
+    [
+        pytest.param(
+            "R\\&D rose 5\\% in Q\\_1 at \\$2 per \\#3",
+            "R\\&D rose 5\\% in Q\\_1 at \\$2 per \\#3",
+            id="escaped-specials-kept",
+        ),
+        pytest.param("a\\\\&b", "a{\\textbackslash}\\&b", id="literal-backslash-then-escape"),
+        pytest.param(
+            "\\alpha and \\{x\\}",
+            "{\\textbackslash}alpha and {\\textbackslash}\\{x{\\textbackslash}\\}",
+            id="other-backslashes-are-literal",
+        ),
+    ],
+)
+def test_already_escaped_specials_are_not_escaped_twice(raw: str, escaped: str) -> None:
+    entry = BibTeXExporter().export_document(_document(title=raw))
+
+    [(_, _, fields)] = parse_bibtex(entry)
+
+    assert fields["title"] == escaped
 
 
 def test_export_results_dedupes_by_highest_score() -> None:
