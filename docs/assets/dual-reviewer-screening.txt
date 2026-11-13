@@ -1,0 +1,32 @@
+1. Two reviewers screen the same papers blind
+12 synthetic papers; r1 records 12 decisions via PUT .../reviewer-screening/{id}.
+GET .../reviewer-screening?reviewer=r2 -> "blind": true, 12/12 "others_hidden": true
+"other_decisions": null, "final": null; r1 reasons in r2's JSON: False
+GET .../screening-conflicts while blind -> HTTP 409 "screening_blind_mode_on"
+A blind=false request -> HTTP 409; r2's browser form says other
+reviewers are hidden until r2 records a decision on that paper.
+
+2. Blinding lifts per paper, then the team unblinds
+After r2's first decision: 1 member shows r1's decision, 11 stay hidden.
+r2 records 12 decisions, each "blinded": true (first decision, blind mode on).
+PUT .../screening-protocol {"blind": false, "changed_by": "lead"} -> revision 1
+GET .../screening-conflicts -> 3 disagreements, 0 resolved:
+  near-miss-05: r1 include / r2 exclude
+  near-miss-11: r1 exclude / r2 include
+  near-miss-12: r1 unsure / r2 exclude
+
+3. An append-only resolution becomes the final decision
+PUT .../screening-resolutions/near-miss-05 by lead: exclude -> revision 1
+Basis: r1 rev 1 include, r2 rev 1 exclude; reviewer decisions unchanged: True
+near-miss-11 resolved include; near-miss-12 (r1 unsure / r2 exclude) left unresolved.
+Final CSV, near-miss-05: r1 include; r2 exclude -> resolved exclude
+Final include 5, final exclude 6, needs review 1 (1 unresolved conflict)
+Existing progress report gains a dual_review section with the same counts: True
+
+4. Agreement report: Cohen's kappa, CI and PABAK
+r1 vs r2, include/exclude/unsure, n 12: p_o 0.750, p_e 0.465
+kappa 0.532 (95% CI 0.103 to 0.962), moderate (Landis-Koch, arbitrary)
+PABAK 0.625; unsure counted as include: kappa 0.500, PABAK 0.500
+SE: Fleiss-Cohen-Everitt 1969 (Wald CI); resolutions changed kappa: False
+Unresolved conflicts: 1; restarted app returned identical JSON: True
+Forbidden calls: 0 (no models, retrieval or network). Synthetic data only.

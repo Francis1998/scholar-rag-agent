@@ -663,6 +663,43 @@ network, write or event is added; the default queue order is unchanged. The pure
 `simulate_screening` replays known labels with the same ranking for WSS@95 and recall
 curves. See the [prioritization guide](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md).
 
+### Independent dual-reviewer screening
+
+`storage.dual_screening.SQLiteDualScreening`, wired as `AppContainer.dual_screening`,
+composes the existing `SQLitePaperScreening` rather than replacing it. Startup creates
+four additive tables: `paper_screening_reviewer_decisions` (latest per collection,
+member and pseudonymous label), `paper_screening_reviewer_history`,
+`paper_screening_resolutions` and `paper_screening_protocols` (the last three
+append-only). Existing unlabeled rows are read in place through
+`SQLitePaperScreening._reviews` as the reserved reviewer `default`; nothing is copied,
+backfilled or rewritten, and the legacy queue, history, export, prioritization and
+screened-retrieval paths are untouched.
+
+Every call resolves the collection with `resolved_collection` and reads protocol,
+unlabeled and labeled decisions and latest resolutions in that one transaction; writes
+reserve it (`BEGIN IMMEDIATE`) and check expected decision, resolution or protocol
+revisions. Records are size-, NUL- and schema-checked and fail closed. A pure
+`_Snapshot` derives each member's team outcome: a resolution is final only while its
+recorded basis (reviewer, decision revision, decision) equals the current decisions;
+otherwise two or more agreeing current decisions are `agreed`, disagreements are
+`conflict`. Reviewer reads hide other reviewers per member until that label has a
+current decision, unless the protocol is unblinded and the request did not ask for
+`blind=true`; team reads raise `screening_blind_mode_on` while blind. The reviewer
+prioritized queue reuses `screening_priority.build_priority` with that reviewer's own
+statuses only.
+
+`storage.screening_agreement` is a pure module: Cohen's kappa in exact `Fraction`
+arithmetic, the Fleiss-Cohen-Everitt (1969) large-sample variance, a clipped Wald 95%
+CI, k-category PABAK and Landis-Koch bands; its model recomputes every value from the
+confusion table on validation. `api.dual_screening` exposes the JSON routes outside the
+legacy screening PUT wildcard with strict query validation; `api.dual_screening_explorer`
+adds the script-free reviewer and team pages with same-origin POST writes through the
+shared `native_forms` parser and a write-aware `_page(dual_review=True)` footer.
+`storage.screening_report` appends an optional `dual_review` section, read in a second
+snapshot that must see the same unlabeled decisions as the export (else 409), and omits
+the key entirely when no labeled data exists so existing report bytes are unchanged. See
+the [dual-reviewer guide](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
+
 `api.collection_explorer` adds GET `/explore/collections` and `/explore/collection`
 without a storage implementation or schema change. Discovery uses
 `SQLitePaperCollections.list_collections`; detail decodes the existing bounded
