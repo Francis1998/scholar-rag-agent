@@ -1317,6 +1317,69 @@ async def test_pmc_connector_uses_body_excerpt_without_abstract() -> None:
     assert documents[0].metadata["pmcid"] == "PMC7654322"
 
 
+# Article IDs as NCBI efetch currently returns them: ``pmcid`` replaced ``pmc``.
+PMC_PMCID_EFETCH_FIXTURE = """<?xml version="1.0"  ?>
+<pmc-articleset>
+  <article article-type="other"><front><article-meta>
+    <article-id pub-id-type="pmcid">PMC10000000</article-id>
+    <article-id pub-id-type="pmcid-ver">PMC10000000.1</article-id>
+    <article-id pub-id-type="pmcaid">10000000</article-id>
+    <article-id pub-id-type="pmcaiid">10000000</article-id>
+    <article-id pub-id-type="pmid">37471719</article-id>
+    <title-group><article-title>Editorial</article-title></title-group>
+  </article-meta></front><body><p>First scanned editorial.</p></body></article>
+  <article article-type="other"><front><article-meta>
+    <article-id pub-id-type="pmcid">PMC10000002</article-id>
+    <article-id pub-id-type="pmcid-ver">PMC10000002.1</article-id>
+    <article-id pub-id-type="pmcaid">10000002</article-id>
+    <title-group><article-title>Editorial</article-title></title-group>
+  </article-meta></front><body><p>A different editorial.</p></body></article>
+  <article><front><article-meta>
+    <article-id pub-id-type="pmcid">PMC3531190</article-id>
+    <article-id pub-id-type="pmcid-ver">PMC3531190.1</article-id>
+    <article-id pub-id-type="pmcaid">3531190</article-id>
+    <article-id pub-id-type="pmid">23193287</article-id>
+    <article-id pub-id-type="doi">10.1093/nar/gks1195</article-id>
+    <title-group><article-title>GenBank</article-title></title-group>
+  </article-meta></front><body><p>Nucleotide sequence database.</p></body></article>
+</pmc-articleset>
+"""
+
+
+@pytest.mark.asyncio
+async def test_pmc_connector_reads_current_ncbi_pmcid_article_ids() -> None:
+    """Live efetch XML labels PMCIDs ``pmcid``; same-titled papers must stay distinct."""
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["10000000", "10000002", "3531190"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=PMC_PMCID_EFETCH_FIXTURE, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pmc.httpx.AsyncClient", return_value=mock_client):
+        documents = await PmcConnector().search("editorial", max_results=3)
+
+    assert [document.metadata["pmcid"] for document in documents] == [
+        "PMC10000000",
+        "PMC10000002",
+        "PMC3531190",
+    ]
+    assert [document.source for document in documents] == [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC10000000/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC10000002/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3531190/",
+    ]
+    assert len({document.document_id for document in documents}) == 3
+    assert documents[2].metadata["doi"] == "10.1093/nar/gks1195"
+    assert documents[2].metadata["pmid"] == "23193287"
+
+
 @pytest.mark.asyncio
 async def test_pmc_connector_returns_empty_on_no_hits() -> None:
     """An empty PMC ID list short-circuits before any efetch call."""
