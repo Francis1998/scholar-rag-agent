@@ -31,7 +31,7 @@ responses and never make live NCBI calls.
 | `title` | `article-meta/title-group/article-title` |
 | `text` | Abstract plus a bounded full-text body excerpt when available, else body excerpt only |
 | `source` | `https://pmc.ncbi.nlm.nih.gov/articles/{PMCID}/`, else DOI URL, else title |
-| `metadata.pmcid` | `article-id pub-id-type="pmc"` normalized with a `PMC` prefix |
+| `metadata.pmcid` | `article-id pub-id-type="pmcid"` (current NCBI efetch XML), else the legacy `pub-id-type="pmc"`, normalized with a `PMC` prefix |
 | `metadata.pmid` | `article-id pub-id-type="pmid"` |
 | `metadata.doi` | `article-id pub-id-type="doi"` |
 | `metadata.year` | First publication year in article metadata |

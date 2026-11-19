@@ -358,6 +358,20 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- The PMC full-text connector (`PmcConnector`) only read PMCIDs from
+  `<article-id pub-id-type="pmc">`, but NCBI efetch now labels them
+  `pub-id-type="pmcid"` (`PMC3531190`, beside `pmcid-ver`, `pmcaid`, and
+  `pmcaiid`). Every live result therefore had an empty `metadata.pmcid` and a
+  DOI URL as `source` instead of the documented PMC landing page, and an article
+  without a DOI fell back to its bare title as `source` and document identity:
+  two different articles titled `Editorial` received the same `document_id`, so
+  ingesting one replaced the other. The connector now reads `pmcid` first and
+  keeps the legacy `pmc` type as a fallback, so sources are
+  `https://pmc.ncbi.nlm.nih.gov/articles/{PMCID}/` again. Documents already
+  stored from live PMC results keep their earlier DOI- or title-based IDs;
+  re-ingesting such an article stores it under its PMC landing-page identity as
+  a separate document. See the
+  [PMC source guide](docs/guides/PMC_SOURCE_GUIDE.md#what-you-get).
 - BibTeX exports (`BibTeXExporter` and saved-run `/runs/{run_id}/bibliography`
   downloads) wrote TeX special characters into text fields unescaped and doubled
   backslashes, so typesetting a downloaded bibliography failed or silently lost
