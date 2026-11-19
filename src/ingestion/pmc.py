@@ -127,7 +127,10 @@ class PmcConnector:
         if not title:
             return None
 
-        pmcid = cls._normalize_pmcid(cls._extract_article_id(article, "pmc"))
+        # NCBI efetch now labels PMCIDs "pmcid"; older JATS payloads use "pmc".
+        pmcid = cls._normalize_pmcid(
+            cls._extract_article_id(article, "pmcid") or cls._extract_article_id(article, "pmc")
+        )
         doi = cls._extract_article_id(article, "doi")
         pmid = cls._extract_article_id(article, "pmid")
         year = cls._resolve_year(article)
