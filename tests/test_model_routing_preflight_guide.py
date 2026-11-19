@@ -115,7 +115,7 @@ def test_matrix_example_reports_every_real_route_and_requested_model(
         "anthropic": "claude-sonnet-5-5",
         "gemini": "gemini-3.8-flash",
         "kimi": "kimi-k3.1-pro",
-        "openai": "gpt-6-astra",
+        "openai": "gpt-6.2-astra",
         "fake": None,
     }
     expected_lines = []
