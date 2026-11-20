@@ -153,7 +153,7 @@ def test_guide_indexes_and_inspiration_are_explicit() -> None:
         "https://github.com/hypothesis/client",
         "https://web.hypothes.is/help/annotation-basics/",
         "2026-10-26",
-        "GPT-6 Astra",
+        "GPT-6.2 Astra",
         "Sonnet 5.5",
         "Gemini 3.8 Flash",
         "Kimi K3.1 Pro",
