@@ -2205,6 +2205,69 @@ async def test_biorxiv_connector_searches_and_normalizes_preprints() -> None:
 
 
 @pytest.mark.asyncio
+async def test_biorxiv_connector_matches_query_terms_as_whole_words() -> None:
+    """Query terms must match whole words, not fragments of longer words.
+
+    Matching used plain substring containment, so ``RNA`` matched "jou*rna*l"
+    and "inte*rna*l" and ``cell`` matched "ex*cell*ent": unrelated preprints
+    were returned as search results.
+    """
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": "Single-cell RNA sequencing of the developing cortex",
+                "doi": "10.1101/2024.01.01.111111",
+                "date": "2024-01-02",
+                "category": "neuroscience",
+                "abstract": "We profile cortical progenitors.",
+                "server": "biorxiv",
+            },
+            {
+                "title": "An excellent internal audit of journal workflows",
+                "doi": "10.1101/2024.01.01.222222",
+                "date": "2024-01-03",
+                "category": "scientific communication and education",
+                "abstract": "External reviewers keep a journal of decisions.",
+                "server": "biorxiv",
+            },
+        ]
+    }
+
+    for query in ("RNA", "cell"):
+        mock_client = _biorxiv_client(payload)
+        with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+            documents = await BioRxivConnector().search(query, max_results=5)
+
+        assert [document.metadata["doi"] for document in documents] == [
+            "10.1101/2024.01.01.111111"
+        ], query
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_connector_treats_simple_plurals_as_the_same_word() -> None:
+    """Whole-word matching still finds singular/plural forms of a query term."""
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": "Dopaminergic neurons and viruses in organoids",
+                "doi": "10.1101/2024.01.01.333333",
+                "date": "2024-01-02",
+                "category": "neuroscience",
+                "abstract": "Organoid neurons respond to viral vectors.",
+                "server": "biorxiv",
+            }
+        ]
+    }
+
+    for query in ("neuron", "neurons", "virus", "organoid"):
+        mock_client = _biorxiv_client(payload)
+        with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+            documents = await BioRxivConnector().search(query, max_results=5)
+
+        assert len(documents) == 1, query
+
+
+@pytest.mark.asyncio
 async def test_biorxiv_connector_supports_medrxiv_server() -> None:
     """The connector can target the medRxiv server."""
     payload: dict[str, object] = {
@@ -4384,6 +4447,46 @@ async def test_biorxiv_collections_connector_filters_recent_collection() -> None
 
     call = mock_client.get.await_args_list[0]
     assert call.args[0] == "https://api.biorxiv.org/details/biorxiv/100"
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_collections_connector_matches_query_terms_as_whole_words() -> None:
+    """Free-text collection filters match whole words, not word fragments.
+
+    ``RNA`` used to match "jou*rna*l" and "inte*rna*l" by substring containment.
+    """
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "doi": "10.1101/2024.03.01.111111",
+                "title": "Long-read RNA isoforms in zebrafish",
+                "authors": "Kim, J.",
+                "date": "2024-03-01",
+                "category": "genomics",
+                "abstract": "Isoform discovery with nanopore reads.",
+                "server": "biorxiv",
+            },
+            {
+                "doi": "10.1101/2024.03.02.222222",
+                "title": "Internal journal club attendance",
+                "authors": "Ng, P.",
+                "date": "2024-03-02",
+                "category": "scientific communication and education",
+                "abstract": "A survey of trainees.",
+                "server": "biorxiv",
+            },
+        ]
+    }
+    mock_client = _biorxiv_collections_client(payload)
+
+    with patch("ingestion.biorxiv_collections.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivCollectionsConnector().search(
+            "RNA",
+            max_results=5,
+            server="biorxiv",
+        )
+
+    assert [document.metadata["doi"] for document in documents] == ["10.1101/2024.03.01.111111"]
 
 
 @pytest.mark.asyncio
