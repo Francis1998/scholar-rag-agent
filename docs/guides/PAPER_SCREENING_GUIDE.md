@@ -228,10 +228,10 @@ Do not present the GIF as a completed systematic review or a clinical conclusion
 
 The feature itself uses FastAPI, Pydantic and SQLite, not a model or active-learning
 library. The existing agent remains a hand-written state machine with HTTPX
-adapters. Official catalogs checked on **2026-11-12 America/Los_Angeles** list
-[GPT-6 Astra](https://developers.openai.com/api/docs/models.md),
+adapters. Official catalogs checked on **2026-11-19 America/Los_Angeles** list
+[GPT-6.2 Astra / GPT-6.2 Sol](https://developers.openai.com/api/docs/models.md),
 [Claude Sonnet 5.5 / Opus 5.5 / Fable 5.2](https://platform.claude.com/docs/en/models/overview),
-[Gemini 4 Carbon / Argon / Hydrogen and Gemini 3.8 Flash](https://aistudio.google.com/docs/models), and
+[Gemini 4 Carbon / Neon / Argon / Hydrogen and Gemini 3.8 Flash](https://aistudio.google.com/docs/models), and
 [Kimi K3.1 Pro](https://platform.kimi.ai/docs/models). See the
 [provider guide](PROVIDER_MODELS_GUIDE.md) for selected defaults and payload
 limits. Catalog documentation and offline tests do not establish account access,

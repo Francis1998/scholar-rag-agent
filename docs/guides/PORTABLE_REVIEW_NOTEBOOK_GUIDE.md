@@ -270,7 +270,7 @@ Stars are dated context, not correctness evidence.
 The stack is FastAPI, Pydantic, HTTPX, SQLite and a custom
 Observe -> Decide -> Act state machine, **not LangGraph**. Default retrieval
 uses deterministic hash embeddings/BM25, not learned semantic embeddings.
-The [2026-11-12 catalog-only check](PROVIDER_MODELS_GUIDE.md) preserves
-`gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash` (SPEED) and `kimi-k3.1-pro`
-defaults and separately dated migration contracts. Export uses none of them;
+The [2026-11-19 catalog check](PROVIDER_MODELS_GUIDE.md) moves the OpenAI default
+to `gpt-6.2-astra` and keeps `claude-sonnet-5-5`, `gemini-3.8-flash` (SPEED),
+`kimi-k3.1-pro` and separately dated migration contracts. Export uses none of them;
 catalog checking is not a live inference or entitlement test.

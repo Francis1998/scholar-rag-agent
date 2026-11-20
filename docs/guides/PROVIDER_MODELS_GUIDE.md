@@ -1,43 +1,52 @@
 # Provider Models and Compatibility
 
-**Catalog review: 2026-11-12 America/Los_Angeles.** The official
+**Catalog review: 2026-11-19 America/Los_Angeles.** The official
 [OpenAI models](https://developers.openai.com/api/docs/models),
+[GPT-6.2 Astra](https://developers.openai.com/api/docs/models/gpt-6.2-astra) and
+[GPT-6.2 Sol](https://developers.openai.com/api/docs/models/gpt-6.2-sol) pages,
+[Using GPT-6.2](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra) guide,
 [Anthropic models overview](https://platform.claude.com/docs/en/models/overview) and
 [Claude Fable 5.2 page](https://platform.claude.com/docs/en/models/fable-5-2/overview),
 [Gemini models](https://aistudio.google.com/docs/models),
-[What's new in Gemini 4 Hydrogen](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen),
+[What's new in Gemini 4 Neon](https://aistudio.google.com/docs/whats-new-gemini-4-neon),
 [Gemini pricing](https://aistudio.google.com/docs/pricing), and
 [Kimi model list](https://platform.kimi.ai/docs/models) were read directly on
-**2026-11-12**. This replaces the indexed-excerpt review of 2026-11-06, when
-direct retrieval failed DNS resolution. This is not a new
-migration or inference test; separately dated model-specific contracts below
-retain their original check dates.
+**2026-11-19**. This replaces the direct review of 2026-11-12. Apart from the
+OpenAI default migration below, it is not a new migration or inference test;
+separately dated model-specific contracts below retain their original check dates.
 
-OpenAI positions `gpt-6-astra` for highest
-intelligence, `gpt-6.1-sol` for balanced near-Astra performance at lower cost,
-`gpt-6.1-terra` for efficient visual reasoning, computer use, and writing,
-and `gpt-6-luna` for its fastest, most cost-effective high-volume work.
+OpenAI now positions **`gpt-6.2-astra`** (released 2026-11-17; supersedes `gpt-6-astra`)
+as its flagship for complex reasoning and coding and **`gpt-6.2-sol`** (supersedes `gpt-6.1-sol`)
+as its go-to model for everyday work, from coding to agents at scale.
+`gpt-6.1-terra` remains its efficient model for visual reasoning, computer use,
+and writing, and `gpt-6-luna` its fastest, most cost-effective high-volume model.
+Both superseded models remain available.
 Its catalog lists **GPT-6-Cyber** under specialized cybersecurity models, not
 the general-purpose starting recommendation; it is not a new RAG default here.
-Anthropic generally recommends `claude-opus-5-5` and now lists
+Anthropic generally recommends `claude-opus-5-5` and lists
 **`claude-fable-5-2`** (released 2026-11-09; supersedes `claude-fable-5-1`) for
 demanding reasoning and long-horizon agentic work, alongside `claude-sonnet-5-5`
 and `claude-haiku-5-5`. Google's Gemini 4 family is **Gemini 4 Carbon
-(`gemini-4-carbon`)**, its strongest reasoning model; **Gemini 4 Argon
-(`gemini-4-argon`)**, its efficient frontier reasoning model; and **Gemini 4
-Hydrogen (`gemini-4-hydrogen`)**, released 2026-11-12 as the fast agentic model
-that Google recommends as the upgrade from Gemini 3.8 Flash. Kimi recommends
-**`kimi-k3.1-pro`** as its latest flagship and lists `kimi-k3.1-pro-highspeed`
-as the optional high-speed variant.
+(`gemini-4-carbon`)**, its strongest reasoning model; **Gemini 4 Neon
+(`gemini-4-neon`)**, generally available 2026-11-18 between Hydrogen and Carbon,
+with frontier-level intelligence and fast end-to-end task completion on the
+paid tier only; **Gemini 4 Argon (`gemini-4-argon`)**, its efficient frontier
+reasoning model; and **Gemini 4 Hydrogen (`gemini-4-hydrogen`)**, released
+2026-11-12 as the fast agentic model that Google recommends as the upgrade from
+Gemini 3.8 Flash. Kimi recommends **`kimi-k3.1-pro`** as its latest flagship
+and lists `kimi-k3.1-pro-highspeed` as the optional high-speed variant.
 
-This catalog recheck changes no runtime defaults, endpoints, routing, or budgets.
-The existing selections remain `gpt-6-astra`, `claude-sonnet-5-5`,
-`gemini-3.8-flash` for the SPEED route, and `kimi-k3.1-pro`; the
-[defaults decision](#defaults-decision-for-the-2026-11-12-lineup) explains each role.
+This recheck changes one runtime default: OpenAI moves from `gpt-6-astra` to its successor `gpt-6.2-astra`,
+which costs 20% less per token; the adapter's unchanged request already follows
+its documented API rules (see [GPT-6.2 Astra and Sol](#gpt-62-astra-and-sol)). Endpoints,
+routing, budgets, and the other selections (`claude-sonnet-5-5`,
+`gemini-3.8-flash` for the SPEED route, and `kimi-k3.1-pro`) are unchanged; the
+[defaults decision](#defaults-decision-for-the-2026-11-19-lineup) explains each role.
 Anthropic's general Opus 5.5 recommendation and its Fable 5.2 model
 do not replace this repository's selected Sonnet 5.5 text-adapter default.
-The other providers' catalog alternatives are not new payload-compatibility
-tests or default migrations. In particular, Gemini 4 long-decode and latency recommendations
+Other catalog alternatives, including GPT-6.2 Sol and Gemini 4 Neon, are opt-in
+overrides; their offline payload pins are not live compatibility tests.
+In particular, Gemini 4 long-decode and latency recommendations
 are not implemented by selecting a model ID; see [Gemini limitations](#google-gemini).
 Saved-run inspection requires none of these providers. The
 [failed-run triage guide](FAILED_RUN_TRIAGE_GUIDE.md) demonstrates why a provider
@@ -61,35 +70,48 @@ checks and existing offline HTTPX contract tests are
 aliases, prices, latency, and output quality can change; evaluate them for your
 account and workload.
 
-## Model Lineup Verified 2026-11-12
+## Model Lineup Verified 2026-11-19
 
 Prices are standard paid-tier list prices in USD per 1M input / output tokens,
-as published on 2026-11-12. They are dated observations with scheduled changes,
+as published on 2026-11-19. They are dated observations with scheduled changes,
 not cost estimates for this repository's requests.
 
 | Provider | Model ID | Official positioning | List price |
 | --- | --- | --- | --- |
-| [OpenAI](https://developers.openai.com/api/docs/models) | `gpt-6-astra` | Flagship for complex reasoning and coding; **repository default** | $10 / $50 |
-| OpenAI | `gpt-6.1-sol` | Near-Astra performance at lower cost | $2 / $10 |
+| [OpenAI](https://developers.openai.com/api/docs/models) | [`gpt-6.2-astra`](https://developers.openai.com/api/docs/models/gpt-6.2-astra) | **New 2026-11-17.** Flagship for complex reasoning and coding; supersedes `gpt-6-astra`; **repository default** | $8 / $40 |
+| OpenAI | [`gpt-6.2-sol`](https://developers.openai.com/api/docs/models/gpt-6.2-sol) | **New 2026-11-17.** Go-to model for everyday work, from coding to agents at scale; supersedes `gpt-6.1-sol` | $2 / $10 |
 | OpenAI | `gpt-6.1-terra` | Fast, efficient visual reasoning, computer use, and writing | $1 / $5 |
 | OpenAI | `gpt-6-luna` | Most efficient model for focused, high-volume work | $0.10 / $0.50 |
+| OpenAI | `gpt-6-astra` | Previous flagship and repository default; superseded by `gpt-6.2-astra`, still available | $10 / $50 |
+| OpenAI | `gpt-6.1-sol` | Near-Astra performance at lower cost; superseded by `gpt-6.2-sol`, still available | $2 / $10 |
 | [Anthropic](https://platform.claude.com/docs/en/models/overview) | [`claude-fable-5-2`](https://platform.claude.com/docs/en/models/fable-5-2/overview) | **New 2026-11-09.** Demanding reasoning and long-horizon agentic work; 1M context, 128K output. Supersedes `claude-fable-5-1` ($10 / $50). | $8 / $40 |
 | Anthropic | `claude-opus-5-5` | Recommended starting point for most workloads | $4 / $20 |
 | Anthropic | `claude-sonnet-5-5` | Best combination of speed and intelligence; **repository default** | $2 / $10 |
 | Anthropic | `claude-haiku-5-5` | High-volume, latency-sensitive tasks | from $0.10 / $0.50 |
 | [Google](https://aistudio.google.com/docs/models) | `gemini-4-carbon` | Strongest reasoning model; thinking `low`, `medium` (default), `high` | $2 / $10 through 2026-11-30, then $4 / $20 |
+| Google | [`gemini-4-neon`](https://aistudio.google.com/docs/whats-new-gemini-4-neon) | **New 2026-11-18.** Frontier-level intelligence with fast end-to-end task completion, between Hydrogen and Carbon; paid tier only; thinking `low`, `medium`, `high` (default), `xhigh` | $3 / $15 |
 | Google | `gemini-4-argon` | Efficient Gemini 4 frontier reasoning; thinking `low`, `medium` (default), `high` | $2 / $10 through 2026-11-30, then $4 / $20 |
-| Google | [`gemini-4-hydrogen`](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) | **New 2026-11-12.** Fast agentic workhorse; Google's recommended upgrade from Gemini 3.8 Flash; thinking `low`, `medium`, `high` (default), `xhigh` | $1.50 / $7.50 |
+| Google | [`gemini-4-hydrogen`](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) | Released 2026-11-12. Fast agentic workhorse; Google's recommended upgrade from Gemini 3.8 Flash; thinking `low`, `medium`, `high` (default), `xhigh` | $1.50 / $7.50 |
 | Google | `gemini-3.8-flash` | Stable previous-generation Flash; **repository SPEED default** | $0.75 / $3.75 through 2026-12-31, then $1.50 / $7.50 |
 | Google | `gemini-3.5-flash-lite` | Fastest, lowest-cost model | $0.30 / $2.50 |
 | [Kimi](https://platform.kimi.ai/docs/models) | `kimi-k3.1-pro` | Flagship with a 1,048,576-token context; **repository default** | $2 / $10 |
 | Kimi | `kimi-k3.1-pro-highspeed` | Same intelligence at about 2-3x the speed | $4 / $20 |
 | Kimi | `kimi-k3` | Previous-generation flagship | $3 / $15 |
 
+OpenAI prices come from each model page. GPT-6.2 Astra and Sol charge $0.40 and
+$0.10 per 1M cached input tokens and $10 and $2.50 per 1M 30-minute cache writes.
+For a request with more than 272K input tokens, input and cache rates double and
+output costs 1.5x for the whole request; Batch costs 50% of Standard. OpenAI
+enables [prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+by default, so input in a prefix of at least 1,024 tokens can be billed at the
+cache-write rate when first cached and at the cached-input rate when reused, even
+though this adapter sets no caching, Batch, Flex, or background option.
 Google prices come from its [pricing page](https://aistudio.google.com/docs/pricing),
 and Kimi prices from its [pricing page](https://platform.kimi.ai/docs/pricing/chat).
-All Gemini 4 models share one 1,048,576-token window for input, thinking, and
-output. Effective **2026-12-01**, Google automatically routes requests for the
+Gemini 4 Neon's output price includes thinking tokens; it supports only implicit
+context caching ($0.15 per 1M cached input tokens), and Batch and Flex cost
+$1.50 / $7.50. All Gemini 4 models share one 1,048,576-token window for input,
+thinking, and output. Effective **2026-12-01**, Google automatically routes requests for the
 deprecated `gemini-2.5-pro` to `gemini-3.8-flash` and `gemini-2.5-flash` to
 `gemini-3.5-flash-lite`. An explicit override naming either 2.5 ID would still be
 recorded as the requested `model_name`, not the model that served it; replace
@@ -97,16 +119,17 @@ such overrides deliberately. Kimi's K2 series is closed to new users and due to
 retire by the end of December 2026; see the
 [K2 notice](#kimi-legacy-overrides-and-retirement-notice).
 
-### Defaults decision for the 2026-11-12 lineup
+### Defaults decision for the 2026-11-19 lineup
 
-Each route keeps its default; new models are opt-in overrides:
+Only the OpenAI default moves to its successor; the other routes keep their
+defaults, and other new models are opt-in overrides:
 
-| Route (provider) | Default kept | Why |
+| Route (provider) | Default | Why |
 | --- | --- | --- |
-| REASONING, used by all `/query` synthesis (Anthropic) | `claude-sonnet-5-5` | Fable 5.2 and Opus 5.5 always think (default effort `high` and `medium`) inside this adapter's fixed `max_tokens=1024`, so they are more likely to fail with `answer was truncated`. Fable 5.2 also costs 4x Sonnet 5.5 per token. Sonnet 5.5 keeps its tested `between_tools` / `medium` contract. |
-| SPEED (Gemini) | `gemini-3.8-flash` | Google recommends Hydrogen as the upgrade, but its migration checklist notes that Hydrogen defaults to `high` thinking rather than `medium`. This adapter sends no thinking level, so swapping the ID would make the SPEED route think longer at 2x the per-token price through 2026-12-31. Gemini 3.8 Flash remains a stable listed model. |
-| COST (Kimi) | `kimi-k3.1-pro` | Still Kimi's flagship; the K2 retirement does not affect it. |
-| DEFAULT and fallbacks (OpenAI unless configured) | `gpt-6-astra` | Still OpenAI's flagship starting recommendation. |
+| REASONING, used by all `/query` synthesis (Anthropic) | `claude-sonnet-5-5` (kept) | Fable 5.2 and Opus 5.5 always think (default effort `high` and `medium`) inside this adapter's fixed `max_tokens=1024`, so they are more likely to fail with `answer was truncated`. Fable 5.2 also costs 4x Sonnet 5.5 per token. Sonnet 5.5 keeps its tested `between_tools` / `medium` contract. |
+| SPEED (Gemini) | `gemini-3.8-flash` (kept) | Google recommends Hydrogen as the upgrade, but its migration checklist notes that Hydrogen defaults to `high` thinking rather than `medium`. This adapter sends no thinking level, so swapping the ID would make the SPEED route think longer at 2x the per-token price through 2026-12-31. Neon is no SPEED candidate: it is paid-tier only, defaults to `high` thinking, and costs 4x Flash's per-token price through 2026-12-31. Gemini 3.8 Flash remains a stable listed model. |
+| COST (Kimi) | `kimi-k3.1-pro` (kept) | Still Kimi's flagship; the K2 retirement does not affect it. |
+| DEFAULT and fallbacks (OpenAI unless configured) | `gpt-6.2-astra` (was `gpt-6-astra`) | OpenAI's catalog now names GPT-6.2 Astra its flagship starting point. It costs 20% less than GPT-6 Astra, keeps the 1,050,000-token context and 128,000-token output limits, supports Chat Completions, and receives the same `model` + `messages` body, which carries no field the GPT-6.2 API rejects. GPT-6.2 Sol stays an opt-in override because this role selects the flagship. |
 
 Revisit the SPEED default before **2027-01-01**, when Gemini 3.8 Flash's list
 price rises to Hydrogen's. A deliberate migration should pin an explicit
@@ -115,10 +138,14 @@ To evaluate the new models now, set explicit overrides and restart. These
 commands set no credential and make no request:
 
 ```bash
-export SCHOLAR_RAG_GEMINI_MODEL=gemini-4-hydrogen
+export SCHOLAR_RAG_OPENAI_MODEL=gpt-6.2-sol
+export SCHOLAR_RAG_GEMINI_MODEL=gemini-4-neon  # paid tier only; or gemini-4-hydrogen
 export SCHOLAR_RAG_ANTHROPIC_MODEL=claude-fable-5-2
 ```
 
+To keep the previous OpenAI default, set `SCHOLAR_RAG_OPENAI_MODEL=gpt-6-astra` (superseded by `gpt-6.2-astra`, still available)
+and restart. A `.env` copied from an older `.env.example` still pins that previous ID until you edit or remove the line;
+`docker compose` reads the updated `.env.example` directly and adopts `gpt-6.2-astra`.
 Follow the [selection and migration checklist](#selection-and-migration-checklist)
 for bounded evaluation, saved provider/model evidence, and rollback.
 
@@ -126,21 +153,19 @@ for bounded evaluation, saved provider/model evidence, and rollback.
 
 | Provider | Requested API model ID | Why this default |
 | --- | --- | --- |
-| OpenAI | `gpt-6-astra` | Highest-intelligence selection in the [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model); its [model page](https://developers.openai.com/api/docs/models/gpt-6-astra) supports text Chat Completions. |
+| OpenAI | `gpt-6.2-astra` | Flagship starting point in the [GPT-6.2 guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra); its [model page](https://developers.openai.com/api/docs/models/gpt-6.2-astra) supports text Chat Completions. Replaces `gpt-6-astra` (still available) at 20% lower list prices; see [GPT-6.2 Astra and Sol](#gpt-62-astra-and-sol). |
 | Anthropic | `claude-sonnet-5-5` | Latest public Sonnet in the [catalog](https://platform.claude.com/docs/en/models/overview), selected for this bounded, no-tools text adapter. Its model-specific thinking/effort controls preserve the 1024-token cap. The catalog generally recommends Opus 5.5 and lists Fable 5.2 (superseding Fable 5.1) for demanding work; neither replaces this Sonnet choice. |
-| Google | `gemini-3.8-flash` | Retained [Flash model](https://aistudio.google.com/docs/models) for the existing SPEED route, not Google's latest overall model. Google recommends `gemini-4-hydrogen` as its upgrade; it stays an opt-in override (see the [defaults decision](#defaults-decision-for-the-2026-11-12-lineup)). |
+| Google | `gemini-3.8-flash` | Retained [Flash model](https://aistudio.google.com/docs/models) for the existing SPEED route, not Google's latest overall model. Google recommends `gemini-4-hydrogen` as its upgrade; it and the paid-tier `gemini-4-neon` stay opt-in overrides (see the [defaults decision](#defaults-decision-for-the-2026-11-19-lineup)). |
 | Moonshot | `kimi-k3.1-pro` | Latest flagship in the [current catalog](https://platform.kimi.ai/docs/models). The separately dated K3.1 contract check below covers both variants' K3 parameter constraints; this catalog review changes no payload. |
 
-The current [OpenAI GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model)
-also positions `gpt-6.1-sol` for balancing speed, cost, and intelligence with
-near-Astra performance, and `gpt-6-luna` for focused, high-volume workloads.
-These are provider
+The current [Using GPT-6.2 guide](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra)
+also positions `gpt-6.2-sol` for complex work at lower cost, and OpenAI's
+catalog keeps `gpt-6-luna` for focused, high-volume workloads. These are provider
 catalog descriptions
-([6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol)),
-not measured tradeoffs or additional adapter-contract tests in this repository;
-the selected flagship and routing remain unchanged.
+([6.2 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.2-sol)),
+not measured tradeoffs in this repository; routing is unchanged.
 
-The [6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+The [6.1 Sol model page](https://developers.openai.com/api/docs/models/gpt-6.1-sol) (superseded by 6.2 Sol),
 separately reviewed **2026-10-13 America/Los_Angeles**, explicitly supports
 Chat Completions **without tool calling**; use Responses
 for tools. Its supported reasoning efforts are `low`, `medium`, `high`, `xhigh`
@@ -158,10 +183,40 @@ without editing source. They are nonblank, whitespace-trimmed strings; see
 [configuration](../CONFIGURATION.md) for precedence and credential requirements.
 `SCHOLAR_RAG_DEFAULT_MODEL` remains a **provider family**, not one of these IDs.
 
+### GPT-6.2 Astra and Sol
+
+The [GPT-6.2 Astra](https://developers.openai.com/api/docs/models/gpt-6.2-astra) and
+[GPT-6.2 Sol](https://developers.openai.com/api/docs/models/gpt-6.2-sol) model pages and the
+[Using GPT-6.2 migration quickstart](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra#migration-quickstart)
+were checked **2026-11-19 America/Los_Angeles**. Both models take text and image
+input, return text, use reasoning tokens, and share a 1,050,000-token context
+window with at most 922,000 input and 128,000 output tokens. Both support Chat
+Completions, Responses, and Batch; knowledge cutoffs are 2026-05-18 (Astra) and
+2026-06-01 (Sol). The migration quickstart's request rules and this adapter's
+behavior for both IDs:
+
+| GPT-6.2 API rule | This adapter |
+| --- | --- |
+| Reasoning effort `none` is rejected; replace `none` or `minimal` with `low`, and start new integrations at `medium` | Sends no `reasoning_effort` and has no effort setting, so it can never send `none` or `minimal`; the provider's default effort applies |
+| Chat Completions requests must omit `temperature`, `top_p`, `logprobs`, and `top_logprobs` | Sends none of them |
+| Tool calling requires the Responses API | Sends no tools or functions, and rejects tool-call output as nonfinal |
+| No Flex processing (`service_tier: "flex"`) | Sends no `service_tier`, so it never requests Flex |
+| Responses appends top-level `instructions` after `input`; reusable instructions belong in a leading `developer` message for prompt caching | Uses Chat Completions with one short leading `system` instruction, so the Responses change does not apply; caching stays provider-controlled |
+
+The request therefore stays `model` plus system and user `messages` on
+`POST /v1/chat/completions`, identical to the GPT-6 Astra request it replaces.
+Offline HTTPX regressions pin that exact body for the `gpt-6.2-astra` default
+and a `gpt-6.2-sol` override. The adapter does not adopt Responses, tools,
+multi-agent delegation, background completion windows, or `prompt_cache_options`.
+Reasoning at the provider's default effort still runs inside the 60-second HTTPX
+timeouts and the default 60-second reasoning deadline; a slow answer fails
+explicitly instead of being retried with a larger budget. No live account or
+inference verification was performed.
+
 ### Optional GPT-6.1 Terra
 
 The [Terra model page](https://developers.openai.com/api/docs/models/gpt-6.1-terra),
-rechecked **2026-11-12 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
+rechecked **2026-11-19 America/Los_Angeles**, names the exact ID `gpt-6.1-terra`.
 It documents text/image input, text output, and both Chat Completions and
 Responses, but **tool calling requires Responses**. Its reasoning efforts are
 `none`, `low`, `medium` (default), `high`, `xhigh`, and `max`.
@@ -169,7 +224,7 @@ These are provider capabilities, not implemented application features or
 measured speed/quality improvements.
 
 Terra is an optional text-model selection here, not a replacement for
-`gpt-6-astra`. This adapter still sends only `model` and text `messages` to
+the `gpt-6.2-astra` default. This adapter still sends only `model` and text `messages` to
 Chat Completions. It sends no reasoning-effort override and exposes no effort
 setting, so Terra's documented provider default applies rather than a locally
 pinned effort. Selecting its ID adds neither image input, computer use,
@@ -178,7 +233,7 @@ does not establish this account's access or live payload compatibility.
 
 ### Kimi legacy overrides and retirement notice
 
-The **2026-11-12 America/Los_Angeles** direct read of the
+The **2026-11-19 America/Los_Angeles** direct read of the
 [Kimi model list](https://platform.kimi.ai/docs/models) still lists
 `kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and `kimi-k2.6` under deprecated
 models, and Kimi's [pricing notice](https://platform.kimi.ai/docs/pricing/chat)
@@ -251,7 +306,7 @@ historical evidence, not settings to rewrite.
    completed answer. Never put credentials or request headers in evidence.
 6. **Keep or roll back explicitly.** Restore the previously recorded, still
    available ID in the configuration source that actually selected it and
-   restart. If the baseline used the OpenAI default, that ID is `gpt-6-astra`;
+   restart. If the baseline used the OpenAI default, that ID is `gpt-6.2-astra` (`gpt-6-astra` before 2026-11-19);
    a custom baseline may differ. Removing only an environment override can
    expose an older `.env` value. For Kimi, remove legacy overrides to use
    `kimi-k3.1-pro`, or select a verified available alternative; do not roll back
@@ -458,11 +513,15 @@ The offline fake and the public response schema for custom adapters are unchange
 
 The adapter keeps `POST https://api.openai.com/v1/chat/completions`, using the
 selected `model` plus system and user messages. The
-[GPT-6 Astra migration guide](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)
-forbids `temperature`, `top_p`, and `top_logprobs`, plus `logprobs` for Chat
-Completions. No sampling overrides are sent. Astra tool calling requires the
-Responses API; keeping Chat Completions is appropriate only for this text-only
-adapter, not evidence of tool support.
+[GPT-6.2 migration quickstart](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra#migration-quickstart),
+checked **2026-11-19 America/Los_Angeles**, tells Chat Completions callers to omit
+`temperature`, `top_p`, `logprobs`, and `top_logprobs`, rejects reasoning effort
+`none` (callers using `none` or `minimal` should move to `low`), and requires the
+Responses API for tool calling, as the earlier GPT-6 Astra guide did. No sampling,
+logprob, reasoning-effort, tool, or service-tier field is sent, so the default
+GPT-6.2 Astra, a GPT-6.2 Sol override, and older GPT-6 IDs all receive the same
+body. Keeping Chat Completions is appropriate only for this text-only adapter,
+not evidence of tool support. See [GPT-6.2 Astra and Sol](#gpt-62-astra-and-sol).
 
 ### Anthropic
 
@@ -546,27 +605,36 @@ documents Argon REST calls and a client-side continuation loop. That loop,
 streaming, and Interactions background execution are not implemented here.
 The new finish-reason guard rejects unfinished hops; it does not enable long decode.
 
-Gemini 4 Carbon and Hydrogen were checked **2026-11-12 America/Los_Angeles**.
+Gemini 4 Carbon and Hydrogen were checked **2026-11-12** and Gemini 4 Neon **2026-11-19**
+(America/Los_Angeles).
 The [Hydrogen guide](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
 says `gemini-4-hydrogen` is served by both `generateContent` and the Interactions
 API. It defaults to `high` thinking, adds `xhigh`, and rejects `minimal`;
 [Carbon](https://aistudio.google.com/docs/whats-new-gemini-4-carbon) and Argon
-default to `medium` and cap at `high`. Google asks callers to remove
-`temperature`, `top_p`, and `top_k`. This adapter sends no generation
-configuration at all, so every Gemini 4 ID gets no sampling values and no
-thinking level: each model's documented default applies, and no thinking-level
-setting is added. A non-streaming REST hop holds up to 32,768 tokens on Carbon
-and Argon and 65,536 on Hydrogen; a longer answer ends in the `CONTINUATION`
-hop rejected above. Hydrogen does not support explicit context caching, which
-this adapter never requests. Carbon and Argon are paid-tier only, and Carbon
-spends more thinking tokens per turn than Argon.
+default to `medium` and cap at `high`. The
+[Neon guide](https://aistudio.google.com/docs/whats-new-gemini-4-neon) says moving
+from another Gemini 4 model to `gemini-4-neon` needs no request-schema change; it
+is served by `generateContent` and the Interactions API, and like Hydrogen it
+defaults to `high` thinking, adds `xhigh`, and rejects `minimal`.
+Google asks callers to remove `temperature`, `top_p`, and `top_k`. This adapter
+sends no generation configuration at all, so every Gemini 4 ID, Neon included,
+gets no sampling values and no thinking level: each model's documented default
+applies, and no thinking-level setting is added. A non-streaming REST hop holds
+up to 32,768 tokens on Carbon and Argon and 65,536 on Hydrogen and Neon; a longer
+answer ends in the `CONTINUATION` hop rejected above. Hydrogen and Neon do not
+support explicit context caching, which this adapter never requests. Carbon,
+Argon, and Neon are paid-tier only, and Carbon spends more thinking tokens per
+turn than Argon. Neon's guide also warns against prompting for raw-text JSON tool
+calls without declared tools, which can end in `MALFORMED_FUNCTION_CALL`; this
+adapter declares no tools, sends no system instruction, and rejects that finish
+reason as nonfinal output.
 
-Google's Argon migration checklist recommends client timeouts of at least
+Google's Argon and Neon migration checklists recommend client timeouts of at least
 15 minutes for hard prompts; the generateContent long-decode guide recommends a
 20-minute HTTP read timeout. This repository instead retains **60-second HTTPX
 network-operation timeouts** and a **60-second reasoning-phase deadline by
-default**, including retries and waits. Slow Argon or Carbon overrides can therefore time
-out or return an explicit response error rather than a completed answer.
+default**, including retries and waits. Slow Argon, Carbon, or Neon overrides can
+therefore time out or return an explicit response error rather than a completed answer.
 No timeout, output-budget, thinking-level, endpoint, SDK, or selected-default
 change is made. Catalog presence and offline HTTPX regressions do not establish
 account entitlement, live compatibility, or workload suitability.
@@ -673,9 +741,12 @@ custom IDs reaching routed payloads/URLs, mocked HTTP request/response contracts
 multipart answer extraction without thought text, and unchanged routing/fakes.
 Sonnet regressions check exact model-specific controls, unchanged headers and
 budget, legacy rollback, and the absence of those controls for unknown/Opus/Fable
-IDs, including `claude-fable-5-2` and `claude-haiku-5-5`. Gemini 4 Carbon, Argon,
-and Hydrogen overrides on the SPEED route keep the exact `contents`-only body,
-with no sampling fields or thinking level.
+IDs, including `claude-fable-5-2` and `claude-haiku-5-5`. Gemini 4 Carbon, Neon,
+Argon, and Hydrogen overrides on the SPEED route keep the exact `contents`-only body,
+with no sampling fields or thinking level. The routed `gpt-6.2-astra` default and a
+`gpt-6.2-sol` override keep the exact Chat Completions body of `model` plus
+system/user `messages`, with no reasoning-effort, sampling, logprob, tool, or
+service-tier field.
 A real local runner using mocked HTTPX and SQLite confirms that the saved
 generation model matches the requested wire ID, not a provider-reported alias.
 Kimi regressions cover K3.1 Pro defaults through AppContainer for every task type,

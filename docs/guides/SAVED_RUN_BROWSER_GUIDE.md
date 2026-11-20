@@ -349,18 +349,17 @@ offline fake default when keys are absent. The checked lock includes FastAPI
 0.138.0, Pydantic 2.13.4, HTTPX 0.28.1 and Pillow 12.3.0. No dependency,
 framework, retrieval or provider migration is part of this feature.
 
-Official model pages were rechecked the same day:
-[OpenAI Astra](https://developers.openai.com/api/docs/models/gpt-6-astra),
-[OpenAI 6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+Official model pages were last rechecked **2026-11-19 America/Los_Angeles**:
+[OpenAI GPT-6.2 Astra](https://developers.openai.com/api/docs/models/gpt-6.2-astra),
+[GPT-6.2 Sol](https://developers.openai.com/api/docs/models/gpt-6.2-sol),
 [Anthropic](https://platform.claude.com/docs/en/models/overview),
-[Gemini Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash),
-and [Kimi](https://platform.kimi.ai/docs/overview.md).
-Selected defaults are now `gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`
-and `kimi-k3.1-pro`; the **2026-11-12 America/Los_Angeles** catalog review adds
-Claude Fable 5.2 and Gemini 4 Carbon/Hydrogen only as opt-in alternatives.
-The newer lower-cost `gpt-6.1-sol` is an alternative, with
+[Gemini](https://aistudio.google.com/docs/models),
+and [Kimi](https://platform.kimi.ai/docs/models).
+Selected defaults are now `gpt-6.2-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`
+and `kimi-k3.1-pro`; Claude Fable 5.2 and Gemini 4 Carbon/Neon/Hydrogen are
+opt-in alternatives. The lower-cost `gpt-6.2-sol` is an alternative, with
 Chat Completions limited to no-tool use and Responses required for tools;
-it does not support `none`/`minimal` reasoning effort. This is a catalog-only
+GPT-6.2 rejects `none` reasoning effort, which this adapter never sends. This is a catalog-only
 check, **not live account, inference, performance or budget verification**.
 Endpoints, effort, budgets and separately dated migration contracts are unchanged;
 see the [provider guide](PROVIDER_MODELS_GUIDE.md). Saved-run browsing uses none

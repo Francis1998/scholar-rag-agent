@@ -921,9 +921,9 @@ waits. Direct callers needing a total deadline must wrap the call in an async
 timeout. Cancellation always stops the wait rather than forcing an early retry.
 The default reasoning-phase deadline is also 60 seconds. These limits have not
 been raised to Google's longer Gemini 4 latency/long-decode recommendations;
-selecting `gemini-4-carbon`, `gemini-4-argon`, or `gemini-4-hydrogen` does not
+selecting `gemini-4-carbon`, `gemini-4-neon`, `gemini-4-argon`, or `gemini-4-hydrogen` does not
 add continuation, streaming, or background execution. Slow or unfinished
-Gemini 4 responses, most likely on Carbon or Argon, can fail within the current
+Gemini 4 responses, most likely on Carbon, Argon, or Neon, can fail within the current
 runtime. See the [dated Gemini limitations](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 This per-instance attempt limit is not a token/spend budget or an account-wide
 provider quota.
