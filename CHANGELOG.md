@@ -358,6 +358,16 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- The arXiv connector (`ArxivConnector.fetch`) sent every query containing a
+  `/` to arXiv's `id_list` parameter, because it treated any slash as an
+  old-style identifier. Ordinary searches such as `AdS/CFT`,
+  `TCP/IP congestion control` or `1/f noise` therefore failed: the live API
+  answers `id_list=AdS/CFT` with HTTP 400 ("incorrect id format"), so `fetch`
+  raised `httpx.HTTPStatusError` instead of returning papers. Only genuine
+  old-style identifiers — an archive, an optional subject class, a slash and a
+  seven-digit number with an optional version, such as `hep-th/9711200`,
+  `math.GT/0309136` or `cond-mat/0207270v2` — now use `id_list`; everything
+  else is sent as `search_query`.
 - The PMC full-text connector (`PmcConnector`) only read PMCIDs from
   `<article-id pub-id-type="pmc">`, but NCBI efetch now labels them
   `pub-id-type="pmcid"` (`PMC3531190`, beside `pmcid-ver`, `pmcaid`, and
