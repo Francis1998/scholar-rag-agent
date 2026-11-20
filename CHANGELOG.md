@@ -362,9 +362,11 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   free-text filter of `BioRxivCollectionsConnector.search`) matched query
   tokens by plain substring containment, so `RNA` matched "journal" and
   "internal", `cell` matched "excellent", and unrelated preprints came back as
-  search results. Query tokens now match whole words (case-insensitive), with
-  simple `-s` / `-es` plurals treated as the same word so `neuron` still finds
-  "neurons". Category-name queries such as `cell_biology` are unchanged. See the
+  search results. Query tokens now match whole words (case-insensitive); a
+  query word of three or more letters also matches its regular plural (`-s`, or
+  `-es` after `s`, `x`, `z`, `ch`, `sh`), so `neuron` still finds "neurons"
+  while `rat` does not match "rates" and `AIDS` does not match "aid".
+  Category-name queries such as `cell_biology` are unchanged. See the
   [bioRxiv source guide](docs/guides/BIORXIV_SOURCE_GUIDE.md).
 - The arXiv connector (`ArxivConnector.fetch`) sent every query containing a
   `/` to arXiv's `id_list` parameter, because it treated any slash as an

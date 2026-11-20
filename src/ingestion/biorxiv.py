@@ -31,6 +31,8 @@ _PAGE_SIZE_CAP = 100
 _DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$", re.IGNORECASE)
 _YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
 _WORD_PATTERN = re.compile(r"[a-z0-9]+")
+_SIBILANT_ENDINGS = ("s", "x", "z", "ch", "sh")
+_MIN_FOLDED_WORD_LENGTH = 3
 
 
 def text_words(text: str) -> set[str]:
@@ -48,23 +50,26 @@ def text_words(text: str) -> set[str]:
 def word_matches(word: str, words: set[str]) -> bool:
     """Return whether ``word`` occurs in ``words`` as a whole word.
 
-    Simple English plurals count as the same word (``neuron`` and ``neurons``,
-    ``virus`` and ``viruses``), but a word never matches a fragment of a longer
-    word, so ``rna`` does not match ``journal``.
+    A query word of three or more characters also matches its regular English
+    plural: ``-s`` (``neuron`` → ``neurons``), or ``-es`` after ``s``, ``x``,
+    ``z``, ``ch`` or ``sh`` (``virus`` → ``viruses``). Folding only ever expands
+    the query word, so ``rat`` does not match ``rates``, ``rates`` does not match
+    ``rat`` and ``aids`` does not match ``aid``; a word never matches a fragment
+    of a longer word, so ``rna`` does not match ``journal``.
 
     Args:
         word: Lowercase query word.
         words: Lowercase words of the text being searched.
 
     Returns:
-        Whether the word, or its simple singular/plural form, is present.
+        Whether the word, or its regular plural, is present.
     """
-    forms = {word, f"{word}s", f"{word}es"}
-    if word.endswith("es"):
-        forms.add(word[:-2])
-    if word.endswith("s"):
-        forms.add(word[:-1])
-    return not forms.isdisjoint(words)
+    if word in words:
+        return True
+    if len(word) < _MIN_FOLDED_WORD_LENGTH:
+        return False
+    plural = f"{word}es" if word.endswith(_SIBILANT_ENDINGS) else f"{word}s"
+    return plural in words
 
 
 class BioRxivConnector:

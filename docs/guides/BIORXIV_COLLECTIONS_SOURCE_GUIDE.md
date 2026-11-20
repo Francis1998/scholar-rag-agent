@@ -26,8 +26,8 @@ GET https://api.biorxiv.org/details/biorxiv/2025-06-01/2025-07-01?category=cell_
 
 Recent-post window for free text such as the example's `cell biology`
 (client-side title/abstract/category filter; a post matches when any query
-token appears as a whole word, with simple `-s` / `-es` plurals folded, so
-`RNA` never matches "journal"):
+token appears as a whole word or, for words of three or more letters, as its
+regular `-s` / `-es` plural, so `RNA` never matches "journal"):
 
 ```text
 GET https://api.biorxiv.org/details/biorxiv/100
