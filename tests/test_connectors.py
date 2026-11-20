@@ -2268,6 +2268,41 @@ async def test_biorxiv_connector_treats_simple_plurals_as_the_same_word() -> Non
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("query", "text"),
+    [
+        ("rat", "Interest rates in rural clinics"),
+        ("rates", "A rat model of sepsis"),
+        ("AIDS", "First aid training for nurses"),
+        ("us", "The lab uses a new assay"),
+    ],
+)
+async def test_biorxiv_connector_does_not_fold_unrelated_words(query: str, text: str) -> None:
+    """Plural folding only expands a query word to its regular plural forms.
+
+    Stripping or adding ``-s`` / ``-es`` blindly conflated unrelated words:
+    ``rat`` matched "rates", ``rates`` matched "rat" and ``AIDS`` matched "aid".
+    """
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "title": text,
+                "doi": "10.1101/2024.01.01.444444",
+                "date": "2024-01-02",
+                "category": "epidemiology",
+                "abstract": "",
+                "server": "biorxiv",
+            }
+        ]
+    }
+    mock_client = _biorxiv_client(payload)
+    with patch("ingestion.biorxiv.httpx.AsyncClient", return_value=mock_client):
+        documents = await BioRxivConnector().search(query, max_results=5)
+
+    assert documents == []
+
+
+@pytest.mark.asyncio
 async def test_biorxiv_connector_supports_medrxiv_server() -> None:
     """The connector can target the medRxiv server."""
     payload: dict[str, object] = {
@@ -4487,6 +4522,34 @@ async def test_biorxiv_collections_connector_matches_query_terms_as_whole_words(
         )
 
     assert [document.metadata["doi"] for document in documents] == ["10.1101/2024.03.01.111111"]
+
+
+@pytest.mark.asyncio
+async def test_biorxiv_collections_connector_does_not_fold_unrelated_words() -> None:
+    """The any-token collections filter must not conflate ``rates``/``rat`` or ``AIDS``/``aid``."""
+    payload: dict[str, object] = {
+        "collection": [
+            {
+                "doi": "10.1101/2024.03.03.333333",
+                "title": "A rat model of sepsis",
+                "authors": "Ito, M.",
+                "date": "2024-03-03",
+                "category": "immunology",
+                "abstract": "First aid outcomes in rodents.",
+                "server": "biorxiv",
+            }
+        ]
+    }
+    for query in ("rates", "AIDS"):
+        mock_client = _biorxiv_collections_client(payload)
+        with patch("ingestion.biorxiv_collections.httpx.AsyncClient", return_value=mock_client):
+            documents = await BioRxivCollectionsConnector().search(
+                query,
+                max_results=5,
+                server="biorxiv",
+            )
+
+        assert documents == [], query
 
 
 @pytest.mark.asyncio
