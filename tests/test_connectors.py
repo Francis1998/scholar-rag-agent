@@ -127,6 +127,61 @@ async def test_arxiv_connector_uses_id_list_for_versioned_id() -> None:
     assert "search_query" not in params
 
 
+def _arxiv_mock_client() -> AsyncMock:
+    response = httpx.Response(200, text=ARXIV_FIXTURE, request=httpx.Request("GET", "http://test"))
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+    return mock_client
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "query",
+    ["AdS/CFT", "TCP/IP congestion control", "input/output scheduling", "1/f noise"],
+)
+async def test_arxiv_connector_searches_free_text_queries_containing_a_slash(query: str) -> None:
+    """A free-text query that merely contains ``/`` must be searched, not looked up.
+
+    Any ``/`` used to route the query to ``id_list``; arXiv answers
+    ``id_list=AdS/CFT`` with HTTP 400 ("incorrect id format"), so ordinary
+    searches such as ``AdS/CFT`` raised instead of returning papers.
+    """
+    mock_client = _arxiv_mock_client()
+
+    with patch("ingestion.arxiv.httpx.AsyncClient", return_value=mock_client):
+        await ArxivConnector().fetch(query, max_results=3)
+
+    params = mock_client.get.call_args.kwargs["params"]
+    assert params.get("search_query") == query
+    assert params.get("max_results") == 3
+    assert "id_list" not in params
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "hep-th/9711200",
+        "math/0309136",
+        "cond-mat/0207270v2",
+        "math.GT/0309136",
+        " astro-ph/9905116 ",
+    ],
+)
+async def test_arxiv_connector_uses_id_list_for_old_style_ids(identifier: str) -> None:
+    """Old-style ``archive[.subject]/YYMMNNN[vN]`` identifiers still resolve via id_list."""
+    mock_client = _arxiv_mock_client()
+
+    with patch("ingestion.arxiv.httpx.AsyncClient", return_value=mock_client):
+        await ArxivConnector().fetch(identifier)
+
+    params = mock_client.get.call_args.kwargs["params"]
+    assert params.get("id_list") == identifier.strip()
+    assert "search_query" not in params
+
+
 @pytest.mark.asyncio
 async def test_crossref_connector_searches_and_normalizes_works() -> None:
     """CrossrefConnector normalizes work items, stripping JATS abstract markup."""

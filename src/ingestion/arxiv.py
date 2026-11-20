@@ -13,9 +13,12 @@ ATOM_NAMESPACE = "{http://www.w3.org/2005/Atom}"
 
 # New-style arXiv identifiers are ``YYMM.NNNNN`` with an optional ``vN`` version
 # suffix (e.g. ``2301.00001`` or ``2301.00001v2``). Old-style identifiers carry
-# an archive prefix and a slash (e.g. ``math/0309136``) and are detected
-# separately by the presence of ``/``.
+# an archive (optionally with a subject class), a slash and a seven-digit
+# ``YYMMNNN`` number (e.g. ``hep-th/9711200``, ``math.GT/0309136`` or
+# ``cond-mat/0207270v2``). A free-text query that merely contains ``/`` (such
+# as ``AdS/CFT``) is not an identifier: arXiv rejects it as an ``id_list``.
 _ARXIV_ID_PATTERN = re.compile(r"^\d{4}\.\d{4,5}(v\d+)?$")
+_OLD_STYLE_ARXIV_ID_PATTERN = re.compile(r"^[a-z]+(?:-[a-z]+)*(?:\.[A-Za-z]{2})?/\d{7}(v\d+)?$")
 
 
 class ArxivConnector:
@@ -29,7 +32,7 @@ class ArxivConnector:
             "start": 0,
             "max_results": max_results,
         }
-        if _ARXIV_ID_PATTERN.match(identifier) or "/" in identifier:
+        if _ARXIV_ID_PATTERN.match(identifier) or _OLD_STYLE_ARXIV_ID_PATTERN.match(identifier):
             params = {"id_list": identifier, "max_results": max_results}
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(ARXIV_API_URL, params=params)
