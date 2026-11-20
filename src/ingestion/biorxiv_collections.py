@@ -22,6 +22,7 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 
+from ingestion.biorxiv import text_words, word_matches
 from ingestion.chunking import stable_id
 from retrieval.models import Document
 
@@ -153,17 +154,23 @@ class BioRxivCollectionsConnector:
 
     @classmethod
     def _matches(cls, item: dict[str, object], query_tokens: set[str]) -> bool:
-        """Return True when any query token appears in title or abstract."""
+        """Return True when any query token appears in title or abstract.
+
+        Tokens match whole words (simple plurals fold together), never
+        fragments of longer words.
+        """
         if not query_tokens:
             return True
-        haystack = " ".join(
-            [
-                cls._as_str(item.get("title")).lower(),
-                cls._as_str(item.get("abstract")).lower(),
-                cls._as_str(item.get("category")).lower(),
-            ]
+        words = text_words(
+            " ".join(
+                [
+                    cls._as_str(item.get("title")),
+                    cls._as_str(item.get("abstract")),
+                    cls._as_str(item.get("category")),
+                ]
+            )
         )
-        return any(token in haystack for token in query_tokens)
+        return any(word_matches(token, words) for token in query_tokens)
 
     @classmethod
     def _matches_category(cls, item: dict[str, object], category_tokens: set[str]) -> bool:

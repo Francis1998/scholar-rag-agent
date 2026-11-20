@@ -358,6 +358,14 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- The bioRxiv / medRxiv connectors (`BioRxivConnector.search` and the
+  free-text filter of `BioRxivCollectionsConnector.search`) matched query
+  tokens by plain substring containment, so `RNA` matched "journal" and
+  "internal", `cell` matched "excellent", and unrelated preprints came back as
+  search results. Query tokens now match whole words (case-insensitive), with
+  simple `-s` / `-es` plurals treated as the same word so `neuron` still finds
+  "neurons". Category-name queries such as `cell_biology` are unchanged. See the
+  [bioRxiv source guide](docs/guides/BIORXIV_SOURCE_GUIDE.md).
 - The arXiv connector (`ArxivConnector.fetch`) sent every query containing a
   `/` to arXiv's `id_list` parameter, because it treated any slash as an
   old-style identifier. Ordinary searches such as `AdS/CFT`,

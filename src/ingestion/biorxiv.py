@@ -30,6 +30,41 @@ _SUPPORTED_SERVERS = frozenset({"biorxiv", "medrxiv"})
 _PAGE_SIZE_CAP = 100
 _DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$", re.IGNORECASE)
 _YEAR_PREFIX_PATTERN = re.compile(r"^(\d{4})")
+_WORD_PATTERN = re.compile(r"[a-z0-9]+")
+
+
+def text_words(text: str) -> set[str]:
+    """Split text into the lowercase alphanumeric words used for query matching.
+
+    Args:
+        text: Free text such as a query, title, or abstract.
+
+    Returns:
+        Set of lowercase alphanumeric words.
+    """
+    return set(_WORD_PATTERN.findall(text.lower()))
+
+
+def word_matches(word: str, words: set[str]) -> bool:
+    """Return whether ``word`` occurs in ``words`` as a whole word.
+
+    Simple English plurals count as the same word (``neuron`` and ``neurons``,
+    ``virus`` and ``viruses``), but a word never matches a fragment of a longer
+    word, so ``rna`` does not match ``journal``.
+
+    Args:
+        word: Lowercase query word.
+        words: Lowercase words of the text being searched.
+
+    Returns:
+        Whether the word, or its simple singular/plural form, is present.
+    """
+    forms = {word, f"{word}s", f"{word}es"}
+    if word.endswith("es"):
+        forms.add(word[:-2])
+    if word.endswith("s"):
+        forms.add(word[:-1])
+    return not forms.isdisjoint(words)
 
 
 class BioRxivConnector:
@@ -189,6 +224,9 @@ class BioRxivConnector:
     def _matches(item: dict[str, object], query_tokens: set[str]) -> bool:
         """Return True when every query token appears in title or abstract.
 
+        Tokens match whole words (simple plurals fold together), never
+        fragments of longer words.
+
         Args:
             item: A preprint collection entry.
             query_tokens: Lowercase alphanumeric query tokens.
@@ -198,14 +236,16 @@ class BioRxivConnector:
         """
         if not query_tokens:
             return False
-        haystack = " ".join(
-            [
-                BioRxivConnector._as_str(item.get("title")),
-                BioRxivConnector._as_str(item.get("abstract")),
-                BioRxivConnector._as_str(item.get("category")),
-            ]
-        ).lower()
-        return all(token in haystack for token in query_tokens)
+        words = text_words(
+            " ".join(
+                [
+                    BioRxivConnector._as_str(item.get("title")),
+                    BioRxivConnector._as_str(item.get("abstract")),
+                    BioRxivConnector._as_str(item.get("category")),
+                ]
+            )
+        )
+        return all(word_matches(token, words) for token in query_tokens)
 
     @staticmethod
     def _tokens(query: str) -> set[str]:
@@ -217,7 +257,7 @@ class BioRxivConnector:
         Returns:
             Set of tokens used for client-side filtering.
         """
-        return set(re.findall(r"[a-z0-9]+", query.lower()))
+        return text_words(query)
 
     @staticmethod
     def _extract_year(date: str) -> str:
