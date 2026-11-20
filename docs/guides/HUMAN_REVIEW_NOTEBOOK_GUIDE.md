@@ -246,14 +246,14 @@ human intervention. The local gap was discoverability of already-recorded
 human feedback beside immutable evidence. This is original, narrower
 implementation work, not copied code, a new integration or feature parity.
 
-**Dated model context, 2026-11-12 (America/Los_Angeles):**
+**Dated model context, 2026-11-19 (America/Los_Angeles):**
 [OpenAI's catalog](https://developers.openai.com/api/docs/models.md) recommends
-`gpt-6-astra` and lists `gpt-6.1-sol`/`gpt-6.1-terra`/`gpt-6-luna`;
+`gpt-6.2-astra` and lists `gpt-6.2-sol`/`gpt-6.1-terra`/`gpt-6-luna`;
 [Claude](https://platform.claude.com/docs/en/models/overview) lists Fable 5.2 (superseding Fable 5.1),
 Opus 5.5, Sonnet 5.5 (released September 28) and Haiku 5.5;
-[Google](https://aistudio.google.com/docs/models) lists `gemini-4-carbon`,
-`gemini-4-argon`, and the new `gemini-4-hydrogen`; [Kimi](https://platform.kimi.ai/docs/models)
-names `kimi-k3.1-pro` flagship. Existing Astra/Sonnet 5.5/Gemini 3.8 Flash/Kimi K3.1 Pro
-defaults are unchanged. This notebook needs none and makes no model calls.
+[Google](https://aistudio.google.com/docs/models) lists `gemini-4-carbon`, the new
+`gemini-4-neon`, `gemini-4-argon`, and `gemini-4-hydrogen`; [Kimi](https://platform.kimi.ai/docs/models)
+names `kimi-k3.1-pro` flagship. The defaults are GPT-6.2 Astra (new), Sonnet 5.5,
+Gemini 3.8 Flash and Kimi K3.1 Pro. This notebook needs none and makes no model calls.
 Catalog checks do not test inference, account entitlement or new aliases
 through the existing adapters.

@@ -175,8 +175,8 @@ Expected provider matrix, in enum order:
 | only Kimi keyed; default Anthropic missing | fake | fake | kimi | fake |
 | no keys; default OpenAI | fake | fake | fake | fake |
 
-The requested IDs in the all-keyed case remain `claude-sonnet-5-5`,
-`gemini-3.8-flash`, `kimi-k3.1-pro`, and `gpt-6-astra`.
+The requested IDs in the all-keyed case are `claude-sonnet-5-5`,
+`gemini-3.8-flash`, `kimi-k3.1-pro`, and `gpt-6.2-astra`.
 An empty or `None` key is absent; the builder checks truthiness, not credential
 validity. A nonempty placeholder (even whitespace) is not authentication.
 Custom direct-router names are allowed by `ModelRouter`; they are not valid
@@ -246,7 +246,7 @@ with (
     assert explicit.openai_model == "explicit-model"
     os.environ.pop("SCHOLAR_RAG_OPENAI_MODEL")
     assert Settings(_env_file=dotenv).openai_model == "dotenv-model"
-    assert Settings(_env_file=None).openai_model == "gpt-6-astra"
+    assert Settings(_env_file=None).openai_model == "gpt-6.2-astra"
     assert initial.openai_model == "environment-model"
     rebuilt = build_model_router(explicit)
     original_adapter = router.route(TaskType.DEFAULT)
@@ -384,15 +384,16 @@ state machine, not LangGraph or a hosted vector database.
 
 All live adapters are stateless, single-turn text adapters. Selecting a model
 ID adds no tools, streaming, multimodal input, or reasoning-state replay.
-The selected defaults remain unchanged. Official documentation reviewed
-**2026-11-12 America/Los_Angeles** provides catalog context, not live inference:
+Only the OpenAI default changed, to `gpt-6.2-astra`. Official documentation reviewed
+**2026-11-19 America/Los_Angeles** provides catalog context, not live inference:
 
 | Official source | Relevant distinction |
 | --- | --- |
-| [OpenAI model catalog](https://developers.openai.com/api/docs/models.md) | Astra is the flagship; Sol, Terra, and Luna have different documented positioning, not measured tradeoffs here. |
+| [OpenAI model catalog](https://developers.openai.com/api/docs/models.md) | GPT-6.2 Astra (new; the selected default) is the flagship; GPT-6.2 Sol, Terra, and Luna have different documented positioning, not measured tradeoffs here. |
+| [Using GPT-6.2](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra) | Text Chat Completions is supported; tools require Responses, and reasoning effort `none` is rejected. The adapter sends no effort, so no effort setting exists to misconfigure. |
 | [GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra.md) | Text Chat Completions is supported; tools require Responses. Its reasoning-effort options do not create an effort setting in this repository. |
 | [Anthropic model overview](https://platform.claude.com/docs/en/models/overview) | Generally recommends Opus 5.5 and lists Fable 5.2 (new), Sonnet 5.5, and Haiku 5.5; this repository still selects Sonnet 5.5. |
-| [Gemini models](https://aistudio.google.com/docs/models) | Lists Gemini 4 Carbon, Argon, and Hydrogen; [Hydrogen](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) is Google's recommended upgrade from 3.8 Flash, but the existing SPEED choice remains Gemini 3.8 Flash, not an automatic upgrade. |
+| [Gemini models](https://aistudio.google.com/docs/models) | Lists Gemini 4 Carbon, the new paid-tier [Neon](https://aistudio.google.com/docs/whats-new-gemini-4-neon), Argon, and Hydrogen; [Hydrogen](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) is Google's recommended upgrade from 3.8 Flash, but the existing SPEED choice remains Gemini 3.8 Flash, not an automatic upgrade. |
 | [Kimi quickstart](https://platform.kimi.ai/docs/get-your-api-key.md) | Recommends K3.1 Pro and describes a high-speed variant; the variant is not an automatic fallback. |
 
 This review does not redate earlier migration-contract checks in the

@@ -11,7 +11,7 @@ Scholar RAG Agent uses `pydantic-settings` and environment variables.
 | `SCHOLAR_RAG_MAX_SOURCE_DOCS` | `50` | Maximum retrieved chunk results per query, despite the historical setting name; not a distinct-document quota. |
 | `SCHOLAR_RAG_MAX_HOPS` | `5` | Global hop bound; planner tasks request one to three hops depending on intent. |
 | `SCHOLAR_RAG_DEFAULT_MODEL` | `openai` | Exact lowercase provider family for DEFAULT tasks and missing-provider fallbacks: `openai`, `anthropic`, `gemini`, `kimi`, or `fake`; not an API model ID. |
-| `SCHOLAR_RAG_OPENAI_MODEL` | `gpt-6-astra` | OpenAI Chat Completions model ID. |
+| `SCHOLAR_RAG_OPENAI_MODEL` | `gpt-6.2-astra` | OpenAI Chat Completions model ID. |
 | `SCHOLAR_RAG_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Anthropic Messages model ID. |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini-3.8-flash` | Gemini generateContent model ID. |
 | `SCHOLAR_RAG_KIMI_MODEL` | `kimi-k3.1-pro` | Moonshot Chat Completions model ID. |
@@ -244,16 +244,24 @@ Gemini/Kimi providers still handle SPEED/COST.
 See the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md) for
 source-linked defaults and payload compatibility limits. The Sonnet 5.5 migration
 contract was checked on **2026-10-01 America/Los_Angeles**.
-All four official model catalogs were read again on **2026-11-12 America/Los_Angeles**.
-Anthropic now lists `claude-fable-5-2`, which supersedes `claude-fable-5-1`. Google
-lists `gemini-4-carbon` (its strongest reasoning model), `gemini-4-argon`, and the
-new `gemini-4-hydrogen`, its recommended upgrade from Gemini 3.8 Flash. This
+All four official model catalogs were read again on **2026-11-19 America/Los_Angeles**.
+OpenAI released `gpt-6.2-astra` (supersedes `gpt-6-astra`) on 2026-11-17, and
+`gpt-6.2-sol` (supersedes `gpt-6.1-sol`); both predecessors remain available. The
+OpenAI default is now `gpt-6.2-astra`, which costs 20% less than its predecessor
+and receives the same `model` + `messages` body: the adapter sends no reasoning
+effort (GPT-6.2 rejects `none`), sampling, logprob, or tool field.
+To keep the previous default, set `SCHOLAR_RAG_OPENAI_MODEL=gpt-6-astra` instead of `gpt-6.2-astra` and restart.
+A `.env` copied from an older `.env.example` still pins that previous ID until you
+edit it; `docker compose` reads the updated template directly.
+Anthropic lists `claude-fable-5-2`, which supersedes `claude-fable-5-1`. Google
+lists `gemini-4-carbon` (its strongest reasoning model), the new `gemini-4-neon` (paid tier only, between Hydrogen and Carbon),
+`gemini-4-argon`, and `gemini-4-hydrogen`, its recommended upgrade from Gemini 3.8 Flash. This
 repository retains `claude-sonnet-5-5` for REASONING and `gemini-3.8-flash` for
-its SPEED route; Fable 5.2 and Hydrogen are opt-in overrides, as explained in the
-[defaults decision](docs/guides/PROVIDER_MODELS_GUIDE.md#defaults-decision-for-the-2026-11-12-lineup).
-OpenAI's `gpt-6.1-terra` is an optional text-model override here, not a
-replacement for `gpt-6-astra`.
-Its tool calling requires Responses; selecting the ID does not add Responses,
+its SPEED route; Fable 5.2, Neon, and Hydrogen are opt-in overrides, as explained in the
+[defaults decision](docs/guides/PROVIDER_MODELS_GUIDE.md#defaults-decision-for-the-2026-11-19-lineup).
+OpenAI's `gpt-6.2-sol` and `gpt-6.1-terra` are optional text-model overrides here,
+not replacements for the flagship default.
+Their tool calling requires Responses; selecting an ID does not add Responses,
 image input, or tools to this adapter. The
 [selection checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
 provides a credential-free environment example, bounded evaluation, exact
@@ -273,8 +281,8 @@ Use `SCHOLAR_RAG_KIMI_MODEL=kimi-k3` to keep the previous model, or
 `SCHOLAR_RAG_KIMI_MODEL=kimi-k3.1-pro-highspeed` for the optional high-speed variant,
 then restart. Explicit Settings arguments still take precedence over environment,
 then `.env`, then defaults; remove older overrides to adopt the new default.
-All selected defaults and separately dated migration contracts are unchanged
-by today's catalog recheck.
+Apart from the OpenAI default, all selected defaults and separately dated
+migration contracts are unchanged by today's catalog recheck.
 Documentation and offline HTTPX contract tests do not establish live inference
 compatibility or account entitlement.
 The screening progress workflow performs zero model calls; this catalog check
@@ -284,9 +292,9 @@ Gemini still uses `generateContent`, not the current Interactions quickstart.
 Google rejects unrestricted standard keys; auth keys and appropriately restricted
 standard keys are covered in the [Gemini compatibility notes](docs/guides/PROVIDER_MODELS_GUIDE.md#google-gemini).
 Setting an API key header does not migrate the endpoint or the key's permissions.
-A Gemini 4 (Carbon, Argon, or Hydrogen) model override does not add long-decode
+A Gemini 4 (Carbon, Neon, Argon, or Hydrogen) model override does not add long-decode
 continuation or adopt Google's longer timeout recommendations. It sends no
-thinking level, so each model's documented default applies (`high` for Hydrogen,
+thinking level, so each model's documented default applies (`high` for Neon and Hydrogen,
 `medium` for Carbon and Argon). HTTPX network-operation timeouts remain 60 seconds;
 the reasoning-phase deadline remains 60 seconds by default, including retries
 and waits. See the same compatibility notes before choosing an alternative.

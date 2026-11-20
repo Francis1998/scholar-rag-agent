@@ -36,7 +36,7 @@ class ProviderCase(NamedTuple):
 
 
 PROVIDERS = [
-    ProviderCase("openai", OpenAIAdapter, "gpt-6-astra", "gpt-5.6-terra", "OPENAI_API_KEY"),
+    ProviderCase("openai", OpenAIAdapter, "gpt-6.2-astra", "gpt-5.6-terra", "OPENAI_API_KEY"),
     ProviderCase(
         "anthropic",
         AnthropicAdapter,
@@ -134,6 +134,13 @@ def test_settings_expose_current_model_defaults(provider_case: ProviderCase) -> 
     settings = Settings(_env_file=None)
     assert getattr(settings, f"{provider_case.name}_model") == provider_case.model
     assert settings.default_model == "openai"
+
+
+def test_compose_env_template_selects_current_defaults(provider_case: ProviderCase) -> None:
+    """docker-compose loads .env.example, so a stale template ID would pin an old model."""
+    template = Path(__file__).resolve().parents[1] / ".env.example"
+    settings = Settings(_env_file=template)
+    assert getattr(settings, f"{provider_case.name}_model") == provider_case.model
 
 
 @pytest.mark.parametrize("value", ["", " \t\n", None, 123, b"byte-model"])
@@ -543,14 +550,81 @@ async def test_anthropic_overrides_use_only_exact_model_controls(
     assert response.model_name == model
 
 
-@pytest.mark.parametrize("model", ["gemini-4-carbon", "gemini-4-hydrogen", "gemini-4-argon"])
+@pytest.mark.parametrize(
+    ("override", "model"),
+    [(None, "gpt-6.2-astra"), ("  gpt-6.2-sol  ", "gpt-6.2-sol")],
+    ids=["default-astra", "sol-override"],
+)
+async def test_gpt_6_2_routes_send_only_model_and_messages(
+    override: str | None,
+    model: str,
+    llm_request: LLMRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GPT-6.2 Chat Completions bodies carry no effort, sampling, logprob, or tool field.
+
+    The API rejects reasoning effort ``none`` (OpenAI moves ``minimal`` callers to
+    ``low``), Chat Completions rejects ``temperature``, ``top_p``, ``logprobs``, and
+    ``top_logprobs``, tool calling requires Responses, and Flex is unavailable.
+    Omitting every control keeps the provider's default effort on a text-only route.
+    """
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    if override is not None:
+        monkeypatch.setenv("SCHOLAR_RAG_OPENAI_MODEL", override)
+    adapter = build_model_router(Settings(_env_file=None)).route(TaskType.DEFAULT)
+    assert isinstance(adapter, OpenAIAdapter)
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "model": "server-reported-version",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": "Grounded answer [c1]."},
+                    }
+                ],
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond), trust_env=False)
+    with patch("llm.providers.httpx.AsyncClient", return_value=client):
+        response = await adapter.generate(llm_request)
+
+    [request] = requests
+    assert str(request.url) == "https://api.openai.com/v1/chat/completions"
+    assert request.headers["authorization"] == "Bearer test-provider-key"
+    assert json.loads(request.content) == {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "Answer with citation chunk IDs from the context."},
+            {
+                "role": "user",
+                "content": f"Context:\n{llm_request.context}\n\nQuestion:\n{llm_request.prompt}",
+            },
+        ],
+    }
+    assert response == LLMResponse(
+        text="Grounded answer [c1].",
+        citation_chunk_ids=["c1"],
+        raw_provider="openai",
+        model_name=model,
+    )
+
+
+@pytest.mark.parametrize(
+    "model", ["gemini-4-carbon", "gemini-4-neon", "gemini-4-hydrogen", "gemini-4-argon"]
+)
 async def test_gemini_4_speed_overrides_keep_provider_default_thinking(
     model: str, llm_request: LLMRequest, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Gemini 4 IDs get no sampling or thinking level, so provider defaults apply.
 
-    Hydrogen defaults to ``high`` and rejects ``minimal``; Carbon and Argon default
-    to ``medium``. None of them may receive ``temperature``/``topP``/``topK``.
+    Neon and Hydrogen default to ``high`` and reject ``minimal``; Carbon and Argon
+    default to ``medium``. None of them may receive ``temperature``/``topP``/``topK``.
     """
     monkeypatch.setenv("GEMINI_API_KEY", "test-provider-key")
     monkeypatch.setenv("SCHOLAR_RAG_GEMINI_MODEL", model)

@@ -204,7 +204,7 @@ calls or current-corpus enrichment. Its fixed source/read limits and exact
 
 | Environment variable | `Settings` field | Default API model ID |
 | --- | --- | --- |
-| `SCHOLAR_RAG_OPENAI_MODEL` | `openai_model` | `gpt-6-astra` |
+| `SCHOLAR_RAG_OPENAI_MODEL` | `openai_model` | `gpt-6.2-astra` |
 | `SCHOLAR_RAG_ANTHROPIC_MODEL` | `anthropic_model` | `claude-sonnet-5-5` |
 | `SCHOLAR_RAG_GEMINI_MODEL` | `gemini_model` | `gemini-3.8-flash` |
 | `SCHOLAR_RAG_KIMI_MODEL` | `kimi_model` | `kimi-k3.1-pro` |
@@ -237,25 +237,28 @@ These fields accept custom IDs, not a hard-coded catalog allowlist. The selected
 model must support the adapter's endpoint and bounded, single-turn text payload.
 No model discovery, account-entitlement check, or inference call happens during
 settings validation. See the [provider model guide](guides/PROVIDER_MODELS_GUIDE.md)
-for the **2026-11-12 America/Los_Angeles** four-provider catalog review and
-[verified lineup](guides/PROVIDER_MODELS_GUIDE.md#model-lineup-verified-2026-11-12),
+for the **2026-11-19 America/Los_Angeles** four-provider catalog review and
+[verified lineup](guides/PROVIDER_MODELS_GUIDE.md#model-lineup-verified-2026-11-19),
 the separate **2026-10-24 America/Los_Angeles** Kimi K3.1 migration-contract check,
 the separately dated **2026-10-01 America/Los_Angeles** Anthropic migration-contract check,
-and model-specific limitations. Google's Gemini 4 lineup is now `gemini-4-carbon`,
-`gemini-4-argon`, and the new `gemini-4-hydrogen`, its recommended upgrade from
-3.8 Flash; the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI 6.1 Sol,
-6.1 Terra, Anthropic Haiku 5.5 and Fable 5.2, and Gemini 4 Hydrogen are catalog
-alternatives, not live adapter-compatibility claims. OpenAI documents Chat
-Completions without tools
-for [6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) and
+and model-specific limitations.
+OpenAI's 2026-11-17 `gpt-6.2-astra` replaces `gpt-6-astra` as the default; `SCHOLAR_RAG_OPENAI_MODEL=gpt-6-astra` restores the previous, still-available model.
+Google's Gemini 4 lineup is now `gemini-4-carbon`, the new `gemini-4-neon`
+(paid tier only), `gemini-4-argon`, and `gemini-4-hydrogen`, its recommended upgrade from
+3.8 Flash; the selected SPEED-route default remains `gemini-3.8-flash`. OpenAI
+GPT-6.2 Sol (superseding 6.1 Sol), 6.1 Terra, Anthropic Haiku 5.5 and Fable 5.2, and Gemini 4
+Neon and Hydrogen are catalog alternatives, not live adapter-compatibility claims.
+OpenAI documents Chat Completions without tools for
+[GPT-6.2](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6.2-astra) and
 [6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra); tool use
-requires Responses, which this adapter does not implement. Terra's supported
-reasoning efforts are provider capabilities, not new configuration controls.
+requires Responses, which this adapter does not implement. GPT-6.2 also rejects
+reasoning effort `none`; this adapter sends no effort, sampling, or logprob field.
+Terra's supported reasoning efforts are provider capabilities, not new configuration controls.
 Selecting Terra adds no vision, computer use, or reasoning-state replay.
-All selected defaults, including `kimi-k3.1-pro`, endpoints, routing, and budgets remain unchanged by
-this catalog recheck.
+Except for the OpenAI default, all selected defaults, including `kimi-k3.1-pro`,
+endpoints, routing, and budgets remain unchanged by this catalog recheck.
 
-Selecting a Gemini 4 model (Carbon, Argon, or Hydrogen) does not implement its
+Selecting a Gemini 4 model (Carbon, Neon, Argon, or Hydrogen) does not implement its
 long-decode loop or background execution, and sends no thinking level.
 Google recommends longer client timeouts for that workload; this repository
 keeps 60-second HTTPX network-operation timeouts and a 60-second reasoning-phase

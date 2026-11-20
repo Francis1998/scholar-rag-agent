@@ -327,21 +327,22 @@ No competitor code, assets or paper text were copied.
 
 ### Current catalog versus configured defaults
 
-Checked **2026-11-12 America/Los_Angeles**; no runtime defaults changed:
+Checked **2026-11-19 America/Los_Angeles**; only the OpenAI default changed:
 [OpenAI's catalog](https://developers.openai.com/api/docs/models.md) highlights
-GPT-6 Astra (`gpt-6-astra`), GPT-6.1 Sol/Terra and GPT-6 Luna.
-The [Astra model page](https://developers.openai.com/api/docs/models/gpt-6-astra)
+GPT-6.2 Astra (`gpt-6.2-astra`), GPT-6.2 Sol, GPT-6.1 Terra and GPT-6 Luna.
+The [GPT-6.2 Astra model page](https://developers.openai.com/api/docs/models/gpt-6.2-astra)
 explicitly supports Chat Completions.
 [Anthropic's catalog](https://platform.claude.com/docs/en/models/overview)
 lists Claude Fable 5.2 (`claude-fable-5-2`, superseding Fable 5.1), Opus 5.5 (`claude-opus-5-5`),
 Sonnet 5.5 (`claude-sonnet-5-5`) and Haiku 5.5 (`claude-haiku-5-5`).
 [Google's catalog](https://aistudio.google.com/docs/models) lists Gemini 4 Carbon
-(`gemini-4-carbon`), Gemini 4 Argon (`gemini-4-argon`), the new Gemini 4 Hydrogen
-(`gemini-4-hydrogen`) and [Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash).
+(`gemini-4-carbon`), the new Gemini 4 Neon (`gemini-4-neon`), Gemini 4 Argon
+(`gemini-4-argon`), Gemini 4 Hydrogen (`gemini-4-hydrogen`) and
+[Gemini 3.8 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash).
 [Kimi recommends Kimi K3.1 Pro](https://platform.kimi.ai/docs/get-your-api-key.md)
 (`kimi-k3.1-pro`).
 
-Repository defaults stay `gpt-6-astra`, `claude-sonnet-5-5`, `gemini-3.8-flash`
+Repository defaults are `gpt-6.2-astra` (new), `claude-sonnet-5-5`, `gemini-3.8-flash`
 for SPEED, and `kimi-k3.1-pro`, all configurable. Catalog descriptions are not
 account-entitlement checks or live-call compatibility tests. This workbench
 calls none of them. The real stack remains Python 3.11+, FastAPI/Pydantic,

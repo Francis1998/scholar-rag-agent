@@ -321,6 +321,6 @@ Primary documentation checked **2026-10-09 America/Los_Angeles**:
 No upstream code, passages, benchmark results or historical model defaults were
 copied. The stack remains FastAPI/Pydantic/HTTPX/SQLite with the existing custom
 state machine, not LangGraph or LlamaIndex. The separately checked
-[provider catalog](PROVIDER_MODELS_GUIDE.md) retains `gpt-6-astra`,
+[provider catalog](PROVIDER_MODELS_GUIDE.md) selects `gpt-6.2-astra`,
 `claude-sonnet-5-5`, `gemini-3.8-flash`, and `kimi-k3.1-pro`; catalog presence is not a
 live compatibility or account-access test.

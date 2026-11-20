@@ -619,23 +619,25 @@ For the exact wiring and storage lifecycle, see [Architecture](ARCHITECTURE.md).
 For current model IDs, per-provider overrides, routing, and dated official
 sources, use the [provider model guide](docs/guides/PROVIDER_MODELS_GUIDE.md).
 
-The **2026-11-12 America/Los_Angeles** direct review of the official catalogs
-adds Claude Fable 5.2, which supersedes Fable 5.1, and Gemini 4 Carbon and Hydrogen.
-It leaves all selected defaults unchanged. The
-[provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md#model-lineup-verified-2026-11-12)
+The **2026-11-19 America/Los_Angeles** direct review of the official catalogs
+adds OpenAI's GPT-6.2 Astra and GPT-6.2 Sol (2026-11-17), which supersede GPT-6 Astra and GPT-6.1 Sol,
+and Google's Gemini 4 Neon (2026-11-18), between Gemini 4 Hydrogen and Carbon.
+The OpenAI default moves to `gpt-6.2-astra`, 20% cheaper per token than
+its predecessor; the Anthropic, Gemini, and Kimi defaults are unchanged. The
+[provider guide](docs/guides/PROVIDER_MODELS_GUIDE.md#model-lineup-verified-2026-11-19)
 lists the verified lineup with dated list prices, the per-role defaults decision,
 and the earlier, separately dated compatibility checks.
 
 | Provider | Repository default | Current official guidance |
 | --- | --- | --- |
-| OpenAI | `gpt-6-astra` | [OpenAI models](https://developers.openai.com/api/docs/models): Astra is the flagship for complex reasoning and coding, `gpt-6.1-sol` offers near-Astra performance at lower cost, `gpt-6.1-terra` targets efficient visual/writing work, and `gpt-6-luna` cost-sensitive volume. These are provider descriptions, not implemented vision/tools or measured tradeoffs here. |
+| OpenAI | `gpt-6.2-astra` | [OpenAI models](https://developers.openai.com/api/docs/models): [`gpt-6.2-astra`](https://developers.openai.com/api/docs/models/gpt-6.2-astra) (new; supersedes `gpt-6-astra`) is the flagship for complex reasoning and coding, [`gpt-6.2-sol`](https://developers.openai.com/api/docs/models/gpt-6.2-sol) (new; supersedes `gpt-6.1-sol`) the go-to model for everyday work at lower cost, `gpt-6.1-terra` targets efficient visual/writing work, and `gpt-6-luna` cost-sensitive volume. These are provider descriptions, not implemented vision/tools or measured tradeoffs here. |
 | Anthropic | `claude-sonnet-5-5` | [Claude catalog](https://platform.claude.com/docs/en/models/overview): generally recommends `claude-opus-5-5`, with `claude-fable-5-2` (new; supersedes `claude-fable-5-1`) for demanding long-horizon reasoning and `claude-haiku-5-5` for latency-sensitive work. Sonnet remains this bounded text adapter's selection. |
-| Google | `gemini-3.8-flash` | [Gemini catalog](https://aistudio.google.com/docs/models): `gemini-4-carbon` is the strongest reasoning model, `gemini-4-argon` the efficient frontier model, and [`gemini-4-hydrogen`](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) (new) the recommended upgrade from 3.8 Flash, at twice Flash's list price through 2026-12-31. Flash remains the SPEED-route default; Hydrogen is an opt-in override. |
+| Google | `gemini-3.8-flash` | [Gemini catalog](https://aistudio.google.com/docs/models): `gemini-4-carbon` is the strongest reasoning model, [`gemini-4-neon`](https://aistudio.google.com/docs/whats-new-gemini-4-neon) (new; paid tier only) sits between Hydrogen and Carbon for complex work with fast end-to-end completion, `gemini-4-argon` is the efficient frontier model, and [`gemini-4-hydrogen`](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen) the recommended upgrade from 3.8 Flash, at twice Flash's list price through 2026-12-31. Flash remains the SPEED-route default; Neon and Hydrogen are opt-in overrides. |
 | Kimi | `kimi-k3.1-pro` | [Kimi catalog](https://platform.kimi.ai/docs/models): K3.1 Pro is the latest flagship, with `kimi-k3.1-pro-highspeed` as an optional variant, not an automatic fallback. |
 
 Use the [selection and migration checklist](docs/guides/PROVIDER_MODELS_GUIDE.md#selection-and-migration-checklist)
-for an explicit Terra, Hydrogen, or Fable 5.2 override, bounded evaluation, saved provider/model
-evidence, and rollback. Kimi's [K2 notice](docs/guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
+for an explicit GPT-6.2 Sol, Terra, Gemini 4 Neon or Hydrogen, or Fable 5.2 override, bounded
+evaluation, saved provider/model evidence, and rollback. Kimi's [K2 notice](docs/guides/PROVIDER_MODELS_GUIDE.md#kimi-legacy-overrides-and-retirement-notice)
 closed the K2 series, including `kimi-k2.7-code`, `kimi-k2.7-code-highspeed`, and
 `kimi-k2.6`, to newly registered users on **2026-10-31**; users registered
 **before November 1, 2026** can keep using those IDs until Kimi retires the
@@ -646,7 +648,9 @@ Check legacy overrides; the repository's K3.1 default already needs no migration
 These remain stateless, single-turn text adapters: OpenAI and Kimi use Chat
 Completions, Anthropic Messages, and Gemini `generateContent`. Selecting another
 ID does not add image input, tool loops, streaming, or a different endpoint.
-Terra tool calling requires Responses, which this adapter does not implement.
+GPT-6.2 and Terra tool calling require Responses, which this adapter does not implement.
+The OpenAI body is only `model` plus messages: it never sends the reasoning effort
+`none` that GPT-6.2 rejects, or sampling, logprob, or tool fields.
 Earlier Kimi and Sonnet migration checks are dated separately in the provider guide;
 explicit `kimi-k3` rollback overrides remain available.
 Routing and budgets are unchanged. Catalog guidance is not a repository
