@@ -23,8 +23,12 @@ GET https://api.biorxiv.org/details/biorxiv/10.1101/2020.01.01.000001/na
 
 The content API has no free-text `q` parameter. This connector fetches a recent
 window (capped at **100** posts per call) and filters client-side by query
-tokens against title, abstract, and category. DOI-shaped queries are resolved
-directly via the DOI detail endpoint.
+tokens against title, abstract, and category. Every token must appear as a
+whole word (case-insensitive). A query word of three or more letters also
+matches its regular plural (`-s`, or `-es` after `s`, `x`, `z`, `ch`, `sh`), so
+`RNA` matches "RNA sequencing" but not "journal", `neuron` matches "neurons",
+and `rat` does not match "rates". DOI-shaped queries are resolved directly via
+the DOI detail endpoint.
 
 ## What you get
 
