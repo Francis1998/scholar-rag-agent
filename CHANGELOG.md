@@ -358,6 +358,15 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- The PubMed connector (`PubMedConnector.search`) read `ArticleTitle` with
+  `findtext`, which stops at the first inline child element. PubMed italicizes
+  species and gene names (`<i>Plasmodium falciparum</i>`) and marks formulas
+  with `<sub>`/`<sup>` inside titles, so such titles were cut short ("... in the
+  Digestive Vacuole of") and a title starting with an inline element was
+  replaced by the "Untitled PubMed article" placeholder — wrong titles that then
+  reached retrieval, citations, and BibTeX exports. The full title text is now
+  gathered across inline elements, like the abstract; a missing or blank title
+  still uses the placeholder.
 - The bioRxiv / medRxiv connectors (`BioRxivConnector.search` and the
   free-text filter of `BioRxivCollectionsConnector.search`) matched query
   tokens by plain substring containment, so `RNA` matched "journal" and

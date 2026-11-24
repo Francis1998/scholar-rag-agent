@@ -122,16 +122,14 @@ class PubMedConnector:
         documents: list[Document] = []
         for article in root.findall(".//PubmedArticle"):
             pmid = (article.findtext(".//MedlineCitation/PMID") or "").strip()
-            title = (
-                article.findtext(".//Article/ArticleTitle") or "Untitled PubMed article"
-            ).strip()
+            title = cls._extract_title(article)
             abstract = cls._extract_abstract(article)
             year = cls._resolve_year(article)
             source = f"{PUBMED_ARTICLE_URL}/{pmid}/" if pmid else title
             documents.append(
                 Document(
                     document_id=stable_id(source, "doc"),
-                    title=" ".join(title.split()),
+                    title=title,
                     text=abstract,
                     source=source,
                     metadata={
@@ -142,6 +140,29 @@ class PubMedConnector:
                 )
             )
         return documents
+
+    @staticmethod
+    def _extract_title(article: object) -> str:
+        """Return the full ``ArticleTitle`` text of a PubMed article.
+
+        PubMed italicizes species and gene names (``<i>``) and marks formulas
+        with ``<sub>``/``<sup>`` inside ``ArticleTitle``. ``findtext`` returned
+        only the text before the first inline child, which cut such titles short
+        and replaced titles that start with an inline element by the placeholder,
+        so the whole title is gathered with ``itertext`` like the abstract.
+
+        Args:
+            article: A ``PubmedArticle`` XML element.
+
+        Returns:
+            The whitespace-collapsed title, or ``"Untitled PubMed article"`` when
+            the title is missing or blank.
+        """
+        find = getattr(article, "find", None)
+        node = find(".//Article/ArticleTitle") if find is not None else None
+        itertext = getattr(node, "itertext", None)
+        title = " ".join("".join(itertext()).split()) if itertext is not None else ""
+        return title or "Untitled PubMed article"
 
     @staticmethod
     def _resolve_year(article: object) -> str:
