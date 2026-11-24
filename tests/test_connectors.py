@@ -1218,6 +1218,62 @@ async def test_pubmed_connector_preserves_abstract_with_inline_markup() -> None:
     assert documents[0].text == "The BRCA1 gene is essential for repair."
 
 
+PUBMED_INLINE_TITLE_FIXTURE = """<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40070001</PMID>
+      <Article>
+        <ArticleTitle>Stress tolerance of <i>Plasmodium falciparum</i> parasites.</ArticleTitle>
+        <Abstract><AbstractText>Body.</AbstractText></Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID>40070002</PMID>
+      <Article>
+        <ArticleTitle><i>BRCA1</i> loss and CO<sub>2</sub>-driven acidosis.</ArticleTitle>
+        <Abstract><AbstractText>Body.</AbstractText></Abstract>
+      </Article>
+    </MedlineCitation>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+
+
+@pytest.mark.asyncio
+async def test_pubmed_connector_preserves_title_with_inline_markup() -> None:
+    """Inline formatting tags in an ArticleTitle must not truncate or blank the title.
+
+    PubMed italicizes species and gene names inside ``ArticleTitle`` (for example
+    ``<i>Plasmodium falciparum</i>``) and marks chemical formulas with ``<sub>``.
+    ``findtext`` returns only the text before the first inline child, so a title
+    was cut at its first italic word, and a title that starts with an inline
+    element became the "Untitled PubMed article" placeholder.
+    """
+    esearch_response = httpx.Response(
+        200,
+        json={"esearchresult": {"idlist": ["40070001", "40070002"]}},
+        request=httpx.Request("GET", "http://test"),
+    )
+    efetch_response = httpx.Response(
+        200, text=PUBMED_INLINE_TITLE_FIXTURE, request=httpx.Request("GET", "http://test")
+    )
+    mock_client = AsyncMock()
+    mock_client.get.side_effect = [esearch_response, efetch_response]
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.pubmed.httpx.AsyncClient", return_value=mock_client):
+        documents = await PubMedConnector().search("plasmodium", max_results=2)
+
+    assert [document.title for document in documents] == [
+        "Stress tolerance of Plasmodium falciparum parasites.",
+        "BRCA1 loss and CO2-driven acidosis.",
+    ]
+
+
 @pytest.mark.asyncio
 async def test_pubmed_connector_returns_empty_on_no_hits() -> None:
     """An empty PMID list short-circuits before any efetch call."""
