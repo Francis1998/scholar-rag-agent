@@ -59,6 +59,7 @@ from storage.source_context import ContextDocumentIdentity
 
 PATH = "/explore/screening"
 PRIORITY_PATH = "/explore/screening-priority"
+STOPPING_PATH = "/explore/screening-stopping"
 MAX_FORM_BYTES = 65_536
 MAX_QUERY_BYTES = 65_536
 HISTORY_LIMIT = 5
@@ -275,6 +276,18 @@ def _fragments(
             },
         ),
         "Most likely relevant first: reopen the prioritized queue",
+    )
+    yield _link(
+        "screening-stopping",
+        _url(
+            root_path + STOPPING_PATH,
+            {
+                "collection_id": selection.collection_id,
+                "collection_revision": selection.collection_revision,
+                "collection_return": selection.navigation(),
+            },
+        ),
+        "When could you stop? Advisory stopping rules",
     )
     yield "</nav>"
     yield _literal(history.collection_name, "collection-name")
@@ -506,6 +519,14 @@ def _priority_item(
 def _priority_fragments(
     priority: ScreeningPriority, options: _PriorityOpen, root_path: str
 ) -> Iterator[str]:
+    stopping = _url(
+        root_path + STOPPING_PATH,
+        {
+            "collection_id": priority.collection_id,
+            "collection_revision": priority.collection_revision,
+            "collection_return": options.navigation(),
+        },
+    )
     yield '<nav aria-label="Screening navigation">'
     yield _collection_link(options.navigation(), root_path)
     yield _link(
@@ -516,6 +537,7 @@ def _priority_fragments(
         ),
         "Read this ordering as JSON (a separate read)",
     )
+    yield _link("priority-stopping", stopping, "When could you stop? Advisory stopping rules")
     yield "</nav>"
     yield _literal(priority.collection_name, "collection-name")
     yield _identity(priority.collection_id, "collection-id")
@@ -584,10 +606,13 @@ def _priority_fragments(
         f"<p>Ties: {_escaped(method.tie_break)}</p>"
         f"<p>Only the title and the first {MAX_FEATURE_TEXT_CHARACTERS} characters of stored "
         "text are read; nothing is sent anywhere.</p>"
-        '<p id="stopping-signal">No stopping signal is shown. Decisions keep per-paper '
-        "revisions and wall-clock times, not a reliable global decision order, so a count of "
-        "consecutive excludes since the last include would not be honest. When to stop "
-        "screening remains your judgment; prioritization gives no recall guarantee.</p>"
+        '<p id="stopping-signal">No stopping signal is shown on this ordering. Decisions '
+        "keep per-paper revisions and wall-clock times, not a guaranteed global decision "
+        "order. The separate "
+        f'<a href="{_escaped(stopping)}">advisory stopping rules</a> page uses recorded '
+        "decision times only under that stated assumption, flags detected inconsistencies "
+        "and offers a random-sample recall test. When to stop screening remains your "
+        "judgment; prioritization gives no recall guarantee.</p>"
         "</details>"
     )
 

@@ -633,6 +633,18 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
         ),
         "Most likely relevant first (opt-in order of papers still needing your decision)",
     )
+    yield _link(
+        "screening-stopping",
+        _url(
+            root_path + "/explore/screening-stopping",
+            {
+                "collection_id": snapshot.collection_id,
+                "collection_revision": snapshot.collection_revision,
+                "collection_return": options.token(),
+            },
+        ),
+        "When could you stop screening? Advisory stopping rules and a recall test",
+    )
     yield '</nav><nav aria-label="Independent dual-reviewer screening">'
     dual: dict[str, str | int | None] = {
         "collection_id": snapshot.collection_id,
