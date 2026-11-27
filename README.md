@@ -48,8 +48,10 @@ PDF-upload UI.
 
 ## Choose a workflow
 
-New: two or more reviewers can [screen the same collection blind under pseudonymous
-labels, resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
+New: [import the RIS, PubMed, CSL-JSON or CSV files your search exported](docs/guides/REFERENCE_IMPORT_GUIDE.md)
+into a screening-ready collection, with a dry-run preview and duplicate detection. Two or
+more reviewers can also [screen the same collection blind under pseudonymous labels,
+resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
 
 | What you can do | Integrated path | Next guide |
 | --- | --- | --- |
@@ -60,6 +62,7 @@ labels, resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SC
 | Recover paper IDs after restart | Browse bounded document summaries, filter by source/title, and select papers for queries | [Document catalog](docs/guides/DOCUMENT_CATALOG_GUIDE.md) |
 | Find exact wording and read its source in a browser | Search from `/explore`, inspect highlighted Unicode spans, page within an exact paper/collection, and return from source context without generation | [Browser/API/Python passage search](docs/guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Reuse a named paper selection after restart | Save a collection, then pass `collection_id` to `/query` or `/retrieve`; revisioned edits preserve old evidence | [Paper collections](docs/guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Start a review from exported search results | Upload RIS, PubMed MEDLINE/NBIB, CSL-JSON or CSV/TSV files; preview skipped records (with line numbers), duplicates within the import and against the collection, then explicitly add only new papers with per-file provenance; imported labels never become decisions | [Reference import: browser/API/Python guide and executed GIF](docs/guides/REFERENCE_IMPORT_GUIDE.md) |
 | Create a named selection without curl or manual JSON | Filter a bounded catalog page, explicitly check exact papers, save a name and reopen persisted membership | [Native collection builder: offline/browser/API/Python/portfolio guide](docs/guides/NATIVE_COLLECTION_BUILDER_GUIDE.md) |
 | Edit a collection without dropping hidden members | Rename, explicitly select additions/removals, preview the complete result and save against the current revision | [Native editor: browser/API/Python/portfolio guide and measured demo](docs/guides/NATIVE_COLLECTION_EDITOR_GUIDE.md) |
 | Browse saved collections and human screening | Discover collections from `/explore`, inspect membership/status/reasons, follow exact readers and download revision-bound screening/duplicate outputs | [Native collection browser and executed demo](docs/guides/COLLECTION_BROWSER_GUIDE.md) |
@@ -99,6 +102,30 @@ labels, resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SC
 | Demonstrate your engineering work | Use synthetic notes, review warnings, save artifacts, and explain limitations | [Portfolio walkthrough](docs/guides/RESEARCH_WORKFLOW_GUIDE.md#6-present-a-portfolio-demonstration) |
 | Catch retrieval regressions before a release | Compare real BM25/hybrid rankings on labeled passages and enforce per-retriever quality gates | [Offline benchmarks](docs/guides/RETRIEVAL_BENCHMARK_GUIDE.md) |
 | Extend ingestion or retrieval | Explicitly wire Python connectors, ranking helpers, or screening utilities | [Categorized catalog](docs/README.md) |
+
+## Import references from your search
+
+[![Executed offline import: RIS + CSL-JSON with an overlapping paper, preview, commit and idempotent re-import](docs/assets/reference-import.png)](docs/assets/reference-import.gif)
+
+Choose **Import references** from saved collections (or **Import more references into
+this collection** on a collection page). Upload up to five files exported from PubMed
+(MEDLINE/NBIB), Embase, Scopus, Web of Science, Zotero, Mendeley or EndNote (RIS,
+CSL-JSON, CSV/TSV with ASReview-style columns) and preview first: per file you see the
+detected format, records read, every skipped record with its reason and line number,
+duplicates within the import and against the collection (exact DOI, PMID, identical
+content, then a conservative title + year rule) and the papers that would be added. Only
+an explicit **Import** stores new papers, adds them through the atomic collection store
+and saves an import record with counts per file; each paper keeps its file, record and
+original identifiers. `POST /collections/imports/preview` and `POST /collections/imports`
+do the same over JSON or multipart.
+
+Existing papers and members are never deleted, overwritten or reordered, and re-importing
+a file reports duplicates instead of doubling the collection. Include/exclude labels in
+the files are counted and ignored, so every imported paper starts unscreened. The
+[complete guide](docs/guides/REFERENCE_IMPORT_GUIDE.md) has field-mapping tables, export
+steps for common tools, limits and troubleshooting. The opt-in GIF is a **generated
+illustration of executed offline output**, not browser footage; the
+[measured transcript](docs/assets/reference-import.txt) is the text alternative.
 
 ## Build a paper collection in your browser
 

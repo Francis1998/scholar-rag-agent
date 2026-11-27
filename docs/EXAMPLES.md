@@ -109,6 +109,29 @@ Unicode such as `"\u00a0\u2003"`) returns HTTP 422 before ingestion, storage,
 or indexing. Nonblank text is passed through unchanged for document IDs and
 stored document content; existing chunk whitespace normalization still applies.
 
+## Import a reference library into a collection
+
+```python
+from pathlib import Path
+
+from api.dependencies import create_container
+from ingestion.reference_import import ImportTarget, UploadedFile
+from scripts.demo_evidence_export import offline_settings
+
+container = create_container(offline_settings(Path("review.sqlite3")))
+preview = container.reference_imports.preview(
+    [UploadedFile("pubmed.nbib", Path("pubmed.nbib").read_bytes())],
+    ImportTarget(new_collection_name="My review"),
+)
+print(preview.totals.model_dump())  # records read, skipped, duplicates, papers to add
+if preview.can_commit:
+    result = container.reference_imports.commit(preview.draft_id)
+    print(result.collection.collection_id, len(result.collection.document_ids))
+```
+
+Re-running the same file reports `blocking_reason == "nothing_new"`; imported labels never
+become screening decisions. See the [reference import guide](guides/REFERENCE_IMPORT_GUIDE.md).
+
 ## Ingest a local PDF in Python
 
 Use the [executable local PDF guide](guides/PDF_OCR_HOOK_GUIDE.md) to generate a

@@ -181,6 +181,25 @@ Pass their `document_id` values to `/query` `document_ids`. Reuse the same
 database on restart; the [document catalog guide](docs/guides/DOCUMENT_CATALOG_GUIDE.md)
 includes a complete offline example, privacy limits, and a measured animation.
 
+### Import exported search results
+
+To start a review from files you exported (PubMed NBIB, RIS from Embase, Scopus, Web of
+Science, Zotero, Mendeley or EndNote, Zotero CSL JSON, or ASReview-style CSV), open
+`http://127.0.0.1:8000/explore/collections` and choose **Import references**, or preview
+and commit through the API:
+
+```bash
+curl -s -F "files=@pubmed-search.ris" -F "new_collection_name=My review" \
+  "$BASE_URL/collections/imports/preview" | tee preview.json
+curl -s -H "Content-Type: application/json" \
+  -d "{\"draft_id\": \"$(python -c 'import json; print(json.load(open("preview.json"))["draft_id"])')\"}" \
+  "$BASE_URL/collections/imports"
+```
+
+The preview lists skipped records with line numbers, duplicates and new papers; nothing
+is written until the commit. Labels in the files are ignored. See the
+[reference import guide](docs/guides/REFERENCE_IMPORT_GUIDE.md).
+
 ### Preview before generating
 
 Before screening a saved selection, read

@@ -683,6 +683,29 @@ queue and screening form link to it. No table, setting, cache, model, network, w
 event is added. See the
 [stopping-rules guide](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md).
 
+### Reference-library import
+
+`ingestion.reference_files` holds dependency-free parsers for RIS, PubMed MEDLINE/NBIB,
+CSL-JSON and CSV/TSV. Each format maps tags or columns to one neutral record; a shared
+validator applies fixed bounds and reports skipped records with stable reasons and line
+numbers instead of clipping. DOI normalization starts from
+`retrieval.duplicate_paper_cluster._normalize_doi` and title matching from its
+`_normalize_title`. `ingestion.reference_import.SQLiteReferenceImports`, wired as
+`AppContainer.reference_imports`, adds two tables: `reference_import_drafts` (the exact
+uploaded bytes plus target, kept 24 hours) and `reference_imports` (one JSON import record
+per commit). Preview resolves the target collection, its members' DOI/PMID/title/year
+signals, earlier import records and already stored content IDs in one read transaction,
+then plans every record purely: exact DOI, PMID, content ID, then title + year, against
+the collection first and earlier import records second. Commit re-plans the draft at the
+previewed revision, stores only absent documents through `IngestionPipeline`, then saves
+membership with `SQLitePaperCollections.create` or `edit`; their new `before_commit` hook
+writes the import record and marks the draft in the same SQLite transaction as the
+collection save. Documents are content-addressed (`doc-ref-v1-...`), so a stored paper is
+reused, never rewritten. `POST /collections/imports/preview`, `POST /collections/imports`,
+`GET /collections/{collection_id}/imports` and the native `/explore/collections/import`
+pages expose it; the collection list and detail pages link to it. No setting, model or
+network call is added. See the [reference import guide](docs/guides/REFERENCE_IMPORT_GUIDE.md).
+
 ### Independent dual-reviewer screening
 
 `storage.dual_screening.SQLiteDualScreening`, wired as `AppContainer.dual_screening`,
