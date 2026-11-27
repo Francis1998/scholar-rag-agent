@@ -168,6 +168,53 @@ def test_existing_documents_and_members_are_never_overwritten_or_reordered(
     assert [row for row in current if not str(row[0]).startswith("kept-")] == stored
 
 
+def test_a_concurrent_importer_storing_the_same_paper_first_is_never_overwritten(
+    api: ExplorerAPI,
+) -> None:
+    importer = service(api)
+    original = importer._ingest
+    rival: list[str] = []
+
+    def racing(documents: list[Document]) -> object:
+        # Another process stores the first paper between the absence check and this write.
+        if not rival:
+            first = documents[0]
+            metadata = {**first.metadata, "import_file": "rival.ris"}
+            api.container.ingestion_pipeline.ingest_documents(
+                [first.model_copy(update={"metadata": metadata})]
+            )
+            rival.append(first.document_id)
+        return original(documents)
+
+    importer._ingest = racing
+    result = importer.commit(importer.preview([fixture("search.ris")], new("Race")).draft_id)
+    ((metadata,),) = rows(api, "SELECT metadata FROM documents WHERE document_id = ?", rival[0])
+    assert json.loads(str(metadata))["import_file"] == "rival.ris"
+    assert [(paper.document_id == rival[0], paper.created) for paper in result.record.papers] == [
+        (True, False),
+        (False, True),
+    ]
+    assert len(result.collection.document_ids) == 2
+
+
+def test_commit_refuses_additions_that_differ_from_the_preview(api: ExplorerAPI) -> None:
+    seed(api, "member", "A member that shares a DOI", doi="10.5555/shared")
+    collection = api.container.paper_collections.create(name="Plan", document_ids=["member"])
+    content = ris(
+        {"TI": "A record previewed as a duplicate by DOI", "DO": "10.5555/shared"},
+        {"TI": "A record previewed as a new paper", "PY": "2020"},
+    )
+    preview = service(api).preview([UploadedFile("plan.ris", content)], into(collection))
+    assert statuses(preview) == [(1, 1, "duplicate_in_collection", "doi"), (1, 2, "new", None)]
+    # Member metadata can change without a collection revision change.
+    seed(api, "member", "A member that shares a DOI")
+    with pytest.raises(CollectionError) as raised:
+        service(api).commit(preview.draft_id)
+    assert (raised.value.code, raised.value.status_code) == ("reference_import_preview_stale", 409)
+    assert api.container.paper_collections.get(collection.collection_id).document_ids == ("member",)
+    assert rows(api, "SELECT COUNT(*) FROM documents") == [(1,)]
+
+
 def test_capacity_and_stale_revisions_block_commit_without_writes(api: ExplorerAPI) -> None:
     for index in range(99):
         seed(api, f"member-{index:02d}", f"Existing member number {index}")
