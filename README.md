@@ -16,7 +16,7 @@ The API/browser workflows below are integrated; [offline cue extractors](#offlin
 and most catalog extensions need explicit Python wiring. Keep this unauthenticated
 service on loopback for local, trusted use.
 
-Recent offline helpers include
+Opt-in offline cue helpers include
 [`ColliderStratificationResidualCueExtractor`](docs/guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md),
 [`HealthyWorkerResidualCueExtractor`](docs/guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md),
 and [`EValueResidualCueExtractor`](docs/guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md).
@@ -740,49 +740,79 @@ Existing cue illustrations remain available without interrupting the introductio
 | [LossToFollowupBiasCueExtractor](docs/guides/LOSS_TO_FOLLOWUP_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/loss-to-followup-bias-cues.gif) |
 | [LateLookerBiasCueExtractor](docs/guides/LATE_LOOKER_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/late-looker-bias-cues.gif) |
 | [RightTruncationBiasCueExtractor](docs/guides/RIGHT_TRUNCATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](assets/demo/right-truncation-bias-cues.gif) |
-| PerProtocolAnalysisCueExtractor | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
-| BayesianInterimPriorCueExtractor | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
-| DifferenceInDifferencesCueExtractor | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
-| NegativeControlExposureCueExtractor | [GIF](docs/assets/negative-control-exposure-cue-extractor.gif) |
-| EValueSensitivityCueExtractor | [GIF](docs/assets/evalue-sensitivity-cue-extractor.gif) |
-| DoseResponseCueExtractor | [GIF](docs/assets/dose-response-cue-extractor.gif) |
-| SpilloverInterferenceCueExtractor | [GIF](docs/assets/spillover-interference-cue-extractor.gif) |
-| PlaceboTestCueExtractor | [GIF](docs/assets/placebo-test-cue-extractor.gif) |
-| HeterogeneousTreatmentEffectCueExtractor | [GIF](docs/assets/heterogeneous-treatment-effect-cue-extractor.gif) |
-| RegressionDiscontinuityCueExtractor | [GIF](docs/assets/regression-discontinuity-cue-extractor.gif) |
-| InterruptedTimeSeriesCueExtractor | [GIF](docs/assets/interrupted-time-series-cue-extractor.gif) |
-| PropensityScoreMatchingCueExtractor | [GIF](docs/assets/propensity-score-matching-cue-extractor.gif) |
-| SyntheticControlCueExtractor | [GIF](docs/assets/synthetic-control-cue-extractor.gif) |
-| NegativeControlOutcomeCueExtractor | [GIF](docs/assets/negative-control-outcome-cue-extractor.gif) |
-| MendelianRandomizationCueExtractor | [GIF](docs/assets/mendelian-randomization-cue-extractor.gif) |
-| InstrumentalVariableStrengthCueExtractor | [GIF](docs/assets/instrumental-variable-strength-cue-extractor.gif) |
-| TimeVaryingConfoundingCueExtractor | [GIF](docs/assets/time-varying-confounding-cue-extractor.gif) |
-| MediationAnalysisCueExtractor | [GIF](docs/assets/mediation-analysis-cue-extractor.gif) |
-| CompetingRiskCueExtractor | [GIF](docs/assets/competing-risk-cue-extractor.gif) |
-| TransportabilityCueExtractor | [GIF](docs/assets/transportability-cue-extractor.gif) |
-| ConfoundingAdjustmentCueExtractor | [GIF](docs/assets/confounding-adjustment-cue-extractor.gif) |
-| MissingDataMechanismCueExtractor | [GIF](docs/assets/missing-data-mechanism-cue-extractor.gif) |
-| EstimandIchE9CueExtractor | [GIF](docs/assets/estimand-ich-e9-cue-extractor.gif) |
-| SimpsonParadoxCueExtractor | [GIF](docs/assets/simpson-paradox-cues.gif) |
-| ResidualConfoundingCueExtractor | [GIF](docs/assets/residual-confounding-cues.gif) |
-| IntervalCensoringCueExtractor | [GIF](docs/assets/interval-censoring-cues.gif) |
-| EcologicalFallacyCueExtractor | [GIF](docs/assets/ecological-fallacy-cues.gif) |
-| DetectionBiasCueExtractor | [GIF](docs/assets/detection-bias-cues.gif) |
-| HealthyUserBiasCueExtractor | [GIF](docs/assets/healthy-user-bias-cues.gif) |
-| InformationBiasCueExtractor | [GIF](docs/assets/information-bias-cues.gif) |
-| NoveltyBiasCueExtractor | [GIF](docs/assets/novelty-bias-cues.gif) |
-| ChannelingBiasCueExtractor | [GIF](docs/assets/channeling-bias-cues.gif) |
-| PrevalenceIncidenceBiasCueExtractor | [GIF](docs/assets/prevalence-incidence-bias-cues.gif) |
-| IncorporationBiasCueExtractor | [GIF](docs/assets/incorporation-bias-cues.gif) |
-| WillRogersPhenomenonCueExtractor | [GIF](docs/assets/will-rogers-phenomenon-cues.gif) |
-| ReferralBiasCueExtractor | [GIF](docs/assets/referral-bias-cues.gif) |
-| HawthorneEffectCueExtractor | [GIF](docs/assets/hawthorne-effect-cues.gif) |
-| RightCensoringCueExtractor | [GIF](docs/assets/right-censoring-cues.gif) |
-| DiagnosticAccessBiasCueExtractor | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
-| NonDifferentialMisclassificationCueExtractor | [GIF](docs/assets/non-differential-misclassification-cues.gif) |
-| SocialDesirabilityBiasCueExtractor | [GIF](docs/assets/social-desirability-bias-cues.gif) |
-| IndexEventBiasCueExtractor | [GIF](docs/assets/index-event-bias-cues.gif) |
-| CompetingEventBiasCueExtractor | [GIF](docs/assets/competing-event-bias-cues.gif) |
+| [PerProtocolAnalysisCueExtractor](docs/guides/PER_PROTOCOL_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/per-protocol-analysis-cue-extractor.gif) |
+| [BayesianInterimPriorCueExtractor](docs/guides/BAYESIAN_INTERIM_PRIOR_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/bayesian-interim-prior-cue-extractor.gif) |
+| [DifferenceInDifferencesCueExtractor](docs/guides/DIFFERENCE_IN_DIFFERENCES_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/difference-in-differences-cue-extractor.gif) |
+| [NegativeControlExposureCueExtractor](docs/guides/NEGATIVE_CONTROL_EXPOSURE_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/negative-control-exposure-cue-extractor.gif) |
+| [EValueSensitivityCueExtractor](docs/guides/EVALUE_SENSITIVITY_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/evalue-sensitivity-cue-extractor.gif) |
+| [DoseResponseCueExtractor](docs/guides/DOSE_RESPONSE_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/dose-response-cue-extractor.gif) |
+| [SpilloverInterferenceCueExtractor](docs/guides/SPILLOVER_INTERFERENCE_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/spillover-interference-cue-extractor.gif) |
+| [PlaceboTestCueExtractor](docs/guides/PLACEBO_TEST_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/placebo-test-cue-extractor.gif) |
+| [HeterogeneousTreatmentEffectCueExtractor](docs/guides/HETEROGENEOUS_TREATMENT_EFFECT_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/heterogeneous-treatment-effect-cue-extractor.gif) |
+| [RegressionDiscontinuityCueExtractor](docs/guides/REGRESSION_DISCONTINUITY_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/regression-discontinuity-cue-extractor.gif) |
+| [InterruptedTimeSeriesCueExtractor](docs/guides/INTERRUPTED_TIME_SERIES_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/interrupted-time-series-cue-extractor.gif) |
+| [PropensityScoreMatchingCueExtractor](docs/guides/PROPENSITY_SCORE_MATCHING_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/propensity-score-matching-cue-extractor.gif) |
+| [SyntheticControlCueExtractor](docs/guides/SYNTHETIC_CONTROL_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/synthetic-control-cue-extractor.gif) |
+| [NegativeControlOutcomeCueExtractor](docs/guides/NEGATIVE_CONTROL_OUTCOME_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/negative-control-outcome-cue-extractor.gif) |
+| [MendelianRandomizationCueExtractor](docs/guides/MENDELIAN_RANDOMIZATION_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/mendelian-randomization-cue-extractor.gif) |
+| [InstrumentalVariableStrengthCueExtractor](docs/guides/INSTRUMENTAL_VARIABLE_STRENGTH_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/instrumental-variable-strength-cue-extractor.gif) |
+| [TimeVaryingConfoundingCueExtractor](docs/guides/TIME_VARYING_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/time-varying-confounding-cue-extractor.gif) |
+| [MediationAnalysisCueExtractor](docs/guides/MEDIATION_ANALYSIS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/mediation-analysis-cue-extractor.gif) |
+| [CompetingRiskCueExtractor](docs/guides/COMPETING_RISK_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/competing-risk-cue-extractor.gif) |
+| [TransportabilityCueExtractor](docs/guides/TRANSPORTABILITY_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/transportability-cue-extractor.gif) |
+| [ConfoundingAdjustmentCueExtractor](docs/guides/CONFOUNDING_ADJUSTMENT_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/confounding-adjustment-cue-extractor.gif) |
+| [MissingDataMechanismCueExtractor](docs/guides/MISSING_DATA_MECHANISM_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/missing-data-mechanism-cue-extractor.gif) |
+| [EstimandIchE9CueExtractor](docs/guides/ESTIMAND_ICH_E9_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/estimand-ich-e9-cue-extractor.gif) |
+| [SimpsonParadoxCueExtractor](docs/guides/SIMPSON_PARADOX_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/simpson-paradox-cues.gif) |
+| [ResidualConfoundingCueExtractor](docs/guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/residual-confounding-cues.gif) |
+| [IntervalCensoringCueExtractor](docs/guides/INTERVAL_CENSORING_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/interval-censoring-cues.gif) |
+| [EcologicalFallacyCueExtractor](docs/guides/ECOLOGICAL_FALLACY_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/ecological-fallacy-cues.gif) |
+| [DetectionBiasCueExtractor](docs/guides/DETECTION_BIAS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/detection-bias-cues.gif) |
+| [HealthyUserBiasCueExtractor](docs/guides/HEALTHY_USER_BIAS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/healthy-user-bias-cues.gif) |
+| [InformationBiasCueExtractor](docs/guides/INFORMATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/information-bias-cues.gif) |
+| [NoveltyBiasCueExtractor](docs/guides/NOVELTY_BIAS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/novelty-bias-cues.gif) |
+| [ChannelingBiasCueExtractor](docs/guides/CHANNELING_BIAS_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/channeling-bias-cues.gif) |
+| [PrevalenceIncidenceBiasCueExtractor](docs/guides/PREVALENCE_INCIDENCE_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/prevalence-incidence-bias-cues.gif) |
+| [IncorporationBiasCueExtractor](docs/guides/INCORPORATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/incorporation-bias-cues.gif) |
+| [WillRogersPhenomenonCueExtractor](docs/guides/WILL_ROGERS_PHENOMENON_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/will-rogers-phenomenon-cues.gif) |
+| [ReferralBiasCueExtractor](docs/guides/REFERRAL_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/referral-bias-cues.gif) |
+| [HawthorneEffectCueExtractor](docs/guides/HAWTHORNE_EFFECT_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/hawthorne-effect-cues.gif) |
+| [RightCensoringCueExtractor](docs/guides/RIGHT_CENSORING_CUE_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/right-censoring-cues.gif) |
+| [DiagnosticAccessBiasCueExtractor](docs/guides/DIAGNOSTIC_ACCESS_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/diagnostic-access-bias-cues.gif) |
+| [NonDifferentialMisclassificationCueExtractor](docs/guides/NON_DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/non-differential-misclassification-cues.gif) |
+| [SocialDesirabilityBiasCueExtractor](docs/guides/SOCIAL_DESIRABILITY_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/social-desirability-bias-cues.gif) |
+| [IndexEventBiasCueExtractor](docs/guides/INDEX_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/index-event-bias-cues.gif) |
+| [CompetingEventBiasCueExtractor](docs/guides/COMPETING_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | [GIF](docs/assets/competing-event-bias-cues.gif) |
+
+Narrower variants flag three fixed phrases each, case-insensitively and with a
+space or hyphen between words, in a paper's title, abstract, summary, methods,
+results, or discussion text. A match is a lexical hint, not a finding. Each guide
+has a usage example; a GIF is linked only where it shows that helper, because
+the other guides' GIFs are blank or repeat another helper's title card.
+
+| Opt-in helper | Phrases flagged | Illustration |
+| --- | --- | --- |
+| [AdaptiveEnrichmentCueExtractor](docs/guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md) | adaptive enrichment; enrichment design; biomarker enrichment | — |
+| [AdaptiveRandomizationCueExtractor](docs/guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md) | adaptive randomization; response-adaptive randomization; covariate-adaptive randomization | — |
+| [AttritionResidualCueExtractor](docs/guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | attrition residual; differential attrition residual; loss to follow-up residual | — |
+| [ClusterCrossoverResidualCueExtractor](docs/guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | cluster crossover residual; cluster crossover design; stepped wedge residual | — |
+| [ColliderBiasOpeningCueExtractor](docs/guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md) | collider bias opening; conditioning on collider; collider stratification | — |
+| [CompetingRisksResidualCueExtractor](docs/guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | competing risk(s) residual; residual competing risk; unmodeled competing event | — |
+| [DoseResponseResidualCueExtractor](docs/guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | dose-response residual; exposure gradient residual; nonlinear dose residual | [GIF](assets/demo/dose-response-residual-cues.gif) |
+| [FalsificationTestResidualCueExtractor](docs/guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | falsification test residual; placebo outcome residual; pre-trend falsification | — |
+| [HeapingBiasResidualCueExtractor](docs/guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | heaping bias residual; digit preference residual; age heaping residual | — |
+| [ImmortalTimeResidualCueExtractor](docs/guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | immortal time residual; immortal time bias; guaranteed survival window | — |
+| [InstrumentalVariableExclusionCueExtractor](docs/guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md) | instrumental variable exclusion; IV exclusion restriction; exclusion restriction violation | — |
+| [InstrumentalVariableWeakResidualCueExtractor](docs/guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | IV weak residual; weak instrument residual; first-stage F residual | [GIF](assets/demo/instrumental-variable-weak-residual-cues.gif) |
+| [MediationBiasCueExtractor](docs/guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | mediation bias; biased mediation estimate; mediator collider bias | — |
+| [MediationPathResidualCueExtractor](docs/guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | mediation path residual; indirect effect residual; path-specific residual | — |
+| [MendelianRandomizationWeakCueExtractor](docs/guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md) | weak instrument; weak Mendelian randomization; Mendelian randomization weak instrument | [GIF](assets/demo/mendelian-randomization-weak-cues.gif) |
+| [OutcomeSwitchingCueExtractor](docs/guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md) | outcome switching; switched primary outcome; changed primary endpoint | [GIF](assets/demo/outcome-switching-cues.gif) |
+| [PrincipalStratumResidualCueExtractor](docs/guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | principal stratum residual; principal stratum effect; complier average residual | — |
+| [ProtocolAmendmentCueExtractor](docs/guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md) | protocol amendment; amended primary endpoint; mid-study protocol change | — |
+| [SelectionBiasResidualCueExtractor](docs/guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | selection bias residual; sample selection residual; Berkson residual | — |
+| [SelectionIntoTreatmentCueExtractor](docs/guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md) | selection into treatment; treatment selection bias; self-selection into treatment | [GIF](assets/demo/selection-into-treatment-cues.gif) |
+| [TwinStudiesResidualCueExtractor](docs/guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | twin studies residual; monozygotic discordance; dizygotic control residual | [GIF](assets/demo/twin-studies-residual-cues.gif) |
 
 ## Documentation
 
@@ -793,6 +823,9 @@ Existing cue illustrations remain available without interrupting the introductio
 | [API and library examples](docs/EXAMPLES.md) | Copyable requests and clearly separated network adapters |
 | [Configuration](CONFIGURATION.md) | Runtime settings and provider setup |
 | [Architecture](ARCHITECTURE.md) | Integrated pipeline and persistence |
+| [Safety](SAFETY.md) | Timeouts, scope bounds, evidence privacy, and the limits of each workflow |
+| [Provider models](docs/guides/PROVIDER_MODELS_GUIDE.md) | Dated model lineup, repository defaults, migration checklist, and payload contracts |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Fixes for install, empty evidence, PDF text, port, export, provider, and CI problems |
 | [Documentation catalog](docs/README.md) | All existing extension/source guides, operations, and historical records |
 | [Contributing](CONTRIBUTING.md) / [Security](SECURITY.md) | Contribution workflow and vulnerability reporting |
 
@@ -808,142 +841,7 @@ uv run pytest tests/ -v --cov=src --cov-fail-under=70
 [Security Scan](.github/workflows/security.yml) also audits dependencies and runs
 Bandit. Passing these checks is not a scientific-accuracy benchmark.
 
-### CompetingRisksResidualCueExtractor
-
-![CompetingRisksResidualCueExtractor](assets/demo/competing-risks-residual-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers competing-risks residual cue extractors. Distinct from `CompetingRiskCueExtractor` / `CompetingRiskInformativeCensoringCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-### MediationBiasCueExtractor
-
-![MediationBiasCueExtractor](assets/demo/mediation-bias-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers mediation-bias cue extractors. Distinct from `MediationAnalysisCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md`.
-
-### ProtocolAmendmentCueExtractor
-
-![ProtocolAmendmentCueExtractor](assets/demo/protocol-amendment-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers protocol-amendment cue extractors. Distinct from `OutcomeSwitchingCueExtractor` / `WinnerCurseCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md`.
-
-### ColliderBiasOpeningCueExtractor
-
-![ColliderBiasOpeningCueExtractor](assets/demo/collider-bias-opening-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers collider-bias-opening cue extractors. Distinct from `SelectionBiasCueExtractor` / `SimpsonParadoxCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md`.
-
-### AdaptiveEnrichmentCueExtractor
-
-![AdaptiveEnrichmentCueExtractor](assets/demo/adaptive-enrichment-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-enrichment cue extractors. Distinct from `SubgroupAnalysisCueExtractor` / `ProtocolAmendmentCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md`.
-
-### ImmortalTimeResidualCueExtractor
-
-![ImmortalTimeResidualCueExtractor](assets/demo/immortal-time-residual-cues.gif)
-
-
-### PrincipalStratumResidualCueExtractor
-
-![PrincipalStratumResidualCueExtractor](assets/demo/principal-stratum-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers principal-stratum residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### MediationPathResidualCueExtractor
-
-![MediationPathResidualCueExtractor](assets/demo/mediation-path-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers mediation-path residual cue extractors. Distinct from `MediationAnalysisCueExtractor` / `MediationBiasCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### FalsificationTestResidualCueExtractor
-
-![FalsificationTestResidualCueExtractor](assets/demo/falsification-test-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers falsification-test residual cue extractors. Distinct from `NegativeControlOutcomeCueExtractor` / `PlaceboTestCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-### ClusterCrossoverResidualCueExtractor
-
-![ClusterCrossoverResidualCueExtractor](assets/demo/cluster-crossover-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers cluster-crossover residual cue extractors. Distinct from `ClusterRandomizationCueExtractor` / `CrossoverDesignCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-### AdaptiveRandomizationCueExtractor
-
-![AdaptiveRandomizationCueExtractor](assets/demo/adaptive-randomization-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers adaptive-randomization cue extractors. Distinct from `AdaptiveDesignCueExtractor` / `AdaptiveEnrichmentCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md`.
-
-### InstrumentalVariableExclusionCueExtractor
-
-![InstrumentalVariableExclusionCueExtractor](assets/demo/instrumental-variable-exclusion-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers instrumental-variable exclusion cue extractors. Distinct from `InstrumentalVariableStrengthCueExtractor` / `InstrumentStrengthCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md`.
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers immortal-time residual cue extractors. Distinct from `SurvivorBiasCueExtractor` / `TimeDependentBiasCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### TwinStudiesResidualCueExtractor
-
-![TwinStudiesResidualCueExtractor](assets/demo/twin-studies-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers twin-studies residual cue extractors. Distinct from `MendelianRandomizationCueExtractor` / `MendelianRandomizationWeakCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### DoseResponseResidualCueExtractor
-
-![DoseResponseResidualCueExtractor](assets/demo/dose-response-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers dose-response residual cue extractors. Distinct from `DoseResponseCueExtractor` / `SurrogateEndpointCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### HeapingBiasResidualCueExtractor
-
-![HeapingBiasResidualCueExtractor](assets/demo/heaping-bias-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers heaping-bias residual cue extractors. Distinct from `MeasurementErrorBiasCueExtractor` / `SurveyModeEffectCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### AttritionResidualCueExtractor
-
-![AttritionResidualCueExtractor](assets/demo/attrition-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers attrition residual cue extractors. Distinct from `LossToFollowupBiasCueExtractor` / `InformativeCensoringCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### SelectionBiasResidualCueExtractor
-
-![SelectionBiasResidualCueExtractor](assets/demo/selection-bias-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers selection-bias residual cue extractors. Distinct from `SelectionBiasCueExtractor` / `SelectionIntoTreatmentCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
-
-### InstrumentalVariableWeakResidualCueExtractor
-
-![InstrumentalVariableWeakResidualCueExtractor](assets/demo/instrumental-variable-weak-residual-cues.gif)
-
-Offline cue extractor. Gap vs Elicit/Consensus/Connected Papers weak-IV residual cue extractors. Distinct from `InstrumentalVariableExclusionCueExtractor` / `InstrumentalVariableStrengthCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md`.
-
 ## License
 
 [Apache-2.0](LICENSE). Source papers and third-party service content retain their
 own licenses and access terms.
-
-### OutcomeSwitchingCueExtractor
-
-![OutcomeSwitchingCueExtractor](assets/demo/outcome-switching-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers outcome-switching cue extractors. Distinct from `PrimaryEndpointCueExtractor` / `SpinPHackingCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md`.
-
-### SelectionIntoTreatmentCueExtractor
-
-![SelectionIntoTreatmentCueExtractor](assets/demo/selection-into-treatment-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers selection-into-treatment cue extractors. Distinct from `SelectionBiasCueExtractor` / `HealthyWorkerSurvivorCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md`.
-
-### MendelianRandomizationWeakCueExtractor
-
-![MendelianRandomizationWeakCueExtractor](assets/demo/mendelian-randomization-weak-cues.gif)
-
-Gap vs Elicit/Consensus/Connected Papers weak Mendelian-randomization cue extractors. Distinct from `InstrumentStrengthCueExtractor` / `GComputationCueExtractor`. Stack: GPT-6 Astra / Claude Opus 5.5 / Gemini 4 Argon / Kimi K3.1 Pro. See `docs/guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md`.
