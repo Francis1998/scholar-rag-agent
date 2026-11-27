@@ -125,6 +125,35 @@ def test_page_matches_the_json_assessment_and_escapes_saved_text(api: ExplorerAP
     assert not root.by_class("next-member")
 
 
+def test_completion_notice_asks_for_unsure_decisions_first(api: ExplorerAPI) -> None:
+    collection = seed(api)
+
+    def decide(identifier: str, decision: str, revision: int = 0) -> None:
+        api.container.paper_screening.submit(
+            collection.collection_id,
+            identifier,
+            ScreeningSubmission.model_validate(
+                {
+                    "collection_revision": 1,
+                    "expected_decision_revision": revision,
+                    "decision": decision,
+                    "reason": "Synthetic human opinion.",
+                }
+            ),
+        )
+
+    for identifier in (HOSTILE, "pending-1", "pending-2"):
+        decide(identifier, "exclude")
+    decide("pending-3", "unsure")
+    notice = api.page(page_url(collection)).by_id("all-screened").text()
+    # Every member has a decision, but one judgment is still unsure and needs a human.
+    assert "1 unsure decision still needs your include or exclude decision" in notice
+    assert "nothing left" not in notice
+    decide("pending-3", "exclude", revision=1)
+    resolved = api.page(page_url(collection)).by_id("all-screened").text()
+    assert "nothing left to stop screening" in resolved
+
+
 def test_the_seeded_sample_round_trips_through_native_get_forms(api: ExplorerAPI) -> None:
     collection = seed(api)
     root = api.page(page_url(collection))

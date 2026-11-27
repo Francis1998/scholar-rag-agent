@@ -429,7 +429,7 @@ def test_unsure_pauses_the_sample_and_outside_decisions_count_as_found(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     review = _review(tmp_path, monkeypatch, 12)
-    for index, decision in enumerate(["include", "include", "exclude", "unsure"]):
+    for index, decision in enumerate(["include", "include", "exclude", "exclude"]):
         review.decide(f"p{index:02d}", decision, index)
     urn = [f"p{index:02d}" for index in range(4, 12)]
     order = sample_order(
@@ -455,8 +455,35 @@ def test_unsure_pauses_the_sample_and_outside_decisions_count_as_found(
     review.decide(order[1], "exclude", 24)
     resumed = review.assess(sample_seed=11, sample_after=4).recall_test
     assert resumed.blocked_by_unsure is None and resumed.sample_size == 2
-    # The unsure prioritized-phase member ends no relevant count, but it ends the run.
-    assert review.assess().consecutive_irrelevant.last_relevant_at is not None
+
+
+def test_unsure_decisions_before_the_sample_make_the_recall_test_not_evaluable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    review = _review(tmp_path, monkeypatch, 3)
+    review.decide("p00", "include", 1)
+    review.decide("p01", "unsure", 2)
+    start = review.assess().recall_test
+    assert (start.sample_after, start.urn_size) == (2, 1)
+    review.decide("p02", "exclude", 3)
+    parameters = {"sample_seed": 5, "sample_after": 2, "sample_urn_sha256": start.urn_sha256}
+    blocked = review.assess(**parameters).recall_test
+    # The unsure p01 is neither found nor in the urn. Counting it as irrelevant gave
+    # K_hat = 1 > capacity 0, p = 0 and a 1.0 bound, although recall is 1/2 if p01 is relevant.
+    assert (blocked.status, blocked.p_value, blocked.recall_lower_bound) == (
+        "not_evaluable",
+        None,
+        None,
+    )
+    assert blocked.recall_estimate is None and blocked.additional_irrelevant_needed is None
+    assert blocked.unsure_before_sample == ("p01",)
+    assert "unsure_before_sample" in blocked.explanation
+    assert start.unsure_before_sample == ("p01",) and "unsure" in start.explanation
+    review.decide("p01", "include", 4)
+    resolved = review.assess(**parameters).recall_test
+    # r_seen = r_before = 2: K_hat = floor(2 / 0.95 - 2) + 1 = 1 exceeds the empty capacity.
+    assert (resolved.status, resolved.p_value, resolved.recall_lower_bound) == ("met", 0.0, 1.0)
+    assert resolved.unsure_before_sample == ()
 
 
 def test_zero_relevant_and_all_screened_edges(
@@ -589,6 +616,27 @@ def test_a_decision_from_an_older_revision_after_a_current_one_is_flagged(
         'Member "p00" has a decision from an earlier collection revision recorded after '
         'member "p01" was decided at revision 2.',
     )
+
+
+def test_a_stale_decision_recorded_after_a_current_one_is_flagged(review: Review) -> None:
+    review.decide("p00", "exclude", 10)
+    review.container.document_store.add_documents(
+        [Document(document_id="p08", title="Added", text="x", source="s")], []
+    )
+    review.collection = review.container.paper_collections.edit(
+        review.collection.collection_id,
+        changes=CollectionEdit(name="Stopping", expected_revision=1, add_document_ids=("p08",)),
+    )
+    review.decide("p01", "exclude", 5)
+    result = review.assess()
+    # p00 stays stale, but its revision-1 decision is later than p01's at revision 2.
+    assert (result.collection_revision, result.counts.stale) == (2, 1)
+    assert not result.timeline.order_reliable
+    assert result.timeline.order_warnings == (
+        'Member "p00" has a decision from an earlier collection revision recorded after '
+        'member "p01" was decided at revision 2.',
+    )
+    assert result.consecutive_irrelevant.status == "not_evaluable"
 
 
 def test_stale_members_are_pending_and_unretained_history_never_lengthens_a_run(
