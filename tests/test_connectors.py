@@ -11,6 +11,7 @@ from ingestion.arxiv import ArxivConnector
 from ingestion.arxiv_html_abstract import ArxivHtmlAbstractConnector
 from ingestion.biorxiv import BioRxivConnector
 from ingestion.biorxiv_collections import BioRxivCollectionsConnector
+from ingestion.chunking import stable_id
 from ingestion.clinicaltrials import ClinicalTrialsConnector
 from ingestion.core import CoreConnector
 from ingestion.crossref import CrossrefConnector
@@ -397,6 +398,58 @@ async def test_crossref_connector_decodes_entities_in_jats_abstract() -> None:
 
     assert len(documents) == 1
     assert documents[0].text == "Results show x < y & z > 0 in a café."
+
+
+@pytest.mark.asyncio
+async def test_crossref_connector_strips_face_markup_from_titles() -> None:
+    """Crossref titles carry inline face markup that must not reach stored titles.
+
+    Publishers deposit titles with ``<i>``, ``<sub>``, ``<sup>`` and similar inline
+    tags, often wrapped across lines (as in 10.64898/2026.03.26.714369), and may
+    entity-encode characters such as ``&amp;``. The tags formatted text inside a
+    word or phrase, so they are removed without splitting ``CO<sub>2</sub>``; a
+    title made only of markup falls back to the placeholder. The DOI-less
+    source label and document ID keep the raw title, as before.
+    """
+    raw_untitled = "<i> </i>"
+    response = httpx.Response(
+        200,
+        json={
+            "message": {
+                "items": [
+                    {
+                        "title": [
+                            "Biofilm initiation associated with cell orientation "
+                            "patterning in\n                  <i>Escherichia coli</i>\n"
+                        ],
+                        "DOI": "10.1000/italic",
+                    },
+                    {
+                        "title": ["CO<sub>2</sub> capture &amp; Ca<sup>2+</sup> signalling"],
+                        "DOI": "10.1000/formula",
+                    },
+                    {"title": [raw_untitled]},
+                ]
+            }
+        },
+        request=httpx.Request("GET", "http://test"),
+    )
+    mock_client = AsyncMock()
+    mock_client.get.return_value = response
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    with patch("ingestion.crossref.httpx.AsyncClient", return_value=mock_client):
+        documents = await CrossrefConnector().search("biofilm", max_results=3)
+
+    assert [document.title for document in documents] == [
+        "Biofilm initiation associated with cell orientation patterning in Escherichia coli",
+        "CO2 capture & Ca2+ signalling",
+        "Untitled Crossref work",
+    ]
+    assert documents[0].source == "https://doi.org/10.1000/italic"
+    assert documents[2].source == raw_untitled
+    assert documents[2].document_id == stable_id(raw_untitled, "doc")
 
 
 @pytest.mark.asyncio
