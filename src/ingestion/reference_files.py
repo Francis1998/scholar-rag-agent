@@ -41,6 +41,7 @@ MAX_SHORT_CHARACTERS = 64
 _LINES = re.compile(r"\r\n|\r|\n")
 _SPACES = re.compile(r"[ \t\n\r\x0b\x0c]+")
 _UNSAFE = re.compile(r"[\x00-\x08\x0e-\x1f\x7f\ud800-\udfff]")
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\ud800-\udfff]")
 _YEAR = re.compile(r"(?<![0-9])[0-9]{4}(?![0-9])")
 _DOI_SHAPE = re.compile(r"10\.[0-9]{4,9}/\S+")
 _DOI_PREFIXES = (
@@ -173,6 +174,11 @@ def _line(value: str) -> str:
     return _SPACES.sub(" ", value).strip()
 
 
+def _paragraphs(value: str) -> str:
+    """Collapse spaces within each line but keep the abstract's own line breaks."""
+    return "\n".join(_line(part) for part in _LINES.split(value) if part.strip())
+
+
 def _unique(values: Iterable[str]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(value for value in values if value))
 
@@ -260,7 +266,7 @@ def _build(raw: _Raw) -> ReferenceRecord | SkippedRecord:
         record_index=raw.record_index,
         line=raw.line,
         title=title,
-        abstract="\n".join(_line(value) for value in raw.fields.get("abstract", ())),
+        abstract="\n".join(_paragraphs(value) for value in raw.fields.get("abstract", ())),
         authors=_unique(_line(value) for value in raw.fields.get("authors", ())),
         year=_year(raw),
         doi=next((doi for doi in map(normalize_doi, dois) if doi), ""),
@@ -696,7 +702,7 @@ _PARSERS: dict[ReferenceFormat, Callable[[str], Iterator[_Raw]]] = {
 
 
 def _file_name(value: str) -> str:
-    if not 1 <= len(value) <= MAX_FILE_NAME_CHARACTERS or _UNSAFE.search(value):
+    if not 1 <= len(value) <= MAX_FILE_NAME_CHARACTERS or _CONTROL.search(value):
         raise ReferenceFileError(
             "invalid_reference_file_name",
             f"File names need 1-{MAX_FILE_NAME_CHARACTERS} characters without control characters.",
