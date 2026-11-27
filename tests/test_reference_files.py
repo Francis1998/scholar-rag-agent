@@ -107,6 +107,11 @@ def test_ris_new_type_tag_before_end_reports_the_open_record() -> None:
     ]
 
 
+def test_medline_tags_without_a_value_do_not_break_the_record() -> None:
+    parsed = parse("x.nbib", b"PMID- 7\nTI  - A title before an empty tag\nAB  -\nDP  - 2001\n")
+    assert not parsed.skipped and parsed.records[0].year == "2001"
+
+
 def test_medline_uses_full_authors_doi_lid_terms_and_types() -> None:
     record = parse("pubmed.nbib").records[0]
     assert record.title.endswith("crossover trial.")
@@ -179,6 +184,7 @@ def test_csv_reports_label_columns_and_multiline_cells() -> None:
         ("x.csv", b"title,Title\na,b\n", "auto", "reference_columns_invalid"),
         ("x.csv", b'title,abstract\n"unclosed,quote\n', "auto", "invalid_reference_file"),
         ("x.json", b"[1, 2", "auto", "invalid_reference_file"),
+        ("x.json", b'[{"volume": ' + b"9" * 5000 + b"}]", "auto", "invalid_reference_file"),
         ("x.tsv", b"\xff\xfeA\x00\x00\xd8", "auto", "reference_file_not_utf8"),
         ("x.csv", b"caf\xe9", "auto", "reference_file_not_utf8"),
         ("x.ris", b"no tagged lines here\n", "ris", "reference_file_empty"),

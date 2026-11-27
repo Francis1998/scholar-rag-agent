@@ -55,7 +55,7 @@ _PMID_PREFIX = re.compile(r"^(?:pmid|pubmed(?:\s*id)?)\s*[:\-]?\s*", re.IGNORECA
 _PMID_IN_TEXT = re.compile(r"\bPMID\s*[:\-]\s*([0-9]{1,9})\b", re.IGNORECASE)
 _PUBMED_URL = re.compile(r"pubmed\.ncbi\.nlm\.nih\.gov/([0-9]{1,9})(?:[/?#]|$)", re.IGNORECASE)
 _RIS_TAG = re.compile(r"^([A-Z][A-Z0-9])[ ]{1,2}-(?:[ ]+(.*?))?\s*$")
-_MEDLINE_TAG = re.compile(r"^([A-Z][A-Z0-9]{0,3})[ ]*- (.*?)\s*$")
+_MEDLINE_TAG = re.compile(r"^([A-Z][A-Z0-9]{0,3})[ ]*-(?: (.*?))?\s*$")
 
 
 class ReferenceFileError(ValueError):
@@ -473,7 +473,7 @@ def _medline(text: str) -> Iterator[_Raw]:
             if start is not None and problem is None:
                 problem = ("malformed_line", f"Line {number} is not a MEDLINE tag or continuation.")
             continue
-        tag, value = match.group(1), match.group(2).strip()
+        tag, value = match.group(1), (match.group(2) or "").strip()
         if tag == "PMID" and start is not None and tags:
             yield finish()
             start, tags, last, problem = None, {}, None, None
@@ -554,9 +554,11 @@ def _csl_json(text: str) -> Iterator[_Raw]:
             f"CSL-JSON is not valid JSON (line {exc.lineno}, column {exc.colno}); "
             "nothing was imported.",
         ) from exc
-    except RecursionError as exc:
+    except (ValueError, RecursionError) as exc:
+        # Integer literals beyond Python's digit limit and extreme nesting are rejected too.
         raise ReferenceFileError(
-            "invalid_reference_file", "CSL-JSON nesting is too deep; nothing was imported."
+            "invalid_reference_file",
+            "CSL-JSON nesting or a number is too large; nothing was imported.",
         ) from exc
     items: list[object]
     if isinstance(data, list):

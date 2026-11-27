@@ -14,6 +14,7 @@ import base64
 import binascii
 import json
 import sqlite3
+import threading
 from collections.abc import Callable, Sequence
 from contextlib import closing
 from dataclasses import dataclass
@@ -562,7 +563,7 @@ def _members(connection: sqlite3.Connection, document_ids: Sequence[str]) -> lis
 _YEAR_FIELDS = ("year", "published_year", "publication_year")
 _SCHEMA = (
     """
-    CREATE TABLE IF NOT EXISTS reference_import_drafts (
+    CREATE TABLE IF NOT EXISTS reference_import_staging (
         draft_id TEXT PRIMARY KEY NOT NULL,
         created_at TEXT NOT NULL,
         request TEXT NOT NULL,
@@ -628,6 +629,7 @@ class SQLiteReferenceImports:
         self._collections = collections
         self._ingest = ingest
         self._clock = clock or (lambda: datetime.now(UTC))
+        self._commit_lock = threading.Lock()
         try:
             with closing(sqlite3.connect(database_path)) as connection, connection:
                 for statement in _SCHEMA:
@@ -724,11 +726,11 @@ class SQLiteReferenceImports:
             with self._connect() as connection, connection:
                 connection.execute("BEGIN IMMEDIATE")
                 connection.execute(
-                    "DELETE FROM reference_import_drafts WHERE created_at < ?",
+                    "DELETE FROM reference_import_staging WHERE created_at < ?",
                     ((created - DRAFT_LIFETIME).isoformat(),),
                 )
                 connection.execute(
-                    "INSERT INTO reference_import_drafts (draft_id, created_at, request) "
+                    "INSERT INTO reference_import_staging (draft_id, created_at, request) "
                     "VALUES (?, ?, ?)",
                     (draft_id, created.isoformat(), json.dumps(request)),
                 )
@@ -764,7 +766,7 @@ class SQLiteReferenceImports:
             ) from exc
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT created_at, request, import_id FROM reference_import_drafts "
+                "SELECT created_at, request, import_id FROM reference_import_staging "
                 "WHERE draft_id = ?",
                 (identifier,),
             ).fetchone()
@@ -815,6 +817,11 @@ class SQLiteReferenceImports:
         example a stale revision), the new documents stay in the corpus unassigned and a
         later import reuses them by content ID.
         """
+        with self._commit_lock:
+            return self._commit(draft_id)
+
+    def _commit(self, draft_id: str) -> ReferenceImportResult:
+        """Serialized in-process, so concurrent commits never ingest the same draft twice."""
         try:
             target, files = self._draft(draft_id)
             name, current, plan = self._planned(files, target)
@@ -857,7 +864,7 @@ class SQLiteReferenceImports:
                 )
                 if (
                     connection.execute(
-                        "UPDATE reference_import_drafts SET import_id = ? "
+                        "UPDATE reference_import_staging SET import_id = ? "
                         "WHERE draft_id = ? AND import_id IS NULL",
                         (record.import_id, draft_id),
                     ).rowcount

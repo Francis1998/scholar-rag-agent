@@ -191,7 +191,7 @@ def test_capacity_and_stale_revisions_block_commit_without_writes(api: ExplorerA
         service(api).commit(stale.draft_id)
     assert (raised.value.code, raised.value.status_code) == ("collection_revision_conflict", 409)
     assert rows(api, "SELECT COUNT(*) FROM reference_imports") == [(0,)]
-    assert rows(api, "SELECT COUNT(*) FROM reference_import_drafts WHERE import_id IS NULL") == [
+    assert rows(api, "SELECT COUNT(*) FROM reference_import_staging WHERE import_id IS NULL") == [
         (2,)
     ]
 
@@ -262,7 +262,7 @@ def test_expired_unknown_and_malformed_drafts_are_rejected(
 
 
 def drafts(api: ExplorerAPI) -> int:
-    return int(rows(api, "SELECT COUNT(*) FROM reference_import_drafts")[0][0])
+    return int(rows(api, "SELECT COUNT(*) FROM reference_import_staging")[0][0])
 
 
 def test_multipart_preview_commit_and_history_api(api: ExplorerAPI) -> None:

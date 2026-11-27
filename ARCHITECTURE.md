@@ -691,7 +691,7 @@ validator applies fixed bounds and reports skipped records with stable reasons a
 numbers instead of clipping. DOI normalization starts from
 `retrieval.duplicate_paper_cluster._normalize_doi` and title matching from its
 `_normalize_title`. `ingestion.reference_import.SQLiteReferenceImports`, wired as
-`AppContainer.reference_imports`, adds two tables: `reference_import_drafts` (the exact
+`AppContainer.reference_imports`, adds two tables: `reference_import_staging` (the exact
 uploaded bytes plus target, kept 24 hours) and `reference_imports` (one JSON import record
 per commit). Preview resolves the target collection, its members' DOI/PMID/title/year
 signals, earlier import records and already stored content IDs in one read transaction,
