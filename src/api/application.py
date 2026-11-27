@@ -28,6 +28,7 @@ from api.dual_screening_explorer import router as dual_screening_explorer_router
 from api.evidence import router as evidence_router
 from api.explorer import router as explorer_router
 from api.notebook_export import router as notebook_export_router
+from api.reference_import import router as reference_import_router
 from api.research import router as research_router
 from api.retrieval import router as retrieval_router
 from api.retrieval_explorer import router as retrieval_explorer_router
@@ -147,6 +148,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(screening_stopping_explorer_router)
     application.include_router(collections_router)
     application.include_router(collection_duplicates_router)
+    application.include_router(reference_import_router)
     application.include_router(screening_router)
     application.include_router(screening_report_router)
     application.include_router(screening_priority_router)
