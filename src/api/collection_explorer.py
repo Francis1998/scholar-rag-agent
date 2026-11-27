@@ -351,6 +351,11 @@ def _list(page: CollectionPage, options: _ListParameters, root_path: str) -> Ite
         ),
         "Create a paper collection",
     )
+    yield _link(
+        "import-references",
+        root_path + "/explore/collections/import",
+        "Import references (RIS, PubMed MEDLINE, CSL-JSON, CSV) into a new collection",
+    )
     yield (
         '<p class="notice">Current saved selections, not screened-in papers. '
         "Membership counts are not screening decisions. Open a collection to inspect "
@@ -520,6 +525,17 @@ def _detail(snapshot: ScreeningExport, options: _CollectionReturn, root_path: st
             },
         ),
         "Edit collection name and membership",
+    )
+    yield _link(
+        "import-references",
+        _url(
+            root_path + "/explore/collections/import",
+            {
+                "collection_id": snapshot.collection_id,
+                "collection_revision": snapshot.collection_revision,
+            },
+        ),
+        "Import more references into this collection",
     )
     yield (
         f"<p>Collection revision: {snapshot.collection_revision}; "

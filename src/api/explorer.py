@@ -293,6 +293,23 @@ _EDITING_FOOTER = (
     "using the unchanged JSON API. Membership binds IDs, not frozen paper contents."
     "</p></footer></body></html>"
 )
+_IMPORT_FOOTER = (
+    "</main><footer><h2>Explicit import, local trusted use only</h2>"
+    "<p>Preview parses your files and keeps their exact bytes as a private local draft for up "
+    "to 24 hours. It never changes documents, collections or screening. Only Import writes: "
+    "it stores new papers through the existing ingestion pipeline and adds them through the "
+    "atomic collection store with an import record. Existing papers and members are never "
+    "deleted, overwritten or reordered.</p>"
+    "<p>Imported include/exclude labels are counted and ignored: nothing is screened "
+    "automatically and every imported paper starts unscreened. No models, network lookups, "
+    "retrieval or agent events run. File contents are shown as literal escaped text, never "
+    "as HTML or external links.</p>"
+    "<p>No JavaScript, external resources, cookies or browser storage are used. There is no "
+    "built-in authentication; keep this app on loopback or behind your own access controls. "
+    "Exact Origin checks block cross-origin browser posts, not direct clients. File names, "
+    "titles and abstracts may be sensitive; no-store cannot prevent saving or screenshots."
+    "</p></footer></body></html>"
+)
 _SCREENING_FOOTER = (
     "</main><footer><h2>Explicit human opinions, local trusted use only</h2>"
     "<p>Only an explicit form POST records one decision and appends its history. GET never "
@@ -468,6 +485,7 @@ def _page(
     prioritization: bool = False,
     dual_review: bool = False,
     stopping: bool = False,
+    importing: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -524,7 +542,11 @@ def _page(
         subject = "INDEPENDENT DUAL REVIEW"
         description = "Screen blind under your own label; unblind deliberately to resolve."
         footer = _DUAL_REVIEW_FOOTER
-    writes = screening or annotation or review or creation or editing or dual_review
+    if importing:
+        subject = "REFERENCE IMPORT"
+        description = "Upload exported references, review duplicates and skips, then import."
+        footer = _IMPORT_FOOTER
+    writes = screening or annotation or review or creation or editing or dual_review or importing
     mode = "EXPLICIT HUMAN WRITE" if writes else "READ-ONLY"
     prefix = (
         '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
@@ -570,6 +592,7 @@ def _error(
     prioritization: bool = False,
     dual_review: bool = False,
     stopping: bool = False,
+    importing: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -595,6 +618,7 @@ def _error(
         prioritization=prioritization,
         dual_review=dual_review,
         stopping=stopping,
+        importing=importing,
     )
 
 
