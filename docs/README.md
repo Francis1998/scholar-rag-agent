@@ -314,6 +314,86 @@ run them automatically. Usage examples and individual GIFs remain in each guide.
 | [Preregistration flags](guides/PREREGISTRATION_FLAG_DETECTOR_GUIDE.md) | Registry and preregistration cues |
 | [Open-data availability](guides/OPEN_DATA_AVAILABILITY_FLAGGER_GUIDE.md) | Data-availability cues |
 
+#### More bias, design, and residual cues
+
+| Guide | Reported cues |
+| --- | --- |
+| [AdaptiveEnrichmentCueExtractor](guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md) | Adaptive enrichment / enrichment design / biomarker enrichment wording |
+| [AdaptiveRandomizationCueExtractor](guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md) | Adaptive / response-adaptive / covariate-adaptive randomization wording |
+| [AscertainmentBiasCueExtractor](guides/ASCERTAINMENT_BIAS_CUE_EXTRACTOR_GUIDE.md) | Ascertainment / detection / surveillance bias wording |
+| [AtomisticFallacyCueExtractor](guides/ATOMISTIC_FALLACY_CUES_EXTRACTOR_GUIDE.md) | Atomistic fallacy / individual-to-group results / cross-level inference wording |
+| [AttritionInformativeCensoringCueExtractor](guides/ATTRITION_INFORMATIVE_CENSORING_CUE_EXTRACTOR_GUIDE.md) | Informative censoring / attrition bias / lost-to-follow-up wording |
+| [AttritionResidualCueExtractor](guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Attrition / differential-attrition / loss-to-follow-up residual wording |
+| [BerksonBiasCueExtractor](guides/BERKSON_BIAS_CUE_EXTRACTOR_GUIDE.md) | Berkson's bias / Berkson's paradox / hospital-selection bias wording |
+| [ChannelingBiasCueExtractor](guides/CHANNELING_BIAS_CUE_EXTRACTOR_GUIDE.md) | Channeling bias / confounding by indication / indication bias wording |
+| [ClusterCrossoverResidualCueExtractor](guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Cluster-crossover residual or design / stepped-wedge residual wording |
+| [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md) | Collider-bias opening / conditioning on a collider / collider-stratification wording |
+| [ColliderStratificationResidualCueExtractor](guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | Collider-stratification / stratification-collider / M-bias residual wording |
+| [CompetingEventBiasCueExtractor](guides/COMPETING_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Competing-event / competing-risk bias and competing-mortality wording |
+| [CompetingRisksResidualCueExtractor](guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Competing-risks residual / residual competing risk / unmodeled competing event wording |
+| [ConfoundingByContraindicationCueExtractor](guides/CONFOUNDING_BY_CONTRAINDICATION_CUES_EXTRACTOR_GUIDE.md) | Confounding by contraindication / channeling-by-contraindication wording |
+| [ConfoundingByIndicationCueExtractor](guides/CONFOUNDING_BY_INDICATION_CUE_EXTRACTOR_GUIDE.md) | Confounding by indication / channeling bias / treatment-selection confounding wording |
+| [DepletionOfSusceptiblesCueExtractor](guides/DEPLETION_OF_SUSCEPTIBLES_CUE_EXTRACTOR_GUIDE.md) | Depletion of susceptibles / survivor-cohort depletion / waning-hazard selection wording |
+| [DetectionBiasCueExtractor](guides/DETECTION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Detection / surveillance / referral bias wording |
+| [DiagnosticAccessBiasCueExtractor](guides/DIAGNOSTIC_ACCESS_BIAS_CUES_EXTRACTOR_GUIDE.md) | Diagnostic-access / imaging-access bias and unequal test-access wording |
+| [DifferentialMisclassificationCueExtractor](guides/DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) | Differential misclassification / differential recall / outcome-dependent error wording |
+| [DoseResponseResidualCueExtractor](guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Dose-response / exposure-gradient / nonlinear-dose residual wording |
+| [EValueResidualCueExtractor](guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | E-value residual (bias) and its sensitivity wording |
+| [EcologicalFallacyCueExtractor](guides/ECOLOGICAL_FALLACY_CUE_EXTRACTOR_GUIDE.md) | Ecological fallacy / ecological inference / aggregate-level bias wording |
+| [FalsificationTestResidualCueExtractor](guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Falsification-test / placebo-outcome residual and pre-trend falsification wording |
+| [GComputationCueExtractor](guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md) | G-computation / g-formula / parametric g-formula wording |
+| [HawthorneEffectCueExtractor](guides/HAWTHORNE_EFFECT_CUE_EXTRACTOR_GUIDE.md) | Hawthorne effect / observer effect / reactivity-bias wording |
+| [HealthyUserBiasCueExtractor](guides/HEALTHY_USER_BIAS_CUE_EXTRACTOR_GUIDE.md) | Healthy-user / healthy-adherer bias and healthy-user effect wording |
+| [HealthyWorkerResidualCueExtractor](guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | Healthy-worker / healthy-worker-effect / survivor-worker residual wording |
+| [HeapingBiasResidualCueExtractor](guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Heaping-bias / digit-preference / age-heaping residual wording |
+| [ImmortalTimeResidualCueExtractor](guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Immortal-time residual / immortal-time bias / guaranteed-survival window wording |
+| [IncorporationBiasCueExtractor](guides/INCORPORATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | Incorporation / diagnostic-review / test-review bias wording |
+| [IndexEventBiasCueExtractor](guides/INDEX_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Index-event / index-admission / prevalence-odds bias wording |
+| [IndicationBiasCueExtractor](guides/INDICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Indication bias / channeling bias / confounding-by-severity wording |
+| [InformationBiasCueExtractor](guides/INFORMATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Information bias / differential and non-differential misclassification wording |
+| [InformativeCensoringCueExtractor](guides/INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md) | Informative / dependent / non-ignorable censoring wording |
+| [InstrumentalVariableExclusionCueExtractor](guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md) | IV exclusion restriction / exclusion-restriction violation wording |
+| [InstrumentalVariableWeakResidualCueExtractor](guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | IV-weak / weak-instrument / first-stage F residual wording |
+| [IntervalCensoringCueExtractor](guides/INTERVAL_CENSORING_CUE_EXTRACTOR_GUIDE.md) | Interval-censoring / interval-censored / current-status-data wording |
+| [LeadTimeBiasCueExtractor](guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) | Lead-time bias / earlier-detection bias / screening lead-time wording |
+| [LeftTruncationResidualCueExtractor](guides/LEFT_TRUNCATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | Left-truncation residual (bias) and its sensitivity wording |
+| [LengthBiasCueExtractor](guides/LENGTH_BIAS_CUE_EXTRACTOR_GUIDE.md) | Length bias / length-time bias / indolent-disease bias wording |
+| [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) | Length-time bias / slow-progressing or indolent disease wording |
+| [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md) | Mediation bias / biased mediation estimate / mediator-collider bias wording |
+| [MediationPathResidualCueExtractor](guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Mediation-path / indirect-effect / path-specific residual wording |
+| [MendelianRandomizationWeakCueExtractor](guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md) | Weak instrument / weak Mendelian randomization wording |
+| [NegativeControlExposureResidualCueExtractor](guides/NEGATIVE_CONTROL_EXPOSURE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | Negative-control exposure residual (bias) and its sensitivity wording |
+| [NonDifferentialMisclassificationCueExtractor](guides/NON_DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) | Non-differential misclassification / classical measurement-error wording |
+| [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) | Nonresponse bias / survey and unit nonresponse wording |
+| [NoveltyBiasCueExtractor](guides/NOVELTY_BIAS_CUE_EXTRACTOR_GUIDE.md) | Novelty / positive-outcome / newsworthiness bias wording |
+| [OutcomeReportingBiasCueExtractor](guides/OUTCOME_REPORTING_BIAS_CUES_EXTRACTOR_GUIDE.md) | Outcome-reporting bias / selective outcome reporting / switched primary outcome wording |
+| [OutcomeSwitchingCueExtractor](guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md) | Outcome switching / switched primary outcome / changed primary endpoint wording |
+| [OverdiagnosisBiasCueExtractor](guides/OVERDIAGNOSIS_BIAS_CUE_EXTRACTOR_GUIDE.md) | Overdiagnosis bias / overdetection / pseudodisease wording |
+| [PrevalenceIncidenceBiasCueExtractor](guides/PREVALENCE_INCIDENCE_BIAS_CUES_EXTRACTOR_GUIDE.md) | Prevalence-incidence / prevalent-user / incidence-density bias wording |
+| [PrevalentUserBiasCueExtractor](guides/PREVALENT_USER_BIAS_CUES_EXTRACTOR_GUIDE.md) | Prevalent-user bias / prevalent users / new-user design wording |
+| [PrincipalStratumResidualCueExtractor](guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Principal-stratum residual / principal-stratum effect / complier-average residual wording |
+| [ProtocolAmendmentCueExtractor](guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md) | Protocol amendment / amended primary endpoint / mid-study protocol change wording |
+| [ProtopathicBiasCueExtractor](guides/PROTOPATHIC_BIAS_CUE_EXTRACTOR_GUIDE.md) | Protopathic bias / protopathic confounding / lag-time bias wording |
+| [ReferralBiasCueExtractor](guides/REFERRAL_BIAS_CUES_EXTRACTOR_GUIDE.md) | Referral bias / referral filter / specialty-referral bias wording |
+| [ReportingBiasCueExtractor](guides/REPORTING_BIAS_CUE_EXTRACTOR_GUIDE.md) | Reporting bias / selective reporting / outcome-reporting bias wording |
+| [ResidualConfoundingCueExtractor](guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) | Residual / unmeasured confounding and residual-bias wording |
+| [ReverseCausationCueExtractor](guides/REVERSE_CAUSATION_CUE_EXTRACTOR_GUIDE.md) | Reverse causation / reverse causality / protopathic-timing wording |
+| [RightCensoringCueExtractor](guides/RIGHT_CENSORING_CUE_EXTRACTOR_GUIDE.md) | Right / administrative censoring and loss-to-follow-up wording |
+| [SelectionBiasResidualCueExtractor](guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Selection-bias / sample-selection / Berkson residual wording |
+| [SelectionIntoTreatmentCueExtractor](guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md) | Selection into treatment / treatment-selection bias / self-selection into treatment wording |
+| [SimpsonParadoxCueExtractor](guides/SIMPSON_PARADOX_CUE_EXTRACTOR_GUIDE.md) | Simpson's paradox / Simpson's reversal / aggregation-bias wording |
+| [SocialDesirabilityBiasCueExtractor](guides/SOCIAL_DESIRABILITY_BIAS_CUES_EXTRACTOR_GUIDE.md) | Social-desirability bias / SDB-prone response wording |
+| [SpectrumBiasCueExtractor](guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md) | Spectrum bias / spectrum effect / case-mix bias wording |
+| [SpinPHackingCueExtractor](guides/SPIN_P_HACKING_CUES_EXTRACTOR_GUIDE.md) | Spin in reporting or abstracts / p-hacking / forking-paths wording |
+| [SurvivorBiasCueExtractor](guides/SURVIVOR_BIAS_CUE_EXTRACTOR_GUIDE.md) | Survivor / survivorship bias and surviving-cohort wording |
+| [SyntheticDiffInDiffResidualCueExtractor](guides/SYNTHETIC_DIFF_IN_DIFF_RESIDUAL_CUE_EXTRACTOR_GUIDE.md) | Synthetic diff-in-diff residual (bias) and its sensitivity wording |
+| [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) | Time-dependent / time-related / immortal-time bias wording |
+| [TwinStudiesResidualCueExtractor](guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md) | Twin-studies residual / monozygotic discordance / dizygotic-control residual wording |
+| [VerificationBiasCueExtractor](guides/VERIFICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) | Verification / work-up / referral bias wording |
+| [VolunteerBiasCueExtractor](guides/VOLUNTEER_BIAS_CUE_EXTRACTOR_GUIDE.md) | Volunteer bias / self-selection bias / healthy-volunteer effect wording |
+| [WillRogersPhenomenonCueExtractor](guides/WILL_ROGERS_PHENOMENON_CUES_EXTRACTOR_GUIDE.md) | Will Rogers phenomenon / stage-migration wording |
+| [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md) | Winner's curse / winner's-curse bias / effect-size inflation wording |
+
 ### Source adapters: papers, repositories, and registries
 
 Connectors return normalized records. They are not automatic web searches during
@@ -398,79 +478,3 @@ OpenAlex, PubMed, Crossref, Europe PMC, DOAJ, DBLP, HAL, OpenAIRE, and Zenodo ad
 [Daily improvements](../DAILY_IMPROVEMENTS.md) and
 [the activity log](PULL_SHARK_LOG.md) are historical records, not onboarding
 instructions or evidence of current scientific performance.
-
-| Extract offline ConfoundingByIndication cues | [ConfoundingByIndicationCueExtractor](guides/CONFOUNDING_BY_INDICATION_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline LengthBias cues | [LengthBiasCueExtractor](guides/LENGTH_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline LeadTimeBias cues | [LeadTimeBiasCueExtractor](guides/LEAD_TIME_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline BerksonBias cues | [BerksonBiasCueExtractor](guides/BERKSON_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline VolunteerBias cues | [VolunteerBiasCueExtractor](guides/VOLUNTEER_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline ReportingBias cues | [ReportingBiasCueExtractor](guides/REPORTING_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline IndicationBias cues | [IndicationBiasCueExtractor](guides/INDICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline ReverseCausation cues | [ReverseCausationCueExtractor](guides/REVERSE_CAUSATION_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline SurvivorBias cues | [SurvivorBiasCueExtractor](guides/SURVIVOR_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline IntervalCensoring cues | [IntervalCensoringCueExtractor](guides/INTERVAL_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline EcologicalFallacy cues | [EcologicalFallacyCueExtractor](guides/ECOLOGICAL_FALLACY_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline DetectionBias cues | [DetectionBiasCueExtractor](guides/DETECTION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline HealthyUserBias cues | [HealthyUserBiasCueExtractor](guides/HEALTHY_USER_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline InformationBias cues | [InformationBiasCueExtractor](guides/INFORMATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline NoveltyBias cues | [NoveltyBiasCueExtractor](guides/NOVELTY_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline ChannelingBias cues | [ChannelingBiasCueExtractor](guides/CHANNELING_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline PrevalenceIncidenceBias cues | [PrevalenceIncidenceBiasCueExtractor](guides/PREVALENCE_INCIDENCE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline IncorporationBias cues | [IncorporationBiasCueExtractor](guides/INCORPORATION_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline WillRogersPhenomenon cues | [WillRogersPhenomenonCueExtractor](guides/WILL_ROGERS_PHENOMENON_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline NonDifferentialMisclassification cues | [NonDifferentialMisclassificationCueExtractor](guides/NON_DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline SpinPHacking cues | [SpinPHackingCueExtractor](guides/SPIN_P_HACKING_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline DifferentialMisclassification cues | [DifferentialMisclassificationCueExtractor](guides/DIFFERENTIAL_MISCLASSIFICATION_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline ConfoundingByContraindication cues | [ConfoundingByContraindicationCueExtractor](guides/CONFOUNDING_BY_CONTRAINDICATION_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline SocialDesirabilityBias cues | [SocialDesirabilityBiasCueExtractor](guides/SOCIAL_DESIRABILITY_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline IndexEventBias cues | [IndexEventBiasCueExtractor](guides/INDEX_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline CompetingEventBias cues | [CompetingEventBiasCueExtractor](guides/COMPETING_EVENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline DiagnosticAccessBias cues | [DiagnosticAccessBiasCueExtractor](guides/DIAGNOSTIC_ACCESS_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline ReferralBias cues | [ReferralBiasCueExtractor](guides/REFERRAL_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline HawthorneEffect cues | [HawthorneEffectCueExtractor](guides/HAWTHORNE_EFFECT_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline RightCensoring cues | [RightCensoringCueExtractor](guides/RIGHT_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline ResidualConfounding cues | [ResidualConfoundingCueExtractor](guides/RESIDUAL_CONFOUNDING_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline SimpsonParadox cues | [SimpsonParadoxCueExtractor](guides/SIMPSON_PARADOX_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline ProtopathicBias cues | [ProtopathicBiasCueExtractor](guides/PROTOPATHIC_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline DepletionOfSusceptibles cues | [DepletionOfSusceptiblesCueExtractor](guides/DEPLETION_OF_SUSCEPTIBLES_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline OverdiagnosisBias cues | [OverdiagnosisBiasCueExtractor](guides/OVERDIAGNOSIS_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline AscertainmentBias cues | [AscertainmentBiasCueExtractor](guides/ASCERTAINMENT_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline AttritionInformativeCensoring cues | [AttritionInformativeCensoringCueExtractor](guides/ATTRITION_INFORMATIVE_CENSORING_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline VerificationBias cues | [VerificationBiasCueExtractor](guides/VERIFICATION_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline SpectrumBias cues | [SpectrumBiasCueExtractor](guides/SPECTRUM_BIAS_CUE_EXTRACTOR_GUIDE.md) |
-| Extract offline AtomisticFallacy cues | [AtomisticFallacyCueExtractor](guides/ATOMISTIC_FALLACY_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline OutcomeReportingBias cues | [OutcomeReportingBiasCueExtractor](guides/OUTCOME_REPORTING_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline NonresponseBias cues | [NonresponseBiasCueExtractor](guides/NONRESPONSE_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline PrevalentUserBias cues | [PrevalentUserBiasCueExtractor](guides/PREVALENT_USER_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline TimeDependentBias cues | [TimeDependentBiasCueExtractor](guides/TIME_DEPENDENT_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-| Extract offline LengthTimeBias cues | [LengthTimeBiasCueExtractor](guides/LENGTH_TIME_BIAS_CUES_EXTRACTOR_GUIDE.md) |
-- [GComputationCueExtractor](guides/G_COMPUTATION_CUES_EXTRACTOR_GUIDE.md)
-- [InformativeCensoringCueExtractor](guides/INFORMATIVE_CENSORING_CUES_EXTRACTOR_GUIDE.md)
-- [OutcomeSwitchingCueExtractor](guides/OUTCOME_SWITCHING_CUES_EXTRACTOR_GUIDE.md)
-- [SelectionIntoTreatmentCueExtractor](guides/SELECTION_INTO_TREATMENT_CUES_EXTRACTOR_GUIDE.md)
-- [MendelianRandomizationWeakCueExtractor](guides/MENDELIAN_RANDOMIZATION_WEAK_CUES_EXTRACTOR_GUIDE.md)
-- [WinnerCurseCueExtractor](guides/WINNER_CURSE_CUES_EXTRACTOR_GUIDE.md)
-- [CompetingRisksResidualCueExtractor](guides/COMPETING_RISKS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [MediationBiasCueExtractor](guides/MEDIATION_BIAS_CUES_EXTRACTOR_GUIDE.md)
-- [ProtocolAmendmentCueExtractor](guides/PROTOCOL_AMENDMENT_CUES_EXTRACTOR_GUIDE.md)
-- [ColliderBiasOpeningCueExtractor](guides/COLLIDER_BIAS_OPENING_CUES_EXTRACTOR_GUIDE.md)
-- [AdaptiveEnrichmentCueExtractor](guides/ADAPTIVE_ENRICHMENT_CUES_EXTRACTOR_GUIDE.md)
-- [ImmortalTimeResidualCueExtractor](guides/IMMORTAL_TIME_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [PrincipalStratumResidualCueExtractor](guides/PRINCIPAL_STRATUM_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [MediationPathResidualCueExtractor](guides/MEDIATION_PATH_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [TwinStudiesResidualCueExtractor](guides/TWIN_STUDIES_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [DoseResponseResidualCueExtractor](guides/DOSE_RESPONSE_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [HeapingBiasResidualCueExtractor](guides/HEAPING_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [AttritionResidualCueExtractor](guides/ATTRITION_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [ColliderStratificationResidualCueExtractor](guides/COLLIDER_STRATIFICATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [HealthyWorkerResidualCueExtractor](guides/HEALTHY_WORKER_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [SyntheticDiffInDiffResidualCueExtractor](guides/SYNTHETIC_DIFF_IN_DIFF_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [LeftTruncationResidualCueExtractor](guides/LEFT_TRUNCATION_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [NegativeControlExposureResidualCueExtractor](guides/NEGATIVE_CONTROL_EXPOSURE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [EValueResidualCueExtractor](guides/E_VALUE_RESIDUAL_CUE_EXTRACTOR_GUIDE.md)
-- [SelectionBiasResidualCueExtractor](guides/SELECTION_BIAS_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [InstrumentalVariableWeakResidualCueExtractor](guides/INSTRUMENTAL_VARIABLE_WEAK_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [FalsificationTestResidualCueExtractor](guides/FALSIFICATION_TEST_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [ClusterCrossoverResidualCueExtractor](guides/CLUSTER_CROSSOVER_RESIDUAL_CUES_EXTRACTOR_GUIDE.md)
-- [AdaptiveRandomizationCueExtractor](guides/ADAPTIVE_RANDOMIZATION_CUES_EXTRACTOR_GUIDE.md)
-- [InstrumentalVariableExclusionCueExtractor](guides/INSTRUMENTAL_VARIABLE_EXCLUSION_CUES_EXTRACTOR_GUIDE.md)
