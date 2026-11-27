@@ -68,6 +68,7 @@ labels, resolve conflicts and report Cohen's kappa](docs/guides/DUAL_REVIEWER_SC
 | Retrieve only current human-included papers | Pass a revision-checked `screened_collection` directly to preview/query; reject empty or stale selections without widening scope | [API/Python handoff, full guide and executed GIF](docs/guides/SCREENED_COLLECTION_GUIDE.md) |
 | Record a human screening decision in a normal browser | Open an exact member/revision, read local paper/source links, explicitly submit a reasoned opinion, and recover append-only history after restart | [Native screening workbench: user/API/Python/portfolio guide](docs/guides/HUMAN_SCREENING_WORKBENCH_GUIDE.md) |
 | Screen the most likely relevant papers first | Opt in to a local TF-IDF + Naive Bayes order of still-pending members, learned from your current includes/excludes, with per-paper scores and contributing terms; it never decides | [Screening prioritization: browser/API/Python guide, simulation and executed GIF](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md) |
+| Decide when it is reasonably safe to stop screening | Check consecutive excludes, a SAFE-style checkpoint and buscar's exact hypergeometric test of "recall < target" on a seeded random sample of the unscreened rest; advisory only, it never excludes or stops | [Screening stopping rules: browser/API/Python guide, worked numbers and executed GIF](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md) |
 | Screen with two independent, blind reviewers | Record decisions under pseudonymous labels, stay blind to others until you decide each paper, list conflicts, append resolutions that become final decisions, and report Cohen's kappa with a 95% CI, PABAK and PRISMA-style counts | [Dual-reviewer screening: browser/API/Python guide and executed GIF](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md) |
 | Inspect how a human screening judgment changed | Read append-only decisions with exact reasons, original timestamps, revisions and an honest legacy boundary through Python/API/native browser pages | [Screening decision history and executed offline illustration](docs/guides/SCREENING_HISTORY_GUIDE.md) |
 | Download complete human screening results | Export every current collection member in one read snapshot as bounded JSON or spreadsheet-safe CSV, including stale and unscreened states | [Screening exports and measured offline demo](docs/guides/SCREENING_EXPORT_GUIDE.md) |
@@ -169,12 +170,39 @@ kept and no score is invented. Nothing records, changes or suggests a decision.
 On a templated synthetic set (100 papers, 20 relevant, mostly near misses), a
 simulated reviewer found 19 of 20 relevant papers after a median of 25.5 papers in
 prioritized order versus 94 in saved order across ten shuffles (median WSS@95 0.695
-vs 0.01). That is synthetic evidence of the mechanism, not a recall guarantee, and no
-stopping signal is reported because stored decisions have no reliable global order.
+vs 0.01). That is synthetic evidence of the mechanism, not a recall guarantee. The
+ordering itself reports no stopping signal; the separate advisory stopping rules below
+do, under stated assumptions.
 The [complete guide](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md) gives exact
 formulas, the API, cold start, limits and an ASReview/Covidence/Rayyan comparison.
 The opt-in GIF is a **generated illustration of executed output**, not browser
 footage; the [measured transcript](docs/assets/screening-priority.txt) is the text
+alternative.
+
+## Decide when to stop screening, with evidence
+
+[![Executed synthetic stopping rules: SAFE checkpoint, seeded sample, buscar p-values and advisory checks](docs/assets/screening-stopping-rules.png)](docs/assets/screening-stopping-rules.gif)
+
+On a saved collection, choose **When could you stop screening?** to read three
+published stopping rules over your recorded human decisions: ASReview's consecutive
+irrelevant records (N records or a % of the collection), a SAFE-style checkpoint (key
+papers found, twice the estimated relevant count and a minimum share screened, plus that
+run), and buscar's test. For buscar you choose a seed, screen a reproducible SHA-256
+random sample of the still-unscreened members in the listed order, and get an exact
+hypergeometric p-value for H0 "recall < target", a recall estimate, a lower bound and
+how many more irrelevant sample records would be needed.
+`GET /collections/{collection_id}/screening-stopping?collection_revision=N` returns the
+same assessment as JSON.
+
+In the synthetic demo (100 papers, 20 relevant) the SAFE checkpoint is met after 43
+prioritized decisions; then 44 sampled records, all irrelevant, give p = 13/266 = 0.049 <
+0.05 and recall >= 0.952 at 95% confidence, with 13 papers never screened. It is
+**strictly advisory**: nothing is recorded, excluded or stopped, decision times are
+treated as a disclosed and checked assumption, and every response lists its assumptions
+and limitations. The [complete guide](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md)
+derives every number by hand and compares ASReview LAB, SAFE, buscar and ASReview
+Insights. The opt-in GIF is a **generated illustration of executed output**, not browser
+footage; the [measured transcript](docs/assets/screening-stopping-rules.txt) is the text
 alternative.
 
 ## Screen independently with two blind reviewers

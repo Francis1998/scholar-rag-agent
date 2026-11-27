@@ -5,7 +5,10 @@ JSON or literal Markdown report: exact collection ID/name/revision, every member
 and status, resolved versus still-needing-human-review totals, and exclusion
 reasons with exact member IDs. This is a **human progress handoff**, not automatic
 screening, a PRISMA flow diagram, study-quality scoring, recall estimation or a
-stopping recommendation.
+stopping recommendation. For advisory stopping evidence (consecutive excludes, a
+SAFE-style checkpoint and buscar's random-sample recall test) read the separate
+[stopping-rules assessment](SCREENING_STOPPING_RULES_GUIDE.md) and save its JSON
+beside the report; the report itself does not include it.
 
 [![Executed synthetic human screening report preview](../assets/screening-progress-report.png)](../assets/screening-progress-report.gif)
 

@@ -350,7 +350,7 @@ is fabricated from a single class. If the labeled papers contain no usable terms
 a rename, makes earlier decisions `stale`; stale opinions are never labels, so a
 revised collection may return to cold start until you re-screen.
 
-## Stopping signal: deliberately not computed
+## Stopping signal: the ordering itself reports none
 
 ASReview LAB lets a reviewer set a
 [stopping threshold](https://asreview.readthedocs.io/en/latest/lab/progress.html)
@@ -359,7 +359,7 @@ set by default and "the ideal threshold is still actively researched". The
 [SAFE procedure](https://doi.org/10.1186/s13643-024-02502-7) (Boetje and van de
 Schoot, 2024) combines several heuristics and still requires human judgment.
 
-This feature **reports no stopping signal**. Such a count needs a reliable global
+This ordering **reports no stopping signal**. Such a count needs a reliable global
 order of decisions. The stored screening data has a per-paper decision revision and
 a server wall-clock `updated_at`, but no global decision sequence: revisions only
 order one paper's decisions, and wall-clock times can repeat or move backwards and
@@ -375,6 +375,14 @@ Once the model was ready, runs of excludes before the last relevant paper were a
 most 4 in this easy synthetic set; real collections with differently worded relevant
 subtopics can produce much longer runs. Decide when to stop yourself; prioritization
 gives no recall guarantee.
+
+For evidence about when to stop, the separate, advisory
+[stopping rules](SCREENING_STOPPING_RULES_GUIDE.md) page and
+`GET /collections/{collection_id}/screening-stopping` evaluate this count over recorded
+decision times **under that stated assumption**, flag detected time inconsistencies,
+check a SAFE-style checkpoint and offer buscar's random-sample recall test, whose
+validity rests on a seeded random sample rather than on the decision order. They never
+record, exclude or stop anything.
 
 ## Simulation: prioritized vs saved order
 
@@ -478,7 +486,8 @@ the method behaves on your own topic.
 - Collection revisions do not version paper contents; editing stored text changes the
   next ordering without changing the revision.
 - One read is one snapshot. The order can change between reads as decisions change;
-  reread before choosing the next paper. There is no stopping signal (see above).
+  reread before choosing the next paper. The ordering reports no stopping signal; see
+  above and the [stopping rules](SCREENING_STOPPING_RULES_GUIDE.md).
 - Collections hold at most 100 papers, and `simulate_screening` accepts 2-100.
 
 ## Comparison: scholar-rag-agent vs ASReview vs Covidence vs Rayyan
@@ -493,7 +502,7 @@ Facts about other tools come only from the documentation linked above, checked o
 | Starts ranking | After 1 current include and 1 current exclude | [Prior-knowledge](https://asreview.readthedocs.io/en/latest/lab/project_create.html) relevant/irrelevant labels generate its initial ranking | After 25 decisions with at least 2 includes and 2 excludes; reviews under 100 studies use import order | On demand after 50 decisions with at least 5 includes and 5 excludes |
 | Updates | Recomputed on every read | After labeling, in the active-learning loop | As more studies are screened | When ratings are recomputed |
 | Output | Rank, score, log-odds, top contributing terms per paper | Next record to screen | "Most relevant" sort order | Five rating levels; sort by internal score |
-| Stopping support | None; omitted because no reliable global decision order is stored | Optional threshold of irrelevant records since the last relevant | Not documented | Not documented |
+| Stopping support | None in the ordering; a separate advisory [stopping-rules page](SCREENING_STOPPING_RULES_GUIDE.md) reports consecutive excludes over recorded times, a SAFE-style checkpoint and buscar's random-sample recall test | Optional threshold of irrelevant records since the last relevant | Not documented | Not documented |
 | Simulation | `simulate_screening` and the offline demo | [`asreview simulate`](https://asreview.readthedocs.io/en/latest/lab/simulation_cli.html) on fully labeled data | Not documented | Published validation figures |
 | Decisions | Never written or suggested by the ordering | Human labels | Human votes | "Ratings are suggestions only and are never recorded as decisions" |
 
@@ -516,6 +525,7 @@ stopping signal is shown. Present the simulation table as synthetic evidence of 
 mechanism, not as a recall claim for real reviews.
 
 Related guides: [paper screening](PAPER_SCREENING_GUIDE.md),
+[advisory stopping rules](SCREENING_STOPPING_RULES_GUIDE.md),
 [human screening workbench](HUMAN_SCREENING_WORKBENCH_GUIDE.md),
 [screening history](SCREENING_HISTORY_GUIDE.md),
 [screening progress report](SCREENING_REPORT_GUIDE.md) and
