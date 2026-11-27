@@ -343,7 +343,8 @@ collection. The same records are returned by `GET /collections/{collection_id}/i
 | 413 | `reference_import_too_large` | The request body exceeds its bound |
 | 413 | `reference_file_too_large`, `reference_file_too_many_records` | A file exceeds 2,097,152 bytes or 1,000 records |
 | 415 | `reference_import_media_type` | Not multipart/form-data or application/json, or content-encoded |
-| 422 | `invalid_reference_import` | Invalid target, field, format, file count or draft ID |
+| 422 | `invalid_reference_import` | Invalid preview target, field, format or file count (and a malformed draft ID in Python) |
+| 422 | FastAPI validation list | A malformed `POST /collections/imports` body, as for `POST /collections` |
 | 422 | `reference_file_not_utf8`, `reference_format_unknown`, `reference_file_empty`, `invalid_reference_file`, `reference_columns_invalid`, `invalid_reference_file_name` | A file cannot be read as a whole (the message names the file number) |
 | 422 | `reference_import_capacity_exceeded` | Members plus new papers would exceed 100 |
 | 503 | `reference_import_storage_error`, `collection_storage_error` | Storage is unavailable; no success is reported |
