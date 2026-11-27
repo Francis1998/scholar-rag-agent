@@ -36,6 +36,14 @@ def _chunk_rows(chunks: list[Chunk]) -> list[tuple[str, ...]]:
     ]
 
 
+class DocumentsExistError(ValueError):
+    """An insert-only write found documents that are already stored; nothing was written."""
+
+    def __init__(self, document_ids: tuple[str, ...]) -> None:
+        super().__init__("Some documents already exist; nothing was written.")
+        self.document_ids = document_ids
+
+
 class SQLiteDocumentStore:
     """Persist normalized documents and chunks in SQLite."""
 
@@ -57,9 +65,14 @@ class SQLiteDocumentStore:
 
     @contextmanager
     def replacing_documents(
-        self, documents: list[Document], chunks: list[Chunk]
+        self, documents: list[Document], chunks: list[Chunk], *, insert_only: bool = False
     ) -> Iterator[sqlite3.Connection]:
-        """Replace complete documents; commit only after dependent writes also succeed."""
+        """Replace complete documents; commit only after dependent writes also succeed.
+
+        With ``insert_only`` the write transaction first checks that none of the documents
+        exist and raises :class:`DocumentsExistError` otherwise, so concurrent writers can
+        never overwrite each other's rows.
+        """
         document_ids = {document.document_id for document in documents}
         if len(document_ids) != len(documents):
             raise ValueError("Replacement documents must have unique document_id values.")
@@ -70,6 +83,14 @@ class SQLiteDocumentStore:
         document_rows, chunk_rows = _document_rows(documents), _chunk_rows(chunks)
         with closing(sqlite3.connect(self._database_path)) as connection, connection:
             connection.execute("BEGIN IMMEDIATE")
+            if insert_only:
+                existing = connection.execute(
+                    "SELECT document_id FROM documents "
+                    "WHERE document_id IN (SELECT value FROM json_each(?))",
+                    (json.dumps(sorted(document_ids)),),
+                ).fetchall()
+                if existing:
+                    raise DocumentsExistError(tuple(sorted(row[0] for row in existing)))
             for chunk in chunks:
                 owner = connection.execute(
                     "SELECT document_id FROM chunks WHERE chunk_id = ?", (chunk.chunk_id,)

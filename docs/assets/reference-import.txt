@@ -1,0 +1,27 @@
+1. Two exports of one search, with an overlapping paper
+pubmed-search.ris   RIS        3 records (record 2 has no title)
+zotero-library.json CSL-JSON   2 records
+Overlap: https://doi.org/10.5555/SLEEP.2021.001 (RIS) = 10.5555/sleep.2021.001
+RIS record 1 carries an ASReview_relevant label in its N1 note.
+Offline: network, model, retrieval and event guards were called 0 times.
+
+2. Preview (dry run): everything reported, nothing written
+Records read 5 | skipped 1 | duplicates within the import 1 | new papers 3
+Skipped: file 1, record 2, line 11: missing_title
+Duplicate: file 2, record 1 matches file 1, record 1 by doi
+Labels in the files (ignored): 1 included, 0 excluded
+Before commit: 0 documents, 0 collections (only a private 24-hour draft)
+
+3. Commit: one explicit browser POST, then the collection view
+POST /explore/collections/import/commit -> 303 /explore/collection
+'Sleep and caffeine review': revision 1, 3 members
+Import record: file 1 -> 2 new; file 2 -> 1 new, 1 duplicate
+Paper provenance: pubmed-search.ris, record 1, line 1, file SHA-256 matches: true
+Corpus documents: 0 before, 3 after commit; collections: 0 before, 1 after
+
+4. Re-import is idempotent; labels never decide
+Same two files again: 0 new; already in the collection by doi 3, pmid 1
+Both files are flagged as previously imported into this collection
+Commit -> 409 reference_import_nothing_new; membership unchanged: true
+Screening queue: 3 unscreened, 0 include, 0 exclude
+Fuzzy near-duplicates: run Inspect duplicate candidates on the collection.

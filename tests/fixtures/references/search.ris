@@ -1,0 +1,40 @@
+Provider: Synthetic Search Service
+Database: PubMed
+
+TY  - JOUR
+TI  - Caffeine timing and sleep onset in adolescents:
+  a randomised crossover trial
+AU  - Garcia, María José
+AU  - Østergaard, Søren
+AU  - Garcia, María José
+PY  - 2021/03/14/
+DO  - https://doi.org/10.5555/SLEEP.2021.001
+AB  - Background: evening caffeine delays sleep.
+AB  - Methods: 40 adolescents, crossover.
+KW  - caffeine
+KW  - sleep onset
+JO  - Journal of Synthetic Sleep Research
+VL  - 12
+IS  - 3
+SP  - 101
+EP  - 109
+AN  - 33445566
+DB  - PubMed
+N1  - ASReview_relevant
+ER  - 
+
+TY  - JOUR
+AB  - A record with an abstract but no title.
+ER  - 
+
+TY  - CHAP
+BT  - Handbook of Synthetic Memory
+T1  - 睡眠と記憶の統合に関する総説
+AU  - 山田, 太郎
+Y1  - 2019
+N1  - ASReview_irrelevant
+UR  - https://example.org/chapter/7
+ER  - 
+
+TY  - JOUR
+TI  - A record whose export was cut off

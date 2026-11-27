@@ -402,6 +402,23 @@ reproducible SHA-256 order, not a secret. No model, retrieval, network, cache or
 event is involved; there is no authentication, and IDs and sample parameters stay in
 URLs. See the [stopping-rules guide](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md).
 
+### Reference-library import
+
+`POST /collections/imports/preview` and the native import page are a **dry run**: they
+change no document, collection, screening decision or event, and store only a private
+draft of the uploaded bytes for 24 hours so commit imports exactly what was previewed.
+Commit (`POST /collections/imports` or the explicit **Import** button, which needs one
+exact same-origin `Origin`) adds only new papers. It never deletes, overwrites or reorders
+papers or members; an identical stored paper is reused unchanged. Re-importing a file is
+idempotent and reports duplicates. Include/exclude labels in uploaded files (ASReview
+columns or `ASReview_relevant` notes) are counted and dropped: they are never stored,
+never become screening decisions and never train prioritization. Adding papers to an
+existing collection increments its revision, which makes earlier decisions stale as with
+any edit. Parsing is offline and bounded (5 files, 2 MiB and 1,000 records per file, field
+limits); file values are escaped literal text in HTML and error messages never echo file
+contents. Uploaded files can be sensitive and stay in the local database; there is no
+authentication. See the [reference import guide](docs/guides/REFERENCE_IMPORT_GUIDE.md).
+
 ## Read-only collection browser
 
 `/explore/collections` and `/explore/collection` expose existing metadata, not

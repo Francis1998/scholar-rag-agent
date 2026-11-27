@@ -18,6 +18,7 @@ accumulated feature list in the project README.
 | Search exact wording in a browser, inspect Unicode highlights and return from source context | [Native passage search, API/Python linkage and actual-output GIF](guides/BROWSER_PASSAGE_SEARCH_GUIDE.md) |
 | Find literal wording across current stored papers without ranking or generation | [Literal passage search and measured offline demo](guides/LITERAL_SEARCH_GUIDE.md) |
 | Save named paper selections for queries and previews across restarts | [Paper collections and offline demo](guides/PAPER_COLLECTIONS_GUIDE.md) |
+| Import RIS, PubMed MEDLINE/NBIB, CSL-JSON or CSV/TSV search exports into a collection with a dry-run preview, duplicate detection and per-file provenance; labels never become decisions | [Reference import: browser/API/Python guide, field mappings and executed GIF/still/text](guides/REFERENCE_IMPORT_GUIDE.md) |
 | Create a reusable selection in a native browser with explicit exact-ID checkboxes | [Native collection builder: offline/browser/API/Python/portfolio guide and GIF](guides/NATIVE_COLLECTION_BUILDER_GUIDE.md) |
 | Rename and explicitly add/remove members without dropping hidden papers | [Native collection editor: browser/API/Python/portfolio guide, executed demo and GIF/still/text](guides/NATIVE_COLLECTION_EDITOR_GUIDE.md) |
 | Browse saved membership, human screening and revision-bound downloads without writes | [Native collection browser: end-user/API/Python/portfolio guide and executed GIF](guides/COLLECTION_BROWSER_GUIDE.md) |

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "http://zotero.org/users/1/items/ABCD1234",
+    "type": "article-journal",
+    "title": "Caffeine timing and sleep onset in adolescents: a randomised crossover trial",
+    "container-title": "Journal of Synthetic Sleep Research",
+    "volume": 12,
+    "issue": "3",
+    "page": "101-109",
+    "DOI": "10.5555/SLEEP.2021.001",
+    "PMID": "33445566",
+    "author": [{"family": "Garcia", "given": "María José"}, {"family": "Østergaard", "given": "Søren"}],
+    "issued": {"date-parts": [["2021", 3, 14]]},
+    "abstract": "Background: evening caffeine delays sleep.\nMethods: 40 adolescents, crossover."
+  },
+  {
+    "id": "item-2",
+    "type": "report",
+    "title": "Sleep hygiene education for shift workers: a pilot",
+    "author": [{"literal": "Synthetic Sleep Consortium"}],
+    "issued": {"raw": "2018-11"},
+    "URL": "https://example.org/report/2",
+    "keyword": "sleep hygiene; shift work"
+  },
+  "not an object",
+  {"id": "item-4", "title": "   "}
+]

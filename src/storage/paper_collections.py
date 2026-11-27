@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
 from typing import Annotated, Self
@@ -171,6 +171,9 @@ class CollectionError(ValueError):
         self.missing_document_ids = missing_document_ids
 
 
+BeforeCommit = Callable[[sqlite3.Connection, PaperCollection], None]
+
+
 def _invalid_record() -> CollectionError:
     return CollectionError(
         "invalid_collection_record", "Saved collection metadata is invalid.", 409
@@ -312,7 +315,14 @@ class SQLitePaperCollections:
                 409,
             )
 
-    def create(self, *, name: str, document_ids: DocumentIdsInput) -> PaperCollection:
+    def create(
+        self,
+        *,
+        name: str,
+        document_ids: DocumentIdsInput,
+        before_commit: BeforeCommit | None = None,
+    ) -> PaperCollection:
+        """Save a new selection; ``before_commit`` writes dependent rows in the same transaction."""
         selection = CollectionSelection.model_validate({"name": name, "document_ids": document_ids})
         collection = PaperCollection(
             **selection.model_dump(), collection_id=f"col_{uuid4().hex}", revision=1
@@ -325,6 +335,8 @@ class SQLitePaperCollections:
                 "VALUES (?, ?, ?, ?)",
                 (collection.collection_id, collection.name, 1, json.dumps(collection.document_ids)),
             )
+            if before_commit is not None:
+                before_commit(connection, collection)
         return collection
 
     def get(self, collection_id: str) -> PaperCollection:
@@ -422,13 +434,26 @@ class SQLitePaperCollections:
             self._validate_replacement(connection, collection_id, replacement)
             return current, replacement
 
-    def edit(self, collection_id: str, *, changes: CollectionEdit) -> PaperCollection:
-        """Validate all old members and apply explicit deltas in one reserved transaction."""
+    def edit(
+        self,
+        collection_id: str,
+        *,
+        changes: CollectionEdit,
+        before_commit: BeforeCommit | None = None,
+    ) -> PaperCollection:
+        """Validate all old members and apply explicit deltas in one reserved transaction.
+
+        ``before_commit`` receives the reserved connection and saved collection so dependent
+        rows commit or roll back together with the edit.
+        """
         payload = CollectionEdit.model_validate(changes.model_dump())
         with self.resolved_collection(
             collection_id, expected_revision=payload.expected_revision, write=True
         ) as (connection, current):
-            return self._replace(connection, collection_id, payload.apply_to(current))
+            collection = self._replace(connection, collection_id, payload.apply_to(current))
+            if before_commit is not None:
+                before_commit(connection, collection)
+            return collection
 
     def delete(self, collection_id: str, *, expected_revision: int) -> None:
         identifier = _COLLECTION_ID.validate_python(collection_id)
