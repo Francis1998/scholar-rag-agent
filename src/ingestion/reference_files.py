@@ -181,12 +181,14 @@ def _skip(raw: _Raw, reason: str, message: str) -> SkippedRecord:
     return SkippedRecord(raw.record_index, raw.line, reason, message)
 
 
+def publication_year(value: str) -> str:
+    """Return the first standalone four-digit year in a date-like value, or ""."""
+    match = _YEAR.search(value)
+    return match.group(0) if match else ""
+
+
 def _year(raw: _Raw) -> str:
-    for value in raw.fields.get("year", ()):
-        match = _YEAR.search(value)
-        if match:
-            return match.group(0)
-    return ""
+    return next((year for year in map(publication_year, raw.fields.get("year", ())) if year), "")
 
 
 def _pages(raw: _Raw) -> str:

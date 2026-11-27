@@ -12,6 +12,7 @@ from agent.runner import AgentRunner
 from agent.safety import SafetyLimits
 from config import Settings, load_settings
 from ingestion.pipeline import IngestionPipeline
+from ingestion.reference_import import SQLiteReferenceImports
 from llm.router import RoutingLLMAdapter, build_model_router
 from retrieval.citations import CitationGrounder
 from retrieval.dense import DenseRetriever
@@ -84,6 +85,9 @@ class AppContainer:
             document_store=self.document_store,
             hybrid_retriever=self.hybrid_retriever,
             graph_builder=self.graph_builder,
+        )
+        self.reference_imports = SQLiteReferenceImports(
+            database_path, self.paper_collections, self.ingestion_pipeline.ingest_documents
         )
         executor = Executor(
             retriever=self.hybrid_retriever,
