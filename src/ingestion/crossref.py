@@ -100,14 +100,16 @@ class CrossrefConnector:
             Normalized document, or None when the item carries no usable title
             or DOI to anchor it.
         """
-        title = cls._first_string(item.get("title")) or "Untitled Crossref work"
+        raw_title = cls._first_string(item.get("title")) or "Untitled Crossref work"
+        title = cls._plain_title(raw_title) or "Untitled Crossref work"
         doi = item.get("DOI")
         doi_str = doi.strip() if isinstance(doi, str) else ""
-        source = f"https://doi.org/{doi_str}" if doi_str else title
+        # The raw title keeps existing DOI-less source labels and document IDs stable.
+        source = f"https://doi.org/{doi_str}" if doi_str else raw_title
         abstract = cls._strip_jats(item.get("abstract"))
         return Document(
             document_id=stable_id(source, "doc"),
-            title=" ".join(title.split()),
+            title=title,
             text=abstract,
             source=source,
             metadata={
@@ -137,6 +139,25 @@ class CrossrefConnector:
                 if isinstance(entry, str) and entry.strip():
                     return entry
         return ""
+
+    @staticmethod
+    def _plain_title(title: str) -> str:
+        """Return a Crossref title as plain, whitespace-collapsed text.
+
+        Publishers deposit titles with inline face markup (``<i>``, ``<b>``,
+        ``<sub>``, ``<sup>``, ``<scp>`` or MathML), often wrapped across lines,
+        and may entity-encode characters such as ``&amp;``. Those tags only
+        format text inside a word or phrase, so they are removed without
+        inserting a space (``CO<sub>2</sub>`` becomes ``CO2``), then entities
+        are decoded and whitespace is collapsed.
+
+        Args:
+            title: The raw Crossref title string.
+
+        Returns:
+            The plain-text title, or an empty string when only markup remains.
+        """
+        return " ".join(html.unescape(_JATS_TAG_PATTERN.sub("", title)).split())
 
     @classmethod
     def _strip_jats(cls, abstract: object) -> str:
