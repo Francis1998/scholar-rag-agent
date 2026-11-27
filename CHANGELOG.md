@@ -358,6 +358,16 @@ Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DOAJ ingestion connector (`ingestion/doaj.py`) that queries the DOAJ public `search/articles` endpoint by keyword and normalizes each `bibjson` article (title, abstract, DOI, year, full-text link) into a `Document`. It adds an eighth scholarly source that guarantees a freely readable open access full text alongside PDF, arXiv, Semantic Scholar, OpenAlex, PubMed, Crossref, and Europe PMC.
 
 ### Fixed
+- The Crossref connector (`CrossrefConnector.search`) stored work titles
+  verbatim, including the inline face markup publishers deposit (`<i>`, `<sub>`,
+  `<sup>`, often wrapped across lines) and entity-encoded characters such as
+  `&amp;`. Titles therefore read "... patterning in <i>Escherichia coli</i>",
+  and those tags reached the corpus browser, retrieval context, duplicate-title
+  matching and BibTeX exports; a markup-only title never used the "Untitled
+  Crossref work" placeholder. Titles are now plain text: tags are removed
+  without splitting words (`CO<sub>2</sub>` becomes `CO2`), entities are decoded
+  and whitespace is collapsed. DOI-less source labels and document IDs still
+  use the raw title, so existing IDs are unchanged.
 - The PubMed connector (`PubMedConnector.search`) read `ArticleTitle` with
   `findtext`, which stops at the first inline child element. PubMed italicizes
   species and gene names (`<i>Plasmodium falciparum</i>`) and marks formulas

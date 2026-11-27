@@ -379,8 +379,9 @@ for document in documents:
 
 Like PubMed, Crossref is a keyword-search connector: one call returns several
 works. Each work is normalized into the same `Document` shape, with the DOI and
-publication year captured in metadata and any JATS-XML abstract markup stripped
-to plain text.
+publication year captured in metadata, any JATS-XML abstract markup stripped to
+plain text, and inline title markup (`<i>`, `<sub>`, `<sup>`) removed without
+splitting words (`CO<sub>2</sub>` becomes `CO2`).
 
 ## Search Europe PMC By Keyword
 
