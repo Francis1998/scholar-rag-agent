@@ -121,6 +121,7 @@ def test_page_matches_the_json_assessment_and_escapes_saved_text(api: ExplorerAP
         criterion["status"] for criterion in body["safe_checkpoint"]["criteria"]
     ]
     assert len(root.by_id("assumptions").by_tag("li")) == len(body["assumptions"])
+    assert len(root.by_id("limitations").by_tag("li")) == len(body["limitations"])
     assert not root.by_class("next-member")
 
 
