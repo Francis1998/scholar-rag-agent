@@ -339,6 +339,8 @@ collection. The same records are returned by `GET /collections/{collection_id}/i
 | 409 | `collection_name_conflict` | The new collection name is already used |
 | 409 | `reference_import_nothing_new` | Every record is a duplicate or was skipped; nothing was written |
 | 409 | `reference_import_already_committed` | This draft was already imported |
+| 409 | `reference_import_preview_stale` | The papers commit would add differ from the previewed ones (for example a member's DOI, title or year changed without a revision change); preview again |
+| 409 | `reference_import_busy` | Other imports kept storing the same papers concurrently; retry the commit |
 | 409 | `collection_documents_missing`, `invalid_reference_import_record` | Stored data is inconsistent; nothing is repaired |
 | 413 | `reference_import_too_large` | The request body exceeds its bound |
 | 413 | `reference_file_too_large`, `reference_file_too_many_records` | A file exceeds 2,097,152 bytes or 1,000 records |
@@ -492,6 +494,13 @@ and the file and record of every added paper.
 - **Sensitive content.** Search exports can contain unpublished titles or reviewer notes.
   Drafts, documents and import records stay in your local database; review before sharing
   it or the JSON.
+- **Exactly what you previewed.** Commit re-plans the stored draft and refuses with
+  `reference_import_preview_stale` if the papers it would add differ from the preview, so
+  a paper you never saw is never added.
+- **Concurrent importers.** New papers are written insert-only inside the document store's
+  write transaction: if another process stores the same content-addressed paper first,
+  nothing is overwritten, that paper is reused (`created: false`) and the rest are
+  inserted.
 - **Partial failure.** New papers are stored before the collection save. If that save
   then fails (for example a stale revision or a name taken in the meantime), they remain
   in the corpus unassigned and a later import reuses them by content ID; no collection or

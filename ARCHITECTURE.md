@@ -697,7 +697,10 @@ per commit). Preview resolves the target collection, its members' DOI/PMID/title
 signals, earlier import records and already stored content IDs in one read transaction,
 then plans every record purely: exact DOI, PMID, content ID, then title + year, against
 the collection first and earlier import records second. Commit re-plans the draft at the
-previewed revision, stores only absent documents through `IngestionPipeline`, then saves
+previewed revision, refuses (409) when the additions differ from the previewed ones, stores
+only absent documents through `IngestionPipeline.ingest_documents(..., insert_only=True)`
+(the document store checks absence inside its `BEGIN IMMEDIATE` transaction and raises
+`DocumentsExistError` instead of replacing), then saves
 membership with `SQLitePaperCollections.create` or `edit`; their new `before_commit` hook
 writes the import record and marks the draft in the same SQLite transaction as the
 collection save. Documents are content-addressed (`doc-ref-v1-...`), so a stored paper is

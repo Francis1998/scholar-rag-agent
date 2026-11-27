@@ -1,5 +1,6 @@
 """Application dependency wiring for local runtime components."""
 
+from functools import partial
 from pathlib import Path
 
 from agent.answer_reviews import AnswerReviewService
@@ -87,7 +88,9 @@ class AppContainer:
             graph_builder=self.graph_builder,
         )
         self.reference_imports = SQLiteReferenceImports(
-            database_path, self.paper_collections, self.ingestion_pipeline.ingest_documents
+            database_path,
+            self.paper_collections,
+            partial(self.ingestion_pipeline.ingest_documents, insert_only=True),
         )
         executor = Executor(
             retriever=self.hybrid_retriever,

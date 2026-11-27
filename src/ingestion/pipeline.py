@@ -35,8 +35,14 @@ class IngestionPipeline:
         self._graph_builder = graph_builder
         self._chunker = chunker or TextChunker()
 
-    def ingest_documents(self, documents: list[Document]) -> list[Chunk]:
-        """Replace complete documents; repeated document IDs use their last supplied value."""
+    def ingest_documents(
+        self, documents: list[Document], *, insert_only: bool = False
+    ) -> list[Chunk]:
+        """Replace complete documents; repeated document IDs use their last supplied value.
+
+        ``insert_only`` refuses (``DocumentsExistError``) instead of replacing any document
+        that is already stored, atomically within the store's write transaction.
+        """
         batch = {document.document_id: document.model_copy(deep=True) for document in documents}
         if not batch:
             return []
@@ -64,7 +70,9 @@ class IngestionPipeline:
         shared_database = graph_store.database_path == self._document_store.database_path
         with (
             self._hybrid_retriever.replacing_documents(document_ids, chunks),
-            self._document_store.replacing_documents(current_documents, chunks) as connection,
+            self._document_store.replacing_documents(
+                current_documents, chunks, **({"insert_only": True} if insert_only else {})
+            ) as connection,
         ):
             graph_store.replace_documents(
                 document_ids, graph_chunks, connection=connection if shared_database else None

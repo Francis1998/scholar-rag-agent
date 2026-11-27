@@ -52,6 +52,7 @@ from retrieval.models import Document
 from retrieval.scope import MAX_DOCUMENT_IDS
 from storage.collection_duplicates import DOI_FIELDS, MAX_METADATA_BYTES
 from storage.document_catalog import MAX_SOURCE_CHARACTERS
+from storage.document_store import DocumentsExistError
 from storage.paper_collections import (
     CollectionEdit,
     CollectionError,
@@ -722,6 +723,7 @@ class SQLiteReferenceImports:
             request = {
                 "target": target.model_dump(mode="json"),
                 "files": [upload.to_json() for upload in files],
+                "additions": [item.document_id for item in plan.candidates if item.status == "new"],
             }
             with self._connect() as connection, connection:
                 connection.execute("BEGIN IMMEDIATE")
@@ -757,7 +759,7 @@ class SQLiteReferenceImports:
             candidates=plan.candidates,
         )
 
-    def _draft(self, draft_id: str) -> tuple[ImportTarget, list[UploadedFile]]:
+    def _draft(self, draft_id: str) -> tuple[ImportTarget, list[UploadedFile], tuple[str, ...]]:
         try:
             identifier = _DRAFT_ID.validate_python(draft_id)
         except ValidationError as exc:
@@ -777,7 +779,13 @@ class SQLiteReferenceImports:
             if not expired and row["import_id"] is None:
                 request = json.loads(row["request"])
                 target = ImportTarget.model_validate(request["target"])
-                return target, [UploadedFile.from_json(item) for item in request["files"]]
+                additions = request["additions"]
+                if not isinstance(additions, list) or not all(
+                    isinstance(item, str) for item in additions
+                ):
+                    raise ValueError("Invalid previewed additions.")
+                files = [UploadedFile.from_json(item) for item in request["files"]]
+                return target, files, tuple(additions)
         except (ValueError, TypeError, KeyError, RecursionError) as exc:
             raise CollectionError(
                 "invalid_reference_import_record", "The saved draft is invalid.", 409
@@ -794,8 +802,7 @@ class SQLiteReferenceImports:
             409,
         )
 
-    def _ingest_new(self, documents: Sequence[Document]) -> set[str]:
-        """Store only documents that are still absent: existing papers are never overwritten."""
+    def _absent(self, documents: Sequence[Document]) -> list[Document]:
         with self._connect() as connection:
             existing = {
                 row[0]
@@ -805,10 +812,29 @@ class SQLiteReferenceImports:
                     (json.dumps([document.document_id for document in documents]),),
                 )
             }
-        created = [document for document in documents if document.document_id not in existing]
-        if created:
-            self._ingest(created)
-        return {document.document_id for document in created}
+        return [document for document in documents if document.document_id not in existing]
+
+    def _ingest_new(self, documents: Sequence[Document]) -> set[str]:
+        """Insert only absent documents; existing papers are never overwritten.
+
+        The injected ingest is insert-only inside the store's write transaction. If another
+        importer stores some of the same content-addressed papers first, nothing is written,
+        those papers are reused and the rest are inserted on a fresh attempt.
+        """
+        for _ in range(3):
+            absent = self._absent(documents)
+            if not absent:
+                return set()
+            try:
+                self._ingest(absent)
+            except DocumentsExistError:
+                continue
+            return {document.document_id for document in absent}
+        raise CollectionError(
+            "reference_import_busy",
+            "Other imports kept storing the same papers; retry the commit. No collection changed.",
+            409,
+        )
 
     def commit(self, draft_id: str) -> ReferenceImportResult:
         """Re-plan the draft at the previewed revision, then add only new papers atomically.
@@ -823,9 +849,17 @@ class SQLiteReferenceImports:
     def _commit(self, draft_id: str) -> ReferenceImportResult:
         """Serialized in-process, so concurrent commits never ingest the same draft twice."""
         try:
-            target, files = self._draft(draft_id)
+            target, files, previewed = self._draft(draft_id)
             name, current, plan = self._planned(files, target)
             additions = [item for item in plan.candidates if item.status == "new"]
+            if tuple(item.document_id for item in additions) != previewed:
+                # Member metadata can change without a revision change; never add unseen papers.
+                raise CollectionError(
+                    "reference_import_preview_stale",
+                    "The papers to add changed since the preview (for example a member's DOI, "
+                    "title or year changed). Preview again; nothing was written.",
+                    409,
+                )
             if not additions:
                 raise CollectionError(
                     "reference_import_nothing_new",
