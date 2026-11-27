@@ -394,7 +394,8 @@ unscreened or stale members.
 The recorded order relies on server wall-clock decision times, which are not a
 guaranteed sequence: detected inconsistencies make order-based rules `not_evaluable`,
 undetected clock changes remain possible. buscar's recall test is valid only for a seed
-and target chosen before the sample is seen and a sample screened in the listed order;
+and target chosen before the sample is seen and a sample screened in the listed order,
+and it stays `not_evaluable` while unsure decisions recorded before the sample remain;
 p is recomputed without a repeated-looks correction. Recall is relative to the
 collection's members and treats each human decision as correct. The sample order is a
 reproducible SHA-256 order, not a secret. No model, retrieval, network, cache or agent

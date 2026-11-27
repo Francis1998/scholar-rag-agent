@@ -447,6 +447,7 @@ class RandomSampleRecallTest(BaseModel):
     sample_order: tuple[SampleItem, ...] = Field(max_length=MAX_DOCUMENT_IDS)
     next_document_ids: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
     blocked_by_unsure: Identity | None
+    unsure_before_sample: tuple[Identity, ...] = Field(max_length=MAX_DOCUMENT_IDS)
     sample_size: int = Field(strict=True, ge=0, le=MAX_DOCUMENT_IDS)
     sample_relevant: int = Field(strict=True, ge=0, le=MAX_DOCUMENT_IDS)
     relevant_before_sample: int = Field(strict=True, ge=0, le=MAX_DOCUMENT_IDS)
@@ -474,7 +475,8 @@ ASSUMPTIONS = (
     "unretained first decisions never lengthen it.",
     "Unsure counts as possibly relevant: it ends an irrelevant run and pauses the random "
     "sample until you resolve it to include or exclude, but it is never counted as a "
-    "relevant record found.",
+    "relevant record found. An unsure decision recorded before the sample is neither found "
+    "nor in the urn, so the recall test is not_evaluable until it is resolved.",
     "Random sampling: the recall test is valid only if you chose the seed before seeing the "
     "sample, use one seed per assessment and screen sample records in the listed order "
     "without skipping. The order is SHA-256 of [version, seed, collection, revision, "
@@ -731,6 +733,13 @@ def _recall_test(
     collection_id, revision = collection.collection_id, collection.revision
     if options.sample_seed is None or options.sample_after is None:
         urn = [identifier for identifier, status in statuses.items() if status in _PENDING]
+        unsure = tuple(record.document_id for record in ordered if record.decision == "unsure")
+        resolve_first = (
+            f" Resolve the {len(unsure)} unsure decision(s) in unsure_before_sample first: "
+            "until then the test stays not_evaluable."
+            if unsure
+            else ""
+        )
         return RandomSampleRecallTest(
             status="not_started",
             sample_after=len(ordered),
@@ -739,6 +748,7 @@ def _recall_test(
             sample_order=(),
             next_document_ids=(),
             blocked_by_unsure=None,
+            unsure_before_sample=unsure,
             sample_size=0,
             sample_relevant=0,
             relevant_before_sample=0,
@@ -754,7 +764,8 @@ def _recall_test(
             explanation=f"Not started. When you are ready to stop prioritized screening, choose "
             f"a seed and draw a random sample of the {len(urn)} pending members (sample_after="
             f"{len(ordered)} and sample_urn_sha256 from this response). Screen the sample in the "
-            f"listed order; the test then reports p for H0 'recall < {options.target_recall}'.",
+            f"listed order; the test then reports p for H0 'recall < {options.target_recall}'."
+            + resolve_first,
             target_recall=options.target_recall,
             confidence=options.confidence,
             alpha=float(alpha),
@@ -812,10 +823,11 @@ def _recall_test(
         relevant_outside=sum(statuses[identifier] == "include" for identifier in outside),
     )
     upcoming = order[len(observed) :]
-    evaluable = reliable or options.sample_urn_sha256 is not None
+    unsure_before = tuple(record.document_id for record in before if record.decision == "unsure")
+    verified = reliable or options.sample_urn_sha256 is not None
     k_hat = p_value = estimate = bound = needed = None
     status: RecallTestStatus = "not_evaluable"
-    if evaluable:
+    if verified and not unsure_before:
         k_hat, p_value = recall_p_value(observation, target)
         status = "met" if p_value < alpha else "not_met"
         estimate = recall_estimate(observation)
@@ -841,6 +853,7 @@ def _recall_test(
             identifier for identifier in upcoming if statuses[identifier] in (*_PENDING, "unsure")
         ),
         blocked_by_unsure=blocked,
+        unsure_before_sample=unsure_before,
         sample_size=observation.sample_size,
         sample_relevant=observation.sample_relevant,
         relevant_before_sample=observation.relevant_before,
@@ -854,7 +867,16 @@ def _recall_test(
         recall_lower_bound=None if bound is None else float(bound),
         additional_irrelevant_needed=needed,
         explanation=_recall_explanation(
-            status, observation, options, p_value, alpha, bound, needed, blocked
+            status,
+            observation,
+            options,
+            p_value,
+            alpha,
+            bound,
+            needed,
+            blocked,
+            unsure_before=unsure_before,
+            verified=verified,
         ),
         target_recall=options.target_recall,
         confidence=options.confidence,
@@ -872,6 +894,9 @@ def _recall_explanation(
     bound: Fraction | None,
     needed: int | None,
     blocked: str | None,
+    *,
+    unsure_before: Sequence[str] = (),
+    verified: bool = True,
 ) -> str:
     sample = (
         f"Sample: {observation.sample_size} of {observation.urn_size} urn members observed in "
@@ -879,11 +904,20 @@ def _recall_explanation(
         f"{observation.relevant_seen}."
     )
     if status == "not_evaluable" or p_value is None:
-        return (
-            f"{sample} Recorded decision times are inconsistent, so the urn behind sample_after "
-            "cannot be trusted. Pass the sample_urn_sha256 recorded when you drew the sample "
-            "to verify it."
-        )
+        reasons = []
+        if unsure_before:
+            reasons.append(
+                f"{len(unsure_before)} member(s) decided before the sample are unsure (see "
+                "unsure_before_sample): they are neither found nor in the urn, so recall "
+                "cannot be bounded. Resolve them to include or exclude."
+            )
+        if not verified:
+            reasons.append(
+                "Recorded decision times are inconsistent, so the urn behind sample_after "
+                "cannot be trusted. Pass the sample_urn_sha256 recorded when you drew the "
+                "sample to verify it."
+            )
+        return " ".join((sample, *reasons))
     target = options.target_recall
     if status == "met":
         text = (
@@ -1002,7 +1036,8 @@ def _recorded_decisions(
 
     Checks what the data can check: newest history equals the current decision, decision
     revisions are contiguous, times never decrease as revisions increase, and no decision
-    from an earlier collection revision is later than one at this revision.
+    from an earlier collection revision (including a stale member's latest one) is later
+    than one at this revision.
     """
     recorded: list[RecordedDecision] = []
     warnings: list[str] = []
@@ -1010,6 +1045,10 @@ def _recorded_decisions(
     earlier: tuple[datetime, str] | None = None
     for item in queue.items:
         latest = item.review
+        if item.status == "stale" and latest is not None:
+            if earlier is None or latest.updated_at > earlier[0]:
+                earlier = (latest.updated_at, item.document_id)
+            continue
         if item.status not in ("include", "exclude", "unsure") or latest is None:
             continue
         first, retained, newer = latest, latest.revision == 1, None

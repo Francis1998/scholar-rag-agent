@@ -252,7 +252,14 @@ def _summary(result: ScreeningStoppingAssessment) -> Iterator[str]:
     for status, count in counts.model_dump().items():
         yield f'<dt>{status}</dt><dd id="count-{status}">{count}</dd>'
     yield "</dl>"
-    if result.all_screened:
+    if result.all_screened and counts.unsure:
+        needs = "decision still needs" if counts.unsure == 1 else "decisions still need"
+        yield (
+            '<p class="notice" id="all-screened">Every member has a current decision, but '
+            f"{counts.unsure} unsure {needs} your include or exclude decision. Resolve them "
+            "before you stop; the rules below are shown for audit.</p>"
+        )
+    elif result.all_screened:
         yield (
             '<p class="notice" id="all-screened">Every member has a current decision; there '
             "is nothing left to stop screening. The rules below are shown for audit.</p>"
@@ -334,6 +341,22 @@ def _start_sample(
     )
 
 
+def _unsure_before(
+    test: RandomSampleRecallTest, options: _StoppingOpen, root_path: str
+) -> Iterator[str]:
+    if not test.unsure_before_sample:
+        return
+    yield (
+        f"<h3>Resolve first: {len(test.unsure_before_sample)} unsure decision(s) recorded "
+        "before the sample</h3><p>They are neither found nor in the urn, so the recall test "
+        "stays not_evaluable until each one is include or exclude.</p><ol>"
+    )
+    for position, identifier in enumerate(test.unsure_before_sample, 1):
+        link = _screen_link("resolve-unsure", position, identifier, options, root_path)
+        yield f'<li class="unsure-before">{_member(identifier)} {link}</li>'
+    yield "</ol>"
+
+
 def _recall(
     result: ScreeningStoppingAssessment, options: _StoppingOpen, root_path: str
 ) -> Iterator[str]:
@@ -347,6 +370,7 @@ def _recall(
     )
     if test.status == "not_started":
         yield from _start_sample(test, options, root_path)
+        yield from _unsure_before(test, options, root_path)
         return
     yield f'<p id="recall-explanation">{_escaped(test.explanation)}</p><dl>'
     rows = (
@@ -378,6 +402,7 @@ def _recall(
         shown = "-" if value is None else value
         yield f'<dt>{label}</dt><dd id="{identifier}">{_escaped(str(shown))}</dd>'
     yield "</dl>"
+    yield from _unsure_before(test, options, root_path)
     yield (
         "<p>Keep this exact sample: seed, boundary and urn digest. Bookmark this page or "
         "note the values below; a different seed is a different sample.</p>"

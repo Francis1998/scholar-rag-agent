@@ -145,10 +145,14 @@ def test_completion_notice_asks_for_unsure_decisions_first(api: ExplorerAPI) -> 
     for identifier in (HOSTILE, "pending-1", "pending-2"):
         decide(identifier, "exclude")
     decide("pending-3", "unsure")
-    notice = api.page(page_url(collection)).by_id("all-screened").text()
+    root = api.page(page_url(collection))
+    notice = root.by_id("all-screened").text()
     # Every member has a decision, but one judgment is still unsure and needs a human.
     assert "1 unsure decision still needs your include or exclude decision" in notice
     assert "nothing left" not in notice
+    (unsure,) = root.by_class("unsure-before")
+    assert unsure.by_class("member-id")[0].text() == '"pending-3"'
+    assert urlsplit(href(root, "resolve-unsure-1")).path == "/explore/screening"
     decide("pending-3", "exclude", revision=1)
     resolved = api.page(page_url(collection)).by_id("all-screened").text()
     assert "nothing left to stop screening" in resolved

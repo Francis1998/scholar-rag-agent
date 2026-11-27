@@ -245,7 +245,8 @@ exclude them**; recording their decisions, or documenting why you stop, is up to
    Advisory stopping rules and a recall test**. The same link appears on the
    prioritized queue and on every member's screening form.
 3. The page (`/explore/screening-stopping`, read-only, no scripts) shows:
-   - current counts for all members and whether every member is already screened;
+   - current counts for all members and whether every member is already screened (if
+     some decisions are still unsure, the notice asks you to resolve them first);
    - **1. Consecutive irrelevant records**: status, run, threshold and the excludes in
      the run;
    - **2. SAFE-style checkpoint**: overall status and a table of the four conditions;
@@ -306,7 +307,7 @@ ASCII (`0.95`, not `.95`, `9.5e-1` or full-width digits). Unknown, duplicate (ex
 | `timeline.order_reliable`, `order_warnings`, `tied_positions` | Detected time inconsistencies and ties |
 | `consecutive_irrelevant` | `status` (`met`/`not_met`/`not_evaluable`), `threshold`, `current_run`, both as % of the collection, `last_relevant_at`, `run_document_ids`, `explanation` |
 | `safe_checkpoint` | `status` (`met`/`not_met`/`incomplete`), four `criteria` with `name`, `status`, `detail`, and `key_documents_not_included` |
-| `recall_test` | `status` (`not_started`/`met`/`not_met`/`not_evaluable`), `sample_after`, `urn_size`, `urn_sha256`, `sample_order[]`, `next_document_ids`, `blocked_by_unsure`, `sample_size`, `sample_relevant`, `relevant_before_sample`, `decided_outside_sample`, `relevant_outside_sample`, `relevant_seen`, `h0_min_relevant_in_urn` (K_hat), `p_value`, `p_value_exact`, `alpha`, `recall_estimate`, `recall_lower_bound`, `additional_irrelevant_needed`, `explanation` |
+| `recall_test` | `status` (`not_started`/`met`/`not_met`/`not_evaluable`), `sample_after`, `urn_size`, `urn_sha256`, `sample_order[]`, `next_document_ids`, `blocked_by_unsure`, `unsure_before_sample`, `sample_size`, `sample_relevant`, `relevant_before_sample`, `decided_outside_sample`, `relevant_outside_sample`, `relevant_seen`, `h0_min_relevant_in_urn` (K_hat), `p_value`, `p_value_exact`, `alpha`, `recall_estimate`, `recall_lower_bound`, `additional_irrelevant_needed`, `explanation` |
 | `assumptions`, `limitations` | The disclosures that apply to every number above |
 
 When the test is `not_started`, `sample_after` and `urn_sha256` describe the sample you
@@ -355,8 +356,9 @@ latest decision belongs to an earlier revision are `stale` and therefore pending
   not a guaranteed global sequence: a clock can repeat a value or move backwards. The
   assessment says so in `assumptions` and checks what the data can check:
   - within one member, a later decision revision must not have an earlier time;
-  - no decision from an earlier collection revision may be later than a decision at the
-    current revision (the collection had to be edited in between);
+  - no decision from an earlier collection revision (including a stale member's latest
+    one) may be later than a decision at the current revision (the collection had to be
+    edited in between);
   - the newest retained history record must equal the current decision, and decision
     revisions must be contiguous (otherwise a 409 `invalid_screening_history_record`).
   Any detected inconsistency sets `order_reliable: false`, lists `order_warnings` and
@@ -421,6 +423,11 @@ member not yet decided at this revision. You choose the seed; the response gives
   happened to decide from the prioritized queue before reaching it in the sample still
   counts as an observation once the prefix reaches it, although it was not chosen at
   random. Finish the sample before you return to the prioritized queue.
+- **Unsure before the sample.** A member decided unsure before the sample is neither a
+  found record nor part of the urn, so nothing bounds its relevance. While any exists,
+  the test is `not_evaluable` with no p-value or recall figures, and
+  `unsure_before_sample` (also shown in the `not_started` response and on the page with
+  links to each screening form) lists the members to resolve to include or exclude.
 - **Null hypothesis.** With r_before relevant records found before the sample and r_seen
   found in total, final recall is r_seen / (r_before + K) when the urn holds K relevant
   records, so H0 "recall < tau" means K >= K_hat with
@@ -536,7 +543,7 @@ cookies or browser storage, and no paper text is sent anywhere.
 | 409 `collection_revision_conflict` | The collection was edited. Read its current revision; decisions from the old revision are now `stale` and an open sample has ended. |
 | 409 `stopping_sample_urn_changed` | The members decided before `sample_after` are not the urn you drew from: a wrong `sample_after`, or a decision recorded with an earlier server time. Read the `not_started` response again and draw a new sample with a new seed; report both. |
 | 409 `stopping_sample_boundary_tied` | The last decision before the sample and the first one after it share one recorded time, so the boundary is ambiguous. Draw a new sample. |
-| `recall_test.status` is `not_evaluable` | `timeline.order_warnings` lists a detected time inconsistency and no `sample_urn_sha256` was sent. Send the digest you saved when you drew the sample; without it, draw a new one. |
+| `recall_test.status` is `not_evaluable` | Either `unsure_before_sample` lists unsure decisions recorded before the sample (resolve each to include or exclude), or `timeline.order_warnings` lists a detected time inconsistency and no `sample_urn_sha256` was sent (send the digest you saved when you drew the sample; without it, draw a new one). |
 | `consecutive_irrelevant.status` is `not_evaluable` | The same warnings make the run uncountable for this revision. Check the server clock; the SAFE checkpoint is then at best `incomplete`. |
 | `blocked_by_unsure` names a member | That sample member is unsure. Resolve it to include or exclude; later sample decisions count again. |
 | SAFE checkpoint stays `incomplete` | Supply `key_document_id` values and `estimated_relevant` (RR_T). |
