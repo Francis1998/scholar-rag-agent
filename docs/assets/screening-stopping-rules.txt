@@ -1,0 +1,37 @@
+1. SAFE phases 1-2: random pilot, then prioritized screening
+100 synthetic papers (20 relevant); a simulated reviewer PUTs fixture labels.
+Phase 1: first 10 in saved (shuffled) order -> 2 relevant; RR_T = 2/10 x 100 = 20.
+Phase 2: GET .../screening-priority rank 1 -> PUT decision -> GET .../screening-stopping
+SAFE checkpoint met after 43 decisions: 20 of 20 relevant found.
+  key papers met; 43 >= 2 x 20 met; >= 10% met
+  10 consecutive excludes >= threshold 10 (10% of 100): met
+Nothing was excluded: 57 members are still unscreened.
+
+2. A seeded random sample of the unscreened remainder
+GET .../screening-stopping -> recall_test not_started: sample_after=43, urn 57
+Seed 20261124 chosen before viewing; urn_sha256 1c28b5804bc13dbb...
+Sample order = SHA-256 of [version, seed, collection, revision, document ID]
+Screen next: synthetic-closed-book-qa-02, synthetic-citation-recommendation-05, synthetic-table-qa-07, ...
+H0 'recall < 0.95': >= 2 relevant left in the urn (K_hat); p = 1 before sampling
+Projection: if the next 44 sampled records are irrelevant, p < 0.05
+Reading the sample left the database unchanged: True
+
+3. buscar: exact p-value after each sampled decision
+Sampled  Relevant  p = P(X <= k | N_urn, K_hat, n), exact
+      0         0  1 = 1.000
+     10         0  1081/1596 = 0.677
+     20         0  111/266 = 0.417
+     30         0  117/532 = 0.220
+     40         0  34/399 = 0.085
+     44         0  13/266 = 0.049
+Met at n = 44: p < 0.05, reject H0 'recall < 0.95' (95% confidence).
+Recall estimate 1.000; lower bound 0.952; screened 87 of 100.
+
+4. Advisory only: evidence for your decision, never a stop
+Order: first recorded decision time at this revision; reliable True, ties 0
+Browser page statuses and exact p equal the JSON: True
+POST .../screening-stopping -> HTTP 405 "screening_stopping_method_not_allowed"
+Restarted app returned identical JSON: True
+Demo-only ground truth: 20/20 relevant found, true recall 1.00 >= bound 0.952
+13 papers never screened; deciding to stop stays a human, documented choice.
+Forbidden calls: 0 (no models, retrieval or network). Synthetic data only.

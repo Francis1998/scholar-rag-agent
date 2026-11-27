@@ -31,6 +31,9 @@ current includes/excludes is separate and never records a decision.
 [Independent dual-reviewer screening](DUAL_REVIEWER_SCREENING_GUIDE.md) adds blind,
 pseudonymous reviewer labels, conflicts, append-only resolutions and Cohen's kappa;
 the unlabeled decisions described here act as its reviewer `default`.
+Advisory [stopping rules](SCREENING_STOPPING_RULES_GUIDE.md) read these decisions in
+recorded order to report consecutive excludes, a SAFE-style checkpoint and buscar's
+random-sample recall test; they never record, exclude or stop anything.
 The opt-in `PrismaScreeningChecklist` still produces advisory, always-pending
 rows; it is not connected to these decisions. Saved-answer reviews judge an
 answer after generation and remain a separate feature.

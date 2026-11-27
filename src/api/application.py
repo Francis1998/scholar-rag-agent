@@ -42,6 +42,8 @@ from api.screening import router as screening_router
 from api.screening_explorer import router as screening_explorer_router
 from api.screening_priority import router as screening_priority_router
 from api.screening_report import router as screening_report_router
+from api.screening_stopping import router as screening_stopping_router
+from api.screening_stopping_explorer import router as screening_stopping_explorer_router
 from api.search import router as search_router
 from api.validation import sanitized_validation_content
 from api.worksheet_explorer import router as worksheet_explorer_router
@@ -142,11 +144,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(collection_editing_router)
     application.include_router(screening_explorer_router)
     application.include_router(dual_screening_explorer_router)
+    application.include_router(screening_stopping_explorer_router)
     application.include_router(collections_router)
     application.include_router(collection_duplicates_router)
     application.include_router(screening_router)
     application.include_router(screening_report_router)
     application.include_router(screening_priority_router)
+    application.include_router(screening_stopping_router)
     application.include_router(dual_screening_router)
     application.include_router(evidence_router)
     application.include_router(bibliography_router)

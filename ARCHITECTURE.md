@@ -663,6 +663,26 @@ network, write or event is added; the default queue order is unchanged. The pure
 `simulate_screening` replays known labels with the same ranking for WSS@95 and recall
 curves. See the [prioritization guide](docs/guides/SCREENING_PRIORITIZATION_GUIDE.md).
 
+`storage.screening_stopping.assess_screening_stopping` reads the same queue snapshot in
+one `resolved_collection` transaction and walks each decided member's append-only
+history (pages of 100, at most 10,000 rows) back to its first decision at the current
+collection revision. Members ordered by that time form the recorded timeline. History that
+is not contiguous or does not end at the current decision fails with 409; times that
+decrease as revisions increase, or an earlier-revision decision later than a current one,
+are reported as `order_warnings` (never repaired). The pure `build_assessment`
+then evaluates ASReview's consecutive-irrelevant count, a SAFE-style phase-2 checkpoint
+and buscar's hypergeometric test on a seeded random sample of the urn: members not among
+the first `sample_after` timeline entries, ordered by SHA-256 of
+`[version, seed, collection, revision, document]` and verified by an order-independent
+urn digest. Arithmetic uses `math.comb` and `fractions.Fraction` only. The immutable
+`ScreeningStoppingAssessment` validates its counts against the snapshot and is capped at
+524,288 bytes. `GET /collections/{collection_id}/screening-stopping` (outside the
+screening PUT wildcard, strict ASCII query validation, 405 for other methods) and the
+GET-only `/explore/screening-stopping` page expose it; the collection page, prioritized
+queue and screening form link to it. No table, setting, cache, model, network, write or
+event is added. See the
+[stopping-rules guide](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md).
+
 ### Independent dual-reviewer screening
 
 `storage.dual_screening.SQLiteDualScreening`, wired as `AppContainer.dual_screening`,

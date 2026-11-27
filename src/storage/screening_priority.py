@@ -70,9 +70,10 @@ _NOTES = (
     "decisions only. Unsure, stale and unscreened members are never training labels.",
     "Scores order papers within this collection. They are not calibrated probabilities, "
     "recall estimates, quality ratings or evidence of scientific relevance.",
-    "No stopping signal is reported: decisions keep per-paper revisions and server wall-clock "
-    "times, not a reliable global decision sequence, so consecutive excludes since the last "
-    "include cannot be counted honestly. When to stop screening remains your judgment.",
+    "No stopping signal is reported by this ordering: decisions keep per-paper revisions and "
+    "server wall-clock times, not a guaranteed global decision sequence. The separate "
+    "advisory screening-stopping assessment uses recorded times only under that stated "
+    "assumption. When to stop screening remains your judgment.",
     "One read snapshot of membership, decisions, titles and text prefixes; nothing is cached "
     "or saved. A new decision changes the next ordering, so reread it before choosing.",
 )

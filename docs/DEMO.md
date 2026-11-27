@@ -57,6 +57,19 @@ a **generated illustration of executed output**, not browser footage or a
 benchmark on real literature; the [measured transcript](assets/screening-priority.txt)
 is the text alternative.
 
+## Screening stopping rules
+
+[![Executed synthetic screening stopping rules, not browser footage](assets/screening-stopping-rules.png)](assets/screening-stopping-rules.gif)
+
+The [complete browser/API/Python guide](guides/SCREENING_STOPPING_RULES_GUIDE.md)
+reproduces a SAFE random pilot and prioritized screening on 100 synthetic papers until
+the SAFE-style checkpoint is met after 43 decisions, then a seeded random sample of the
+57 unscreened papers until buscar's exact p-value is 13/266 < 0.05 after 44 sampled
+records. Reads leave database bytes unchanged, `POST` returns 405 and a restarted app
+returns identical JSON; no models or network run. This is a **generated illustration of
+executed output**, not browser footage or a benchmark on real literature; the
+[measured transcript](assets/screening-stopping-rules.txt) is the text alternative.
+
 ## Independent dual-reviewer screening
 
 [![Executed synthetic dual-reviewer screening, not browser footage](assets/dual-reviewer-screening.png)](assets/dual-reviewer-screening.gif)

@@ -382,6 +382,26 @@ model, retrieval, network or agent event is involved, and native writes reuse th
 Origin, encoding and size checks as the screening workbench. See the
 [dual-reviewer guide](docs/guides/DUAL_REVIEWER_SCREENING_GUIDE.md).
 
+### Advisory screening stopping rules
+
+`GET /collections/{collection_id}/screening-stopping` and `/explore/screening-stopping`
+are **read-only evidence, never a decision or a stop**: they record, change or suggest no
+decision, exclude, hide or mark no member and stop nothing; other methods return 405.
+Every response carries `advisory_only: true` plus fixed assumptions and limitations, and
+the page shows both beside the numbers. A `met` status is not permission to skip
+unscreened or stale members.
+
+The recorded order relies on server wall-clock decision times, which are not a
+guaranteed sequence: detected inconsistencies make order-based rules `not_evaluable`,
+undetected clock changes remain possible. buscar's recall test is valid only for a seed
+and target chosen before the sample is seen and a sample screened in the listed order,
+and it stays `not_evaluable` while unsure decisions recorded before the sample remain;
+p is recomputed without a repeated-looks correction. Recall is relative to the
+collection's members and treats each human decision as correct. The sample order is a
+reproducible SHA-256 order, not a secret. No model, retrieval, network, cache or agent
+event is involved; there is no authentication, and IDs and sample parameters stay in
+URLs. See the [stopping-rules guide](docs/guides/SCREENING_STOPPING_RULES_GUIDE.md).
+
 ## Read-only collection browser
 
 `/explore/collections` and `/explore/collection` expose existing metadata, not

@@ -315,6 +315,23 @@ _SCREENING_FOOTER = (
     "Decode quotes/escapes when a raw ID is needed. Prior opinions are never rewritten "
     "by this form; legacy gaps remain explicit.</p></footer></body></html>"
 )
+_STOPPING_FOOTER = (
+    "</main><footer><h2>Advisory evidence, never a decision or a stop</h2>"
+    "<p>This GET page reads one snapshot of recorded human decisions and evaluates published "
+    "stopping rules. It never records, changes or suggests include, exclude or unsure, never "
+    "excludes or hides a member, never marks anything screened and never stops screening. "
+    "Unscreened and stale members still need your explicit decision.</p>"
+    "<p>The order comes from server times saved with each decision, which are not a "
+    "guaranteed global sequence; detected inconsistencies are shown and make order-based "
+    "rules not evaluable. Recall is relative to this collection only. The random sample is a "
+    "reproducible SHA-256 order chosen by your seed, not a secret.</p>"
+    "<p>No network, model, retrieval, generation, cache or event write occurs. No scripts, "
+    "external resources, analytics, cookies or browser storage are used. There is no "
+    "authentication; keep the app on loopback or behind your own access controls. IDs and "
+    "parameters remain in URLs and history; no-store cannot prevent saving or screenshots.</p>"
+    "<p>IDs are JSON strings: decode quotes and escapes before using a raw ID. Reread this "
+    "page after each decision; separate reads are not one snapshot.</p></footer></body></html>"
+)
 _PRIORITY_FOOTER = (
     "</main><footer><h2>An ordering, never a decision</h2>"
     "<p>This GET page reads one snapshot and orders papers that still need a human decision. "
@@ -450,6 +467,7 @@ def _page(
     retrieval: bool = False,
     prioritization: bool = False,
     dual_review: bool = False,
+    stopping: bool = False,
 ) -> HTMLResponse:
     subject = "SAVED RUNS" if saved_runs else "CURRENT CORPUS"
     description = (
@@ -498,6 +516,10 @@ def _page(
         subject = "SCREENING PRIORITIZATION"
         description = "Order papers that still need your decision; the order never decides."
         footer = _PRIORITY_FOOTER
+    if stopping:
+        subject = "SCREENING STOPPING RULES"
+        description = "Advisory evidence for deciding when to stop; it never decides or stops."
+        footer = _STOPPING_FOOTER
     if dual_review:
         subject = "INDEPENDENT DUAL REVIEW"
         description = "Screen blind under your own label; unblind deliberately to resolve."
@@ -547,6 +569,7 @@ def _error(
     retrieval: bool = False,
     prioritization: bool = False,
     dual_review: bool = False,
+    stopping: bool = False,
 ) -> HTMLResponse:
     logger.warning("Local explorer failed: %s", code)
     return _page(
@@ -571,6 +594,7 @@ def _error(
         retrieval=retrieval,
         prioritization=prioritization,
         dual_review=dual_review,
+        stopping=stopping,
     )
 
 
